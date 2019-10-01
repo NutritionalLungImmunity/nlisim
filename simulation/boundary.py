@@ -39,8 +39,8 @@ class Dirichlet(BoundaryCondition):
         h = state.dy
         value = self.get_value(state)
 
-        # grad[0, :] += (var[0, :] - value) / h
-        grad[-1, :] += (value - var[-1, :]) / h
+        grad[0, :] = (var[1, :] - var[0, :]) / h
+        grad[-1, :] = (value - var[-1, :]) / h
 
     def _gradient2(self, state: State, var: np.ndarray, lapl: np.ndarray) -> None:
         h = state.dy
@@ -52,7 +52,7 @@ class Dirichlet(BoundaryCondition):
 
 class Neumann(BoundaryCondition):
     def _gradient(self, state: State, var: np.ndarray, grad: np.ndarray) -> None:
-        # grad[0, :] = var[0, :]
+        grad[0, :] = (var[1, :] - var[0, :]) / state.dy
         grad[-1, :] = var[-1, :]
 
     def _gradient2(self, state: State, var: np.ndarray, lapl: np.ndarray) -> None:
