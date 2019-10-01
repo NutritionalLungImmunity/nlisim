@@ -4,8 +4,9 @@ from simulation.driver import run
 
 
 @click.command()
-def main():
-    run(10)
+@click.argument('time', type=click.FLOAT)
+def main(time):
+    run(time)
 
 
 if __name__ == '__main__':

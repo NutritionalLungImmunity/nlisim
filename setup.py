@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from setuptools import setup
 
 setup(
@@ -8,7 +7,11 @@ setup(
     install_requires=[
         'click',
         'numpy',
-        'scipy',
-        'tqdm'
-    ]
+        'scipy'
+    ],
+    entry_points={
+        'console_scripts': [
+            'simulation-run = simulation.cli:main'
+        ]
+    }
 )

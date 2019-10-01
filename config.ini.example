@@ -1,0 +1,19 @@
+[simulation]
+time_step = 0.05
+nx = 200
+ny = 180
+dx = 1.0
+dy = 1.0
+
+validate = True
+
+initialization = simulation.contrib.constant
+iteration = simulation.contrib.point_source
+
+boundary_conditions = simulation.boundary.Neumann
+
+[constant_mutation]
+diffusivity = 0.5
+wind_x = 0.1
+wind_y = -0.2
+
