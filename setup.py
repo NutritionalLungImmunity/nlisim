@@ -11,7 +11,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'simulation-run = simulation.cli:main'
+            'simulation-run = simulation.cli:run'
         ]
     }
 )

@@ -38,14 +38,15 @@ def get_entry_point(name):
 
 
 class SimulationConfig(ConfigParser):
-    def __init__(self, file: Union[str, PurePath]='config.ini') -> None:
+    def __init__(self, file: Union[str, PurePath, None]) -> None:
         super().__init__()
 
         # set defaults
         self.read_dict({
             'simulation': DEFAULTS
         })
-        self.read(file)
+        if file is not None:
+            self.read(file)
 
         self.StateClass = self.load_import_path(
             self.get('simulation', 'state_class')
