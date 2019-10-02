@@ -1,13 +1,14 @@
 from io import BytesIO
 from pathlib import Path, PurePath
 import pickle
-from typing import Any, cast, IO, NamedTuple, TYPE_CHECKING, Union
+from typing import Any, Callable, cast, IO, NamedTuple, TYPE_CHECKING, Union
 
 import numpy as np
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
     from simulation.boundary import BoundaryCondition  # noqa
     from simulation.config import SimulationConfig  # noqa
+    from simulation.validator import Validator  # noqa
 
 
 class State(NamedTuple):
@@ -58,3 +59,11 @@ class State(NamedTuple):
         d = self._asdict()
         d.update(**kwargs)
         return self.__class__(**d)
+
+    def validate(self) -> None:
+        pass
+
+    def apply(self, func: Callable[['State'], 'State']) -> 'State':
+        state = func(self)
+        self.config.validate(state)
+        return state

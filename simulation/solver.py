@@ -59,13 +59,18 @@ def step(state: State, stop_time: Optional[float]=None) -> State:
 
 
 def advance(state: State, target_time: float, initialize: bool=True) -> Iterator[State]:
+    validate = state.config.validate
     if initialize:
-        for f in state.config.initialization_plugins:
-            state = f(state)
+        for p, f in state.config.initialization_plugins.items():
+            with validate.context(p):
+                state = f(state)
+                validate(state)
 
     while state.time < target_time:
-        for f in state.config.iteration_plugins:
-            state = f(state)
+        for p, f in state.config.iteration_plugins.items():
+            with validate.context(p):
+                state = f(state)
+                validate(state)
 
         state = step(state, target_time)
         yield state

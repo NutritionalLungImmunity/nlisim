@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from configparser import ConfigParser
 from functools import lru_cache
 from importlib import import_module
@@ -6,6 +7,8 @@ from pathlib import PurePath
 from pkg_resources import iter_entry_points
 import re
 from typing import Callable, cast, List, TYPE_CHECKING, Union
+
+from simulation.validator import Validator
 
 if TYPE_CHECKING:
     from simulation.state import State  # noqa
@@ -26,7 +29,8 @@ DEFAULTS = {
     'boundary_conditions': 'simulation.boundary.Dirichlet',
 
     'initialization': 'simulation.contrib.constant',
-    'iteration': 'simulation.contrib.point_source'
+    'iteration': 'simulation.contrib.point_source',
+    'validation': ''
 }
 
 
@@ -55,12 +59,19 @@ class SimulationConfig(ConfigParser):
             self.get('simulation', 'boundary_conditions')
         )
 
-        self.initialization_plugins = [
-            self.load_import_path(p) for p in self.getlist('simulation', 'initialization')
+        self.initialization_plugins = OrderedDict([
+            (p, self.load_import_path(p)) for p in self.getlist('simulation', 'initialization')
+        ])
+        self.iteration_plugins = OrderedDict([
+            (p, self.load_import_path(p)) for p in self.getlist('simulation', 'iteration')
+        ])
+
+        validators = [
+            self.load_import_path(p) for p in self.getlist('simulation', 'validation')
         ]
-        self.iteration_plugins = [
-            self.load_import_path(p) for p in self.getlist('simulation', 'iteration')
-        ]
+        self.validate = Validator(
+            validators, skip=not self.get('simulation', 'validate', fallback=True)
+        )
 
     @classmethod
     def load_import_path(cls, path: Union[str, Callable]) -> Callable:
