@@ -45,7 +45,7 @@ value = 1
 [simulation.plot]
 # plot the simulation while it runs at most once every 0.5 seconds
 draw_interval = 0.0
-block = True
+# block = True
 
 [simulation.save]
 # save the simulation state every 1 simulation second
