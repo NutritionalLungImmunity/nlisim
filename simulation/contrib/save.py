@@ -13,7 +13,7 @@ def save_state(state: State):
         'simulation.save', 'save_file_name', fallback='output/simulation-%%010.3f.pkl')
     now = state.time
 
-    if now - _last_save >= save_interval:
+    if now - _last_save + 1e-8 > save_interval:
         path = Path(save_file_name % now)
         path.parent.mkdir(parents=True, exist_ok=True)
         state.save(path)
