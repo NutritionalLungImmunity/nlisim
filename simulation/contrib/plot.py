@@ -28,9 +28,10 @@ def draw_simulation(state: State):
     global _last_draw
 
     draw_interval = state.config.getfloat('simulation.plot', 'draw_interval', fallback=0.5)
+    block = state.config.getboolean('simulation.plot', 'block', fallback=False)
     now = time()
     if now - _last_draw >= draw_interval:
-        display(state)
+        display(state, block=block)
         _last_draw = time()
 
     return state

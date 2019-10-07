@@ -71,7 +71,7 @@ class SimulationConfig(ConfigParser):
             self.load_import_path(p) for p in self.getlist('simulation', 'validation')
         ]
         self.validate = Validator(
-            validators, skip=not self.get('simulation', 'validate', fallback=True)
+            validators, skip=not self.getboolean('simulation', 'validate', fallback=True)
         )
 
     @classmethod

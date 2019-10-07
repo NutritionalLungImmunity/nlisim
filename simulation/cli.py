@@ -18,7 +18,7 @@ def main():
 @click.argument('target_time', type=click.FLOAT, default=100)
 @click.option('--config', type=click.Path(exists=True), default='config.ini',
               help='Path to a simulation config', show_default=True)
-def run(target_time, config, output_dir, output_interval):
+def run(target_time, config):
     """Run a simulation"""
     config = SimulationConfig(config)
     total = ceil(target_time / config.getfloat('simulation', 'time_step'))
@@ -42,7 +42,7 @@ def run(target_time, config, output_dir, output_interval):
 @click.argument('file', type=click.File('rb'))
 def show(file):
     """Display a simulation output file."""
-    display(State.load(file))
+    display(State.load(file), block=True)
 
 
 if __name__ == '__main__':

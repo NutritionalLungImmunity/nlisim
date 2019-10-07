@@ -1,6 +1,6 @@
 [simulation]
 # maximum time step duration
-time_step = 0.01
+time_step = 0.05
 
 # number of grid points in each direction
 nx = 120
@@ -11,7 +11,7 @@ dx = 0.1
 dy = 0.1
 
 # run validation state on every iteration
-validate = True
+validate = False
 
 # a list of initialization functions that execute
 # immediately after state creation at time step 0
@@ -44,7 +44,8 @@ value = 1
 
 [simulation.plot]
 # plot the simulation while it runs at most once every 0.5 seconds
-draw_interval = 0.5
+draw_interval = 0.0
+block = True
 
 [simulation.save]
 # save the simulation state every 1 simulation second
