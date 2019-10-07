@@ -5,6 +5,12 @@ verify_ssl = true
 
 [dev-packages]
 tox = '>=3'
+flake8 = '*'
+flake8-import-order = '*'
+flake8-quotes = '*'
+pep8-naming = '*'
+pytest = '*'
+pytest-cov = '*'
 
 [packages]
 simulation = {editable = true,path = "."}
