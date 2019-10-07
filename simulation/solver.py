@@ -59,6 +59,7 @@ def step(state: State, stop_time: Optional[float] = None) -> State:
 
 
 def advance(state: State, target_time: float, initialize: bool = True) -> Iterator[State]:
+    """Advance a simulation to the given target time."""
     validate = state.config.validate
     if initialize:
         for p, f in state.config.initialization_plugins.items():

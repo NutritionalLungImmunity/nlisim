@@ -9,11 +9,22 @@ ValidatorMethod = Callable[[State], None]
 
 
 class ValidationError(Exception):
+    """
+    This is an error type raised when a simulation validation condition is
+    violated.  It also provides the ability to report the context of a validation
+    error... that is, to report the specific step causing the validation error.
+    """
     def __init__(self, msg: str):
         super().__init__(msg)
         self._ctx: List['str'] = []
 
     def push_context(self, ctx: str) -> None:
+        """Push a new execution context onto the exception.
+
+        The context is an arbitrary string meant to provide users a hint as to
+        the cause of an error even when plugins are allowed to make arbitrary
+        changes to the system state.
+        """
         self._ctx.append(ctx)
 
     def __str__(self) -> str:
@@ -24,13 +35,33 @@ class ValidationError(Exception):
 
 
 class Validator(object):
+    """
+    This class is a callable object that validates the state of a simulation.  By default
+    it checks state attribute types, numpy array shapes, and numeric values.  It provides
+    a hook to inject extra validators from the configuration.
+    """
     def __init__(self, extra: Iterable[ValidatorMethod] = None, skip: bool = False):
+        """Initialize the validator.
+
+        extra:
+            A list of functions that will called with the validation.  These functions take
+            a single argument (the system state) and should raise a validation error or return
+            None on success.
+
+        skip:
+            When true, skip all validation to accelerate the simuation in production mode.
+        """
         self.skip = skip
         self.extra = extra or []
         self._ctx: Optional[str] = None
 
     @contextmanager
     def context(self, ctx: str) -> Iterator['Validator']:
+        """Create a new "validation context".
+
+        This returns a context manager.  Any validation error thrown within this context
+        will contain a reference to the value provided.
+        """
         self._ctx = ctx
         try:
             yield self
@@ -44,6 +75,7 @@ class Validator(object):
             self._ctx = None
 
     def __call__(self, state: State) -> None:
+        """Perform all validation checks on the provided state."""
         if self.skip:
             return
 
@@ -67,6 +99,7 @@ class Validator(object):
 
     @classmethod
     def check_variable(cls, state: State, name: str, variable: np.ndarray) -> None:
+        """Check a single numpy variable for valid numeric values."""
         c = state.concentration
         if not isinstance(variable, np.ndarray):
             raise ValidationError(f'Invalid data type for variable {name}')

@@ -1,7 +1,7 @@
 from io import BytesIO
 from pathlib import Path, PurePath
 import pickle
-from typing import Any, Callable, cast, IO, NamedTuple, TYPE_CHECKING, Union
+from typing import Any, cast, IO, NamedTuple, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -38,6 +38,7 @@ class State(NamedTuple):
 
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -> 'State':
+        """Load a pickled state from either a path, a file, or blob of bytes."""
         if isinstance(arg, (str, PurePath)):
             arg = Path(arg).open('rb')
         if isinstance(arg, bytes):
@@ -46,12 +47,14 @@ class State(NamedTuple):
         return cast('State', pickle.load(arg))
 
     def save(self, arg: Union[str, PurePath, IO[bytes]]) -> None:
+        """Save the current state to the file system."""
         if isinstance(arg, (str, PurePath)):
             arg = Path(arg).open('wb')
 
         arg.write(self.serialize())
 
     def serialize(self) -> bytes:
+        """Return a serialized representation of the current state."""
         return pickle.dumps(self)
 
     def replace(self, **kwargs: Any) -> 'State':
@@ -59,8 +62,3 @@ class State(NamedTuple):
         d = self._asdict()
         d.update(**kwargs)
         return self.__class__(**d)
-
-    def apply(self, func: Callable[['State'], 'State']) -> 'State':
-        state = func(self)
-        self.config.validate(state)
-        return state
