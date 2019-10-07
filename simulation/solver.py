@@ -33,7 +33,7 @@ T(t + dt, x, y) <- T(t, x, y) + ( diffusion + advection + source ) * dt
 """
 
 
-def step(state: State, stop_time: Optional[float]=None) -> State:
+def step(state: State, stop_time: Optional[float] = None) -> State:
     """Advance the state by a single time step."""
     delta_time = state.config.getfloat('simulation', 'time_step')
     concentration = state.concentration
@@ -44,21 +44,21 @@ def step(state: State, stop_time: Optional[float]=None) -> State:
         stop_time = state.time + delta_time
 
     # diffusion
-    dQ = state.diffusivity * laplacian(state, concentration)
+    dq = state.diffusivity * laplacian(state, concentration)
 
     # advection
-    dQ -= state.wind_x * gradient(state, concentration, 1)
-    dQ -= state.wind_y * gradient(state, concentration, 0)
+    dq -= state.wind_x * gradient(state, concentration, 1)
+    dq -= state.wind_y * gradient(state, concentration, 0)
 
     # source
-    dQ += state.source
+    dq += state.source
 
     # mutate the original concentration value
-    concentration[:, :] += dQ * delta_time
+    concentration[:, :] += dq * delta_time
     return state.replace(time=stop_time)
 
 
-def advance(state: State, target_time: float, initialize: bool=True) -> Iterator[State]:
+def advance(state: State, target_time: float, initialize: bool = True) -> Iterator[State]:
     validate = state.config.validate
     if initialize:
         for p, f in state.config.initialization_plugins.items():

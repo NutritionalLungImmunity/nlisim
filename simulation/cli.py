@@ -13,12 +13,12 @@ from simulation.state import State
 
 
 def display(state: State, block=True):
-    C = state.concentration
+    c = state.concentration
     # C = np.ma.masked_where(np.abs(state.concentration) < 1e-6, state.concentration)
-    x = np.arange(C.shape[1] + 1) * state.dx
-    y = np.arange(C.shape[0] + 1) * state.dy
+    x = np.arange(c.shape[1] + 1) * state.dx
+    y = np.arange(c.shape[0] + 1) * state.dy
     pylab.clf()
-    pylab.pcolormesh(x, y, C, cmap='hot')
+    pylab.pcolormesh(x, y, c, cmap='hot')
     pylab.colorbar()
     pylab.axis('scaled')
     pylab.title('%.2f' % state.time)

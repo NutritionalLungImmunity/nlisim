@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Callable, List, Iterable, Iterator, Optional
+from typing import Callable, Iterable, Iterator, List, Optional
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class ValidationError(Exception):
 
 
 class Validator(object):
-    def __init__(self, extra: Iterable[ValidatorMethod]=None, skip: bool=False):
+    def __init__(self, extra: Iterable[ValidatorMethod] = None, skip: bool = False):
         self.skip = skip
         self.extra = extra or []
         self._ctx: Optional[str] = None

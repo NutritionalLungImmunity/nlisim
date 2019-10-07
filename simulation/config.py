@@ -4,9 +4,10 @@ from functools import lru_cache
 from importlib import import_module
 import logging
 from pathlib import PurePath
-from pkg_resources import iter_entry_points
 import re
 from typing import Callable, cast, List, TYPE_CHECKING, Union
+
+from pkg_resources import iter_entry_points
 
 from simulation.validator import Validator
 
@@ -42,7 +43,7 @@ def get_entry_point(name):
 
 
 class SimulationConfig(ConfigParser):
-    def __init__(self, file: Union[str, PurePath, None]) -> None:
+    def __init__(self, file: Union[str, PurePath, None] = None) -> None:
         super().__init__()
 
         # set defaults

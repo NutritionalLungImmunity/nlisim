@@ -60,9 +60,6 @@ class State(NamedTuple):
         d.update(**kwargs)
         return self.__class__(**d)
 
-    def validate(self) -> None:
-        pass
-
     def apply(self, func: Callable[['State'], 'State']) -> 'State':
         state = func(self)
         self.config.validate(state)
