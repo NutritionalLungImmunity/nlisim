@@ -29,8 +29,8 @@ DEFAULTS = {
     'state_class': 'simulation.state.State',
     'boundary_conditions': 'simulation.boundary.Dirichlet',
 
-    'initialization': 'simulation.contrib.constant',
-    'iteration': 'simulation.contrib.point_source',
+    'initialization': 'simulation.contrib.mutation.constant',
+    'iteration': 'simulation.contrib.mutation.point_source',
     'validation': ''
 }
 

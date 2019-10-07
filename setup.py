@@ -6,8 +6,8 @@ setup(
     packages=find_packages(exclude=['test', 'test.*']),
     install_requires=[
         'click',
-        'numpy',
-        'scipy'
+        'matplotlib',
+        'numpy'
     ],
     entry_points={
         'console_scripts': [
