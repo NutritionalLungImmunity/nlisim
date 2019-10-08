@@ -92,3 +92,119 @@ running `pytest --cov` to get coverage information for the tests run from your
 current python environment.  Tox also handles running the linting and type
 checking as well.  These can be run standalone with `flake8 simulation` or
 `mypy simulation` respectively.
+
+# Code organization
+
+* `state.py`
+
+    This module defines a
+    [namedtuple](https://docs.python.org/3/library/collections.html#collections.namedtuple)
+    containing all of the variables that make up the simulation state.  An
+    object of this type is passed around through all of the simulation methods.
+
+    By design, the state class does not contain any methods that mutate its own
+    data.  The state object is primarily a container that can be serialized and
+    deserialized easily for simulation diagnostic output and checkpoints.
+
+* `config.py`
+
+    This module defines a subclass of a python
+    [ConfigParser](https://docs.python.org/3/library/configparser.html?highlight=configparser#configparser.ConfigParser)
+    which parses ".ini" style files for runtime configuration of the
+    simulation.  While not currently enforced, it is expected that all values
+    in the configuration object are immutable.  This is the primary distinction
+    between the simulation config and the simulation state.
+
+* `solver.py`
+
+    This module contains the logic that advances the simulation state in time.
+    It is also responsible for calling the methods that extend the behavior
+    of the simulation that are provided in the configuration.
+
+* `contrib/*`
+
+    Modules under `contrib` are "optional" extensions to the main simulation.
+    They contain functions that are called in one of the extension points in
+    the main solver: initialization and iteration.  These functions could be
+    moved to an external package, but for simplicity in this proof of concept
+    are included with the main simulation.
+
+* `validator.py`
+
+    This module contains a "validation" class that is optionally run after each
+    mutation of the simulation state.  By default, it only detects invalid
+    types and floating point values.  It can be extended by the configuration
+    to include additional validation functions as desired.
+
+* `differences.py`
+
+    This module provides functions to compute numeric derivatives of numpy
+    arrays using finite differences.  The implementation uses vectorized
+    operations to avoid explicit loops in python, which are significantly
+    slower.
+
+* `boundary.py`
+
+    This module defines an abstract interface for handling boundary conditions
+    when performing numeric differentiation.  Basic Dirichlet and Neumann are
+    provided.
+
+* `cli.py`
+
+    This module uses [click](https://click.palletsprojects.com/en/7.x/) to generate
+    a commandline interface for executing the simulation.  Click provides a flexible
+    API for designing high quality CLI's.
+
+
+# Discussion
+
+There are a number of issues present in this architecture that should be considered
+before moving forward.  I will attempt to outline those that I am aware of here.
+
+## Explicit time stepping
+
+The idea that the system is solved explicitly from `t -> t + ∆t` is baked in to
+the architecture.  The iteration-based extensions in particular rely on this
+behavior.  As shown in the example, explicit methods have issues with stability
+that put upper bounds on the possible time steps.  Stabilized methods including
+upwinded and implicit solvers are able to get around this limitation, but don't
+offer the same ability to extend and modify the simulation as easily and
+efficiently as the existing implementation
+
+## Consider the use of a CFD library
+
+If we want to embed a true fluid dynamic simulation, we might want to consider
+the use of a proven fluid dynamic solver rather than building one up on our
+own.
+
+## Passing the configuration inside the state
+
+For simplicity, I included the config object with the simulation state.  A
+better pattern might be to make the configuration a module-level global...
+perhaps something like how flask does
+[configuration](https://flask.palletsprojects.com/en/1.1.x/config/) e.g.
+`current_app.config`.
+
+## Provide a better way to add state via an extension
+
+The configuration object can specify the class used as the state object.  The
+main `State` type can be subclassed to provide additional state variables, but
+there is no way at configuration time to append state variables from multiple
+sources.
+
+## Provide an integrated API for extensions
+
+Currently, there are a number places a simulation extension can modify the
+behavior of the solver: initialization, iteration, state class, and validation.
+A potentially common use case for an extension is to do the following:
+
+* Add a configuration section
+* Add a new state variable
+* Add a validator for the new variable
+* Add initialization for the new variable
+* Add an iteration method to update the new variable
+
+These are all possible in the current framework, but it is left up to the user
+to configure all of the pieces together correctly.  If this is indeed a common
+use case, it would be better to provide a unified API to do all of this from a
+single extension point.
