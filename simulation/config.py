@@ -5,13 +5,13 @@ from importlib import import_module
 import logging
 from pathlib import PurePath
 import re
-from typing import Callable, cast, List, TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union
 
 from pkg_resources import iter_entry_points
 
-from simulation.validator import Validator
 
 if TYPE_CHECKING:
+    from simulation.module import Module
     from simulation.state import State  # noqa
 
 
@@ -20,18 +20,15 @@ DEFAULTS = {
 
     'nx': 100,
     'ny': 80,
+    'nz': 60,
     'dx': 1.0,
     'dy': 1.0,
+    'dz': 1.0,
 
     'validate': True,
     'verbosity': logging.WARNING,
 
-    'state_class': 'simulation.state.State',
-    'boundary_conditions': 'simulation.boundary.Dirichlet',
-
-    'initialization': 'simulation.contrib.mutation.constant',
-    'iteration': 'simulation.contrib.mutation.point_source',
-    'validation': ''
+    'modules': ''
 }
 
 
@@ -60,57 +57,33 @@ class SimulationConfig(ConfigParser):
         if file is not None:
             self.read(file)
 
-        # The remaining code dereferences the import paths for the extensions
-        # described in the config.  This is done here rather than lazily to ensure
-        # import errors occur early.
+        self._modules: OrderedDict[str, 'Module'] = OrderedDict()
+        for module_path in self.getlist('simulation', 'modules'):
+            module = self.load_module(module_path)
+            if module.name in self._modules:
+                raise ValueError(f'A module named {module.name} already exists')
+            self._modules[module.name] = module
 
-        # set the class used to store the system state... a downstream
-        # plugin could append new variables to the state, but the mechanics
-        # of this are not fully developed.
-        self.StateClass = self.load_import_path(
-            self.get('simulation', 'state_class')
-        )
-
-        # import the boundary condition class in use
-        self.boundary_conditions = self.load_import_path(
-            self.get('simulation', 'boundary_conditions')
-        )
-
-        # load all of functions that run during initialization
-        self.initialization_plugins = OrderedDict([
-            (p, self.load_import_path(p)) for p in self.getlist('simulation', 'initialization')
-        ])
-
-        # load all of the function that run during solver iterations
-        self.iteration_plugins = OrderedDict([
-            (p, self.load_import_path(p)) for p in self.getlist('simulation', 'iteration')
-        ])
-
-        # generate the state validator class
-        validators = [
-            self.load_import_path(p) for p in self.getlist('simulation', 'validation')
-        ]
-        self.validate = Validator(
-            validators, skip=not self.getboolean('simulation', 'validate', fallback=True)
-        )
+    @property
+    def modules(self) -> List['Module']:
+        return list(self._modules.values())
 
     @classmethod
-    def load_import_path(cls, path: Union[str, Callable]) -> Callable:
-        """Import a module path to a callable function.
+    def load_module(cls, path: Union[str, 'Module']) -> 'Module':
+        from simulation.module import Module  # avoid circular imports
 
-        This is a generic utility method used by the configuration to load extensions
-        to the solution.  For example, calling with ``my_package.module_1.module_2.method``
-        would return the result of `from my_package.module_1.module_2 import method``.
-        """
-        if not isinstance(path, str):
-            return path
+        if isinstance(path, str):
+            module_path, func_name = path.rsplit('.', 1)
+            module = import_module(module_path, 'simulation')
+            func = getattr(module, func_name, None)
+        else:
+            func = path
 
-        module_path, func_name = path.rsplit('.', 1)
-        module = import_module(module_path, 'simulation')
-        func = getattr(module, func_name, None)
-        if not callable(func):
-            raise Exception(f'{path} is not a callable object')
-        return cast(Callable, func)
+        if not isinstance(func, Module):
+            raise TypeError(f'Invalid module class for "{path}"')
+        if not func.name.isidentifier():
+            raise ValueError(f'Invalid module name "{func.name}" for "{path}')
+        return func
 
     def getlist(self, section: str, option: str) -> List[str]:
         """Return a list of strings from a configuration value.

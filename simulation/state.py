@@ -1,40 +1,86 @@
 from io import BytesIO
 from pathlib import Path, PurePath
 import pickle
-from typing import Any, cast, IO, NamedTuple, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, IO, List, NamedTuple, Tuple, TYPE_CHECKING, Union
 
+import attr
 import numpy as np
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
     from simulation.boundary import BoundaryCondition  # noqa
     from simulation.config import SimulationConfig  # noqa
+    from simulation.module import ModuleState  # noqa
     from simulation.validator import Validator  # noqa
 
+ShapeType = Tuple[int, int, int]
+SpacingType = Tuple[float, float, float]
 
-class State(NamedTuple):
+
+class RectangularGrid(NamedTuple):
+    """A class representation of a rectangular grid."""
+    # cell centered coordinates
+    x: np.ndarray
+    y: np.ndarray
+    z: np.ndarray
+
+    # vertex coordinates
+    xv: np.ndarray
+    yv: np.ndarray
+    zv: np.ndarray
+
+    @classmethod
+    def _make_coordinate_arrays(cls, size: int, spacing: float) -> Tuple[np.ndarray, np.ndarray]:
+        vertex = np.arange(size + 1) * spacing
+        cell = spacing / 2 + vertex[:-1]
+        vertex.flags['WRITEABLE'] = False
+        cell.flags['WRITEABLE'] = False
+        return cell, vertex
+
+    @classmethod
+    def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -> 'RectangularGrid':
+        """Create a rectangular grid with uniform spacing in each axis."""
+        nz, ny, nx = shape
+        dz, dy, dx = spacing
+        x, xv = cls._make_coordinate_arrays(nx, dx)
+        y, yv = cls._make_coordinate_arrays(ny, dy)
+        z, zv = cls._make_coordinate_arrays(nz, dz)
+        return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)
+
+    def meshgrid(self) -> List[np.ndarray]:
+        """Return the coordinate grid representation.
+
+        This returns three 3D arrays containing the x, y, z coordinates
+        respectively.  For example,
+
+        >>> X, Y, Z = grid.meshgrid()
+
+        X[zi, yi, xi] is is the x-coordinate of the point at indices (xi, yi,
+        zi).  The data returned is a read-only view into the coordinate arrays
+        and is efficient to compute on demand.
+        """
+        return np.meshgrid(self.z, self.y, self.x, indexing='ij', copy=False)[::-1]
+
+    @property
+    def shape(self) -> ShapeType:
+        return (len(self.z), len(self.y), len(self.x))
+
+    def allocate_variable(self, dtype: np.dtype = np.dtype('float64')) -> np.ndarray:
+        """Allocate a numpy array defined over this grid."""
+        return np.zeros(self.shape, dtype=dtype)
+
+
+@attr.s(auto_attribs=True, kw_only=True, repr=False)
+class State(object):
     """A container for storing the simulation state at a single time step."""
-
-    # time
     time: float
-
-    # the rectangular grid coordinates (1D each)
-    dx: float
-    dy: float
-
-    # the quantity being advected (e.g. temperature, pollutant, etc.)
-    concentration: np.ndarray
-
-    # simulation parameters
-    diffusivity: np.ndarray
-    wind_x: np.ndarray
-    wind_y: np.ndarray
-    source: np.ndarray
-
-    # boundary conditions
-    bc: 'BoundaryCondition'
+    grid: RectangularGrid
 
     # simulation configuration
     config: 'SimulationConfig'
+
+    # a private container for module state, users of this class should use the
+    # public API instead
+    _extra: Dict[str, 'ModuleState'] = attr.ib(factory=dict)
 
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -> 'State':
@@ -57,8 +103,40 @@ class State(NamedTuple):
         """Return a serialized representation of the current state."""
         return pickle.dumps(self)
 
-    def replace(self, **kwargs: Any) -> 'State':
-        """Return a new copy of the state with new values."""
-        d = self._asdict()
-        d.update(**kwargs)
-        return self.__class__(**d)
+    @classmethod
+    def create(cls, config: 'SimulationConfig'):
+        shape = (
+            config.getint('simulation', 'nz'),
+            config.getint('simulation', 'ny'),
+            config.getint('simulation', 'nx')
+        )
+        spacing = (
+            config.getfloat('simulation', 'dz'),
+            config.getfloat('simulation', 'dy'),
+            config.getfloat('simulation', 'dx')
+        )
+        grid = RectangularGrid.construct_uniform(shape, spacing)
+        state = State(time=0.0, grid=grid, config=config)
+
+        for module in state.config.modules:
+            if hasattr(state, module.name):
+                # prevent modules from overriding existing class attributes
+                raise ValueError(f'The name "{module.name}" is a reserved token.')
+
+            state._extra[module.name] = module.StateClass(global_state=state)
+        return state
+
+    def __repr__(self):
+        modules = [m.name for m in self.config.modules]
+        shp = self.grid.shape
+        grid = f'(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})'
+        return f'State(time={self.time}, grid=Rectangular{grid}, modules={modules})'
+
+    # expose module state as attributes on the global state object
+    def __getattr__(self, module_name: str) -> Any:
+        if module_name in self._extra:
+            return self._extra[module_name]
+        return super().__getattribute__(module_name)
+
+    def __dir__(self):
+        return sorted(super().__dir__() + list(self._extra.keys()))
