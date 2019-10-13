@@ -140,3 +140,19 @@ class State(object):
 
     def __dir__(self):
         return sorted(super().__dir__() + list(self._extra.keys()))
+
+
+def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
+    from simulation.validator import ValidationError  # prevent circular import
+
+    def factory(self: ModuleState) -> np.ndarray:
+        return self.global_state.grid.allocate_variable(dtype)
+
+    def validate_numeric(self: ModuleState, attribute: attr.Attribute, value: np.ndarray) -> None:
+        grid = self.global_state.grid
+        if value.shape != grid.shape:
+            raise ValidationError(f'Invalid shape for gridded variable {attribute.name}')
+        if not np.isfinite(value).all():
+            raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
+
+    return attr.ib(default=attr.Factory(factory, takes_self=True), validator=validate_numeric)

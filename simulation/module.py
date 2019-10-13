@@ -14,13 +14,13 @@ class ModuleState(object):
 
 class Module(object):
     #: a unique name for this module used for namespacing
-    name: Final[str] = ''
+    name: str = ''
 
     #: default values for all config options
-    defaults: Final[Dict[str, str]] = {}
+    defaults: Dict[str, str] = {}
 
     #: container for extra state required by this module
-    StateClass: Final[Type[ModuleState]] = ModuleState
+    StateClass: Type[ModuleState] = ModuleState
 
     def __init__(self, config: SimulationConfig):
         if not config.has_section(self.section):
