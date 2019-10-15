@@ -7,10 +7,8 @@ import attr
 import numpy as np
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
-    from simulation.boundary import BoundaryCondition  # noqa
     from simulation.config import SimulationConfig  # noqa
     from simulation.module import ModuleState  # noqa
-    from simulation.validator import Validator  # noqa
 
 ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]
@@ -143,7 +141,7 @@ class State(object):
 
 
 def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
-    from simulation.validator import ValidationError  # prevent circular import
+    from simulation.validation import ValidationError  # prevent circular imports
 
     def factory(self: ModuleState) -> np.ndarray:
         return self.global_state.grid.allocate_variable(dtype)

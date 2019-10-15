@@ -3,7 +3,7 @@ import numpy as np
 
 from simulation.module import Module, ModuleState
 from simulation.state import grid_variable, State
-from simulation.validator import ValidationError
+from simulation.validation import ValidationError
 
 
 @attr.s(kw_only=True)

@@ -1,4 +1,4 @@
-from typing import Iterator, Optional
+from typing import Optional
 
 from simulation.differences import gradient, laplacian
 from simulation.state import State
@@ -56,22 +56,3 @@ def step(state: State, stop_time: Optional[float] = None) -> State:
     # mutate the original concentration value
     concentration[:, :] += dq * delta_time
     return state.replace(time=stop_time)
-
-
-def advance(state: State, target_time: float, initialize: bool = True) -> Iterator[State]:
-    """Advance a simulation to the given target time."""
-    validate = state.config.validate
-    if initialize:
-        for p, f in state.config.initialization_plugins.items():
-            with validate.context(p):
-                state = f(state)
-                validate(state)
-
-    while state.time < target_time:
-        for p, f in state.config.iteration_plugins.items():
-            with validate.context(p):
-                state = f(state)
-                validate(state)
-
-        state = step(state, target_time)
-        yield state
