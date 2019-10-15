@@ -36,9 +36,8 @@ class Module(object):
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
     # arbitrary code during the simulation lifetime.
-    def construct(self, state: State) -> State:
+    def construct(self, state: State) -> None:
         """Run after state construction."""
-        return state
 
     def initialize(self, state: State) -> State:
         """Run after state initialization."""

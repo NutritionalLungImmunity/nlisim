@@ -3,9 +3,7 @@ from math import ceil
 import click
 
 from simulation.config import SimulationConfig
-from simulation.contrib.plot import display
-from simulation.initialization import create_state
-from simulation.solver import advance
+from simulation.solver import advance, initialize
 from simulation.state import State
 
 
@@ -28,7 +26,8 @@ def run(target_time, config):
             return '0'
         return '%.2f' % x.time
 
-    with click.progressbar(advance(create_state(config), target_time),
+    state = initialize(State.create(config))
+    with click.progressbar(advance(state, target_time),
                            label='Running simulation',
                            length=total,
                            item_show_func=get_time) as bar:
@@ -36,13 +35,6 @@ def run(target_time, config):
             pass
 
     state.save('simulation-final.pkl')
-
-
-@main.command()
-@click.argument('file', type=click.File('rb'))
-def show(file):
-    """Display a simulation output file."""
-    display(State.load(file), block=True)
 
 
 if __name__ == '__main__':

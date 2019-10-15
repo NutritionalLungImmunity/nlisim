@@ -136,6 +136,8 @@ class State(object):
                 raise ValueError(f'The name "{module.name}" is a reserved token.')
 
             state._extra[module.name] = module.StateClass(global_state=state)
+            module.construct(state)
+
         return state
 
     def __repr__(self):
