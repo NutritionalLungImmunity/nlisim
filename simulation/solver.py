@@ -7,14 +7,21 @@ from simulation.state import State
 from simulation.validation import context as validation_context
 
 
-def advance(state: State, target_time: float, initialize: bool = True) -> Iterator[State]:
-    """Advance a simulation to the given target time."""
-    if initialize:
-        for m in state.config.modules:
-            with validation_context(m.name):
-                state = m.initialize(state)
-                attr.validate(state)
+def initialize(state: State) -> State:
+    """Initialize a simulation state."""
+    for m in state.config.modules:
+        with validation_context(f'initialize {m.name}'):
+            state = m.initialize(state)
 
+    # run validation after all initialization is done otherwise validation
+    # could fail on a module's private state before it can initialize itself
+    with validation_context('initialize'):
+        attr.validate(state)
+    return state
+
+
+def advance(state: State, target_time: float) -> Iterator[State]:
+    """Advance a simulation to the given target time."""
     dt = state.config.getfloat('simulation', 'time_step')
     n_steps = ceil((target_time - state.time) / dt)
     initial_time = state.time

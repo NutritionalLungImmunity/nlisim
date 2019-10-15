@@ -44,19 +44,33 @@ class RectangularGrid(NamedTuple):
         z, zv = cls._make_coordinate_arrays(nz, dz)
         return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)
 
+    @property
     def meshgrid(self) -> List[np.ndarray]:
         """Return the coordinate grid representation.
 
-        This returns three 3D arrays containing the x, y, z coordinates
+        This returns three 3D arrays containing the z, y, x coordinates
         respectively.  For example,
 
-        >>> X, Y, Z = grid.meshgrid()
+        >>> Z, Y, X = grid.meshgrid()
 
         X[zi, yi, xi] is is the x-coordinate of the point at indices (xi, yi,
         zi).  The data returned is a read-only view into the coordinate arrays
         and is efficient to compute on demand.
         """
-        return np.meshgrid(self.z, self.y, self.x, indexing='ij', copy=False)[::-1]
+        return np.meshgrid(self.z, self.y, self.x, indexing='ij', copy=False)
+
+    def delta(self, axis: int) -> np.ndarray:
+        """Return grid spacing along the given axis."""
+        if axis == 0:
+            meshgrid = np.meshgrid(self.zv, self.y, self.x, indexing='ij', copy=False)[axis]
+        elif axis == 1:
+            meshgrid = np.meshgrid(self.z, self.yv, self.x, indexing='ij', copy=False)[axis]
+        elif axis == 2:
+            meshgrid = np.meshgrid(self.z, self.y, self.xv, indexing='ij', copy=False)[axis]
+        else:
+            raise ValueError('Invalid axis provided')
+
+        return np.diff(meshgrid, axis=axis)
 
     @property
     def shape(self) -> ShapeType:
@@ -143,10 +157,10 @@ class State(object):
 def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
     from simulation.validation import ValidationError  # prevent circular imports
 
-    def factory(self: ModuleState) -> np.ndarray:
+    def factory(self: 'ModuleState') -> np.ndarray:
         return self.global_state.grid.allocate_variable(dtype)
 
-    def validate_numeric(self: ModuleState, attribute: attr.Attribute, value: np.ndarray) -> None:
+    def validate_numeric(self: 'ModuleState', attribute: attr.Attribute, value: np.ndarray) -> None:
         grid = self.global_state.grid
         if value.shape != grid.shape:
             raise ValidationError(f'Invalid shape for gridded variable {attribute.name}')

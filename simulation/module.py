@@ -1,7 +1,6 @@
 from typing import Dict, Type
 
 import attr
-from typing_extensions import Final
 
 from simulation.config import SimulationConfig
 from simulation.state import State

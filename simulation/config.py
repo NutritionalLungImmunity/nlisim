@@ -5,13 +5,13 @@ from importlib import import_module
 import logging
 from pathlib import PurePath
 import re
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Type, TYPE_CHECKING, Union
 
 from pkg_resources import iter_entry_points
 
 
 if TYPE_CHECKING:
-    from simulation.module import Module
+    from simulation.module import Module  # noqa
     from simulation.state import State  # noqa
 
 
@@ -59,7 +59,7 @@ class SimulationConfig(ConfigParser):
 
         self._modules: OrderedDict[str, 'Module'] = OrderedDict()
         for module_path in self.getlist('simulation', 'modules'):
-            module = self.load_module(module_path)
+            module = self.load_module(module_path)(self)
             if module.name in self._modules:
                 raise ValueError(f'A module named {module.name} already exists')
             self._modules[module.name] = module
@@ -69,8 +69,8 @@ class SimulationConfig(ConfigParser):
         return list(self._modules.values())
 
     @classmethod
-    def load_module(cls, path: Union[str, 'Module']) -> 'Module':
-        from simulation.module import Module  # avoid circular imports
+    def load_module(cls, path: Union[str, Type['Module']]) -> Type['Module']:
+        from simulation.module import Module  # noqa avoid circular imports
 
         if isinstance(path, str):
             module_path, func_name = path.rsplit('.', 1)
@@ -79,7 +79,7 @@ class SimulationConfig(ConfigParser):
         else:
             func = path
 
-        if not isinstance(func, Module):
+        if not issubclass(func, Module):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier():
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
