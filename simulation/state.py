@@ -6,6 +6,8 @@ from typing import Any, cast, Dict, IO, List, NamedTuple, Tuple, TYPE_CHECKING, 
 import attr
 import numpy as np
 
+from simulation.validation import context as validation_context
+
 if TYPE_CHECKING:  # prevent circular imports for type checking
     from simulation.config import SimulationConfig  # noqa
     from simulation.module import ModuleState  # noqa
@@ -135,8 +137,9 @@ class State(object):
                 # prevent modules from overriding existing class attributes
                 raise ValueError(f'The name "{module.name}" is a reserved token.')
 
-            state._extra[module.name] = module.StateClass(global_state=state)
-            module.construct(state)
+            with validation_context(f'{module.name} (construction)'):
+                state._extra[module.name] = module.StateClass(global_state=state)
+                module.construct(state)
 
         return state
 

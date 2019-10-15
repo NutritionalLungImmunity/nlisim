@@ -1,9 +1,11 @@
 from contextlib import contextmanager
-from typing import Callable, Iterator, List
+from typing import Callable, Iterator, List, TYPE_CHECKING
 
-from simulation.state import State
 
-ValidatorMethod = Callable[[State], None]
+if TYPE_CHECKING:  # prevent circular imports for type checking
+    from simulation.state import State  # noqa
+
+ValidatorMethod = Callable[['State'], None]
 
 
 class ValidationError(Exception):

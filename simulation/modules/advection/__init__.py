@@ -48,6 +48,7 @@ class AdvectionState(ModuleState):
 
     @diffusivity.validator
     def _validate_diffusivity(self, attribute: attr.Attribute, value: float) -> None:
+        raise ValidationError('test')
         if not np.isfinite(value) or value < 0:
             raise ValidationError('Invalid diffusivity')
 

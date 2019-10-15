@@ -10,12 +10,12 @@ from simulation.validation import context as validation_context
 def initialize(state: State) -> State:
     """Initialize a simulation state."""
     for m in state.config.modules:
-        with validation_context(f'initialize {m.name}'):
+        with validation_context(f'{m.name} (initialization)'):
             state = m.initialize(state)
 
     # run validation after all initialization is done otherwise validation
     # could fail on a module's private state before it can initialize itself
-    with validation_context('initialize'):
+    with validation_context('global initialization'):
         attr.validate(state)
     return state
 

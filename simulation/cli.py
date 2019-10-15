@@ -1,5 +1,6 @@
 from math import ceil
 
+import attr
 import click
 
 from simulation.config import SimulationConfig
@@ -20,6 +21,8 @@ def run(target_time, config):
     """Run a simulation"""
     config = SimulationConfig(config)
     total = ceil(target_time / config.getfloat('simulation', 'time_step'))
+
+    attr.set_run_validators(config.getboolean('simulation', 'validate'))
 
     def get_time(x):
         if x is None:
