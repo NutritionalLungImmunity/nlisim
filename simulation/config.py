@@ -45,13 +45,16 @@ class SimulationConfig(ConfigParser):
     ConfigParser class.
     """
 
-    def __init__(self, file: Union[str, PurePath, None] = None) -> None:
+    def __init__(self, file: Union[str, PurePath, None] = None, defaults: dict = None) -> None:
         super().__init__()
 
         # set built-in defaults
         self.read_dict({
             'simulation': DEFAULTS
         })
+
+        if defaults is not None:
+            self.read_dict(defaults)
 
         # if provided, read the config file
         if file is not None:
@@ -81,7 +84,7 @@ class SimulationConfig(ConfigParser):
 
         if not issubclass(func, Module):
             raise TypeError(f'Invalid module class for "{path}"')
-        if not func.name.isidentifier():
+        if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
         return func
 

@@ -151,7 +151,7 @@ class State(object):
 
     # expose module state as attributes on the global state object
     def __getattr__(self, module_name: str) -> Any:
-        if module_name in self._extra:
+        if module_name != '_extra' and module_name in self._extra:
             return self._extra[module_name]
         return super().__getattribute__(module_name)
 
