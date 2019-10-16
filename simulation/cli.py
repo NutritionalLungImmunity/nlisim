@@ -14,7 +14,7 @@ def main():
 
 
 @main.command()
-@click.argument('target_time', type=click.FLOAT, default=100)
+@click.argument('target_time', type=click.FLOAT, default=20)
 @click.option('--config', type=click.Path(exists=True), default='config.ini',
               help='Path to a simulation config', show_default=True)
 def run(target_time, config):

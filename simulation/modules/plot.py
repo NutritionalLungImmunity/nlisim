@@ -46,6 +46,7 @@ class Plot2dSlice(Module):
         pylab.draw()
         pylab.pause(0.001)
         if block:
+            print('\nPress "q" in the plot window to continue')
             pylab.show()
 
     def advance(self, state: State, previous_time: float) -> State:

@@ -1,22 +1,31 @@
 from pathlib import Path
 
+import attr
+
+from simulation.module import Module, ModuleState
 from simulation.state import State
 
-_last_save = 0.0
 
+class FileOutput(Module):
+    name = 'file_output'
+    defaults = {
+        'save_interval': '1',
+        'save_file_name': 'output/simulation-<time>.pkl'
+    }
 
-def save_state(state: State):
-    global _last_save
+    @attr.s(kw_only=True)
+    class StateClass(ModuleState):
+        last_save: float = attr.ib(default=0)
 
-    save_interval = state.config.getfloat('simulation.save', 'save_interval', fallback=0.0)
-    save_file_name = state.config.get(
-        'simulation.save', 'save_file_name', fallback='output/simulation-%%010.3f.pkl')
-    now = state.time
+    def advance(self, state: State, previous_time: float) -> State:
+        save_interval = self.config.getfloat('save_interval')
+        save_file_name = self.config.get('save_file_name')
+        now = state.time
 
-    if now - _last_save + 1e-8 > save_interval:
-        path = Path(save_file_name % now)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        state.save(path)
-        _last_save = now
+        if now - state.file_output.last_save > save_interval - 1e-8:
+            path = Path(save_file_name.replace('<time>', ('%010.3f' % now).strip()))
+            path.parent.mkdir(parents=True, exist_ok=True)
+            state.save(path)
+            state.file_output.last_save = now
 
-    return state
+        return state
