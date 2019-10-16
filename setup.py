@@ -5,6 +5,7 @@ setup(
     name='simulation',
     packages=find_packages(exclude=['test', 'test.*']),
     install_requires=[
+        'attrs',
         'click',
         'matplotlib',
         'numpy'

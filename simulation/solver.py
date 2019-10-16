@@ -1,77 +1,38 @@
-from typing import Iterator, Optional
+from math import ceil
+from typing import Iterator
 
-from simulation.differences import gradient, laplacian
+import attr
+
 from simulation.state import State
-
-"""
-Solves the 2D advection-diffusion equation:
-
-    ∂T
-    -- = ∇ ⋅ (d ∇T) - ∇ ⋅ (wT) + S
-    ∂t
-
-With homogeneous diffusivity and incompressible flow this becomes:
-
-    ∂T
-    -- =  d ∆T - w ⋅ ∇T + S
-    ∂t
-
-The terms in the RHS of this equation expand to (where w = (u, v)):
-
-1. diffusion
-        d * T_xx + d * T_yy
-
-2. advection
-        - u * T_x - v * T_y
-
-3. source
-        S
-
-Here, we solve this using Euler's method:
-
-T(t + dt, x, y) <- T(t, x, y) + ( diffusion + advection + source ) * dt
-"""
+from simulation.validation import context as validation_context
 
 
-def step(state: State, stop_time: Optional[float] = None) -> State:
-    """Advance the state by a single time step."""
-    delta_time = state.config.getfloat('simulation', 'time_step')
-    concentration = state.concentration
+def initialize(state: State) -> State:
+    """Initialize a simulation state."""
+    for m in state.config.modules:
+        with validation_context(f'{m.name} (initialization)'):
+            state = m.initialize(state)
 
-    if stop_time is not None and state.time + delta_time > stop_time:
-        delta_time = stop_time - state.time
-    else:
-        stop_time = state.time + delta_time
-
-    # diffusion
-    dq = state.diffusivity * laplacian(state, concentration)
-
-    # advection
-    dq -= state.wind_x * gradient(state, concentration, 1)
-    dq -= state.wind_y * gradient(state, concentration, 0)
-
-    # source
-    dq += state.source
-
-    # mutate the original concentration value
-    concentration[:, :] += dq * delta_time
-    return state.replace(time=stop_time)
+    # run validation after all initialization is done otherwise validation
+    # could fail on a module's private state before it can initialize itself
+    with validation_context('global initialization'):
+        attr.validate(state)
+    return state
 
 
-def advance(state: State, target_time: float, initialize: bool = True) -> Iterator[State]:
+def advance(state: State, target_time: float) -> Iterator[State]:
     """Advance a simulation to the given target time."""
-    validate = state.config.validate
-    if initialize:
-        for p, f in state.config.initialization_plugins.items():
-            with validate.context(p):
-                state = f(state)
-                validate(state)
+    dt = state.config.getfloat('simulation', 'time_step')
+    n_steps = ceil((target_time - state.time) / dt)
+    initial_time = state.time
 
-    while state.time < target_time:
-        for p, f in state.config.iteration_plugins.items():
-            with validate.context(p):
-                state = f(state)
-                validate(state)
+    for i in range(n_steps):
+        previous_time = state.time
+        state.time = min(initial_time + (i + 1) * dt, target_time)
 
-        state = step(state, target_time)
+        for m in state.config.modules:
+            with validation_context(m.name):
+                state = m.advance(state, previous_time)
+                attr.validate(state)
+
         yield state

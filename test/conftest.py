@@ -1,14 +1,21 @@
 from pytest import fixture
 
 from simulation.config import SimulationConfig
-from simulation.initialization import create_state
+from simulation.state import State
+
+
+@fixture
+def base_config():
+    yield SimulationConfig()
 
 
 @fixture
 def config():
-    return SimulationConfig()
+    yield SimulationConfig(defaults={
+        'simulation': {'modules': 'simulation.modules.advection.Advection'}
+    })
 
 
 @fixture
 def state(config):
-    return create_state(config)
+    yield State.create(config)
