@@ -26,7 +26,8 @@ class Module(object):
             config.add_section(self.section)
 
         self.config = config[self.section]
-        self.config.update(self.defaults)
+        values = dict(self.defaults, **self.config)
+        self.config.update(values)
 
     @property
     def section(self):

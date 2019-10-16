@@ -109,8 +109,13 @@ class SimulationConfig(ConfigParser):
         value = a b
                 ,c
         """
+        return self.parselist(self.get(section, option, fallback=''))
+
+    @classmethod
+    def parselist(cls, value: str) -> List[str]:
+        """Helper method for `getlist` split out for code sharing."""
         values = []
-        for value in re.split('[\n ,]+', self.get(section, option, fallback='')):
+        for value in re.split('[\n ,]+', value):
             stripped = value.strip()
             if stripped:
                 values.append(stripped)
