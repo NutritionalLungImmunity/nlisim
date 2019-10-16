@@ -1,7 +1,7 @@
 from io import BytesIO
 from pathlib import Path, PurePath
 import pickle
-from typing import Any, cast, Dict, IO, List, NamedTuple, Tuple, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, IO, List, Tuple, TYPE_CHECKING, Union
 
 import attr
 import numpy as np
@@ -16,14 +16,15 @@ ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]
 
 
-class RectangularGrid(NamedTuple):
+@attr.s(auto_attribs=True, repr=False)
+class RectangularGrid(object):
     """A class representation of a rectangular grid."""
-    # cell centered coordinates
+    # cell centered coordinates (1-d arrays)
     x: np.ndarray
     y: np.ndarray
     z: np.ndarray
 
-    # vertex coordinates
+    # vertex coordinates (1-d arrays)
     xv: np.ndarray
     yv: np.ndarray
     zv: np.ndarray
@@ -82,8 +83,12 @@ class RectangularGrid(NamedTuple):
         """Allocate a numpy array defined over this grid."""
         return np.zeros(self.shape, dtype=dtype)
 
+    def __repr__(self):
+        shp = self.shape
+        return f'RectangularGrid(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})'
 
-@attr.s(auto_attribs=True, kw_only=True, repr=False)
+
+@attr.s(auto_attribs=True, repr=False)
 class State(object):
     """A container for storing the simulation state at a single time step."""
     time: float
@@ -119,6 +124,7 @@ class State(object):
 
     @classmethod
     def create(cls, config: 'SimulationConfig'):
+        """Generate a new state object from a config."""
         shape = (
             config.getint('simulation', 'nz'),
             config.getint('simulation', 'ny'),
@@ -145,9 +151,7 @@ class State(object):
 
     def __repr__(self):
         modules = [m.name for m in self.config.modules]
-        shp = self.grid.shape
-        grid = f'(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})'
-        return f'State(time={self.time}, grid=Rectangular{grid}, modules={modules})'
+        return f'State(time={self.time}, grid={repr(self.grid)}, modules={modules})'
 
     # expose module state as attributes on the global state object
     def __getattr__(self, module_name: str) -> Any:
@@ -160,6 +164,12 @@ class State(object):
 
 
 def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
+    """Return an "attr.ib" object defining a gridded state variable.
+
+    A "gridded" variable is one that is discretized on the primary grid.  The
+    attribute returned by this method contains a factory function for
+    initialization and a default validation that checks for NaN's.
+    """
     from simulation.validation import ValidationError  # prevent circular imports
 
     def factory(self: 'ModuleState') -> np.ndarray:

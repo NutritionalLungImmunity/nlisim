@@ -16,7 +16,7 @@ and best practices:
 
 ## Simulation
 
-The core code solves the 2D advection-diffusion equation given by 
+The core code solves the 2D advection-diffusion equation given by
 ```
     ∂T
     -- =  d ∆T - w ⋅ ∇T + S
@@ -66,7 +66,7 @@ simulation show output/simulation-000010.000.pkl
 ```
 
 Now try running with an unstable configuration.  This is the same as the
-original, but the time step has been increased to `0.05`.
+original, but the time step has been increased to `0.04`.
 ```
 cp config.ini.unstable config.ini
 rm -fr output
@@ -97,10 +97,9 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 
 * `state.py`
 
-    This module defines a
-    [namedtuple](https://docs.python.org/3/library/collections.html#collections.namedtuple)
-    containing all of the variables that make up the simulation state.  An
-    object of this type is passed around through all of the simulation methods.
+    This module defines classes intended to contain all of the variables that
+    make up the simulation state.  An object of the "State" type is passed
+    around through all of the simulation methods.
 
     By design, the state class does not contain any methods that mutate its own
     data.  The state object is primarily a container that can be serialized and
@@ -115,15 +114,14 @@ checking as well.  These can be run standalone with `flake8 simulation` or
     in the configuration object are immutable.  This is the primary distinction
     between the simulation config and the simulation state.
 
-* `solver.py`
+* `module.py`
 
-    This module contains the logic that advances the simulation state in time.
-    It is also responsible for calling the methods that extend the behavior
-    of the simulation that are provided in the configuration.
+    This defines the "module" API for extending the simulation.  See below for
+    a detailed description of this API.
 
-* `contrib/*`
+* `modules/*`
 
-    Modules under `contrib` are "optional" extensions to the main simulation.
+    Modules under `modules` are "optional" extensions to the main simulation.
     They contain functions that are called in one of the extension points in
     the main solver: initialization and iteration.  These functions could be
     moved to an external package, but for simplicity in this proof of concept
@@ -131,23 +129,10 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 
 * `validator.py`
 
-    This module contains a "validation" class that is optionally run after each
-    mutation of the simulation state.  By default, it only detects invalid
-    types and floating point values.  It can be extended by the configuration
-    to include additional validation functions as desired.
-
-* `differences.py`
-
-    This module provides functions to compute numeric derivatives of numpy
-    arrays using finite differences.  The implementation uses vectorized
-    operations to avoid explicit loops in python, which are significantly
-    slower.
-
-* `boundary.py`
-
-    This module defines an abstract interface for handling boundary conditions
-    when performing numeric differentiation.  Basic Dirichlet and Neumann are
-    provided.
+    This module contains a custom exception type dedicated for errors thrown by
+    validation methods.  This along with a custom context generator defined
+    here are intended to provide extra information about the source of errors
+    (e.g. which module was executing) after they are thrown.
 
 * `cli.py`
 
@@ -155,56 +140,70 @@ checking as well.  These can be run standalone with `flake8 simulation` or
     a commandline interface for executing the simulation.  Click provides a flexible
     API for designing high quality CLI's.
 
+# Simulation state
 
-# Discussion
+Absent any additional modules, the simulation state is an object containing only the
+following attributes:
 
-There are a number of issues present in this architecture that should be considered
-before moving forward.  I will attempt to outline those that I am aware of here.
+* time: The simulation time as a floating point number
+* grid: An instance of `RectangularGrid` defining the simulation discretization
+* config: An instance of `SimulationConfig` providing configuration options
 
-## Explicit time stepping
+When a module is included in the runtime configuration, its own state is
+included as an additional "dynamic" attribute on this object.  For example when
+the "advection" module is included, you have access to `state.advection`
+containing the advection module's state.
 
-The idea that the system is solved explicitly from `t -> t + ∆t` is baked in to
-the architecture.  The iteration-based extensions in particular rely on this
-behavior.  As shown in the example, explicit methods have issues with stability
-that put upper bounds on the possible time steps.  Stabilized methods including
-upwinded and implicit solvers are able to get around this limitation, but don't
-offer the same ability to extend and modify the simulation as easily and
-efficiently as the existing implementation
+The State object API directly uses the API of the [attr](https://www.attrs.org)
+library.  This provides things like type annotation integration, data
+validation, initialization, and many more features.  Developers should read the
+attrs documentation to learn more about how to work with the state object.
 
-## Consider the use of a CFD library
+# Extension modules
 
-If we want to embed a true fluid dynamic simulation, we might want to consider
-the use of a proven fluid dynamic solver rather than building one up on our
-own.
+At a high level, an extension module contains the following features:
 
-## Passing the configuration inside the state
+* configuration options
+* state variables
+* simulation lifecycle handlers:
+  * construction (state memory allocation)
+  * initialization (initial conditions)
+  * iteration (advancing the state in time)
 
-For simplicity, I included the config object with the simulation state.  A
-better pattern might be to make the configuration a module-level global...
-perhaps something like how flask does
-[configuration](https://flask.palletsprojects.com/en/1.1.x/config/) e.g.
-`current_app.config`.
+An extension module is registered with the simulation by providing a subclass
+of `simulation.module.Module`.  Features are added by overriding attributes on
+this class.  The following is small example demonstrating some of the features:
 
-## Provide a better way to add state via an extension
+```python
+import attr
 
-The configuration object can specify the class used as the state object.  The
-main `State` type can be subclassed to provide additional state variables, but
-there is no way at configuration time to append state variables from multiple
-sources.
+from simulation.module import Module, ModuleState
 
-## Provide an integrated API for extensions
 
-Currently, there are a number places a simulation extension can modify the
-behavior of the solver: initialization, iteration, state class, and validation.
-A potentially common use case for an extension is to do the following:
+class HelloWorld(Module):
+    name = 'hello_world'
+    defaults = {
+        'target': 'World'
+    }
 
-* Add a configuration section
-* Add a new state variable
-* Add a validator for the new variable
-* Add initialization for the new variable
-* Add an iteration method to update the new variable
+    @attr.s(kw_only=True, auto_attribs=True)
+    class StateClass(ModuleState):
+        target: str = attr.ib(default='')
 
-These are all possible in the current framework, but it is left up to the user
-to configure all of the pieces together correctly.  If this is indeed a common
-use case, it would be better to provide a unified API to do all of this from a
-single extension point.
+    def initialize(self, state):
+        state.hello_world.target = self.config.get('target')
+        return state
+
+    def advance(self, state, previous_time):
+        print(f'Hello {state.hello_world.target}!')
+        return state
+```
+
+When enabled, this module will
+* add its `hello_world` namespace to the simulation state containing a new
+  scalar value, `target`
+* add a configuration option under the section `[hello_world]`
+* initialize the state variable `target` to what is provided in the
+  config file
+* print a message on every time step
+

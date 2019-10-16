@@ -69,10 +69,12 @@ class SimulationConfig(ConfigParser):
 
     @property
     def modules(self) -> List['Module']:
+        """Return a list of instantiated modules connected to this config."""
         return list(self._modules.values())
 
     @classmethod
     def load_module(cls, path: Union[str, Type['Module']]) -> Type['Module']:
+        """Load and validate a module class returning the class constructor."""
         from simulation.module import Module  # noqa avoid circular imports
 
         if isinstance(path, str):
