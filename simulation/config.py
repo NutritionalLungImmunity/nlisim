@@ -1,13 +1,10 @@
 from collections import OrderedDict
 from configparser import ConfigParser
-from functools import lru_cache
 from importlib import import_module
 import logging
 from pathlib import PurePath
 import re
 from typing import List, Type, TYPE_CHECKING, Union
-
-from pkg_resources import iter_entry_points
 
 
 if TYPE_CHECKING:
@@ -30,13 +27,6 @@ DEFAULTS = {
 
     'modules': ''
 }
-
-
-@lru_cache()
-def get_entry_point(name):
-    return [
-        handler.load() for handler in iter_entry_points(name)
-    ]
 
 
 class SimulationConfig(ConfigParser):
