@@ -19,6 +19,7 @@ validate = True
 modules = simulation.modules.advection.Advection
           simulation.modules.plot.Plot2dSlice
           simulation.modules.save.FileOutput
+          simulation.modules.afumigatus.Afumigatus
 
 [advection]
 # state variable initialization
@@ -56,3 +57,7 @@ mask_threshold = 0
 # save the simulation state every 1 simulation second
 save_interval = 1.0
 save_file_name = output/simulation-<time>.pkl
+
+[afumigatus]
+min_iter_to_status_change = 5
+pr_status_change = 0.05
