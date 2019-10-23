@@ -55,4 +55,4 @@ mask_threshold = 0
 [file_output]
 # save the simulation state every 1 simulation second
 save_interval = 1.0
-save_file_name = output/simulation-<time>.pkl
+save_file_name = output/simulation-<time>.hdf5

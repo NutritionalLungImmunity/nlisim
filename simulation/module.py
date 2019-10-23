@@ -1,14 +1,90 @@
-from typing import Dict, Type
+from typing import Any, Dict, Optional, Type, Union
 
 import attr
+from h5py import Dataset, Group
+import numpy as np
 
 from simulation.config import SimulationConfig
 from simulation.state import State
 
+AttrValue = Union[float, str, bool, np.ndarray]
+
 
 @attr.s(auto_attribs=True, kw_only=True)
 class ModuleState(object):
+    """
+    Base type intended to store the state for simulation modules.
+
+    This class contains serialization support for basic types (float, int, str,
+    bool) and numpy arrays of those types.  Modules containing more complicated
+    state must override the serialization mechanism with custom behavior.
+    """
     global_state: 'State'
+
+    def save_state(self, group: Group) -> None:
+        """Save the module state into an HDF5 group."""
+        for field in attr.fields(type(self)):
+            name = field.name
+            if name == 'global_state':
+                continue
+            value = getattr(self, name)
+            self.save_attribute(group, name, value, field.metadata)
+
+    @classmethod
+    def load_state(cls, global_state: 'State', group: Group) -> 'ModuleState':
+        """Load this module's state from an HDF5 group."""
+        kwargs: Dict[str, Any] = {'global_state': global_state}
+        for field in attr.fields(cls):
+            name = field.name
+            if name == 'global_state':
+                continue
+            metadata = field.metadata
+            kwargs[name] = cls.load_attribute(group, name, metadata)
+        return cls(**kwargs)
+
+    @classmethod
+    def save_attribute(cls, group: Group,
+                       name: str, value: AttrValue,
+                       metadata: Optional[dict] = None) -> Dataset:
+        """Save an attribute into an HDF5 group."""
+        metadata = metadata or {}
+
+        if not isinstance(value, (float, int, str, bool, np.ndarray)):
+            # modules must define serializers for unsupported types
+            raise TypeError(
+                f'Attribute {name} in {group.name} contains an unsupported datatype.'
+            )
+
+        kwargs: Dict[str, Any] = {}
+        if metadata.get('grid'):
+            kwargs = dict(
+               compression='gzip',  # transparent compression
+               shuffle=True,        # improve compressiblity
+               fletcher32=True      # checksum
+            )
+
+        var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
+
+        # mark the original attribute as a scalar to unwrap the numpy array when loading
+        var.attrs['scalar'] = not isinstance(value, np.ndarray)
+
+        if metadata.get('grid'):
+            # attach grid scales to dataset dimensions
+            var.dims[0].attach_scale(var.file['z'])
+            var.dims[1].attach_scale(var.file['y'])
+            var.dims[2].attach_scale(var.file['x'])
+
+        return var
+
+    @classmethod
+    def load_attribute(cls, group: Group, name: str, metadata: Optional[dict] = None) -> AttrValue:
+        """Load a raw value from an HDF5 file group."""
+        dataset = group[name]
+        if dataset.attrs.get('scalar', False):
+            value = dataset[()]
+        else:
+            value = dataset[:]
+        return value
 
 
 class Module(object):
