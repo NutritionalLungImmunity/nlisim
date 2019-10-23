@@ -10,7 +10,7 @@ class FileOutput(Module):
     name = 'file_output'
     defaults = {
         'save_interval': '1',
-        'save_file_name': 'output/simulation-<time>.pkl'
+        'save_file_name': 'output/simulation-<time>.hdf5'
     }
 
     @attr.s(kw_only=True)

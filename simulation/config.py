@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
+from io import StringIO
 import logging
 from pathlib import PurePath
 import re
@@ -112,3 +113,8 @@ class SimulationConfig(ConfigParser):
             if stripped:
                 values.append(stripped)
         return values
+
+    def __str__(self):
+        f = StringIO()
+        self.write(f)
+        return f.getvalue()

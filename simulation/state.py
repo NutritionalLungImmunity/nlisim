@@ -1,9 +1,10 @@
 from io import BytesIO
-from pathlib import Path, PurePath
-import pickle
+from pathlib import PurePath
+from tempfile import NamedTemporaryFile
 from typing import Any, cast, Dict, IO, List, Tuple, TYPE_CHECKING, Union
 
 import attr
+from h5py import File as H5File
 import numpy as np
 
 from simulation.validation import context as validation_context
@@ -87,6 +88,20 @@ class RectangularGrid(object):
         shp = self.shape
         return f'RectangularGrid(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})'
 
+    def save(self, file: H5File) -> None:
+        """Save the grid state into an HDF5 file."""
+        for dim in ('x', 'xv', 'y', 'yv', 'z', 'zv'):
+            d = file.create_dataset(dim, data=getattr(self, dim))
+            d.make_scale(dim)
+
+    @classmethod
+    def load(cls, file: H5File) -> 'RectangularGrid':
+        """Generate a grid object from an existing HDF5 file."""
+        kwargs = {}
+        for dim in ('x', 'xv', 'y', 'yv', 'z', 'zv'):
+            kwargs[dim] = file[dim][:]
+        return cls(**kwargs)
+
 
 @attr.s(auto_attribs=True, repr=False)
 class State(object):
@@ -104,23 +119,60 @@ class State(object):
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -> 'State':
         """Load a pickled state from either a path, a file, or blob of bytes."""
-        if isinstance(arg, (str, PurePath)):
-            arg = Path(arg).open('rb')
+        from simulation.config import SimulationConfig  # prevent circular imports
+
         if isinstance(arg, bytes):
             arg = BytesIO(arg)
 
-        return cast('State', pickle.load(arg))
+        with H5File(arg, 'r') as hf:
+            time = hf.attrs['time']
+            grid = RectangularGrid.load(hf)
+
+            with NamedTemporaryFile('r+') as cf:
+                cf.write(hf.attrs['config'])
+                cf.flush()
+                cf.seek(0)
+                config = SimulationConfig(file=cf.name)
+
+            state = cls(time=time, grid=grid, config=config)
+
+            for module in config.modules:
+                group = hf.get(module.name)
+                if group is None:
+                    raise ValueError(
+                        f'File contains no group for {module.name}'
+                    )
+                try:
+                    module_state = module.StateClass.load_state(state, group)
+                except Exception:
+                    print(f'Error loading state for {module.name}')
+                    raise
+
+                state._extra[module.name] = module_state
+
+        return state
 
     def save(self, arg: Union[str, PurePath, IO[bytes]]) -> None:
         """Save the current state to the file system."""
-        if isinstance(arg, (str, PurePath)):
-            arg = Path(arg).open('wb')
+        with H5File(arg, 'w') as hf:
+            hf.attrs['time'] = self.time
+            hf.attrs['config'] = str(self.config)  # TODO: save this in a different format
+            self.grid.save(hf)
 
-        arg.write(self.serialize())
+            for module in self.config.modules:
+                module_state = cast('ModuleState', getattr(self, module.name))
+                group = hf.create_group(module.name)
+                try:
+                    module_state.save_state(group)
+                except Exception:
+                    print(f'Error serializing {module.name}')
+                    raise
 
     def serialize(self) -> bytes:
         """Return a serialized representation of the current state."""
-        return pickle.dumps(self)
+        f = BytesIO()
+        self.save(f)
+        return f.getvalue()
 
     @classmethod
     def create(cls, config: 'SimulationConfig'):
@@ -170,6 +222,7 @@ def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
     attribute returned by this method contains a factory function for
     initialization and a default validation that checks for NaN's.
     """
+    from simulation.module import ModuleState  # noqa prevent circular imports
     from simulation.validation import ValidationError  # prevent circular imports
 
     def factory(self: 'ModuleState') -> np.ndarray:
@@ -182,4 +235,8 @@ def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
         if not np.isfinite(value).all():
             raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
 
-    return attr.ib(default=attr.Factory(factory, takes_self=True), validator=validate_numeric)
+    metadata = {
+        'grid': True
+    }
+    return attr.ib(default=attr.Factory(factory, takes_self=True),
+                   validator=validate_numeric, metadata=metadata)
