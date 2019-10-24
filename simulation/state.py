@@ -1,3 +1,4 @@
+from functools import reduce
 from io import BytesIO
 from pathlib import PurePath
 from tempfile import NamedTemporaryFile
@@ -79,6 +80,9 @@ class RectangularGrid(object):
     @property
     def shape(self) -> ShapeType:
         return (len(self.z), len(self.y), len(self.x))
+
+    def __len__(self):
+        return reduce(lambda x, y: x * y, self.shape, 1)
 
     def allocate_variable(self, dtype: np.dtype = np.dtype('float64')) -> np.ndarray:
         """Allocate a numpy array defined over this grid."""
