@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse.linalg import gmres, LinearOperator
+from scipy.sparse.linalg import cg, LinearOperator
 
 from simulation.state import RectangularGrid
 
@@ -40,7 +40,7 @@ def diffusion_step(grid: RectangularGrid, var: np.ndarray,
     advanced in time by `dt` time units using gmres.
     """
     lapl = discrete_laplacian(grid, var.dtype, dt)
-    var_next, info = gmres(lapl, var.ravel())
+    var_next, info = cg(lapl, var.ravel())
     if info != 0:
         raise Exception(f'GMRES failed ({info})')
     var[:] = var_next.reshape(grid.shape)
