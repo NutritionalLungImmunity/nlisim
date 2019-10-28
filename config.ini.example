@@ -53,10 +53,11 @@ mask_threshold = 0
 [file_output]
 # save the simulation state every 1 simulation second
 save_interval = 1.0
-save_file_name = output/simulation-<time>.pkl
+save_file_name = output/simulation-<time>.hdf5
 
 [afumigatus]
 min_iter_to_status_change = 5
 pr_status_change = 0.05
 init_spores = 2
 branch_probability = 0.5
+
