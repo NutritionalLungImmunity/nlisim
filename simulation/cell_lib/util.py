@@ -4,6 +4,7 @@ import math
 class Util():
     
     cosTheta = math.cos(math.pi/4.0)
+    sinTheta = math.sin(math.pi / 4.0)
     
     @staticmethod
     def rotatation_matrix(phi):

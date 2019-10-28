@@ -1,6 +1,6 @@
 from simulation.cell_lib.cell import Cell
 from simulation.cell_lib.util import Util
-from random import random
+from random import random, uniform
 import numpy as np
 import math
 
@@ -29,19 +29,80 @@ class AfumigatusCell(Cell):
         self.x = x
         self.y = y
         self.z = z
-        self.dx = 0.02*(random() - 1)
-        self.dy = 0.02*(random() - 1)
-        self.dz = 0.02*(random() - 1)
+        self.dx = 0.02*(uniform(-1, 1))
+        self.dy = 0.02*(uniform(-1, 1))
+        self.dz = 0.02*(uniform(-1, 1))
 
         self.growable = True
         self.branchable = False
         self.iteration = 0
         self.boolean_network = AfumigatusCell.InitAfumigatusBooleanState.copy()
 
-        self.next_septa = None
-        self.next_branch = None
+        self.children = []
         self.previous_septa = None
         self.Fe = False
+
+    def get_x (self):
+        return self.x 
+    def get_y (self):
+        return self.y 
+    def get_z (self):
+        return self.z 
+    def get_dx(self):
+        return self.dx
+    def get_dy(self):
+        return self.dy
+    def get_dz(self):
+        return self.dz
+
+    def set_growable(self, val):
+        self.growable = val
+    def set_x (self, val):
+        self.x  = val
+    def set_y (self, val):
+        self.y  = val
+    def set_z (self, val):
+        self.z  = val
+    def set_dx(self, val):
+        self.dx = val
+    def set_dy(self, val):
+        self.dy = val
+    def set_dz(self, val):
+        self.dz = val
+
+    def __str__(self):
+        s =  "AfumigatusCell_" + str(self.id) + \
+            ' x=' + str(self.x) + \
+            ' y=' + str(self.y) + \
+            ' z=' + str(self.z) + \
+            ' dx=' + str(self.dx) + \
+            ' dy=' + str(self.dy) + \
+            ' dz=' + str(self.dz)
+
+        if(self.status == AfumigatusCell.RESTING_CONIDIA):
+            s = s + ' RESTING_CONIDIA'
+        if(self.status == AfumigatusCell.SWELLING_CONIDIA):
+            s = s + ' SWELLING_CONIDIA'
+        if(self.status == AfumigatusCell.HYPHAE):
+            s = s + ' HYPHAE'
+        if(self.status == AfumigatusCell.DYING):
+            s = s + ' DYING'
+        if(self.status == AfumigatusCell.DEAD):
+            s = s + ' DEAD'
+        if(self.state == AfumigatusCell.FREE):
+            s = s + ' FREE'
+        if(self.state == AfumigatusCell.INTERNALIZING):
+            s = s + ' INTERNALIZING'
+        if(self.state == AfumigatusCell.RELEASING):
+            s = s + ' RELEASING'
+       
+        if(self.previous_septa):
+            s = s + ' prev=' + str(self.previous_septa.id)
+        if(len(self.children) > 0):
+            s  = s + ' children='
+            for c in self.children:
+                s = s + ', ' + str(c.id)
+        return s
 
     def set_growth_vector(self, growth_vector):
         self.dx = growth_vector[0]
@@ -57,11 +118,12 @@ class AfumigatusCell(Cell):
                 self.growable = False
                 self.branchable = True # TODO on make branchable if previous is not branchable
                 self.iron_pool = self.iron_pool / 2.0;
-                self.next_septa = AfumigatusCell(x=self.x + self.dx, y=self.y + self.dy, z=self.z + self.dz,\
+                child = AfumigatusCell(x=self.x + self.dx, y=self.y + self.dy, z=self.z + self.dz,\
                                              ironPool=0, status=AfumigatusCell.HYPHAE, state=self.state, isRoot=False)
-                self.next_septa.previous_septa = self
-                self.next_septa.iron_pool = self.iron_pool
-                return self.next_septa
+                child.previous_septa = self
+                child.iron_pool = self.iron_pool
+                self.children.append(child)
+                return child
         return None
 
     def branch(self, branch_probability, xbin, ybin, zbin):
@@ -83,20 +145,20 @@ class AfumigatusCell(Cell):
                 or nextX > xbin or nextY > ybin or nextZ > zbin):
                     return None
                 else:
-                    self.next_branch = AfumigatusCell(x=nextX, y=nextY, z=nextZ,\
+                    child = AfumigatusCell(x=nextX, y=nextY, z=nextZ,\
                                                 ironPool=0, status=AfumigatusCell.HYPHAE, \
                                                 state=self.state, isRoot=False)
-                    self.next_branch.set_growth_vector(growth_vector)
-                    self.next_branch.iron_pool = self.iron_pool
-                    self.next_branch.previous_septa = self
-
+                    child.set_growth_vector(growth_vector)
+                    child.iron_pool = self.iron_pool
+                    child.previous_septa = self
+                    self.children.append(child)
                     #set neighbors to be unbranchable
                     self.branchable = False                    
                     #self.next_branch.branchable = False
                     #if(self.previous_septa):
                     #    self.previous_septa.branchable = False
 
-                    return self.next_branch
+                    return child
                 #self.branchable = False
         return None
 

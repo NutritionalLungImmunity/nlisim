@@ -3,10 +3,6 @@ from abc import ABC, abstractmethod
 class Cell(ABC):
     
     @abstractmethod
-    def interact(self, interactable):
-        pass
-
-    @abstractmethod
     def process_boolean_network(self):
         pass
 

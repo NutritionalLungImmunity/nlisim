@@ -37,12 +37,13 @@ class AfumigatusState(ModuleState):
 class Afumigatus(Module):
     name = 'afumigatus'
     defaults = {
-        'inhaling': True,
-        'trees' : [],
-        'isNew' : {},
-        'min_iter_to_status_change' : 5,
-        'pr_status_change' : 0.05,
-        'lastId' : -1
+        'inhaling': 'True',
+        'trees' : '[]',
+        #'isNew' : '{}',
+        'min_iter_to_status_change' : '5',
+        'pr_status_change' : '0.05',
+        'num_spore' : '0',
+        'lastId' : '-1'
     }
     
     StateClass = AfumigatusState
@@ -54,38 +55,70 @@ class Afumigatus(Module):
 
         afumigatus.inhaling = True
         afumigatus.trees = []
-        afumigatus.isNew = {}
+        #afumigatus.isNew = {}
         afumigatus.min_iter_to_status_change = c.getint('min_iter_to_status_change')
         afumigatus.pr_status_change = c.getfloat('pr_status_change')
-        afumigatus.lastId = 0 
-        afumigatus.sporesLodgeProb = np.ndarray # TODO initialize with something   
+        afumigatus.branch_probability = c.getfloat('branch_probability')
+        afumigatus.init_spores = c.getfloat('init_spores')
+        afumigatus.num_spore = 0 
+        afumigatus.last_id = -1 
+        afumigatus.spores_lodge_prob = np.ndarray # TODO initialize with something 
 
         return state
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         afumigatus: AfumigatusState = state.afumigatus
-        newAf = list()
+        
         print("aspergillus module advancing...")
         # load afumigatus data from state
-
+        num_spore = afumigatus.num_spore
+        init_spores = afumigatus.init_spores
+        trees = afumigatus.trees
+        print ('----------------------------------------------------------------------------------------------------------------------')
+        for a in trees:
+            print(a)
 		# getLastId() = from state 
-		
+        print ('----------------------------------------------------------------------------------------------------------------------')
 		#update and grow
-		#newAfumigatus = list()
-        #
+        isNew = {}
+        
 		##iterate over roots and then sub trees
 		#for(Hyphae<Afumigatus> root: trees):
-		#	ArrayList<Hyphae<Afumigatus>> nodesToProcess = new ArrayList<Hyphae<Afumigatus>>()
-		#	nodesToProcess.add(root)
-		#	
-		#	while(!nodesToProcess.isEmpty()):
-		#		#get first id
-		#		Hyphae<Afumigatus> currHyphae = nodesToProcess.get(0)
-		#		ArrayList<Hyphae<Afumigatus>> children = currHyphae.getChildren()
-		#		nodesToProcess.addAll(children) # depth first search
-		#		
-		#		Afumigatus afumigatus = currHyphae.getData()
+        print('roots process')
+        for root in trees:
+            nodesToProcess = []
+            nodesToProcess.append(root)
+        	
+            while(len(nodesToProcess) > 0):
+                curr_af = nodesToProcess.pop(0)
+                children = curr_af.children
+               
+                if(len(children) > 0):
+                    for c in children:
+                        nodesToProcess.append(c)
+                
+                curr_af.update_status(afumigatus.pr_status_change, afumigatus.min_iter_to_status_change)
+
+                #grow, branch
+                new_af = curr_af.elongate(20,20,20)
+                if(new_af):
+                    new_af.id = afumigatus.last_id
+                    afumigatus.last_id += 1
+                    afumigatus.num_spore += 1
+                new_af2 = curr_af.branch(afumigatus.branch_probability, 20,20,20)
+                if(new_af2):
+                    new_af2.id = afumigatus.last_id
+                    afumigatus.last_id += 1
+                    afumigatus.num_spore += 1
+                if(curr_af.previous_septa == None):
+                    #we are at root, so can grow opposite direction
+                    curr_af.set_dx(curr_af.get_dx() * - 1)
+                    curr_af.set_dy(curr_af.get_dy() * - 1)
+                    curr_af.set_dz(curr_af.get_dz() * - 1)
+                    curr_af.set_growable(True)
+                print(curr_af)
+
 		#		if(afumigatus.isAlive()) :
 		#			if(afumigatus.isLodged()) :
 		#				afumigatus.updateBooleanNetwork() #update the boolean network
@@ -122,9 +155,19 @@ class Afumigatus(Module):
 		#    
 		#
 		##add new spores
-		#addNewSpores(afumigatusSet.size())		
-		#diffuseIron()	
+		#addNewSpores(afumigatusSet.size())
+        print([num_spore, init_spores])
+        if (num_spore < init_spores):
+            print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+            print(afumigatus.last_id)
+            #last_id = afumigatus.lastId
+            #print(last_id)
+            af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = afumigatus.lastId + 1)
+            trees.append(af)
+            afumigatus.num_spore += 1
+            afumigatus.last_id += 1
+            print(afumigatus.last_id)
+            print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+        #diffuseIron()	
 		#isNew.clear()
-	
-
         return state
