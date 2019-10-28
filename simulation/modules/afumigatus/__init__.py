@@ -117,8 +117,7 @@ class Afumigatus(Module):
                     curr_af.set_dy(curr_af.get_dy() * - 1)
                     curr_af.set_dz(curr_af.get_dz() * - 1)
                     curr_af.set_growable(True)
-                print(curr_af)
-
+                
 		#		if(afumigatus.isAlive()) :
 		#			if(afumigatus.isLodged()) :
 		#				afumigatus.updateBooleanNetwork() #update the boolean network
@@ -159,14 +158,11 @@ class Afumigatus(Module):
         print([num_spore, init_spores])
         if (num_spore < init_spores):
             print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
-            print(afumigatus.last_id)
-            #last_id = afumigatus.lastId
-            #print(last_id)
-            af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = afumigatus.lastId + 1)
+            afumigatus.last_id += 1
+            last_id = afumigatus.last_id
+            af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = last_id)
             trees.append(af)
             afumigatus.num_spore += 1
-            afumigatus.last_id += 1
-            print(afumigatus.last_id)
             print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
         #diffuseIron()	
 		#isNew.clear()
