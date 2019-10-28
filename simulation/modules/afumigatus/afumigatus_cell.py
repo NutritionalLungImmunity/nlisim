@@ -72,12 +72,12 @@ class AfumigatusCell(Cell):
 
     def __str__(self):
         s =  "AfumigatusCell_" + str(self.id) + \
-            ' x=' + str(self.x) + \
-            ' y=' + str(self.y) + \
-            ' z=' + str(self.z) + \
-            ' dx=' + str(self.dx) + \
-            ' dy=' + str(self.dy) + \
-            ' dz=' + str(self.dz)
+            ' x=' + '%.5f' % self.x + \
+            ' y=' + '%.5f' % self.y + \
+            ' z=' + '%.5f' % self.z + \
+            ' dx=' + '%.5f' % self.dx + \
+            ' dy=' + '%.5f' % self.dy + \
+            ' dz=' + '%.5f' % self.dz
 
         if(self.status == AfumigatusCell.RESTING_CONIDIA):
             s = s + ' RESTING_CONIDIA'
@@ -99,8 +99,8 @@ class AfumigatusCell(Cell):
         if(self.previous_septa):
             s = s + ' prev=' + str(self.previous_septa.id)
         if(len(self.children) > 0):
-            s  = s + ' children='
-            for c in self.children:
+            s  = s + ' children= ' + str(self.children[0].id)
+            for c in self.children[1:]:
                 s = s + ', ' + str(c.id)
         return s
 
