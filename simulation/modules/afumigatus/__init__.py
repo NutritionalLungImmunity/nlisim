@@ -70,53 +70,60 @@ class Afumigatus(Module):
         """Advance the state by a single time step."""
         afumigatus: AfumigatusState = state.afumigatus
         
-        print("aspergillus module advancing...")
+        #print("aspergillus module advancing...")
         # load afumigatus data from state
         num_spore = afumigatus.num_spore
         init_spores = afumigatus.init_spores
         trees = afumigatus.trees
         print ('----------------------------------------------------------------------------------------------------------------------')
-        for a in trees:
-            print(a)
+        #for a in trees:
+        #    print(a)
 		# getLastId() = from state 
-        print ('----------------------------------------------------------------------------------------------------------------------')
+        #print ('----------------------------------------------------------------------------------------------------------------------')
 		#update and grow
         isNew = {}
         
 		##iterate over roots and then sub trees
 		#for(Hyphae<Afumigatus> root: trees):
-        print('roots process')
         for root in trees:
             nodesToProcess = []
             nodesToProcess.append(root)
         	
             while(len(nodesToProcess) > 0):
                 curr_af = nodesToProcess.pop(0)
+                sss = (str(curr_af.id) + ' -> ')
+                #print(curr_af)
                 children = curr_af.children
                
                 if(len(children) > 0):
+                    sss = sss + ('[' + str(children[0].id))
+                    for c in children[1:]:
+                        sss = sss + (', ' + str(c.id))
+                    sss = sss + (']')
                     for c in children:
                         nodesToProcess.append(c)
                 
+                print(sss)
                 curr_af.update_status(afumigatus.pr_status_change, afumigatus.min_iter_to_status_change)
 
                 #grow, branch
                 new_af = curr_af.elongate(20,20,20)
                 if(new_af):
-                    new_af.id = afumigatus.last_id
+                    new_af.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
                     afumigatus.num_spore += 1
                 new_af2 = curr_af.branch(afumigatus.branch_probability, 20,20,20)
                 if(new_af2):
-                    new_af2.id = afumigatus.last_id
+                    new_af2.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
                     afumigatus.num_spore += 1
-                if(curr_af.previous_septa == None):
+                if(curr_af.previous_septa == None and not(curr_af.switched) and len(curr_af.children) > 0):
                     #we are at root, so can grow opposite direction
                     curr_af.set_dx(curr_af.get_dx() * - 1)
                     curr_af.set_dy(curr_af.get_dy() * - 1)
                     curr_af.set_dz(curr_af.get_dz() * - 1)
                     curr_af.set_growable(True)
+                    curr_af.switched = True
                 
 		#		if(afumigatus.isAlive()) :
 		#			if(afumigatus.isLodged()) :
@@ -155,15 +162,13 @@ class Afumigatus(Module):
 		#
 		##add new spores
 		#addNewSpores(afumigatusSet.size())
-        print([num_spore, init_spores])
+        #print([num_spore, init_spores])
         if (num_spore < init_spores):
-            print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
             afumigatus.last_id += 1
             last_id = afumigatus.last_id
             af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = last_id)
             trees.append(af)
             afumigatus.num_spore += 1
-            print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
         #diffuseIron()	
 		#isNew.clear()
         return state

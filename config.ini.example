@@ -56,8 +56,8 @@ save_interval = 1.0
 save_file_name = output/simulation-<time>.hdf5
 
 [afumigatus]
-min_iter_to_status_change = 5
-pr_status_change = 0.05
-init_spores = 2
-branch_probability = 0.5
+min_iter_to_status_change = 2
+pr_status_change = 1
+init_spores = 1
+branch_probability = 0
 

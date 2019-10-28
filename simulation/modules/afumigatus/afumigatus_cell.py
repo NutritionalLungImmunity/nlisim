@@ -34,6 +34,7 @@ class AfumigatusCell(Cell):
         self.dz = 0.02*(uniform(-1, 1))
 
         self.growable = True
+        self.switched = False
         self.branchable = False
         self.iteration = 0
         self.boolean_network = AfumigatusCell.InitAfumigatusBooleanState.copy()
@@ -122,6 +123,7 @@ class AfumigatusCell(Cell):
                                              ironPool=0, status=AfumigatusCell.HYPHAE, state=self.state, isRoot=False)
                 child.previous_septa = self
                 child.iron_pool = self.iron_pool
+                child.is_root = False
                 self.children.append(child)
                 return child
         return None
@@ -151,6 +153,7 @@ class AfumigatusCell(Cell):
                     child.set_growth_vector(growth_vector)
                     child.iron_pool = self.iron_pool
                     child.previous_septa = self
+                    child.is_root = False
                     self.children.append(child)
                     #set neighbors to be unbranchable
                     self.branchable = False                    
