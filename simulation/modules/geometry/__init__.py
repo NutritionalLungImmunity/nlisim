@@ -39,7 +39,7 @@ from simulation.validation import ValidationError
 
 @attr.s(kw_only=True, repr=False)
 class GeometryState(ModuleState):
-    geometry_grid = grid_variable()
+    geometry_grid = grid_variable(np.dtype('int'))
 
     @geometry_grid.validator
     def _validate_geometry_grid(self, attribute: attr.Attribute, value: np.ndarray) -> None:
