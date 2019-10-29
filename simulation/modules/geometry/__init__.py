@@ -1,35 +1,7 @@
-"""
-Solves the 2D advection-diffusion equation:
-
-    ∂T
-    -- = ∇ ⋅ (d ∇T) - ∇ ⋅ (wT) + S
-    ∂t
-
-With homogeneous diffusivity and incompressible flow this becomes:
-
-    ∂T
-    -- =  d ∆T - w ⋅ ∇T + S
-    ∂t
-
-The terms in the RHS of this equation expand to (where w = (u, v)):
-
-1. diffusion
-        d * T_xx + d * T_yy
-
-2. advection
-        - u * T_x - v * T_y
-
-3. source
-        S
-
-Here, we solve this using Euler's method:
-
-T(t + dt, x, y) <- T(t, x, y) + ( diffusion + advection + source ) * dt
-"""
-from math import floor
-
 import attr
 import numpy as np
+import h5py
+import os
 
 from simulation.module import Module, ModuleState
 from simulation.modules.advection.differences import gradient, laplacian
@@ -43,8 +15,8 @@ class GeometryState(ModuleState):
 
     @geometry_grid.validator
     def _validate_geometry_grid(self, attribute: attr.Attribute, value: np.ndarray) -> None:
-        if not issubclass(value.dtype.type, int) or (value >= 0).all(): 
-            raise ValidationError(f'Invalid geometry')
+        if not (value >= 0).all():
+            raise ValidationError(f'not >= 0')
 
     def __repr__(self):
         return f'GeometryState(geometry_grid)'
@@ -60,15 +32,14 @@ class Geometry(Module):
     def initialize(self, state: State):
         geometry: GeometryState = state.geometry
 
-        g = np.load('geometry.npy')
+        #g = np.load('./simulation/modules/geometry/geometry.npy')
+        with h5py.File(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'geometry.hdf5'), 'r') as f:
+            g = f['geometry'][:]
 
         if (g.shape != state.grid.shape):
             raise ValidationError(f'imported geometry doesn\'t match the shape of primary grid')
 
-        for z in g.shape[0]:
-            for y in g.shape[1]:
-                for x in g.shape[2]:
-                    geometry.geometry_grid[z, y, x] = g[z][y][x]
+        geometry.geometry_grid = np.copy(g)
 
         return state
 
