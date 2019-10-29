@@ -93,14 +93,23 @@ class Afumigatus(Module):
                 curr_af = nodesToProcess.pop(0)
                 sss = (str(curr_af.id) + ' -> ')
                 #print(curr_af)
-                children = curr_af.children
+                elongate_children = curr_af.elongate_children
+                branch_children = curr_af.branch_children
                
-                if(len(children) > 0):
-                    sss = sss + ('[' + str(children[0].id))
-                    for c in children[1:]:
+                if(len(elongate_children) > 0):
+                    sss = sss + ('[' + str(elongate_children[0].id))
+                    for c in elongate_children[1:]:
                         sss = sss + (', ' + str(c.id))
                     sss = sss + (']')
-                    for c in children:
+                    for c in elongate_children:
+                        nodesToProcess.append(c)
+                        
+                if(len(branch_children) > 0):
+                    sss = sss + ('[' + str(branch_children[0].id))
+                    for c in branch_children[1:]:
+                        sss = sss + (', ' + str(c.id))
+                    sss = sss + (']')
+                    for c in branch_children:
                         nodesToProcess.append(c)
                 
                 print(sss)
@@ -117,8 +126,9 @@ class Afumigatus(Module):
                     new_af2.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
                     afumigatus.num_spore += 1
-                if(curr_af.previous_septa == None and not(curr_af.switched) and len(curr_af.children) > 0):
+                if(curr_af.previous_septa == None and not(curr_af.switched) and len(curr_af.elongate_children) > 0):
                     #we are at root, so can grow opposite direction
+                    # TODO add growth delay based on random() < prob_dual elongate
                     curr_af.set_dx(curr_af.get_dx() * - 1)
                     curr_af.set_dy(curr_af.get_dy() * - 1)
                     curr_af.set_dz(curr_af.get_dz() * - 1)

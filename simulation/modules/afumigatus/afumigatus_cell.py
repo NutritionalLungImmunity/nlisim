@@ -39,7 +39,8 @@ class AfumigatusCell(Cell):
         self.iteration = 0
         self.boolean_network = AfumigatusCell.InitAfumigatusBooleanState.copy()
 
-        self.children = []
+        self.branch_children = []
+        self.elongate_children = []
         self.previous_septa = None
         self.Fe = False
 
@@ -99,9 +100,13 @@ class AfumigatusCell(Cell):
        
         if(self.previous_septa):
             s = s + ' prev=' + str(self.previous_septa.id)
-        if(len(self.children) > 0):
-            s  = s + ' children= ' + str(self.children[0].id)
-            for c in self.children[1:]:
+        if(len(self.branch_children) > 0):
+            s  = s + ' b_children= ' + str(self.branch_children[0].id)
+            for c in self.branch_children[1:]:
+                s = s + ', ' + str(c.id)
+        if(len(self.elongate_children) > 0):
+            s  = s + ' e_children= ' + str(self.elongate_children[0].id)
+            for c in self.elongate_children[1:]:
                 s = s + ', ' + str(c.id)
         return s
 
@@ -124,7 +129,7 @@ class AfumigatusCell(Cell):
                 child.previous_septa = self
                 child.iron_pool = self.iron_pool
                 child.is_root = False
-                self.children.append(child)
+                self.elongate_children.append(child)
                 return child
         return None
 
@@ -154,7 +159,7 @@ class AfumigatusCell(Cell):
                     child.iron_pool = self.iron_pool
                     child.previous_septa = self
                     child.is_root = False
-                    self.children.append(child)
+                    self.branch_children.append(child)
                     #set neighbors to be unbranchable
                     self.branchable = False                    
                     #self.next_branch.branchable = False
