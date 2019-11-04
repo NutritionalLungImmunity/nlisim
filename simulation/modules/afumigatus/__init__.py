@@ -38,7 +38,7 @@ class Afumigatus(Module):
     name = 'afumigatus'
     defaults = {
         'inhaling': 'True',
-        'trees' : '[]',
+        'trees' : 'np.array([])',
         #'isNew' : '{}',
         'min_iter_to_status_change' : '5',
         'pr_status_change' : '0.05',
@@ -54,7 +54,7 @@ class Afumigatus(Module):
         c = self.config
 
         afumigatus.inhaling = True
-        afumigatus.trees = []
+        afumigatus.trees = np.array([])
         #afumigatus.isNew = {}
         afumigatus.min_iter_to_status_change = c.getint('min_iter_to_status_change')
         afumigatus.pr_status_change = c.getfloat('pr_status_change')
@@ -82,15 +82,17 @@ class Afumigatus(Module):
         #print ('----------------------------------------------------------------------------------------------------------------------')
 		#update and grow
         isNew = {}
-        
+        print(len(trees))
 		##iterate over roots and then sub trees
 		#for(Hyphae<Afumigatus> root: trees):
         for root in trees:
-            nodesToProcess = []
-            nodesToProcess.append(root)
+            print(root)
+            nodesToProcess = np.array([])
+            nodesToProcess = np.append(nodesToProcess, root)
         	
             while(len(nodesToProcess) > 0):
-                curr_af = nodesToProcess.pop(0)
+                curr_af = nodesToProcess[0]
+                nodesToProcess = np.delete(nodesToProcess, 0, axis=0)
                 sss = (str(curr_af.id) + ' -> ')
                 #print(curr_af)
                 elongate_children = curr_af.elongate_children
@@ -102,7 +104,7 @@ class Afumigatus(Module):
                         sss = sss + (', ' + str(c.id))
                     sss = sss + (']')
                     for c in elongate_children:
-                        nodesToProcess.append(c)
+                        nodesToProcess = np.append(nodesToProcess, c)
                         
                 if(len(branch_children) > 0):
                     sss = sss + ('[' + str(branch_children[0].id))
@@ -110,7 +112,7 @@ class Afumigatus(Module):
                         sss = sss + (', ' + str(c.id))
                     sss = sss + (']')
                     for c in branch_children:
-                        nodesToProcess.append(c)
+                        nodesToProcess = np.append(nodesToProcess, c)
                 
                 print(sss)
                 curr_af.update_status(afumigatus.pr_status_change, afumigatus.min_iter_to_status_change)
@@ -177,7 +179,7 @@ class Afumigatus(Module):
             afumigatus.last_id += 1
             last_id = afumigatus.last_id
             af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = last_id)
-            trees.append(af)
+            afumigatus.trees = np.append(afumigatus.trees, af)
             afumigatus.num_spore += 1
         #diffuseIron()	
 		#isNew.clear()

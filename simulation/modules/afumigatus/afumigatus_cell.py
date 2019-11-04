@@ -39,8 +39,8 @@ class AfumigatusCell(Cell):
         self.iteration = 0
         self.boolean_network = AfumigatusCell.InitAfumigatusBooleanState.copy()
 
-        self.branch_children = []
-        self.elongate_children = []
+        self.branch_children = np.array([])
+        self.elongate_children = np.array([])
         self.previous_septa = None
         self.Fe = False
 
@@ -129,7 +129,7 @@ class AfumigatusCell(Cell):
                 child.previous_septa = self
                 child.iron_pool = self.iron_pool
                 child.is_root = False
-                self.elongate_children.append(child)
+                self.elongate_children = np.append(self.elongate_children, child)
                 return child
         return None
 
@@ -159,7 +159,7 @@ class AfumigatusCell(Cell):
                     child.iron_pool = self.iron_pool
                     child.previous_septa = self
                     child.is_root = False
-                    self.branch_children.append(child)
+                    self.branch_children = np.append(self.branch_children, child)
                     #set neighbors to be unbranchable
                     self.branchable = False                    
                     #self.next_branch.branchable = False
