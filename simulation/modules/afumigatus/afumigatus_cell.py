@@ -122,7 +122,7 @@ class AfumigatusCell(Cell):
                 return None
             else:
                 self.growable = False
-                self.branchable = True # TODO on make branchable if previous is not branchable
+                self.branchable = True
                 self.iron_pool = self.iron_pool / 2.0;
                 child = AfumigatusCell(x=self.x + self.dx, y=self.y + self.dy, z=self.z + self.dz,\
                                              ironPool=0, status=AfumigatusCell.HYPHAE, state=self.state, isRoot=False)
@@ -160,8 +160,9 @@ class AfumigatusCell(Cell):
                     child.previous_septa = self
                     child.is_root = False
                     self.branch_children = np.append(self.branch_children, child)
-                    #set neighbors to be unbranchable
-                    self.branchable = False                    
+                    
+                    #self.branchable = False    
+                    ##set neighbors to be unbranchable
                     #self.next_branch.branchable = False
                     #if(self.previous_septa):
                     #    self.previous_septa.branchable = False
@@ -185,58 +186,14 @@ class AfumigatusCell(Cell):
         elif self.status == AfumigatusCell.DYING:
             self.status = AfumigatusCell.DEAD
 
-        # #is this phagocyte module dependent?
-        # if self.state == AfumigatusCell.INTERNALIZING or self.state == AfumigatusCell.RELEASING:
-        #    self.state = AfumigatusCell.FREE
-
     def is_dead(self):
         return self.status == AfumigatusCell.DEAD
 
     def leave(self, qtty):
         return False
 
-    #def die(self):
-    #    AfumigatusCell.total_cells = AfumigatusCell.total_cells - 1
-
     def move(self, oldVoxel, newVoxel):
         pass
 
     def process_boolean_network(self):
         pass
-
-    # #is this phagocyte module dependent?
-    #def is_internalized(self):
-    #    return self.state == AfumigatusCell.INTERNALIZING
-    #
-    #def is_internalizing(self):
-    #    return self.state == AfumigatusCell.INTERNALIZING
-
-    #def diffuse_iron(self, afumigatus=None):
-    #    if afumigatus == None:
-    #        if self.is_root:
-    #            self.diffuse_iron(self)
-    #    else:
-    #        if afumigatus.next_septa is not None and afumigatus.next_branch is None:
-    #            current_iron_pool = afumigatus.iron_pool
-    #            next_iron_pool = afumigatus.next_septa.iron_pool
-    #            iron_pool = (current_iron_pool + next_iron_pool) / 2.0
-    #            afumigatus.iron_pool = iron_pool
-    #            afumigatus.next_septa.iron_pool = iron_pool
-    #            self.diffuse_iron(afumigatus.next_septa)
-    #        elif afumigatus.next_septa is not None and afumigatus.next_branch is not None:
-    #            current_iron_pool = afumigatus.iron_pool
-    #            next_iron_pool = afumigatus.next_septa.iron_pool
-    #            branch_iron_pool = afumigatus.next_branch.iron_pool
-    #            iron_pool = (current_iron_pool + next_iron_pool + branch_iron_pool) / 3.0
-    #            afumigatus.iron__pool = iron_pool
-    #            afumigatus.next_septa.iron_pool = iron_pool
-    #            afumigatus.next_branch.iron_pool = iron_pool
-    #            self.diffuse_iron(afumigatus.next_branch)
-    #            self.diffuse_iron(afumigatus.next_septa)
-    #
-    #def has_iron(self):
-    #    self.Fe = Util.hillProbability(self.iron_pool, Constants.Kma) > random()
-    #
-    #def inc_iron_pool(self, qtty):
-    #    self.iron_pool = self.iron_pool + qtty
-    #    AfumigatusCell.total_iron = AfumigatusCell.total_iron + qtty
