@@ -62,6 +62,11 @@ class Afumigatus(Module):
         init_spores = afumigatus.init_spores
         trees = afumigatus.trees
 		
+        grid: RectangularGrid = state.grid
+        xbin = grid.shape[2]
+        ybin = grid.shape[1]
+        zbin = grid.shape[0]
+        print(grid.shape)
 		##iterate over roots and then sub hypheal trees
         for root in trees:
             nodesToProcess = np.array([])
@@ -84,12 +89,12 @@ class Afumigatus(Module):
                 curr_af.update_status(afumigatus.pr_status_change, afumigatus.min_iter_to_status_change)
 
                 #grow, branch
-                new_af = curr_af.elongate(20,20,20) # TODO replace 20,20,20 with geometry when implemented
+                new_af = curr_af.elongate(xbin, ybin, zbin)
                 if(new_af):
                     new_af.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
                     afumigatus.num_spore += 1
-                new_af2 = curr_af.branch(afumigatus.branch_probability, 20,20,20) # TODO replace 20,20,20 with geometry when implemented
+                new_af2 = curr_af.branch(afumigatus.branch_probability, xbin, ybin, zbin)
                 if(new_af2):
                     new_af2.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
@@ -107,7 +112,7 @@ class Afumigatus(Module):
         if (num_spore < init_spores):
             # TODO add limitation to just lodge layer eg:
             # rz, ry, rx = np.where(geometry==SPORE_LAYER) # macro read from config
-            while(num_spore < init_spores):
+            while(afumigatus.num_spore < init_spores):
                 #index = randint(0, len(rz))
                 afumigatus.last_id += 1
                 last_id = afumigatus.last_id
