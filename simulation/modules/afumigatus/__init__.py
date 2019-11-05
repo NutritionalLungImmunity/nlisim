@@ -89,12 +89,12 @@ class Afumigatus(Module):
                 curr_af.update_status(afumigatus.pr_status_change, afumigatus.min_iter_to_status_change)
 
                 #grow, branch
-                new_af = curr_af.elongate(xbin, ybin, zbin)
+                new_af = curr_af.elongate(xbin, ybin, zbin) # TODO incorporate geometry growth restriction
                 if(new_af):
                     new_af.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
                     afumigatus.num_spore += 1
-                new_af2 = curr_af.branch(afumigatus.branch_probability, xbin, ybin, zbin)
+                new_af2 = curr_af.branch(afumigatus.branch_probability, xbin, ybin, zbin) # TODO incorporate geometry growth restriction
                 if(new_af2):
                     new_af2.id = afumigatus.last_id + 1
                     afumigatus.last_id += 1
