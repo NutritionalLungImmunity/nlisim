@@ -66,7 +66,7 @@ class Afumigatus(Module):
         xbin = grid.shape[2]
         ybin = grid.shape[1]
         zbin = grid.shape[0]
-        print(grid.shape)
+
 		##iterate over roots and then sub hypheal trees
         for root in trees:
             nodesToProcess = np.array([])
