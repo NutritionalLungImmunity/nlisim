@@ -115,8 +115,8 @@ class AfumigatusCell(Cell):
         self.dy = growth_vector[1]
         self.dz = growth_vector[2]
 
-    def elongate(self, xbin, ybin, zbin):
-        if self.growable and self.status == AfumigatusCell.HYPHAE:# and self.boolean_network[AfumigatusCell.LIP] == 1:
+    def elongate(self, xbin, ybin, zbin): # TODO incorporate geometry growth restriction
+        if self.growable and self.status == AfumigatusCell.HYPHAE:# TODO add iron dependence and self.boolean_network[AfumigatusCell.LIP] == 1:
             if(self.x + self.dx < 0 or self.y + self.dy < 0 or self.z + self.dz < 0 \
                 or self.x + self.dx > xbin or self.y + self.dy > ybin or self.z + self.dz > zbin):
                 return None
@@ -133,8 +133,8 @@ class AfumigatusCell(Cell):
                 return child
         return None
 
-    def branch(self, branch_probability, xbin, ybin, zbin):
-        if self.branchable and self.status == AfumigatusCell.HYPHAE: #and self.boolean_network[AfumigatusCell.LIP] == 1:
+    def branch(self, branch_probability, xbin, ybin, zbin): # TODO incorporate geometry growth restriction
+        if self.branchable and self.status == AfumigatusCell.HYPHAE: # TODO add iron dependence  and self.boolean_network[AfumigatusCell.LIP] == 1:
             if random() < branch_probability:
                 self.iron_pool = self.iron_pool / 2.0
                 growth_vector = [self.dx, self.dy, self.dz]
