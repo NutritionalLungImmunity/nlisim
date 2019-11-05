@@ -3,8 +3,7 @@ import numpy as np
 import h5py
 import os
 import vtk
-import sys
-from vtk.util import numpy_support
+
 from simulation.module import Module, ModuleState
 from simulation.modules.advection.differences import gradient, laplacian
 from simulation.state import grid_variable, State
@@ -63,8 +62,7 @@ class Geometry(Module):
         ybin = grid.shape[1]
         zbin = grid.shape[0]
         g = np.uint8(grid.reshape(grid.shape[0] * grid.shape[1] * grid.shape[2]))
-        print(g.shape)
-        sys.stdout.flush()
+
         data_string = g.tostring()
         dataImporter.CopyImportVoidPointer(data_string, len(data_string))
         dataImporter.SetDataScalarTypeToUnsignedChar()
