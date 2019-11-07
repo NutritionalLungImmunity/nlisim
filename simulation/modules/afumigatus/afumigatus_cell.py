@@ -1,6 +1,7 @@
 from simulation.cell_lib.cell import Cell
 from simulation.cell_lib.util import Util
 from random import random, uniform
+from enum import IntEnum
 import numpy as np
 import math
 
@@ -9,18 +10,20 @@ class AfumigatusCell(Cell):
     InitAfumigatusBooleanState = [1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     
     #status:
-    RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = 1
-    HYPHAE = 2
-    DYING = 3
-    DEAD = 4
+    class Status(IntEnum):
+        RESTING_CONIDIA = 0
+        SWELLING_CONIDIA = 1
+        HYPHAE = 2
+        DYING = 3
+        DEAD = 4
 
     #state:
-    FREE = 0
-    INTERNALIZING = 1
-    RELEASING = 2
+    class State(IntEnum):
+        FREE = 0
+        INTERNALIZING = 1
+        RELEASING = 2
 
-    def __init__(self, x=0, y=0, z=0, ironPool = 0, status = 0, state = 0, isRoot = True, id_in = -1):
+    def __init__(self, x=0, y=0, z=0, ironPool = 0, status = Status.RESTING_CONIDIA, state = State.FREE, isRoot = True, id_in = -1):
         self.id = id_in
         self.iron_pool = ironPool
         self.state = state
@@ -44,34 +47,6 @@ class AfumigatusCell(Cell):
         self.previous_septa = None
         self.Fe = False
 
-    def get_x (self):
-        return self.x 
-    def get_y (self):
-        return self.y 
-    def get_z (self):
-        return self.z 
-    def get_dx(self):
-        return self.dx
-    def get_dy(self):
-        return self.dy
-    def get_dz(self):
-        return self.dz
-
-    def set_growable(self, val):
-        self.growable = val
-    def set_x (self, val):
-        self.x  = val
-    def set_y (self, val):
-        self.y  = val
-    def set_z (self, val):
-        self.z  = val
-    def set_dx(self, val):
-        self.dx = val
-    def set_dy(self, val):
-        self.dy = val
-    def set_dz(self, val):
-        self.dz = val
-
     def __str__(self):
         s =  "AfumigatusCell_" + str(self.id) + \
             ' x=' + '%.5f' % self.x + \
@@ -81,21 +56,21 @@ class AfumigatusCell(Cell):
             ' dy=' + '%.5f' % self.dy + \
             ' dz=' + '%.5f' % self.dz
 
-        if(self.status == AfumigatusCell.RESTING_CONIDIA):
+        if(self.status == Status.RESTING_CONIDIA):
             s = s + ' RESTING_CONIDIA'
-        if(self.status == AfumigatusCell.SWELLING_CONIDIA):
+        if(self.status == Status.SWELLING_CONIDIA):
             s = s + ' SWELLING_CONIDIA'
-        if(self.status == AfumigatusCell.HYPHAE):
+        if(self.status == Status.HYPHAE):
             s = s + ' HYPHAE'
-        if(self.status == AfumigatusCell.DYING):
+        if(self.status == Status.DYING):
             s = s + ' DYING'
-        if(self.status == AfumigatusCell.DEAD):
+        if(self.status == Status.DEAD):
             s = s + ' DEAD'
-        if(self.state == AfumigatusCell.FREE):
+        if(self.state == State.FREE):
             s = s + ' FREE'
-        if(self.state == AfumigatusCell.INTERNALIZING):
+        if(self.state == State.INTERNALIZING):
             s = s + ' INTERNALIZING'
-        if(self.state == AfumigatusCell.RELEASING):
+        if(self.state == State.RELEASING):
             s = s + ' RELEASING'
        
         if(self.previous_septa):
@@ -116,7 +91,7 @@ class AfumigatusCell(Cell):
         self.dz = growth_vector[2]
 
     def elongate(self, xbin, ybin, zbin): # TODO incorporate geometry growth restriction
-        if self.growable and self.status == AfumigatusCell.HYPHAE:# TODO add iron dependence and self.boolean_network[AfumigatusCell.LIP] == 1:
+        if self.growable and self.status == Status.HYPHAE:# TODO add iron dependence and self.boolean_network[AfumigatusCell.LIP] == 1:
             if(self.x + self.dx < 0 or self.y + self.dy < 0 or self.z + self.dz < 0 \
                 or self.x + self.dx > xbin or self.y + self.dy > ybin or self.z + self.dz > zbin):
                 return None
@@ -125,7 +100,7 @@ class AfumigatusCell(Cell):
                 self.branchable = True
                 self.iron_pool = self.iron_pool / 2.0;
                 child = AfumigatusCell(x=self.x + self.dx, y=self.y + self.dy, z=self.z + self.dz,\
-                                             ironPool=0, status=AfumigatusCell.HYPHAE, state=self.state, isRoot=False)
+                                             ironPool=0, status=Status.HYPHAE, state=self.state, isRoot=False)
                 child.previous_septa = self
                 child.iron_pool = self.iron_pool
                 child.is_root = False
@@ -153,7 +128,7 @@ class AfumigatusCell(Cell):
                     return None
                 else:
                     child = AfumigatusCell(x=nextX, y=nextY, z=nextZ,\
-                                                ironPool=0, status=AfumigatusCell.HYPHAE, \
+                                                ironPool=0, status=Status.HYPHAE, \
                                                 state=self.state, isRoot=False)
                     child.set_growth_vector(growth_vector)
                     child.iron_pool = self.iron_pool
@@ -173,21 +148,21 @@ class AfumigatusCell(Cell):
 
     def update_status(self, probability_status_change, min_iter_to_status_change):
         self.iteration = self.iteration + 1
-        if self.status == AfumigatusCell.RESTING_CONIDIA and \
+        if self.status == Status.RESTING_CONIDIA and \
                 self.iteration >= min_iter_to_status_change and \
                 random() < probability_status_change:
-            self.status = AfumigatusCell.SWELLING_CONIDIA
+            self.status = Status.SWELLING_CONIDIA
             self.iteration = 0
-        elif self.status == AfumigatusCell.SWELLING_CONIDIA and \
+        elif self.status == Status.SWELLING_CONIDIA and \
                 self.iteration >= min_iter_to_status_change and \
                 random() < probability_status_change:
-            self.status = AfumigatusCell.HYPHAE
+            self.status = Status.HYPHAE
             self.iteration = 0
-        elif self.status == AfumigatusCell.DYING:
-            self.status = AfumigatusCell.DEAD
+        elif self.status == Status.DYING:
+            self.status = Status.DEAD
 
     def is_dead(self):
-        return self.status == AfumigatusCell.DEAD
+        return self.status == Status.DEAD
 
     def leave(self, qtty):
         return False

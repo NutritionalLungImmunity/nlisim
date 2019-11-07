@@ -102,10 +102,10 @@ class Afumigatus(Module):
                 if(curr_af.previous_septa == None and not(curr_af.switched) and len(curr_af.elongate_children) > 0):
                     #we are at root, so can grow opposite direction
                     # TODO add growth delay based on random() < prob_dual elongate
-                    curr_af.set_dx(curr_af.get_dx() * - 1)
-                    curr_af.set_dy(curr_af.get_dy() * - 1)
-                    curr_af.set_dz(curr_af.get_dz() * - 1)
-                    curr_af.set_growable(True)
+                    curr_af.dx = curr_af.dx * - 1
+                    curr_af.dy = curr_af.dy * - 1
+                    curr_af.dz = curr_af.dz * - 1
+                    curr_af.growable = True
                     curr_af.switched = True
                 
 		##add new spores if haven't inhaled the limit
@@ -116,7 +116,8 @@ class Afumigatus(Module):
                 #index = randint(0, len(rz))
                 afumigatus.last_id += 1
                 last_id = afumigatus.last_id
-                af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.RESTING_CONIDIA, state = AfumigatusCell.FREE, isRoot = True, id_in = last_id)
+                af = AfumigatusCell(x=10, y=10, z=10, ironPool = 0, status = AfumigatusCell.Status.RESTING_CONIDIA,\
+                     state = AfumigatusCell.State.FREE, isRoot = True, id_in = last_id)
                 afumigatus.trees = np.append(afumigatus.trees, af)
                 afumigatus.num_spore += 1
         
