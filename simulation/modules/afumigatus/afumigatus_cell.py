@@ -1,5 +1,4 @@
 from simulation.cell_lib.cell import Cell
-from simulation.cell_lib.util import Util
 from random import random, uniform
 from enum import IntEnum
 import numpy as np
@@ -115,7 +114,7 @@ class AfumigatusCell(Cell):
                 growth_vector = [self.dx, self.dy, self.dz]
                 B = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], growth_vector])
                 B_inv = np.linalg.inv(B)
-                R = Util.rotatation_matrix(2*random()*math.pi)
+                R = rotatation_matrix(2*random()*math.pi)
                 R = np.dot(B, np.dot(R, B_inv))
                 growth_vector = np.dot(R, growth_vector)
                 
@@ -172,3 +171,15 @@ class AfumigatusCell(Cell):
 
     def process_boolean_network(self):
         pass
+
+    
+    @staticmethod
+    def rotatation_matrix(phi):
+        cosTheta = math.cos(math.pi/4.0)
+        sinTheta = math.sin(math.pi / 4.0)
+
+        return np.array([[cosTheta * math.cos(phi), \
+            -cosTheta*math.sin(phi), sinTheta], \
+            [math.sin(phi), math.cos(phi), 0.0],\
+            [-sinTheta*math.cos(phi), sinTheta*math.sin(phi), cosTheta]])
+
