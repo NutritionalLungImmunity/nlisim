@@ -3,61 +3,79 @@ import numpy as np
 import h5py
 import os
 import vtk
+from enum import Enum
 
 from simulation.module import Module, ModuleState
-from simulation.modules.advection.differences import gradient, laplacian
 from simulation.state import grid_variable, State
 from simulation.validation import ValidationError
 
+# I am not quite sure if we should put the definition of the lung tissue types here
+class TissueTypes(Enum):
+    AIR = 0
+    BLOOD = 1
+    OTHER = 2
+    EPITHELIUM = 3
+    SURFACTANT = 4
+    PORE = 5
 
+    @classmethod
+    def validate(cls, value: np.ndarray):
+        return np.logical_and(value >= 0, value <= 5).all() and np.issubclass_(value.dtype.type, np.integer)
+        
 @attr.s(kw_only=True, repr=False)
 class GeometryState(ModuleState):
-    geometry_grid = grid_variable(np.dtype('int'))
+    lung_tissue = grid_variable(np.dtype('int'))
 
-    @geometry_grid.validator
-    def _validate_geometry_grid(self, attribute: attr.Attribute, value: np.ndarray) -> None:
-        if not (value >= 0).all():
-            raise ValidationError(f'not >= 0')
+    @lung_tissue.validator
+    def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -> None:
+        if not TissueTypes.validate(value):
+            raise ValidationError('input illegal')
 
     def __repr__(self):
-        return f'GeometryState(geometry_grid)'
+        return 'GeometryState(lung_tissue)'
 
 
 class Geometry(Module):
     name = 'geometry'
     defaults = {
-        'geometry_grid': '0'
+        'path': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'geometry.hdf5'),
+        'preview_geometry': 'False'
     }
     StateClass = GeometryState
 
     def initialize(self, state: State):
         geometry: GeometryState = state.geometry
+        preview_geometry = self.config.getboolean('preview_geometry')
+        path = self.config.get('path')
+        try:
+            with h5py.File(path, 'r') as f:
+                if f['geometry'][:].shape != state.grid.shape:
+                    raise ValidationError('imported geometry doesn\'t match the shape of primary grid')
+                geometry.lung_tissue[:] = f['geometry'][:]
+        except Exception:
+            print(f'Error loading geometry file at {path}.')
+            raise
 
-        #g = np.load('./simulation/modules/geometry/geometry.npy')
-        with h5py.File(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'geometry.hdf5'), 'r') as f:
-            g = f['geometry'][:]
-
-        if (g.shape != state.grid.shape):
-            raise ValidationError(f'imported geometry doesn\'t match the shape of primary grid')
-
-        geometry.geometry_grid = np.copy(g)
-        print(geometry.geometry_grid.shape)
-        
-        self.preview(geometry.geometry_grid)
-
+        if preview_geometry:
+            Geometry.preview(geometry.lung_tissue)
+            #the pragram will be blocked even a new thread is created. maybe a conflict of the popping window?
+            #thread = threading.Thread(target = Geometry.preview, args = (geometry.lung_tissue, ))
+            #thread.start()
+            
         return state
 
-    def advance(self, state: State, previous_time: float):
-        """Advance the state by a single time step."""
-        # do nothing since the geoemtry is constant
-        return state
+    # same as the super class. not needed for now
+    # def advance(self, state: State, previous_time: float):
+    #     """Advance the state by a single time step."""
+    #     # do nothing since the geoemtry is constant
+    #     return state
 
-    def preview(self, grid: np.ndarray):
-        print(vtk.vtkVersion.GetVTKSourceVersion())
-
+    @classmethod
+    def preview(cls, grid: np.ndarray):
+        #print(vtk.vtkVersion.GetVTKSourceVersion())
+        #sys.stdout.flush()
         dataImporter = vtk.vtkImageImport()
 
-        #g = np.frombuffer(self.geo.get_obj())
         xbin = grid.shape[2]
         ybin = grid.shape[1]
         zbin = grid.shape[0]
