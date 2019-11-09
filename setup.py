@@ -10,6 +10,7 @@ setup(
         'h5py',
         'matplotlib',
         'numpy',
+        'scipy',
         'vtk'
     ],
     entry_points={
