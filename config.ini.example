@@ -19,6 +19,7 @@ validate = True
 modules = simulation.modules.advection.Advection
           simulation.modules.plot.Plot2dSlice
           simulation.modules.save.FileOutput
+          simulation.modules.geometry.Geometry
 
 [advection]
 # state variable initialization
@@ -56,3 +57,8 @@ mask_threshold = 0
 # save the simulation state every 1 simulation second
 save_interval = 1.0
 save_file_name = output/simulation-<time>.hdf5
+
+[geometry]
+# path of the imported geoemtry file
+geometry_path = geometry.hdf5
+preview_geometry = True

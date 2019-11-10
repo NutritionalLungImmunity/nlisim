@@ -38,7 +38,7 @@ class GeometryState(ModuleState):
 class Geometry(Module):
     name = 'geometry'
     defaults = {
-        'path': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'geometry.hdf5'),
+        'geometry_path': 'geometry.hdf5',
         'preview_geometry': 'False'
     }
     StateClass = GeometryState
@@ -46,7 +46,7 @@ class Geometry(Module):
     def initialize(self, state: State):
         geometry: GeometryState = state.geometry
         preview_geometry = self.config.getboolean('preview_geometry')
-        path = self.config.get('path')
+        path = self.config.get('geometry_path')
         try:
             with h5py.File(path, 'r') as f:
                 if f['geometry'][:].shape != state.grid.shape:
