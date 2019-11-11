@@ -9,7 +9,8 @@ setup(
         'click',
         'h5py',
         'matplotlib',
-        'numpy'
+        'numpy',
+        'vtk'
     ],
     entry_points={
         'console_scripts': [
