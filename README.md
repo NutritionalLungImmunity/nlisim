@@ -209,5 +209,5 @@ When enabled, this module will
 
 # Geometry Importation
 
-An example geometry file can be found at [Girder](https://data.computational-biology.org/#item/5dc778b2ef2e2603553c5a11). 
+An example geometry file can be found at [Girder](https://data.nutritionallungimmunity.org/#item/5dc778b2ef2e2603553c5a11).
 To import the geometry, place the geometry.hdf5 to the current directory.
