@@ -10,7 +10,7 @@ BOOLEAN_NETWORK_LENGTH = 23
 GROWTH_SCALE_FACTOR = 0.02  # from original code
 
 
-class CellTree(np.ndarray):
+class CellArray(np.ndarray):
     dtype = np.dtype([
         ('point', Point.dtype),
         ('growth', Point.dtype),
@@ -99,7 +99,7 @@ class CellTree(np.ndarray):
             (grid.zv[0] <= point.z) & (point.z <= grid.zv[-1])
         )
 
-    def elongate(self, grid: RectangularGrid) -> 'CellTree':
+    def elongate(self, grid: RectangularGrid) -> 'CellArray':
         mask = (
             self['growable'] &
             (self['status'] == self.Status.HYPHAE) &
@@ -109,16 +109,16 @@ class CellTree(np.ndarray):
         self['growable'][mask] = False
         self['branchable'][mask] = True
 
-        children = CellTree(mask.sum())
+        children = CellArray(mask.sum())
         self['iron_pool'][mask] /= 2
         children['iron_pool'] = self['iron_pool'][mask]
         children['point'] = self['point'][mask] + self['growth'][mask]
         children['growth'] = self['growth'][mask]
 
-        a = np.append(self, children).view(CellTree)
+        a = np.append(self, children).view(CellArray)
         return a
 
-    def branch(self, branch_probability: float, grid: RectangularGrid) -> 'CellTree':
+    def branch(self, branch_probability: float, grid: RectangularGrid) -> 'CellArray':
         indices = (
             self['branchable'] &
             (self['status'] == self.Status.HYPHAE) &
@@ -128,7 +128,7 @@ class CellTree(np.ndarray):
         if len(indices) == 0:
             return self
 
-        children = CellTree(len(indices))
+        children = CellArray(len(indices))
         children['growth'] = np.apply_along_axis(
             self.random_branch_direction, 1, children['growth'])
 
@@ -146,4 +146,4 @@ class CellTree(np.ndarray):
         children['growable'] = True
         children['branchable'] = False
 
-        return np.append(self, children).view(CellTree)
+        return np.append(self, children).view(CellArray)
