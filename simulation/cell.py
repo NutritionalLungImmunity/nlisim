@@ -1,6 +1,10 @@
+from collections.abc import MutableMapping
 from enum import IntEnum
+from typing import Any, Iterable, Optional, Type, Union
 
+import attr
 import numpy as np
+from scipy.sparse import dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation
 
 from simulation.coordinates import Point
@@ -8,6 +12,24 @@ from simulation.state import RectangularGrid
 
 BOOLEAN_NETWORK_LENGTH = 23
 GROWTH_SCALE_FACTOR = 0.02  # from original code
+MAX_CELL_TREE_SIZE = 10000
+
+# the way numpy types single records is strange...
+CellType = Any
+
+
+class Status(IntEnum):
+    RESTING_CONIDIA = 0
+    SWELLING_CONIDIA = 1
+    HYPHAE = 2
+    DYING = 3
+    DEAD = 4
+
+
+class State(IntEnum):
+    FREE = 0
+    INTERNALIZING = 1
+    RELEASING = 2
 
 
 class CellArray(np.ndarray):
@@ -25,27 +47,16 @@ class CellArray(np.ndarray):
         ('iteration', 'i4')
     ], align=True)
 
-    class Status(IntEnum):
-        RESTING_CONIDIA = 0
-        SWELLING_CONIDIA = 1
-        HYPHAE = 2
-        DYING = 3
-        DEAD = 4
+    def __new__(cls, arg: Union[int, Iterable[np.record]], **kwargs):
+        if isinstance(arg, int):
+            return np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
 
-    class State(IntEnum):
-        FREE = 0
-        INTERNALIZING = 1
-        RELEASING = 2
-
-    def __new__(cls, length: int, **kwargs):
-        return np.asarray([
-            cls.create(**kwargs) for _ in range(length)
-        ], dtype=cls.dtype).view(cls)
+        return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create(cls, point: Point = None, iron_pool: float = 0,
-               status: Status = Status.RESTING_CONIDIA,
-               state: State = State.FREE) -> np.record:
+    def create_cell(cls, point: Point = None, iron_pool: float = 0,
+                    status: Status = Status.RESTING_CONIDIA,
+                    state: State = State.FREE) -> np.record:
 
         if point is None:
             point = Point()
@@ -99,51 +110,198 @@ class CellArray(np.ndarray):
             (grid.zv[0] <= point.z) & (point.z <= grid.zv[-1])
         )
 
-    def elongate(self, grid: RectangularGrid) -> 'CellArray':
+
+@attr.s(auto_attribs=True, kw_only=True, frozen=True)
+class Cell(MutableMapping):
+    tree: 'CellTree'
+    index: int = attr.ib()
+
+    @index.validator
+    def _validate_index(self, attribute, value):
+        if value >= len(self.tree):
+            raise ValueError('Invalid cell index')
+
+    def __attrs_post_init__(self):
+        if self.index < 0:
+            object.__setattr__(self, 'index', self.index + len(self.tree))
+
+    @property
+    def record(self) -> CellType:
+        return self.tree.cells[self.index]
+
+    @property
+    def parent(self) -> Optional['Cell']:
+        indices = self.tree.adjacency[:, self.index].nonzero()[0]
+        if len(indices) == 1:
+            return None
+        if len(indices) == 2 and indices[0] == self.index:
+            index = indices[0]
+            if index == self.index:
+                index = indices[1]
+            return self.__class__(tree=self.tree, index=index)
+
+        raise Exception(f'Invalid adjacency matrix at index {self.index}')
+
+    @property
+    def children(self) -> Iterable['Cell']:
+        indices = self.tree.adjacency[self.index].nonzero()[1]
+        for index in indices:
+            if index != self.index:
+                yield self.__class__(tree=self.tree, index=index)
+
+    def add_child(self, cell: Union[CellType, 'Cell']):
+        if isinstance(cell, Cell):
+            cell = cell.record
+        self.tree.append(cell, parent=self.index)
+
+    def __getitem__(self, key):
+        return self.record.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self.tree.cells[key][self.index] = value
+
+    def __delitem__(self, key):
+        return self.record.__delitem__(key)
+
+    def __iter__(self):
+        for key in self.record.dtype.fields.keys():
+            yield key
+
+    def __contains__(self, key):
+        return key in self.record.dtype.fields
+
+    def __len__(self):
+        return len(self.record)
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class CellTree(object):
+    CellArrayClass: Type[CellArray] = CellArray
+
+    max_cells: int = attr.ib(default=MAX_CELL_TREE_SIZE)
+    grid: RectangularGrid = attr.ib()
+    _cells: CellArray = attr.ib()
+    _adjacency: sparse_matrix = attr.ib()
+    _ncells: int = attr.ib(init=False)
+
+    @_cells.default
+    def __set_default_cells(self) -> CellArray:
+        return self.CellArrayClass(0)
+
+    @_adjacency.default
+    def __set_default_adjacency(self):
+        return sparse_matrix((0, 0))
+
+    def __attrs_post_init__(self):
+        cells = self._cells
+        adjacency = self._adjacency
+
+        object.__setattr__(self, '_ncells', len(cells))
+        object.__setattr__(self, '_cells', self.CellArrayClass(self.max_cells))
+        object.__setattr__(self, '_adjacency', sparse_matrix((self.max_cells, self.max_cells)))
+
+        if len(cells) > 0:
+            self._cells[:len(cells)] = cells
+            self._adjacency[:adjacency.shape[0], :adjacency.shape[1]] = adjacency
+
+    def __len__(self) -> int:
+        return self._ncells
+
+    def __repr__(self) -> str:
+        return f'CellTree[{self._ncells}]'
+
+    def __getitem__(self, index: int) -> Cell:
+        if isinstance(index, str):
+            raise TypeError('Expected an integer index, did you mean `tree.cells[key]`?')
+        return Cell(tree=self, index=index)
+
+    @property
+    def root(self) -> Optional[CellType]:
+        if not len(self):
+            return None
+        return self[0]
+
+    @property
+    def cells(self) -> CellArray:
+        return self._cells[:self._ncells]
+
+    @property
+    def adjacency(self) -> sparse_matrix:
+        return self._adjacency[:self._ncells, :self._ncells]
+
+    @classmethod
+    def create_from_seed(cls, grid, **kwargs) -> 'CellTree':
+        cell = cls.CellArrayClass.create_cell(**kwargs)
+        cells = cls.CellArrayClass([cell])
+        adjacency = sparse_matrix((1, 1))
+        adjacency[0, 0] = 1
+
+        return cls(grid=grid, cells=cells, adjacency=adjacency)
+
+    def append(self, cell: CellType, parent: int = None) -> None:
+        if len(self) >= self.max_cells - 1:
+            raise Exception('Not enough free space in cell tree')
+
+        index = self._ncells
+        object.__setattr__(self, '_ncells', self._ncells + 1)
+        self._cells[index] = cell
+        self._adjacency[index, index] = 1
+
+        if parent is not None:
+            self._adjacency[parent, index] = 1
+
+    def extend(self, cells: CellArray, parents: Iterable[Union[int, None]] = None) -> None:
+        if parents is None:
+            parents = [None] * len(cells)
+
+        for cell, parent in zip(cells, parents):
+            self.append(cell, parent)
+
+    def elongate(self):
+        cells = self.cells
+
         mask = (
-            self['growable'] &
-            (self['status'] == self.Status.HYPHAE) &
-            self.point_mask(self['point'] + self['growth'], grid)
-        )
-
-        self['growable'][mask] = False
-        self['branchable'][mask] = True
-
-        children = CellArray(mask.sum())
-        self['iron_pool'][mask] /= 2
-        children['iron_pool'] = self['iron_pool'][mask]
-        children['point'] = self['point'][mask] + self['growth'][mask]
-        children['growth'] = self['growth'][mask]
-
-        a = np.append(self, children).view(CellArray)
-        return a
-
-    def branch(self, branch_probability: float, grid: RectangularGrid) -> 'CellArray':
-        indices = (
-            self['branchable'] &
-            (self['status'] == self.Status.HYPHAE) &
-            (np.random.rand(*self.shape) < branch_probability)
+            cells['growable'] &
+            (cells['status'] == Status.HYPHAE) &
+            cells.point_mask(cells['point'] + cells['growth'], self.grid)
         ).nonzero()[0]
 
-        if len(indices) == 0:
-            return self
+        cells['growable'][mask] = False
+        cells['branchable'][mask] = True
 
-        children = CellArray(len(indices))
+        children = self.CellArrayClass(len(mask))
+        cells['iron_pool'][mask] /= 2
+        children['iron_pool'] = cells['iron_pool'][mask]
+        children['point'] = cells['point'][mask] + cells['growth'][mask]
+        children['growth'] = cells['growth'][mask]
+
+        self.extend(children, parents=mask)
+
+    def branch(self, branch_probability: float):
+        cells = self.cells
+
+        indices = (
+            cells['branchable'] &
+            (cells['status'] == Status.HYPHAE) &
+            (np.random.rand(*cells.shape) < branch_probability)
+        ).nonzero()[0]
+
+        children = self.CellArrayClass(len(indices))
         children['growth'] = np.apply_along_axis(
-            self.random_branch_direction, 1, children['growth'])
+            cells.random_branch_direction, 1, children['growth'])
 
-        children['point'] = self['point'][indices] + children['growth'][indices]
-        children['iron_pool'] = self['iron_pool'][indices] / 2
+        children['point'] = cells['point'][indices] + children['growth'][indices]
+        children['iron_pool'] = cells['iron_pool'][indices] / 2
 
         # filter out children lying outside of the domain
-        indices = indices[self.point_mask(children['point'], grid)]
+        indices = indices[cells.point_mask(children['point'], self.grid)]
 
         # set iron content for branched cells
-        self['iron_pool'][indices] /= 2
+        cells['iron_pool'][indices] /= 2
 
         # set properties
-        self['branchable'][indices] = False
+        cells['branchable'][indices] = False
         children['growable'] = True
         children['branchable'] = False
 
-        return np.append(self, children).view(CellArray)
+        self.extend(children, parents=indices)
