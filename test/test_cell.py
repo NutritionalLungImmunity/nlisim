@@ -1,8 +1,8 @@
 from typing import Set
 
-from pytest import fixture
+from pytest import fixture, mark
 
-from simulation.cell import CellArray, CellTree, Status
+from simulation.cell import CellArray, CellTree
 from simulation.coordinates import Point
 from simulation.state import RectangularGrid
 
@@ -23,14 +23,12 @@ def cells(grid: RectangularGrid, point: Point):
     # a single cell in the middle of the domain
     cell = CellArray.create_cell(point=point)
     cells = CellArray([cell])
-    cells['status'] = Status.HYPHAE
     yield cells
 
 
 @fixture
 def cell_tree(grid: RectangularGrid, point: Point):
     tree = CellTree.create_from_seed(grid=grid, point=point)
-    tree.cells['status'] = Status.HYPHAE
     yield tree
 
 
@@ -42,7 +40,6 @@ def populated_tree(cell_tree: CellTree, point: Point):
     cell_tree[0]['branchable'] = False
     for _ in range(5):
         cell = CellArray.create_cell(point=point)
-        cell['status'] = Status.HYPHAE
         cell['growable'] = True
         cell['branchable'] = True
         cell_tree.append(cell, parent=0)
@@ -98,6 +95,7 @@ def test_elongated_attributes(cell_tree: CellArray):
     assert not cell_tree[1]['branchable']
 
 
+@mark.skip('Move to module')
 def test_split_iron_pool(cell_tree: CellArray):
     cell_tree.cells['iron_pool'] = 1
 
@@ -123,6 +121,7 @@ def test_traverse_tree(populated_tree: CellTree):
 
 def test_mutate_cell(populated_tree: CellTree):
     cell = populated_tree[4]
-    cell['iron_pool'] = 99
+    growable = not cell['growable']
+    cell['growable'] = growable
 
-    assert populated_tree.cells['iron_pool'][4] == 99
+    assert populated_tree.cells['growable'][4] == growable

@@ -1,5 +1,4 @@
 from collections.abc import MutableMapping
-from enum import IntEnum
 from typing import Any, Iterable, Optional, Type, Union
 
 import attr
@@ -10,42 +9,25 @@ from scipy.spatial.transform import Rotation
 from simulation.coordinates import Point
 from simulation.state import RectangularGrid
 
-BOOLEAN_NETWORK_LENGTH = 23
-GROWTH_SCALE_FACTOR = 0.02  # from original code
 MAX_CELL_TREE_SIZE = 10000
 
 # the way numpy types single records is strange...
 CellType = Any
 
 
-class Status(IntEnum):
-    RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = 1
-    HYPHAE = 2
-    DYING = 3
-    DEAD = 4
-
-
-class State(IntEnum):
-    FREE = 0
-    INTERNALIZING = 1
-    RELEASING = 2
-
-
 class CellArray(np.ndarray):
-    dtype = np.dtype([
+    GROWTH_SCALE_FACTOR = 0.02  # from original code
+
+    BASE_FIELDS = [
         ('point', Point.dtype),
         ('growth', Point.dtype),
-        ('boolean_network', 'b1', BOOLEAN_NETWORK_LENGTH),
-        ('state', 'u1'),
-        ('status', 'u1'),
         ('growable', 'b1'),
         ('switched', 'b1'),
-        ('branchable', 'b1'),
-        ('iron_pool', 'f8'),
-        ('iron', 'b1'),
-        ('iteration', 'i4')
-    ], align=True)
+        ('branchable', 'b1')
+    ]
+
+    # typing for dtype doesn't work correctly with this argument
+    dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
 
     def __new__(cls, arg: Union[int, Iterable[np.record]], **kwargs):
         if isinstance(arg, int):
@@ -54,31 +36,17 @@ class CellArray(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell(cls, point: Point = None, iron_pool: float = 0,
-                    status: Status = Status.RESTING_CONIDIA,
-                    state: State = State.FREE) -> np.record:
-
+    def create_cell(cls, point: Point = None) -> np.record:
         if point is None:
             point = Point()
-        growth = GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
-        network = cls.initial_boolean_network()
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
         growable = True
         switched = False
         branchable = False
-        iteration = 0
-        iron = False
 
         return np.rec.array([
-            (point, growth, network, state, status, growable,
-             switched, branchable, iron_pool, iron, iteration)
+            (point, growth, growable, switched, branchable)
         ], dtype=cls.dtype)[0]
-
-    @classmethod
-    def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([
-            True, False, True, False, True, True, True, True, True, False, False, False,
-            True, False, False, False, False, False, False, False, False, False, False
-        ])
 
     @classmethod
     def random_branch_direction(cls, growth: np.ndarray) -> np.ndarray:
@@ -262,7 +230,6 @@ class CellTree(object):
 
         mask = (
             cells['growable'] &
-            (cells['status'] == Status.HYPHAE) &
             cells.point_mask(cells['point'] + cells['growth'], self.grid)
         ).nonzero()[0]
 
@@ -270,8 +237,6 @@ class CellTree(object):
         cells['branchable'][mask] = True
 
         children = self.CellArrayClass(len(mask))
-        cells['iron_pool'][mask] /= 2
-        children['iron_pool'] = cells['iron_pool'][mask]
         children['point'] = cells['point'][mask] + cells['growth'][mask]
         children['growth'] = cells['growth'][mask]
 
@@ -282,7 +247,6 @@ class CellTree(object):
 
         indices = (
             cells['branchable'] &
-            (cells['status'] == Status.HYPHAE) &
             (np.random.rand(*cells.shape) < branch_probability)
         ).nonzero()[0]
 
@@ -291,13 +255,9 @@ class CellTree(object):
             cells.random_branch_direction, 1, children['growth'])
 
         children['point'] = cells['point'][indices] + children['growth'][indices]
-        children['iron_pool'] = cells['iron_pool'][indices] / 2
 
         # filter out children lying outside of the domain
         indices = indices[cells.point_mask(children['point'], self.grid)]
-
-        # set iron content for branched cells
-        cells['iron_pool'][indices] /= 2
 
         # set properties
         cells['branchable'][indices] = False
