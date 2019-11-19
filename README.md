@@ -207,6 +207,25 @@ When enabled, this module will
   config file
 * print a message on every time step
 
+# Visualization Config
+
+To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
+```
+[visualization]
+# list of variables to visualize [varibale_name | vtk_type]
+# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, RPOLY_DATA
+visual_variables = advection.concentration|STRUCTURED_POINTS
+                   geometry.lung_tissue|STRUCTURED_POINTS
+```
+
+For example, to visualize the molecule concentration and the alveolar geometry, the variables `advection.concentration` and `geometry.lung_tissue` are added to the list, followed by their [VTK dataset formats](https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf). 
+
+* structured point: points data are regularly and uniformly spaced
+* rectilinear grid: points data are regularly spaced but can be not uniform
+* structured grid: points data are not regularly and not uniformly spaced
+* unstructured grid: consists of arbitrary combinations of any possible cell type
+* polygonal data: consists of a set of discrete points, vertices, lines or polygons
+
 # Geometry Importation
 
 An example geometry file can be found at [Girder](https://data.nutritionallungimmunity.org/#item/5dc778b2ef2e2603553c5a11).
