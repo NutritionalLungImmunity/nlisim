@@ -36,7 +36,7 @@ class CellArray(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell(cls, point: Point = None) -> np.record:
+    def create_cell(cls, point: Point = None, **kwargs) -> np.record:
         if point is None:
             point = Point()
         growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
@@ -225,13 +225,25 @@ class CellTree(object):
         for cell, parent in zip(cells, parents):
             self.append(cell, parent)
 
-    def elongate(self):
+    def is_growable(self) -> np.ndarray:
         cells = self.cells
-
-        mask = (
+        return (
             cells['growable'] &
             cells.point_mask(cells['point'] + cells['growth'], self.grid)
-        ).nonzero()[0]
+        )
+
+    def is_branchable(self, branch_probability: float) -> np.ndarray:
+        cells = self.cells
+        return (
+            cells['branchable'] &
+            (np.random.rand(*cells.shape) < branch_probability)
+        )
+
+    def elongate(self):
+        cells = self.cells
+        mask = self.is_growable().nonzero()[0]
+        if len(mask) == 0:
+            return
 
         cells['growable'][mask] = False
         cells['branchable'][mask] = True
@@ -244,11 +256,9 @@ class CellTree(object):
 
     def branch(self, branch_probability: float):
         cells = self.cells
-
-        indices = (
-            cells['branchable'] &
-            (np.random.rand(*cells.shape) < branch_probability)
-        ).nonzero()[0]
+        indices = self.is_branchable(branch_probability).nonzero()[0]
+        if len(indices) == 0:
+            return
 
         children = self.CellArrayClass(len(indices))
         children['growth'] = np.apply_along_axis(
@@ -258,6 +268,8 @@ class CellTree(object):
 
         # filter out children lying outside of the domain
         indices = indices[cells.point_mask(children['point'], self.grid)]
+        if len(indices) == 0:
+            return
 
         # set properties
         cells['branchable'][indices] = False

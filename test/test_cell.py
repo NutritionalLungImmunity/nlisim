@@ -1,21 +1,10 @@
 from typing import Set
 
-from pytest import fixture, mark
+from pytest import fixture
 
 from simulation.cell import CellArray, CellTree
 from simulation.coordinates import Point
 from simulation.state import RectangularGrid
-
-
-@fixture
-def grid():
-    # a 100 x 100 x 100 unit grid
-    yield RectangularGrid.construct_uniform((10, 10, 10), (10, 10, 10))
-
-
-@fixture
-def point():
-    yield Point(50, 50, 50)
 
 
 @fixture
@@ -93,17 +82,6 @@ def test_elongated_attributes(cell_tree: CellArray):
 
     assert cell_tree[1]['growable']
     assert not cell_tree[1]['branchable']
-
-
-@mark.skip('Move to module')
-def test_split_iron_pool(cell_tree: CellArray):
-    cell_tree.cells['iron_pool'] = 1
-
-    cell_tree.elongate()
-    cell_tree.branch(1)
-
-    assert len(cell_tree) == 3
-    assert (cell_tree.cells['iron_pool'] == [0.25, 0.5, 0.25]).all()
 
 
 def test_traverse_tree(populated_tree: CellTree):
