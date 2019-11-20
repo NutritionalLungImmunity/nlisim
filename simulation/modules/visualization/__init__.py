@@ -5,6 +5,8 @@ from enum import Enum
 import attr
 import numpy as np
 import pylab
+import vtk
+from vtk.util import numpy_support
 
 from simulation.config import SimulationConfig
 from simulation.module import Module, ModuleState
@@ -34,13 +36,37 @@ class Visualization(Module):
     StateClass = VisualizationState
 
     @classmethod
+    def write_structured_points(cls, var: np.ndarray, name: str,
+                                dx: float = 0.1, 
+                                dy: float = 0.1, 
+                                dz: float = 0.1) -> None:
+
+        vol = vtk.vtkStructuredPoints()
+
+        # set dimensions X, Y, Z
+        vol.SetDimensions(var.shape[2], var.shape[1], var.shape[0])
+        vol.SetOrigin(0, 0, 0)
+        vol.SetSpacing(dx, dy, dz)
+
+        scalars = numpy_support.numpy_to_vtk(num_array = var.ravel())
+        #scalars = scalars.reshape(var.shape)
+
+        vol.GetPointData().SetScalars(scalars)
+        writer = vtk.vtkStructuredPointsWriter()
+        writer.SetFileName(name)
+        writer.SetInputData(vol)
+        writer.Write()
+
+
+
+    @classmethod
     def visualize(cls, state: State, variable: str) -> None:
         variable_name, vtk_type = variable.split('|')
         module_name, var_name = variable_name.split('.')
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
-            pass
+            Visualization.write_structured_points(var, var_name)
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             pass

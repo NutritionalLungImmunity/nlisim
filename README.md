@@ -212,7 +212,7 @@ When enabled, this module will
 To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
 ```
 [visualization]
-# list of variables to visualize [varibale_name|vtk_type]
+# list of variables to visualize [variable_name|vtk_type]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables = advection.concentration|STRUCTURED_POINTS
                    geometry.lung_tissue|STRUCTURED_POINTS
