@@ -1,9 +1,12 @@
 from enum import IntEnum
 
+import attr
 import numpy as np
 
 from simulation.cell import CellArray, CellTree
 from simulation.coordinates import Point
+from simulation.module import Module, ModuleState
+from simulation.state import cell_tree
 
 BOOLEAN_NETWORK_LENGTH = 23
 
@@ -83,3 +86,13 @@ class AfumigatusCellTree(CellTree):
             super().is_branchable(branch_probability) &
             (self.cells['status'] == Status.HYPHAE)
         )
+
+
+@attr.s(kw_only=True)
+class AfumigatusState(ModuleState):
+    tree = cell_tree(AfumigatusCellTree)
+
+
+class Afumigatus(Module):
+    name = 'afumigatus'
+    StateClass = AfumigatusState

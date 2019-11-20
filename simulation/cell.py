@@ -170,7 +170,8 @@ class CellTree(object):
 
         if len(cells) > 0:
             self._cells[:len(cells)] = cells
-            self._adjacency[:adjacency.shape[0], :adjacency.shape[1]] = adjacency
+            for key, value in adjacency.items():
+                self._adjacency[key] = value
 
     def __len__(self) -> int:
         return self._ncells
