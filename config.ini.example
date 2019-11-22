@@ -70,3 +70,4 @@ preview_geometry = False
 visual_variables = advection.concentration|STRUCTURED_POINTS
                    geometry.lung_tissue|STRUCTURED_POINTS
 visualize_interval = 1
+visualization_file_name = output/<variable>-<time>.vtk
