@@ -23,7 +23,7 @@ class CellArray(np.ndarray):
         ('growth', Point.dtype),
         ('growable', 'b1'),
         ('switched', 'b1'),
-        ('branchable', 'b1')
+        ('branchable', 'b1'),
     ]
 
     # typing for dtype doesn't work correctly with this argument
@@ -44,9 +44,7 @@ class CellArray(np.ndarray):
         switched = False
         branchable = False
 
-        return np.rec.array([
-            (point, growth, growable, switched, branchable)
-        ], dtype=cls.dtype)[0]
+        return np.rec.array([(point, growth, growable, switched, branchable)], dtype=cls.dtype)[0]
 
     @classmethod
     def random_branch_direction(cls, growth: np.ndarray) -> np.ndarray:
@@ -73,9 +71,12 @@ class CellArray(np.ndarray):
 
         # TODO: add geometry restriction
         return (
-            (grid.xv[0] <= point.x) & (point.x <= grid.xv[-1]) &
-            (grid.yv[0] <= point.y) & (point.y <= grid.yv[-1]) &
-            (grid.zv[0] <= point.z) & (point.z <= grid.zv[-1])
+            (grid.xv[0] <= point.x)
+            & (point.x <= grid.xv[-1])
+            & (grid.yv[0] <= point.y)
+            & (point.y <= grid.yv[-1])
+            & (grid.zv[0] <= point.z)
+            & (point.z <= grid.zv[-1])
         )
 
 
@@ -169,7 +170,7 @@ class CellTree(object):
         object.__setattr__(self, '_adjacency', sparse_matrix((self.max_cells, self.max_cells)))
 
         if len(cells) > 0:
-            self._cells[:len(cells)] = cells
+            self._cells[: len(cells)] = cells
             for key, value in adjacency.items():
                 self._adjacency[key] = value
 
@@ -192,11 +193,11 @@ class CellTree(object):
 
     @property
     def cells(self) -> CellArray:
-        return self._cells[:self._ncells]
+        return self._cells[: self._ncells]
 
     @property
     def adjacency(self) -> sparse_matrix:
-        return self._adjacency[:self._ncells, :self._ncells]
+        return self._adjacency[: self._ncells, : self._ncells]
 
     @classmethod
     def create_from_seed(cls, grid, **kwargs) -> 'CellTree':
@@ -228,17 +229,11 @@ class CellTree(object):
 
     def is_growable(self) -> np.ndarray:
         cells = self.cells
-        return (
-            cells['growable'] &
-            cells.point_mask(cells['point'] + cells['growth'], self.grid)
-        )
+        return cells['growable'] & cells.point_mask(cells['point'] + cells['growth'], self.grid)
 
     def is_branchable(self, branch_probability: float) -> np.ndarray:
         cells = self.cells
-        return (
-            cells['branchable'] &
-            (np.random.rand(*cells.shape) < branch_probability)
-        )
+        return cells['branchable'] & (np.random.rand(*cells.shape) < branch_probability)
 
     def elongate(self):
         cells = self.cells
@@ -263,7 +258,8 @@ class CellTree(object):
 
         children = self.CellArrayClass(len(indices))
         children['growth'] = np.apply_along_axis(
-            cells.random_branch_direction, 1, children['growth'])
+            cells.random_branch_direction, 1, children['growth']
+        )
 
         children['point'] = cells['point'][indices] + children['growth'][indices]
 

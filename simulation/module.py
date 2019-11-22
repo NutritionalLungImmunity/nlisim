@@ -22,6 +22,7 @@ class ModuleState(object):
     bool) and numpy arrays of those types.  Modules containing more complicated
     state must override the serialization mechanism with custom behavior.
     """
+
     global_state: 'State'
 
     def save_state(self, group: Group) -> None:
@@ -49,11 +50,10 @@ class ModuleState(object):
         return cls(**kwargs)
 
     @classmethod
-    def save_attribute(cls, group: Group,
-                       name: str, value: AttrValue,
-                       metadata: dict = None) -> Union[Dataset, Group]:
+    def save_attribute(
+        cls, group: Group, name: str, value: AttrValue, metadata: dict = None
+    ) -> Union[Dataset, Group]:
         """Save an attribute into an HDF5 group."""
-
         metadata = metadata or {}
         if isinstance(value, (float, int, str, bool, np.ndarray)):
             return cls.save_simple_type(group, name, value, metadata)
@@ -61,20 +61,16 @@ class ModuleState(object):
             return cls.save_cell_tree(group, name, value, metadata)
         else:
             # modules must define serializers for unsupported types
-            raise TypeError(
-                f'Attribute {name} in {group.name} contains an unsupported datatype.'
-            )
+            raise TypeError(f'Attribute {name} in {group.name} contains an unsupported datatype.')
 
     @classmethod
-    def save_simple_type(cls, group: Group,
-                         name: str, value: AttrValue,
-                         metadata: dict) -> Dataset:
+    def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -> Dataset:
         kwargs: Dict[str, Any] = {}
         if metadata.get('grid'):
             kwargs = dict(
-               compression='gzip',  # transparent compression
-               shuffle=True,        # improve compressiblity
-               fletcher32=True      # checksum
+                compression='gzip',  # transparent compression
+                shuffle=True,  # improve compressiblity
+                fletcher32=True,  # checksum
             )
 
         var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
@@ -91,9 +87,7 @@ class ModuleState(object):
         return var
 
     @classmethod
-    def save_cell_tree(cls, group: Group,
-                       name: str, value: CellTree,
-                       metadata: dict) -> Group:
+    def save_cell_tree(cls, group: Group, name: str, value: CellTree, metadata: dict) -> Group:
         composite_group = group.create_group(name)
 
         class_ = value.__class__
@@ -110,8 +104,9 @@ class ModuleState(object):
         return composite_group
 
     @classmethod
-    def load_attribute(cls, global_state: State, group: Group, name: str,
-                       metadata: Optional[dict] = None) -> AttrValue:
+    def load_attribute(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -> AttrValue:
         """Load a raw value from an HDF5 file group."""
         dataset = group[name]
         if dataset.attrs.get('scalar', False):
@@ -121,8 +116,9 @@ class ModuleState(object):
         return value
 
     @classmethod
-    def load_cell_tree(cls, global_state: State, group: Group, name: str,
-                       metadata: Optional[dict] = None) -> CellTree:
+    def load_cell_tree(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -> CellTree:
         composite_dataset = group[name]
 
         attrs = composite_dataset.attrs
@@ -142,10 +138,9 @@ class ModuleState(object):
         class_ = cast(Type[CellTree], class_)
         max_size = attrs.get('max_size', MAX_CELL_TREE_SIZE)
 
-        adjacency = coo_matrix((
-            composite_dataset['value'],
-            (composite_dataset['row'], composite_dataset['col'])),
-            shape=(max_size, max_size)
+        adjacency = coo_matrix(
+            (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col'])),
+            shape=(max_size, max_size),
         ).todok()
         cells = composite_dataset['cells'][:].view(class_.CellArrayClass)
 

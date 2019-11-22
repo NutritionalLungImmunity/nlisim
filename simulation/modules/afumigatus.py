@@ -32,15 +32,20 @@ class AfumigatusCellArray(CellArray):
         ('status', 'u1'),
         ('iron_pool', 'f8'),
         ('iron', 'b1'),
-        ('iteration', 'i4')
+        ('iteration', 'i4'),
     ]
 
     dtype = np.dtype(CellArray.BASE_FIELDS + AFUMIGATUS_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell(cls, point: Point = None, iron_pool: float = 0,
-                    status: Status = Status.RESTING_CONIDIA,
-                    state: State = State.FREE, **kwargs) -> np.record:
+    def create_cell(
+        cls,
+        point: Point = None,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING_CONIDIA,
+        state: State = State.FREE,
+        **kwargs,
+    ) -> np.record:
 
         if point is None:
             point = Point()
@@ -53,17 +58,54 @@ class AfumigatusCellArray(CellArray):
         iteration = 0
         iron = False
 
-        return np.rec.array([
-            (point, growth, growable, switched, branchable,
-             network, state, status, iron_pool, iron, iteration)
-        ], dtype=cls.dtype)[0]
+        return np.rec.array(
+            [
+                (
+                    point,
+                    growth,
+                    growable,
+                    switched,
+                    branchable,
+                    network,
+                    state,
+                    status,
+                    iron_pool,
+                    iron,
+                    iteration,
+                )
+            ],
+            dtype=cls.dtype,
+        )[0]
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([
-            True, False, True, False, True, True, True, True, True, False, False, False,
-            True, False, False, False, False, False, False, False, False, False, False
-        ])
+        return np.asarray(
+            [
+                True,
+                False,
+                True,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        )
 
 
 class AfumigatusCellTree(CellTree):
@@ -76,16 +118,10 @@ class AfumigatusCellTree(CellTree):
         return super().append(cell, parent)
 
     def is_growable(self):
-        return (
-            super().is_growable() &
-            (self.cells['status'] == Status.HYPHAE)
-        )
+        return super().is_growable() & (self.cells['status'] == Status.HYPHAE)
 
     def is_branchable(self, branch_probability):
-        return (
-            super().is_branchable(branch_probability) &
-            (self.cells['status'] == Status.HYPHAE)
-        )
+        return super().is_branchable(branch_probability) & (self.cells['status'] == Status.HYPHAE)
 
 
 @attr.s(kw_only=True)

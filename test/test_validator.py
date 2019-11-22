@@ -9,8 +9,7 @@ def test_validate_initial_state(config, state):
 
 
 def test_validation_context(config):
-    with pytest.raises(ValidationError) as excinfo, \
-            context('test context'):
+    with pytest.raises(ValidationError) as excinfo, context('test context'):
         raise ValidationError('')
 
     error = excinfo.value

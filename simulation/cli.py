@@ -15,10 +15,15 @@ def main():
 
 @main.command()
 @click.argument('target_time', type=click.FLOAT, default=20)
-@click.option('--config', type=click.Path(exists=True), default='config.ini',
-              help='Path to a simulation config', show_default=True)
+@click.option(
+    '--config',
+    type=click.Path(exists=True),
+    default='config.ini',
+    help='Path to a simulation config',
+    show_default=True,
+)
 def run(target_time, config):
-    """Run a simulation"""
+    """Run a simulation."""
     config = SimulationConfig(config)
     total = ceil(target_time / config.getfloat('simulation', 'time_step'))
 
@@ -30,11 +35,13 @@ def run(target_time, config):
         return '%.2f' % x.time
 
     state = initialize(State.create(config))
-    with click.progressbar(advance(state, target_time),
-                           label='Running simulation',
-                           length=total,
-                           item_show_func=get_time) as bar:
-        for state in bar:
+    with click.progressbar(
+        advance(state, target_time),
+        label='Running simulation',
+        length=total,
+        item_show_func=get_time,
+    ) as bar:
+        for _state in bar:
             pass
 
     state.save('simulation-final.pkl')
