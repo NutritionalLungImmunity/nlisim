@@ -18,7 +18,7 @@ class Plot2dSlice(Module):
         'mask_threshold': '0',
         'z_plane': '0.5',
         'variables': '',
-        'cmap': 'hot'
+        'cmap': 'hot',
     }
 
     @attr.s(kw_only=True)
@@ -26,10 +26,15 @@ class Plot2dSlice(Module):
         last_draw: float = attr.ib(default=0)
 
     @classmethod
-    def display(cls, state: State, z_plane: float, variable: str,
-                block: bool = False,
-                mask_threshold: float = 0,
-                cmap: str = 'hot') -> None:
+    def display(
+        cls,
+        state: State,
+        z_plane: float,
+        variable: str,
+        block: bool = False,
+        mask_threshold: float = 0,
+        cmap: str = 'hot',
+    ) -> None:
         module_name, var_name = variable.split('.')
         var = getattr(getattr(state, module_name), var_name)
         iz = floor(z_plane * (var.shape[0] - 1))
@@ -60,9 +65,9 @@ class Plot2dSlice(Module):
         now = time()
         if now - state.plot2d_slice.last_draw >= draw_interval:
             for variable in variables:
-                self.display(state, z_plane, variable,
-                             block=block, cmap=cmap,
-                             mask_threshold=mask_threshold)
+                self.display(
+                    state, z_plane, variable, block=block, cmap=cmap, mask_threshold=mask_threshold
+                )
                 state.plot2d_slice.last_draw = time()
 
         return state

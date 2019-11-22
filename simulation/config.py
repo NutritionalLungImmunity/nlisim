@@ -15,34 +15,30 @@ if TYPE_CHECKING:
 
 DEFAULTS = {
     'time_step': 0.05,
-
     'nx': 100,
     'ny': 80,
     'nz': 60,
     'dx': 1.0,
     'dy': 1.0,
     'dz': 1.0,
-
     'validate': True,
     'verbosity': logging.WARNING,
-
-    'modules': ''
+    'modules': '',
 }
 
 
 class SimulationConfig(ConfigParser):
     """
-    Internal representation of a simulation config based on the standard python
-    ConfigParser class.
+    Internal representation of a simulation config.
+
+    This is based on the standard Python ConfigParser class.
     """
 
     def __init__(self, file: Union[str, PurePath, None] = None, defaults: dict = None) -> None:
         super().__init__()
 
         # set built-in defaults
-        self.read_dict({
-            'simulation': DEFAULTS
-        })
+        self.read_dict({'simulation': DEFAULTS})
 
         if defaults is not None:
             self.read_dict(defaults)
@@ -82,7 +78,8 @@ class SimulationConfig(ConfigParser):
         return func
 
     def getlist(self, section: str, option: str) -> List[str]:
-        """Return a list of strings from a configuration value.
+        """
+        Return a list of strings from a configuration value.
 
         This method reads a string value from the configuration object and splits
         it by: new lines, spaces, and commas.  The values in the returned list are
@@ -106,7 +103,11 @@ class SimulationConfig(ConfigParser):
 
     @classmethod
     def parselist(cls, value: str) -> List[str]:
-        """Helper method for `getlist` split out for code sharing."""
+        """
+        Return a list of strings from a configuration value.
+
+        This is a helper method for `getlist`, split out for code sharing.
+        """
         values = []
         for value in re.split('[\n ,]+', value):
             stripped = value.strip()

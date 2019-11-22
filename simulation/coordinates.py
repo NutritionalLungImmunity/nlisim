@@ -3,6 +3,7 @@ import numpy as np
 
 class Point(np.ndarray):
     """An array subclass representing a point or vector in 3D space."""
+
     dtype = np.dtype((np.dtype('<f8'), (3,)))
 
     def __new__(cls, x: float = 0, y: float = 0, z: float = 0) -> 'Point':

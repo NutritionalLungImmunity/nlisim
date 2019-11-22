@@ -12,9 +12,9 @@ def base_config():
 
 @fixture
 def config():
-    yield SimulationConfig(defaults={
-        'simulation': {'modules': 'simulation.modules.advection.Advection'}
-    })
+    yield SimulationConfig(
+        defaults={'simulation': {'modules': 'simulation.modules.advection.Advection'}}
+    )
 
 
 @fixture
