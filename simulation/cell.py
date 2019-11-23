@@ -29,9 +29,13 @@ class CellArray(np.ndarray):
     # typing for dtype doesn't work correctly with this argument
     dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
 
-    def __new__(cls, arg: Union[int, Iterable[np.record]], **kwargs):
+    def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
         if isinstance(arg, int):
-            return np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
+            array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
+            if initialize:
+                for index in range(arg):
+                    array[index] = cls.create_cell(**kwargs)
+            return array
 
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
@@ -244,7 +248,7 @@ class CellTree(object):
         cells['growable'][mask] = False
         cells['branchable'][mask] = True
 
-        children = self.CellArrayClass(len(mask))
+        children = self.CellArrayClass(len(mask), initialize=True)
         children['point'] = cells['point'][mask] + cells['growth'][mask]
         children['growth'] = cells['growth'][mask]
 
@@ -256,12 +260,12 @@ class CellTree(object):
         if len(indices) == 0:
             return
 
-        children = self.CellArrayClass(len(indices))
+        children = self.CellArrayClass(len(indices), initialize=True)
         children['growth'] = np.apply_along_axis(
             cells.random_branch_direction, 1, children['growth']
         )
 
-        children['point'] = cells['point'][indices] + children['growth'][indices]
+        children['point'] = cells['point'][indices] + children['growth']
 
         # filter out children lying outside of the domain
         indices = indices[cells.point_mask(children['point'], self.grid)]

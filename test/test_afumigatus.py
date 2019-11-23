@@ -26,8 +26,8 @@ def test_split_iron_pool(cell_tree: AfumigatusCellTree):
 
 def test_elongate(cell_tree: AfumigatusCellTree):
     cell_tree.cells['iron_pool'] = 1
-    cell_tree.cells['status'] = Status.HYPHAE
-    for i in range(100):
+    for _ in range(100):
+        cell_tree.cells['status'] = Status.HYPHAE
         cell_tree.elongate()
 
     assert len(cell_tree) == 101
@@ -37,9 +37,17 @@ def test_branch(cell_tree: AfumigatusCellTree):
     cell_tree.cells['iron_pool'] = 1
     cell_tree.cells['status'] = Status.HYPHAE
     cell_tree.elongate()
-    cell_tree.branch(1)
-    cell_tree.elongate()
-    cell_tree.elongate()
+
+    cell_tree.cells['status'] = Status.HYPHAE
     cell_tree.branch(1)
 
-    assert len(cell_tree) == 9
+    cell_tree.cells['status'] = Status.HYPHAE
+    cell_tree.elongate()
+
+    cell_tree.cells['status'] = Status.HYPHAE
+    cell_tree.elongate()
+
+    cell_tree.cells['status'] = Status.HYPHAE
+    cell_tree.branch(1)
+
+    assert len(cell_tree) == 11
