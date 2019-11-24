@@ -11,7 +11,7 @@ import numpy as np
 from simulation.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
-    from simulation.cell import CellTree
+    from simulation.cell import CellList
     from simulation.config import SimulationConfig  # noqa
     from simulation.module import ModuleState  # noqa
 
@@ -251,9 +251,9 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
     )
 
 
-def cell_tree(tree_class: Type['CellTree']) -> 'CellTree':
+def cell_list(list_class: Type['CellList']) -> 'CellList':
     def factory(self: 'ModuleState'):
-        return tree_class(grid=self.global_state.grid)
+        return list_class(grid=self.global_state.grid)
 
-    metadata = {'cell_tree': True}
+    metadata = {'cell_list': True}
     return attr.ib(default=attr.Factory(factory, takes_self=True), metadata=metadata)
