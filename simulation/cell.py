@@ -106,7 +106,7 @@ class CellList(object):
         return cls(grid=grid, cell_data=cell_data)
 
     def append(self, cell: CellType) -> None:
-        if len(self) >= self.max_cells - 1:
+        if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
 
         index = self._ncells
