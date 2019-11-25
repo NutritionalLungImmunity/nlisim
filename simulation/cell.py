@@ -14,14 +14,56 @@ CellType = Any
 
 
 class CellData(np.ndarray):
-    GROWTH_SCALE_FACTOR = 0.02  # from original code
+    """A low-level data contain for an array cells.
+
+    This class is a subtype of
+    [numpy.recarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html)
+    containing the lowest level representation of a list of "cells" in a
+    simulation.  The underlying data format of this type are identical to a
+    simple array of C structures with the fields given in the static "dtype"
+    variable.
+
+    The base class contains only a single coordinate representing the location
+    of the center of the cell.  Most implementations will want to override this
+    class to append more fields.  Subclasses must also override the base
+    implementation of `create_cell` to construct a single record containing
+    the additional fields.
+
+    For example, the following derived class adds an addition floating point value
+    associated with each cell.
+
+    ```python
+    class DerivedCell(Cell):
+        DERIVED_FIELDS = [
+            ('iron_content', 'f8'),
+        ]
+
+        dtype = np.dtype(Cell.BASE_FIELDS + DERIVED_FIELDS,
+                         align=True)
+
+        @classmethod
+        def create_cell(cls, point=None, iron_content=0):
+            return np.rec.array(
+                [(point, iron_content)],
+                dtype=cls.dtype
+            )[0]
+    ```
+    """
 
     BASE_FIELDS = [
         ('point', Point.dtype),
     ]
+    """
+    This variable contains the base fields that all subclasses should include
+    in their derived data type.
+    """
 
     # typing for dtype doesn't work correctly with this argument
     dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
+    """
+    Subclasses **must** override this value to append custom fields into each
+    cell record.
+    """
 
     def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
         if isinstance(arg, (int, np.int64, np.int32)):
@@ -35,6 +77,11 @@ class CellData(np.ndarray):
 
     @classmethod
     def create_cell(cls, point: Point = None, **kwargs) -> np.record:
+        """Create a single record with type `cls.dtype`.
+
+        Subclasses appending fields must override this with custom default
+        values.
+        """
         if point is None:
             point = Point()
 
@@ -63,10 +110,35 @@ class CellData(np.ndarray):
 
 @attr.s(kw_only=True, frozen=True, repr=False)
 class CellList(object):
-    CellDataClass: Type[CellData] = CellData
+    """A python view on top of a CellData array.
 
-    max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
+    This class represents a pythonic interface to the data contained in a
+    CellData array.  Because the CellData class is a low-level object, it does
+    not allow dynamically appending new elements.  Objects of this class get
+    around this limitation by pre-allocating a large block of memory that is
+    transparently available.  User-facing properties are sliced to make it
+    appear as if the extra data is not there.
+
+    Subclassed types are expected to set the `CellDataClass` attribute to
+    a subclass of `CellData`.  This provides information about the underlying
+    low-level array.
+
+    Parameters
+    ------
+    grid : `simulation.state.RectangularGrid`
+    max_cells : int, optional
+    cells : `simulation.cell.CellData`, optional
+
+    """
+
+    CellDataClass: Type[CellData] = CellData
+    """
+    A class that overrides `CellData` that represents the format of the data
+    contained in the list.
+    """
+
     grid: RectangularGrid = attr.ib()
+    max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
     _cell_data: CellData = attr.ib()
     _ncells: int = attr.ib(init=False)
 
@@ -96,16 +168,23 @@ class CellList(object):
 
     @property
     def cell_data(self) -> CellData:
+        """Return the portion of the underlying data array containing valid data."""
         return self._cell_data[: self._ncells]
 
     @classmethod
-    def create_from_seed(cls, grid, **kwargs) -> 'CellList':
+    def create_from_seed(cls, grid: RectangularGrid, **kwargs) -> 'CellList':
+        """Create a new cell list initialized with a single cell.
+
+        The kwargs provided are passed on to the `create_cell` method of the
+        data array class.
+        """
         cell = cls.CellDataClass.create_cell(**kwargs)
         cell_data = cls.CellDataClass([cell])
 
         return cls(grid=grid, cell_data=cell_data)
 
     def append(self, cell: CellType) -> None:
+        """Append a new cell the the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
 
@@ -113,11 +192,20 @@ class CellList(object):
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[index] = cell
 
-    def extend(self, cells: CellData) -> None:
+    def extend(self, cells: Iterable[CellData]) -> None:
+        """Extend the cell list by multiple cells."""
         for cell in cells:
             self.append(cell)
 
     def save(self, group: Group, name: str, metadata: dict) -> Group:
+        """Save the cell list.
+
+        Save the list of cells as a new composite data structure inside
+        an HDF5 group.  Subclasses should not need to over-ride this method.
+        It will automatically create a new variable in the file with the
+        correct data-type.  It will also create a reference to the original
+        class so that it can be deserialized into the correct type.
+        """
         composite_group = group.create_group(name)
 
         composite_group.attrs['type'] = 'CellList'
@@ -129,6 +217,12 @@ class CellList(object):
 
     @classmethod
     def load(cls, global_state: State, group: Group, name: str, metadata: dict) -> 'CellList':
+        """Load a cell list object.
+
+        Load a `CellList` subclass from a composite group inside an HDF5 file.  As with
+        `simulation.cell.CellList.save`, subclasses should not need to override this
+        method.
+        """
         composite_dataset = group[name]
 
         attrs = composite_dataset.attrs

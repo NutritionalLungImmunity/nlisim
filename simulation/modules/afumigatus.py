@@ -15,6 +15,7 @@ from simulation.state import get_class_path, RectangularGrid, State
 
 
 class AfumigatusCellData(CellData):
+    GROWTH_SCALE_FACTOR = 0.02  # from original code
     BOOLEAN_NETWORK_LENGTH = 23
 
     class Status(IntEnum):
