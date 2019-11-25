@@ -5,7 +5,7 @@ from h5py import Group
 import numpy as np
 
 from simulation.coordinates import Point
-from simulation.state import RectangularGrid, State
+from simulation.state import get_class_path, RectangularGrid, State
 
 MAX_CELL_LIST_SIZE = 10000
 
@@ -24,7 +24,7 @@ class CellData(np.ndarray):
     dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
 
     def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
-        if isinstance(arg, int):
+        if isinstance(arg, (int, np.int64, np.int32)):
             array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
             if initialize:
                 for index in range(arg):
@@ -120,9 +120,8 @@ class CellList(object):
     def save(self, group: Group, name: str, metadata: dict) -> Group:
         composite_group = group.create_group(name)
 
-        class_ = self.__class__
         composite_group.attrs['type'] = 'CellList'
-        composite_group.attrs['class'] = f'{class_.__module__}:{class_.__name__}'
+        composite_group.attrs['class'] = get_class_path(self)
         composite_group.attrs['max_cells'] = self.max_cells
 
         composite_group.create_dataset(name='cell_data', data=self.cell_data)

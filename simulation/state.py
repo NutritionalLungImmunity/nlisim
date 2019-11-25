@@ -257,3 +257,8 @@ def cell_list(list_class: Type['CellList']) -> 'CellList':
 
     metadata = {'cell_list': True}
     return attr.ib(default=attr.Factory(factory, takes_self=True), metadata=metadata)
+
+
+def get_class_path(instance: Any) -> str:
+    class_ = instance.__class__
+    return f'{class_.__module__}:{class_.__name__}'

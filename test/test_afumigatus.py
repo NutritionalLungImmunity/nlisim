@@ -1,10 +1,12 @@
-from typing import Set
+from typing import cast, Set
 
+from h5py import Group
 from pytest import fixture
 
+from simulation.config import SimulationConfig
 from simulation.coordinates import Point
-from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellTree
-from simulation.state import RectangularGrid
+from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellTree, AfumigatusState
+from simulation.state import RectangularGrid, State
 
 Status = AfumigatusCellData.Status
 
@@ -80,7 +82,6 @@ def test_branch(cell_tree: AfumigatusCellTree):
 
     cell_tree.cell_data['status'] = Status.HYPHAE
     cell_tree.elongate()
-
     cell_tree.cell_data['status'] = Status.HYPHAE
     cell_tree.elongate()
 
@@ -140,3 +141,33 @@ def test_mutate_cell(populated_tree: AfumigatusCellTree):
     cell['growable'] = growable
 
     assert populated_tree.cell_data['growable'][4] == growable
+
+
+def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
+    config = SimulationConfig(
+        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
+    )
+    state = State.create(config)
+
+    state.afumigatus.tree.append(cell_tree.cell_data[0])
+    state.afumigatus.save_state(hdf5_group)
+
+    assert 'tree' in hdf5_group
+    assert hdf5_group['tree']['row'][:] == [0]
+    assert hdf5_group['tree']['col'][:] == [0]
+    assert hdf5_group['tree']['value'][:] == [1]
+    assert hdf5_group['tree']['cells']['cell_data'].shape == (1,)
+    assert hdf5_group['tree']['cells']['cell_data'].dtype == cell_tree.cell_data.dtype
+
+
+def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
+    config = SimulationConfig(
+        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
+    )
+    state = State.create(config)
+
+    state.afumigatus.tree.append(cell_tree.cell_data[0])
+    state.afumigatus.save_state(hdf5_group)
+
+    copy = cast(AfumigatusState, AfumigatusState.load_state(state, hdf5_group))
+    assert state.afumigatus.tree.cell_data == copy.tree.cell_data

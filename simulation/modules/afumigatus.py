@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 from simulation.cell import CellData, CellList, CellType
 from simulation.coordinates import Point
 from simulation.module import Module, ModuleState
-from simulation.state import RectangularGrid, State
+from simulation.state import get_class_path, RectangularGrid, State
 
 
 class AfumigatusCellData(CellData):
@@ -329,7 +329,9 @@ class AfumigatusCellTree(object):
 
     def save(self, group: Group, name: str, metadata: dict) -> Group:
         composite_group = group.create_group(name)
-        composite_group['cells'] = self.cells.save(composite_group, 'cells', metadata)
+        composite_group.attrs['class'] = get_class_path(self)
+        composite_group.attrs['type'] = 'CellTree'
+        self.cells.save(composite_group, 'cells', metadata)
 
         sp = self.adjacency.tocoo()
         composite_group.create_dataset(name='row', data=sp.row)
@@ -342,7 +344,7 @@ class AfumigatusCellTree(object):
         cls, global_state: State, group: Group, name: str, metadata: dict
     ) -> 'AfumigatusCellTree':
         composite_dataset = group[name]
-        cells = AfumigatusCellList.load(global_state, composite_dataset, name, metadata)
+        cells = AfumigatusCellList.load(global_state, composite_dataset, 'cells', metadata)
 
         adjacency = coo_matrix(
             (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col'])),
