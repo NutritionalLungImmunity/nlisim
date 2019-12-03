@@ -95,9 +95,12 @@ class MacrophageCellData(CellData):
 class MacrophageCellList(CellList):
     CellDataClass = MacrophageCellData
 
+def cell_list_factory(self: 'MacrophageState'):
+    return MacrophageCellList(grid=self.global_state.grid)
+
 @attr.s(kw_only=True)
 class MacrophageState(ModuleState):
-    cells: MacrophageCellList = attr.ib()
+    cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     init_num: int
 
 class Macrophage(Module):
@@ -116,7 +119,7 @@ class Macrophage(Module):
         # macrophage.recruit_rate = self.config.getfloat('rec_rate')
         macrophage.init_num = self.config.getint('init_num')
 
-        indices = np.argwhere(tissue == TissueTypes.SURFACTANT)
+        indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
         np.random.shuffle(indices)
 
         for i in range(0, macrophage.init_num):
