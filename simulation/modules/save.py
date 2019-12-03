@@ -8,10 +8,7 @@ from simulation.state import State
 
 class FileOutput(Module):
     name = 'file_output'
-    defaults = {
-        'save_interval': '1',
-        'save_file_name': 'output/simulation-<time>.hdf5'
-    }
+    defaults = {'save_interval': '1', 'save_file_name': 'output/simulation-<time>.hdf5'}
 
     @attr.s(kw_only=True)
     class StateClass(ModuleState):

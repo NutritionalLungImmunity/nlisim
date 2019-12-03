@@ -1,3 +1,6 @@
+from io import BytesIO
+
+from h5py import File
 from pytest import fixture
 
 from simulation.config import SimulationConfig
@@ -12,9 +15,9 @@ def base_config():
 
 @fixture
 def config():
-    yield SimulationConfig(defaults={
-        'simulation': {'modules': 'simulation.modules.advection.Advection'}
-    })
+    yield SimulationConfig(
+        defaults={'simulation': {'modules': 'simulation.modules.advection.Advection'}}
+    )
 
 
 @fixture
@@ -31,3 +34,13 @@ def grid():
 @fixture
 def point():
     yield Point(50, 50, 50)
+
+
+@fixture
+def hdf5_file():
+    yield File(BytesIO(), 'w')
+
+
+@fixture
+def hdf5_group(hdf5_file):
+    yield hdf5_file.create_group('test-group')

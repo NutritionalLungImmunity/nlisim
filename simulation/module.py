@@ -1,12 +1,10 @@
 from importlib import import_module
-from typing import Any, cast, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import attr
 from h5py import Dataset, Group
 import numpy as np
-from scipy.sparse import coo_matrix
 
-from simulation.cell import CellTree, MAX_CELL_TREE_SIZE
 from simulation.config import SimulationConfig
 from simulation.state import State
 
@@ -22,6 +20,7 @@ class ModuleState(object):
     bool) and numpy arrays of those types.  Modules containing more complicated
     state must override the serialization mechanism with custom behavior.
     """
+
     global_state: 'State'
 
     def save_state(self, group: Group) -> None:
@@ -41,40 +40,56 @@ class ModuleState(object):
             name = field.name
             if name == 'global_state':
                 continue
-            metadata = field.metadata
-            if metadata.get('cell_tree'):
-                kwargs[name] = cls.load_cell_tree(global_state, group, name, metadata)
+            metadata = field.metadata or {}
+
+            group_object = group.get(name, None)
+            if group_object is None:
+                raise ValueError(f'Could not read {name} from file.')
+
+            if isinstance(group_object, Group):
+                # TODO: break this out into helper methods so subclasses can customize
+                class_name = group_object.attrs.get('class')
+                if class_name is None:
+                    raise ValueError(f'Field {name} contained an invalid composite type.')
+
+                module_name, class_name = class_name.split(':')
+                try:
+                    module = import_module(module_name)
+                except ImportError:
+                    raise TypeError(f'File references unknown module {module_name} in {name}')
+
+                class_ = getattr(module, class_name, None)
+                if class_ is None:
+                    raise TypeError(f'File references invalid class for {name}')
+
+                kwargs[name] = class_.load(global_state, group, name, metadata)
+
             else:
                 kwargs[name] = cls.load_attribute(global_state, group, name, metadata)
         return cls(**kwargs)
 
     @classmethod
-    def save_attribute(cls, group: Group,
-                       name: str, value: AttrValue,
-                       metadata: dict = None) -> Union[Dataset, Group]:
+    def save_attribute(
+        cls, group: Group, name: str, value: AttrValue, metadata: dict
+    ) -> Union[Dataset, Group]:
         """Save an attribute into an HDF5 group."""
-
         metadata = metadata or {}
         if isinstance(value, (float, int, str, bool, np.ndarray)):
             return cls.save_simple_type(group, name, value, metadata)
-        elif isinstance(value, CellTree):
-            return cls.save_cell_tree(group, name, value, metadata)
+        elif hasattr(value, 'save'):
+            return value.save(group, name, metadata)
         else:
             # modules must define serializers for unsupported types
-            raise TypeError(
-                f'Attribute {name} in {group.name} contains an unsupported datatype.'
-            )
+            raise TypeError(f'Attribute {name} in {group.name} contains an unsupported datatype.')
 
     @classmethod
-    def save_simple_type(cls, group: Group,
-                         name: str, value: AttrValue,
-                         metadata: dict) -> Dataset:
+    def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -> Dataset:
         kwargs: Dict[str, Any] = {}
         if metadata.get('grid'):
             kwargs = dict(
-               compression='gzip',  # transparent compression
-               shuffle=True,        # improve compressiblity
-               fletcher32=True      # checksum
+                compression='gzip',  # transparent compression
+                shuffle=True,  # improve compressiblity
+                fletcher32=True,  # checksum
             )
 
         var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
@@ -91,27 +106,9 @@ class ModuleState(object):
         return var
 
     @classmethod
-    def save_cell_tree(cls, group: Group,
-                       name: str, value: CellTree,
-                       metadata: dict) -> Group:
-        composite_group = group.create_group(name)
-
-        class_ = value.__class__
-        composite_group.attrs['type'] = 'CellTree'
-        composite_group.attrs['class'] = f'{class_.__module__}:{class_.__name__}'
-        composite_group.attrs['max_size'] = value.max_cells
-
-        composite_group.create_dataset(name='cells', data=value.cells)
-
-        sp = value.adjacency.tocoo()
-        composite_group.create_dataset(name='row', data=sp.row)
-        composite_group.create_dataset(name='col', data=sp.col)
-        composite_group.create_dataset(name='value', data=sp.data)
-        return composite_group
-
-    @classmethod
-    def load_attribute(cls, global_state: State, group: Group, name: str,
-                       metadata: Optional[dict] = None) -> AttrValue:
+    def load_attribute(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -> AttrValue:
         """Load a raw value from an HDF5 file group."""
         dataset = group[name]
         if dataset.attrs.get('scalar', False):
@@ -119,37 +116,6 @@ class ModuleState(object):
         else:
             value = dataset[:]
         return value
-
-    @classmethod
-    def load_cell_tree(cls, global_state: State, group: Group, name: str,
-                       metadata: Optional[dict] = None) -> CellTree:
-        composite_dataset = group[name]
-
-        attrs = composite_dataset.attrs
-        if attrs.get('type') != 'CellTree' or attrs.get('class') is None:
-            raise TypeError(f'File contains invalid type for {name}')
-
-        module_name, class_name = attrs['class'].split(':')
-        try:
-            module = import_module(module_name)
-        except ImportError:
-            raise TypeError(f'File references unknown module {module_name} in {name}')
-
-        class_ = getattr(module, class_name, None)
-        if class_ is None:
-            raise TypeError(f'File references invalid class for {name}')
-
-        class_ = cast(Type[CellTree], class_)
-        max_size = attrs.get('max_size', MAX_CELL_TREE_SIZE)
-
-        adjacency = coo_matrix((
-            composite_dataset['value'],
-            (composite_dataset['row'], composite_dataset['col'])),
-            shape=(max_size, max_size)
-        ).todok()
-        cells = composite_dataset['cells'][:].view(class_.CellArrayClass)
-
-        return class_(grid=global_state.grid, cells=cells, adjacency=adjacency)
 
 
 class Module(object):

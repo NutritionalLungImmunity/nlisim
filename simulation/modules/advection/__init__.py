@@ -1,4 +1,6 @@
 """
+Advection Module.
+
 Solves the 2D advection-diffusion equation:
 
     ∂T
@@ -65,7 +67,7 @@ class Advection(Module):
         'px': '0.5',
         'py': '0.5',
         'pz': '0.5',
-        'value': '1.0'
+        'value': '1.0',
     }
     StateClass = AdvectionState
 

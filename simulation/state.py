@@ -11,17 +11,21 @@ import numpy as np
 from simulation.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
-    from simulation.cell import CellTree
+    from simulation.cell import CellList
     from simulation.config import SimulationConfig  # noqa
     from simulation.module import ModuleState  # noqa
 
 ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]
 
+_dtype_float = np.dtype('float')
+_dtype_float64 = np.dtype('float64')
+
 
 @attr.s(auto_attribs=True, repr=False)
 class RectangularGrid(object):
     """A class representation of a rectangular grid."""
+
     # cell centered coordinates (1-d arrays)
     x: np.ndarray
     y: np.ndarray
@@ -85,7 +89,7 @@ class RectangularGrid(object):
     def __len__(self):
         return reduce(lambda x, y: x * y, self.shape, 1)
 
-    def allocate_variable(self, dtype: np.dtype = np.dtype('float64')) -> np.ndarray:
+    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined over this grid."""
         return np.zeros(self.shape, dtype=dtype)
 
@@ -111,6 +115,7 @@ class RectangularGrid(object):
 @attr.s(auto_attribs=True, repr=False)
 class State(object):
     """A container for storing the simulation state at a single time step."""
+
     time: float
     grid: RectangularGrid
 
@@ -144,9 +149,7 @@ class State(object):
             for module in config.modules:
                 group = hf.get(module.name)
                 if group is None:
-                    raise ValueError(
-                        f'File contains no group for {module.name}'
-                    )
+                    raise ValueError(f'File contains no group for {module.name}')
                 try:
                     module_state = module.StateClass.load_state(state, group)
                 except Exception:
@@ -185,12 +188,12 @@ class State(object):
         shape = (
             config.getint('simulation', 'nz'),
             config.getint('simulation', 'ny'),
-            config.getint('simulation', 'nx')
+            config.getint('simulation', 'nx'),
         )
         spacing = (
             config.getfloat('simulation', 'dz'),
             config.getfloat('simulation', 'dy'),
-            config.getfloat('simulation', 'dx')
+            config.getfloat('simulation', 'dx'),
         )
         grid = RectangularGrid.construct_uniform(shape, spacing)
         state = State(time=0.0, grid=grid, config=config)
@@ -220,7 +223,7 @@ class State(object):
         return sorted(super().__dir__() + list(self._extra.keys()))
 
 
-def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
+def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
     """Return an "attr.ib" object defining a gridded state variable.
 
     A "gridded" variable is one that is discretized on the primary grid.  The
@@ -240,18 +243,22 @@ def grid_variable(dtype: np.dtype = np.dtype('float')) -> np.ndarray:
         if not np.isfinite(value).all():
             raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
 
-    metadata = {
-        'grid': True
-    }
-    return attr.ib(default=attr.Factory(factory, takes_self=True),
-                   validator=validate_numeric, metadata=metadata)
+    metadata = {'grid': True}
+    return attr.ib(
+        default=attr.Factory(factory, takes_self=True),
+        validator=validate_numeric,
+        metadata=metadata,
+    )
 
 
-def cell_tree(tree_class: Type['CellTree']) -> 'CellTree':
+def cell_list(list_class: Type['CellList']) -> 'CellList':
     def factory(self: 'ModuleState'):
-        return tree_class(grid=self.global_state.grid)
+        return list_class(grid=self.global_state.grid)
 
-    metadata = {
-        'cell_tree': True
-    }
+    metadata = {'cell_list': True}
     return attr.ib(default=attr.Factory(factory, takes_self=True), metadata=metadata)
+
+
+def get_class_path(instance: Any) -> str:
+    class_ = instance.__class__
+    return f'{class_.__module__}:{class_.__name__}'

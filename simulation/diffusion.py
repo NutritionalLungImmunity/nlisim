@@ -32,8 +32,7 @@ def discrete_laplacian(grid: RectangularGrid, dtype: np.dtype, dt: float) -> Lin
     return LinearOperator(matvec=matvec, dtype=dtype, shape=(n, n))
 
 
-def diffusion_step(grid: RectangularGrid, var: np.ndarray,
-                   diffusivity: float, dt: float) -> None:
+def diffusion_step(grid: RectangularGrid, var: np.ndarray, diffusivity: float, dt: float) -> None:
     """Apply diffusion to a variable.
 
     Solves laplaces equation in 3D using implicit time steps.  The variable is

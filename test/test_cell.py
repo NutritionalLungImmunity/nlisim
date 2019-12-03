@@ -1,105 +1,58 @@
-from typing import Set
+from h5py import Group
+from pytest import fixture, raises
 
-from pytest import fixture
-
-from simulation.cell import CellArray, CellTree
+from simulation.cell import CellData, CellList
 from simulation.coordinates import Point
 from simulation.state import RectangularGrid
 
 
 @fixture
-def cells(grid: RectangularGrid, point: Point):
+def cell(grid: RectangularGrid, point: Point):
     # a single cell in the middle of the domain
-    cell = CellArray.create_cell(point=point)
-    cells = CellArray([cell])
+    cell = CellData.create_cell(point=point)
+    cells = CellData([cell])
     yield cells
 
 
 @fixture
-def cell_tree(grid: RectangularGrid, point: Point):
-    tree = CellTree.create_from_seed(grid=grid, point=point)
-    yield tree
+def cell_list(grid: RectangularGrid, point: Point):
+    cells = CellList.create_from_seed(grid=grid, point=point)
+    yield cells
 
 
-@fixture
-def populated_tree(cell_tree: CellTree, point: Point):
-    """Return a non-trivial cell tree."""
-    # TODO: use valid locations
-    cell_tree[0]['growable'] = False
-    cell_tree[0]['branchable'] = False
-    for _ in range(5):
-        cell = CellArray.create_cell(point=point)
-        cell['growable'] = True
-        cell['branchable'] = True
-        cell_tree.append(cell, parent=0)
-
-    for i in [2, 3]:
-        cell_tree[i]['growable'] = False
-        cell_tree[i]['branchable'] = False
-        for _ in range(2 * i):
-            cell = CellArray.create_cell(point=point)
-            cell['growable'] = True
-            cell['branchable'] = True
-            cell_tree.append(cell, parent=i)
-
-    for i in [4, 10]:
-        cell_tree[i]['growable'] = False
-        cell_tree[i]['branchable'] = False
-
-        cell = CellArray.create_cell(point=point)
-        cell['growable'] = True
-        cell['branchable'] = True
-        cell_tree.append(cell, parent=i)
-
-    yield cell_tree
+def test_append_cell_list(cell, cell_list):
+    original_length = len(cell_list)
+    cell_list.append(cell)
+    assert len(cell_list) == original_length + 1
+    assert cell == cell_list[-1]
 
 
-def test_initial_attributes(cells: CellArray):
-    cell = cells[0]
-    assert cell['growable']
-    assert not cell['branchable']
+def test_extend_cell_list(cell, cell_list):
+    original_length = len(cell_list)
+    cell_list.extend([cell, cell])
+    assert len(cell_list) == original_length + 2
+    assert cell == cell_list[-1]
+    assert cell == cell_list[-2]
 
 
-def test_branched_attributes(cell_tree: CellTree):
-    cell_tree.cells['branchable'] = True
-    cell_tree.branch(1)
-
-    assert len(cell_tree) == 2
-
-    assert not cell_tree[0]['branchable']
-
-    assert cell_tree[1]['growable']
-    assert not cell_tree[1]['branchable']
+def test_serialize(cell_list: CellList, hdf5_group: Group):
+    cell_list_group = cell_list.save(hdf5_group, 'test', {})
+    assert cell_list_group['cell_data'].shape == (len(cell_list),)
+    assert cell_list_group['cell_data'].dtype == cell_list.cell_data.dtype
 
 
-def test_elongated_attributes(cell_tree: CellArray):
-    cell_tree.elongate()
-
-    assert len(cell_tree) == 2
-
-    assert not cell_tree[0]['growable']
-    assert cell_tree[0]['branchable']
-
-    assert cell_tree[1]['growable']
-    assert not cell_tree[1]['branchable']
+def test_get_cell(cell_list: CellList):
+    assert cell_list[0] == cell_list.cell_data[0]
 
 
-def test_traverse_tree(populated_tree: CellTree):
-    visited: Set[int] = set()
-
-    def visit(root):
-        assert root.index not in visited
-        visited.add(root.index)
-        for child in root.children:
-            visit(child)
-
-    visit(populated_tree.root)
-    assert visited == set(range(len(populated_tree)))
+def test_getitem_error(cell_list: CellList):
+    with raises(TypeError):
+        _ = cell_list['a']  # type: ignore
 
 
-def test_mutate_cell(populated_tree: CellTree):
-    cell = populated_tree[4]
-    growable = not cell['growable']
-    cell['growable'] = growable
+def test_out_of_memory_error(grid: RectangularGrid, cell: CellData):
+    cell_list = CellList(grid=grid, max_cells=1)
+    cell_list.append(cell)
 
-    assert populated_tree.cells['growable'][4] == growable
+    with raises(Exception):
+        cell_list.append(cell)

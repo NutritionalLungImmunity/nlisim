@@ -21,8 +21,9 @@ class TissueTypes(Enum):
 
     @classmethod
     def validate(cls, value: np.ndarray):
-        return np.logical_and(value >= 0, value <= 5).all()\
-                and np.issubclass_(value.dtype.type, np.integer)
+        return np.logical_and(value >= 0, value <= 5).all() and np.issubclass_(
+            value.dtype.type, np.integer
+        )
 
 
 @attr.s(kw_only=True, repr=False)
@@ -40,10 +41,7 @@ class GeometryState(ModuleState):
 
 class Geometry(Module):
     name = 'geometry'
-    defaults = {
-        'geometry_path': 'geometry.hdf5',
-        'preview_geometry': 'False'
-    }
+    defaults = {'geometry_path': 'geometry.hdf5', 'preview_geometry': 'False'}
     StateClass = GeometryState
 
     def initialize(self, state: State):
@@ -87,7 +85,7 @@ class Geometry(Module):
         data_importer.SetNumberOfScalarComponents(1)
 
         data_importer.SetDataExtent(0, xbin - 1, 0, ybin - 1, 0, zbin - 1)
-        data_importer.SetWholeExtent(0, xbin - 1, 0,  ybin - 1, 0, zbin - 1)
+        data_importer.SetWholeExtent(0, xbin - 1, 0, ybin - 1, 0, zbin - 1)
 
         # Create transfer mapping scalar value to opacity
         opacity_transfer_function = vtk.vtkPiecewiseFunction()

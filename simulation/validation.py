@@ -10,16 +10,19 @@ ValidatorMethod = Callable[['State'], None]
 
 class ValidationError(Exception):
     """
-    This is an error type raised when a simulation validation condition is
-    violated.  It also provides the ability to report the context of a validation
+    An error type raised when a simulation validation condition is violated.
+
+    This also provides the ability to report the context of a validation
     error... that is, to report the specific step causing the validation error.
     """
+
     def __init__(self, msg: str):
         super().__init__(msg)
         self._ctx: List['str'] = []
 
     def push_context(self, ctx: str) -> None:
-        """Push a new execution context onto the exception.
+        """
+        Push a new execution context onto the exception.
 
         The context is an arbitrary string meant to provide users a hint as to
         the cause of an error even when plugins are allowed to make arbitrary
