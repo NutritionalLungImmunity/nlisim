@@ -119,20 +119,21 @@ class Macrophage(Module):
         # macrophage.recruit_rate = self.config.getfloat('rec_rate')
         macrophage.init_num = self.config.getint('init_num')
 
-        indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-        np.random.shuffle(indices)
+        if(macrophage.init_num > 0):
+            indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
+            np.random.shuffle(indices)
 
-        for i in range(0, macrophage.init_num):
-            x = indices[i][2] + (random.uniform(-0.5, 0.5))
-            y = indices[i][1] + (random.uniform(-0.5, 0.5))
-            z = indices[i][0] + (random.uniform(-0.5, 0.5))
-            point = Point(x=x, y=y, z=z)
+            for i in range(0, macrophage.init_num):
+                x = indices[i][2] + (random.uniform(-0.5, 0.5))
+                y = indices[i][1] + (random.uniform(-0.5, 0.5))
+                z = indices[i][0] + (random.uniform(-0.5, 0.5))
+                point = Point(x=x, y=y, z=z)
 
-            if(i == 0):
-                # create one cell
-                macrophage.cells = MacrophageCellList.create_from_seed(grid=grid, point=point, status=MacrophageCellData.Status.RESTING)
-            else:
-                macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=MacrophageCellData.Status.RESTING))
+                if(i == 0):
+                    # create one cell
+                    macrophage.cells = MacrophageCellList.create_from_seed(grid=grid, point=point, status=MacrophageCellData.Status.RESTING)
+                else:
+                    macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=MacrophageCellData.Status.RESTING))
 
         return state
 
