@@ -116,7 +116,6 @@ class Macrophage(Module):
         grid: RectangularGrid = state.grid
         tissue: GeometryState = state.geometry.lung_tissue
 
-        # macrophage.recruit_rate = self.config.getfloat('rec_rate')
         macrophage.init_num = self.config.getint('init_num')
 
         if(macrophage.init_num > 0):
