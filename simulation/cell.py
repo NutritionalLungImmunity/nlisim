@@ -34,16 +34,15 @@ class CellData(np.ndarray):
 
     ```python
     class DerivedCell(CellData):
-        FIELDS = [
+        FIELDS = CellData.FIELDS + [
             ('iron_content', 'f8')
-        ] + CellData.FIELDS
+        ]
 
         dtype = np.dtype(CellData.FIELDS, align=True)
 
         @classmethod
-        def create_cell_tuple(cls, iron=0, **kwargs):
-            values = CellData.create_cell_tuple(**kwargs)
-            return np.rec.array([values], dtype=cls.dtype)[0]
+        def create_cell_tuple(cls, iron_content=0, **kwargs):
+            return CellData.create_cell_tuple(**kwargs) + (iron_content,)
     ```
     """
 
