@@ -1,10 +1,11 @@
-from typing import Any, Iterable, List, Type, Union
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Set, Type, Union
 
 import attr
 from h5py import Group
 import numpy as np
 
-from simulation.coordinates import Point
+from simulation.coordinates import Point, Voxel
 from simulation.state import get_class_path, RectangularGrid, State
 
 MAX_CELL_LIST_SIZE = 10000
@@ -150,6 +151,8 @@ class CellList(object):
     max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
     _cell_data: CellData = attr.ib()
     _ncells: int = attr.ib(init=False)
+    _voxel_index: Dict[Voxel, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
+    _reverse_voxel_index: List[Voxel] = attr.ib(init=False, factory=list)
 
     @_cell_data.default
     def __set_default_cells(self) -> CellData:
@@ -163,6 +166,8 @@ class CellList(object):
 
         if len(cells) > 0:
             self._cell_data[: len(cells)] = cells
+
+        self._compute_voxel_index()
 
     def __len__(self) -> int:
         return self._ncells
@@ -229,6 +234,8 @@ class CellList(object):
 
         sample_indices = np.asarray(sample)
         if sample_indices.dtype == 'b1':
+            if sample_indices.shape != self.cell_data.shape:
+                raise ValueError('Expected boolean mask the same size as the cell list')
             sample_indices = sample_indices.nonzero()[0]
 
         mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
@@ -242,6 +249,9 @@ class CellList(object):
         index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[index] = cell
+        voxel = self.grid.get_voxel(cell['point'])
+        self._voxel_index[voxel].add(index)
+        self._reverse_voxel_index.append(voxel)
 
     def extend(self, cells: Iterable[CellData]) -> None:
         """Extend the cell list by multiple cells."""
@@ -281,3 +291,47 @@ class CellList(object):
         cell_data = composite_dataset['cell_data'][:].view(cls.CellDataClass)
 
         return cls(max_cells=max_cells, grid=global_state.grid, cell_data=cell_data)
+
+    def get_cells_in_voxel(self, voxel: Voxel) -> np.ndarray:
+        """Return a list of cell indices contained in a given voxel."""
+        return np.asarray(sorted((self._voxel_index[voxel])))
+
+    def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
+        """Return a list of cells indices in the same voxel."""
+        return self.get_cells_in_voxel(self.grid.get_voxel(cell['point']))
+
+    def update_voxel_index(self, indices: Iterable = None):
+        """Update the embedded voxel index.
+
+        This method will update the voxel indices for a given list of cells,
+        or if no parameter is provided, for all of the cells.  Currently,
+        calling this method is only required if the `point` field of a cell
+        is changed... i.e. if the cell is moved to a potentially different
+        voxel.
+        """
+        if indices is None:
+            self._voxel_index.clear()
+            self._reverse_voxel_index.clear()
+            self._compute_voxel_index()
+            return
+
+        for index in indices:
+            cell = self[index]
+            old_voxel = self._reverse_voxel_index[index]
+            new_voxel = self.grid.get_voxel(cell['point'])
+            if old_voxel != new_voxel:
+                self._voxel_index[old_voxel].remove(index)
+                self._voxel_index[new_voxel].add(index)
+                self._reverse_voxel_index[index] = new_voxel
+
+    def _compute_voxel_index(self):
+        """Generate a dictionary mapping voxel index to cell index.
+
+        This index exists to maintain efficient (sub-linear) access to cells contained
+        in a single voxel.  This method is called automatically on initialization.
+        """
+        for cell_index in range(len(self)):
+            cell = self[cell_index]
+            voxel = self.grid.get_voxel(cell['point'])
+            self._voxel_index[voxel].add(cell_index)
+            self._reverse_voxel_index.append(voxel)
