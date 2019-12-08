@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Type, Union
+from typing import Any, Iterable, List, Type, Union
 
 import attr
 from h5py import Group
@@ -33,25 +33,23 @@ class CellData(np.ndarray):
     associated with each cell.
 
     ```python
-    class DerivedCell(Cell):
-        DERIVED_FIELDS = [
-            ('iron_content', 'f8'),
-        ]
+    class DerivedCell(CellData):
+        FIELDS = [
+            ('iron_content', 'f8')
+        ] + CellData.FIELDS
 
-        dtype = np.dtype(Cell.BASE_FIELDS + DERIVED_FIELDS,
-                         align=True)
+        dtype = np.dtype(CellData.FIELDS, align=True)
 
         @classmethod
-        def create_cell(cls, point=None, iron_content=0):
-            return np.rec.array(
-                [(point, iron_content)],
-                dtype=cls.dtype
-            )[0]
+        def create_cell_tuple(cls, iron=0, **kwargs):
+            values = CellData.create_cell_tuple(**kwargs)
+            return np.rec.array([values], dtype=cls.dtype)[0]
     ```
     """
 
-    BASE_FIELDS = [
+    FIELDS: List[Any] = [
         ('point', Point.dtype),
+        ('dead', 'b1'),
     ]
     """
     This variable contains the base fields that all subclasses should include
@@ -59,7 +57,7 @@ class CellData(np.ndarray):
     """
 
     # typing for dtype doesn't work correctly with this argument
-    dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
     """
     Subclasses **must** override this value to append custom fields into each
     cell record.
@@ -76,16 +74,28 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell(cls, point: Point = None, **kwargs) -> np.record:
+    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
+        """Create a tuple of fields attached to a single cell.
+
+        The base class version of this method returns the fields associated with
+        just the bare cell.  Subclasses that append additional attributes onto
+        the cell must override this method to append their own fields to this
+        tuple.  Care must be taken to ensure that the order of the tuple is
+        identical to the order of the fields listed in `cls.dtype`.
+        """
+        if point is None:
+            point = Point()
+
+        return (point, dead)
+
+    @classmethod
+    def create_cell(cls, **kwargs) -> np.record:
         """Create a single record with type `cls.dtype`.
 
         Subclasses appending fields must override this with custom default
         values.
         """
-        if point is None:
-            point = Point()
-
-        return np.rec.array([(point,)], dtype=cls.dtype)[0]
+        return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
 
     @classmethod
     def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
@@ -182,6 +192,48 @@ class CellList(object):
         cell_data = cls.CellDataClass([cell])
 
         return cls(grid=grid, cell_data=cell_data)
+
+    def alive(self, sample: Iterable = None) -> np.ndarray:
+        """Get a list of indices containing cells that are alive.
+
+        This method will filter out cells that are dead according to the
+        value of the `dead` field.  Optionally, you can also pass in a boolean
+        mask or index array.  This method will then filter the given list of
+        cells rather than the full list.
+
+        For example, to iterate over all living cells:
+        ```python
+        for index in cells.alive():
+            cell = cells[index]
+            # do something...
+        ```
+
+        To iterate over a sub-sample of living cells:
+        ```python
+        sample = [1, 10, 15]
+        for index in cells.alive(sample):
+            cell = cells[index]
+            # do something...
+        ```
+
+        To iterate over a boolean mask of living cells:
+        ```python
+        sample = cells.cell_data['iron'] > 0.5
+        for index in cells.alive(sample):
+            cell = cells[index]
+            # do something...
+        ```
+        """
+        cell_data = self.cell_data
+        if sample is None:
+            return (cell_data['dead'] == False).nonzero()[0]  # noqa: E712
+
+        sample_indices = np.asarray(sample)
+        if sample_indices.dtype == 'b1':
+            sample_indices = sample_indices.nonzero()[0]
+
+        mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
+        return sample_indices[mask]
 
     def append(self, cell: CellType) -> None:
         """Append a new cell the the list."""

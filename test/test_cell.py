@@ -1,4 +1,6 @@
 from h5py import Group
+import numpy as np
+from numpy.testing import assert_array_equal
 from pytest import fixture, raises
 
 from simulation.cell import CellData, CellList
@@ -56,3 +58,14 @@ def test_out_of_memory_error(grid: RectangularGrid, cell: CellData):
 
     with raises(Exception):
         cell_list.append(cell)
+
+
+def test_filter_out_dead(grid: RectangularGrid):
+    cells = CellList(grid=grid)
+    cells.extend([CellData.create_cell(dead=bool(i % 2)) for i in range(10)])
+
+    assert_array_equal(cells.alive(), [0, 2, 4, 6, 8])
+    assert_array_equal(cells.alive([1, 2, 3, 6]), [2, 6])
+
+    mask = np.arange(10) < 5
+    assert_array_equal(cells.alive(mask), [0, 2, 4])

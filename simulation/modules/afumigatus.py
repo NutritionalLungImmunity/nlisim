@@ -43,20 +43,18 @@ class AfumigatusCellData(CellData):
         ('iteration', 'i4'),
     ]
 
-    dtype = np.dtype(CellData.BASE_FIELDS + AFUMIGATUS_FIELDS, align=True)  # type: ignore
+    FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell(
+    def create_cell_tuple(
         cls,
-        point: Point = None,
+        *,
         iron_pool: float = 0,
         status: Status = Status.RESTING_CONIDIA,
         state: State = State.FREE,
         **kwargs,
     ) -> np.record:
-
-        if point is None:
-            point = Point()
 
         growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
         network = cls.initial_boolean_network()
@@ -66,24 +64,18 @@ class AfumigatusCellData(CellData):
         iteration = 0
         iron = False
 
-        return np.rec.array(
-            [
-                (
-                    point,
-                    network,
-                    growth,
-                    growable,
-                    switched,
-                    branchable,
-                    state,
-                    status,
-                    iron_pool,
-                    iron,
-                    iteration,
-                )
-            ],
-            dtype=cls.dtype,
-        )[0]
+        return CellData.create_cell_tuple(**kwargs) + (
+            network,
+            growth,
+            growable,
+            switched,
+            branchable,
+            state,
+            status,
+            iron_pool,
+            iron,
+            iteration,
+        )
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
@@ -274,7 +266,7 @@ class AfumigatusCellTree(object):
 
     def is_growable(self) -> np.ndarray:
         cells = self.cells.cell_data
-        return (
+        return self.cells.alive(
             cells['growable']
             & cells.point_mask(cells['point'] + cells['growth'], self.grid)
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
@@ -282,7 +274,7 @@ class AfumigatusCellTree(object):
 
     def is_branchable(self, branch_probability: float) -> np.ndarray:
         cells = self.cells.cell_data
-        return (
+        return self.cells.alive(
             cells['branchable']
             & (np.random.rand(*cells.shape) < branch_probability)
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
@@ -290,7 +282,7 @@ class AfumigatusCellTree(object):
 
     def elongate(self):
         cells = self.cell_data
-        mask = self.is_growable().nonzero()[0]
+        mask = self.is_growable()
         if len(mask) == 0:
             return
 
@@ -305,7 +297,7 @@ class AfumigatusCellTree(object):
 
     def branch(self, branch_probability: float):
         cells = self.cell_data
-        indices = self.is_branchable(branch_probability).nonzero()[0]
+        indices = self.is_branchable(branch_probability)
         if len(indices) == 0:
             return
 
@@ -348,7 +340,7 @@ class AfumigatusCellTree(object):
         cells = AfumigatusCellList.load(global_state, composite_dataset, 'cells', metadata)
 
         adjacency = coo_matrix(
-            (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col'])),
+            (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col']),),
             shape=(cells.max_cells, cells.max_cells),
         ).todok()
 
