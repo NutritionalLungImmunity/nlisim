@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 from pytest import fixture, raises
 
 from simulation.cell import CellData, CellList
-from simulation.coordinates import Point
+from simulation.coordinates import Point, Voxel
 from simulation.state import RectangularGrid
 
 
@@ -69,3 +69,40 @@ def test_filter_out_dead(grid: RectangularGrid):
 
     mask = np.arange(10) < 5
     assert_array_equal(cells.alive(mask), [0, 2, 4])
+
+
+def test_get_neighboring_cells(grid: RectangularGrid):
+    point = Point(x=4.5, y=4.5, z=4.5)
+
+    raw_cells = [CellData.create_cell(point=point) for _ in range(5)]
+    raw_cells[1]['point'] = Point(x=-1, y=4.5, z=4.5)
+    raw_cells[4]['point'] = Point(x=4.5, y=4.5, z=-1)
+
+    cells = CellList(grid=grid)
+    cells.extend(raw_cells)
+
+    assert_array_equal(cells.get_neighboring_cells(cells[0]), [0, 2, 3])
+    assert_array_equal(cells.get_cells_in_voxel(Voxel(x=0, y=0, z=0)), [])
+
+
+def test_move_cell(grid: RectangularGrid):
+    point = Point(x=4.5, y=4.5, z=4.5)
+
+    raw_cells = [CellData.create_cell(point=point) for _ in range(5)]
+    raw_cells[1]['point'] = Point(x=-1, y=4.5, z=4.5)
+    raw_cells[4]['point'] = Point(x=4.5, y=4.5, z=-1)
+
+    cells = CellList(grid=grid)
+    cells.extend(raw_cells)
+
+    cells[0]['point'] = Point(x=50, y=50, z=50)
+
+    # updating an incorrect index will not update the cell at index 0
+    cells.update_voxel_index([1, 3])
+    assert_array_equal(cells.get_neighboring_cells(cells[2]), [0, 2, 3])
+    assert cells._reverse_voxel_index[0] == grid.get_voxel(point)
+
+    # this should correctly update the voxel index
+    cells.update_voxel_index([0])
+    assert_array_equal(cells.get_neighboring_cells(cells[0]), [0])
+    assert cells._reverse_voxel_index[0] == grid.get_voxel(cells[0]['point'])
