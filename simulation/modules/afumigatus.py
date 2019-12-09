@@ -110,7 +110,7 @@ class AfumigatusCellData(CellData):
 
 @attr.s(auto_attribs=True, kw_only=True, frozen=True)
 class AfumigatusCell(MutableMapping):
-    tree: 'AfumigatusCellTree'
+    tree: 'AfumigatusCellTreeList'
     index: int = attr.ib()
 
     @index.validator
@@ -151,6 +151,10 @@ class AfumigatusCell(MutableMapping):
             cell = cell.record
         self.tree.append(cell, parent=self.index)
 
+    def kill(self) -> List['AfumigatusCell']:
+        """Mark the current cell as dead and remove it from the tree."""
+        return self.tree.kill(self.index)
+
     def __getitem__(self, key):
         return self.record.__getitem__(key)
 
@@ -177,7 +181,7 @@ class AfumigatusCellList(CellList):
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
-class AfumigatusCellTree(object):
+class AfumigatusCellTreeList(object):
     cells: CellList = attr.ib()
     _adjacency: sparse_matrix = attr.ib()
 
@@ -201,10 +205,13 @@ class AfumigatusCellTree(object):
 
     @property
     def roots(self) -> List[CellType]:
-        if not len(self):
-            return []
-        # TODO: Return all roots
-        return [self[0]]
+        # This is linear in the number of nodes... might need to be optimized.
+        roots = []
+        for i in range(len(self)):
+            cell = self[i]
+            if not cell['dead'] and cell.parent is None:
+                roots.append(cell)
+        return roots
 
     @property
     def cell_data(self) -> AfumigatusCellData:
@@ -232,7 +239,7 @@ class AfumigatusCellTree(object):
         return rotation.apply(growth)
 
     @classmethod
-    def create_from_seed(cls, grid, **kwargs) -> 'AfumigatusCellTree':
+    def create_from_seed(cls, grid, **kwargs) -> 'AfumigatusCellTreeList':
         cells = AfumigatusCellList.create_from_seed(grid, **kwargs)
         adjacency = sparse_matrix((1, 1))
         adjacency[0, 0] = 1
@@ -263,6 +270,23 @@ class AfumigatusCellTree(object):
 
         for cell, parent in zip(cells, parents):
             self.append(cell, parent)
+
+    def kill(self, index: int) -> List[AfumigatusCell]:
+        """Kill the cell at the given index and remove it from the tree.
+
+        This method will return a list of cells which were children of the
+        killed cell.  These children will be the roots of newly formed trees.
+        """
+        self.cell_data[index]['dead'] = True
+        roots = []
+        for i in range(len(self)):
+            if i == index:
+                continue
+            if self._adjacency.pop((i, index), None):
+                self[i]['growable'] = True
+            if self._adjacency.pop((index, i), None):
+                roots.append(self[i])
+        return roots
 
     def is_growable(self) -> np.ndarray:
         cells = self.cells.cell_data
@@ -335,7 +359,7 @@ class AfumigatusCellTree(object):
     @classmethod
     def load(
         cls, global_state: State, group: Group, name: str, metadata: dict
-    ) -> 'AfumigatusCellTree':
+    ) -> 'AfumigatusCellTreeList':
         composite_dataset = group[name]
         cells = AfumigatusCellList.load(global_state, composite_dataset, 'cells', metadata)
 
@@ -349,12 +373,12 @@ class AfumigatusCellTree(object):
 
 def cell_list_factory(self: 'AfumigatusState'):
     cells = AfumigatusCellList(grid=self.global_state.grid)
-    return AfumigatusCellTree(cells=cells)
+    return AfumigatusCellTreeList(cells=cells)
 
 
 @attr.s(kw_only=True)
 class AfumigatusState(ModuleState):
-    tree: AfumigatusCellTree = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
 
 
 class Afumigatus(Module):
