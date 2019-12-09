@@ -5,7 +5,11 @@ from pytest import fixture
 
 from simulation.config import SimulationConfig
 from simulation.coordinates import Point
-from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellTree, AfumigatusState
+from simulation.modules.afumigatus import (
+    AfumigatusCellData,
+    AfumigatusCellTreeList,
+    AfumigatusState,
+)
 from simulation.state import RectangularGrid, State
 
 Status = AfumigatusCellData.Status
@@ -13,12 +17,12 @@ Status = AfumigatusCellData.Status
 
 @fixture
 def cell_tree(grid: RectangularGrid, point: Point):
-    tree = AfumigatusCellTree.create_from_seed(grid=grid, point=point, status=Status.HYPHAE)
+    tree = AfumigatusCellTreeList.create_from_seed(grid=grid, point=point, status=Status.HYPHAE)
     yield tree
 
 
 @fixture
-def populated_tree(cell_tree: AfumigatusCellTree, point: Point):
+def populated_tree(cell_tree: AfumigatusCellTreeList, point: Point):
     """Return a non-trivial cell tree."""
     # TODO: use valid locations
     cell_tree[0]['growable'] = False
@@ -50,7 +54,7 @@ def populated_tree(cell_tree: AfumigatusCellTree, point: Point):
     yield cell_tree
 
 
-def test_split_iron_pool(cell_tree: AfumigatusCellTree):
+def test_split_iron_pool(cell_tree: AfumigatusCellTreeList):
     cell_tree.cell_data['iron_pool'] = 1
 
     cell_tree.elongate()
@@ -63,7 +67,7 @@ def test_split_iron_pool(cell_tree: AfumigatusCellTree):
     assert (cell_tree.cell_data['iron_pool'] == [0.25, 0.5, 0.25]).all()
 
 
-def test_elongate(cell_tree: AfumigatusCellTree):
+def test_elongate(cell_tree: AfumigatusCellTreeList):
     cell_tree.cell_data['iron_pool'] = 1
     for _ in range(100):
         cell_tree.cell_data['status'] = Status.HYPHAE
@@ -72,7 +76,7 @@ def test_elongate(cell_tree: AfumigatusCellTree):
     assert len(cell_tree) == 101
 
 
-def test_branch(cell_tree: AfumigatusCellTree):
+def test_branch(cell_tree: AfumigatusCellTreeList):
     cell_tree.cell_data['iron_pool'] = 1
     cell_tree.cell_data['status'] = Status.HYPHAE
     cell_tree.elongate()
@@ -98,7 +102,7 @@ def test_initial_attributes(point: Point):
     assert not cell['branchable']
 
 
-def test_branched_attributes(cell_tree: AfumigatusCellTree):
+def test_branched_attributes(cell_tree: AfumigatusCellTreeList):
     cell_tree.cell_data['branchable'] = True
     cell_tree.branch(1)
 
@@ -122,7 +126,7 @@ def test_elongated_attributes(cell_tree: AfumigatusCellData):
     assert not cell_tree[1]['branchable']
 
 
-def test_traverse_tree(populated_tree: AfumigatusCellTree):
+def test_traverse_tree(populated_tree: AfumigatusCellTreeList):
     visited: Set[int] = set()
 
     def visit(root):
@@ -135,7 +139,7 @@ def test_traverse_tree(populated_tree: AfumigatusCellTree):
     assert visited == set(range(len(populated_tree)))
 
 
-def test_mutate_cell(populated_tree: AfumigatusCellTree):
+def test_mutate_cell(populated_tree: AfumigatusCellTreeList):
     cell = populated_tree[4]
     growable = not cell['growable']
     cell['growable'] = growable
@@ -143,7 +147,7 @@ def test_mutate_cell(populated_tree: AfumigatusCellTree):
     assert populated_tree.cell_data['growable'][4] == growable
 
 
-def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
+def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
     config = SimulationConfig(
         defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
     )
@@ -160,7 +164,7 @@ def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
     assert hdf5_group['tree']['cells']['cell_data'].dtype == cell_tree.cell_data.dtype
 
 
-def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
+def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
     config = SimulationConfig(
         defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
     )
@@ -171,3 +175,13 @@ def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTree):
 
     copy = cast(AfumigatusState, AfumigatusState.load_state(state, hdf5_group))
     assert state.afumigatus.tree.cell_data == copy.tree.cell_data
+
+
+def test_kill_cell(populated_tree: AfumigatusCellTreeList):
+    old_parent = populated_tree[4].parent
+    assert old_parent is not None
+
+    new_roots = populated_tree[4].kill()
+    assert len(new_roots) == len(populated_tree.roots) - 1
+    assert old_parent['growable']
+    assert populated_tree[4]['dead']
