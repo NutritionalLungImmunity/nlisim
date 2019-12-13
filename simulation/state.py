@@ -8,6 +8,7 @@ import attr
 from h5py import File as H5File
 import numpy as np
 
+from simulation.coordinates import Point, Voxel
 from simulation.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
@@ -110,6 +111,37 @@ class RectangularGrid(object):
         for dim in ('x', 'xv', 'y', 'yv', 'z', 'zv'):
             kwargs[dim] = file[dim][:]
         return cls(**kwargs)
+
+    @classmethod
+    def _find_dimension_index(cls, vertices: np.ndarray, coordinate: float) -> int:
+        indices = (vertices >= coordinate).nonzero()[0]
+        if len(indices) == 0:
+            return -1
+        return indices[0]
+
+    def get_voxel(self, point: Point) -> Voxel:
+        """Return the voxel containing the given point.
+
+        For points outside of the grid, this method will return invalid
+        indices.  For example, given vertex coordinates [1.5, 2.7, 6.5] and point
+        -1.5 or 7.1, this method will return -1 and 3, respectively.  Call the
+        the `is_valid_voxel` method to determine if the voxel is valid.
+        """
+        # For some reason, extracting fields from a recordarray results in a
+        # transposed point object (shape (1,3) rather than (3,)).  This code
+        # ensures the representation is as expected.
+        point = point.ravel().view(Point)
+        assert len(point) == 3, 'This method does not handle arrays of points'
+
+        ix = self._find_dimension_index(self.xv, point.x)
+        iy = self._find_dimension_index(self.yv, point.y)
+        iz = self._find_dimension_index(self.zv, point.z)
+        return Voxel(x=ix, y=iy, z=iz)
+
+    def is_valid_voxel(self, voxel: Voxel) -> bool:
+        """Return whether or not a voxel index is valid."""
+        v = voxel
+        return 0 <= v.x <= len(self.x) and 0 <= v.y <= len(self.y) and 0 <= v.z <= len(self.z)
 
 
 @attr.s(auto_attribs=True, repr=False)
