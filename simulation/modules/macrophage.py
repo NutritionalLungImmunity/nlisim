@@ -30,35 +30,26 @@ class MacrophageCellData(CellData):
         ('iteration', 'i4'),
     ]
 
-    dtype = np.dtype(CellData.BASE_FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
+    dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell(
+    def create_cell_tuple(
         cls,
-        point: Point = None,
+        *,
         iron_pool: float = 0,
         status: Status = Status.RESTING,
         **kwargs,
     ) -> np.record:
 
-        if point is None:
-            point = Point()
-
         network = cls.initial_boolean_network()
         iteration = 0
 
-        return np.rec.array(
-            [
-                (
-                    point,
-                    network,
-                    status,
-                    iron_pool,
-                    iteration,
-                )
-            ],
-            dtype=cls.dtype,
-        )[0]
+        return CellData.create_cell_tuple(**kwargs) + (
+            network,
+            status,
+            iron_pool,
+            iteration,
+        )
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
@@ -117,6 +108,7 @@ class Macrophage(Module):
         tissue: GeometryState = state.geometry.lung_tissue
 
         macrophage.init_num = self.config.getint('init_num')
+        macrophage.cells = MacrophageCellList(grid=grid)
 
         if(macrophage.init_num > 0):
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
@@ -127,12 +119,10 @@ class Macrophage(Module):
                 y = indices[i][1] + (random.uniform(-0.5, 0.5))
                 z = indices[i][0] + (random.uniform(-0.5, 0.5))
                 point = Point(x=x, y=y, z=z)
-
-                if(i == 0):
-                    # create one cell
-                    macrophage.cells = MacrophageCellList.create_from_seed(grid=grid, point=point, status=MacrophageCellData.Status.RESTING)
-                else:
-                    macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=MacrophageCellData.Status.RESTING))
+                status = MacrophageCellData.Status.RESTING
+                
+                macrophage.cells.append(
+                    MacrophageCellData.create_cell(point=point, status=status))
 
         return state
 
