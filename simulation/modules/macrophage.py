@@ -180,5 +180,6 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
             ix = int(new_point.x)
 
         cell['point'] = new_point
+        cells.update_voxel_index([index])
 
     return cells
