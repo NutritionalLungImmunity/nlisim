@@ -147,6 +147,7 @@ class Macrophage(Module):
         return state
 
 def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
+    #currently randomly drifts resting macrophages, need to add molecule dependence
     def valid_point(point: Point, grid: RectangularGrid):
         return((grid.xv[0] <= point.x)
             & (point.x <= grid.xv[-1])
@@ -156,6 +157,7 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
             & (point.z <= grid.zv[-1])
         )
     
+    # TODO - replace random 'delta_point' with logic based on chemokines
     delta_point = Point(x=random.uniform(-1, 1),
                     y=random.uniform(-1, 1),
                     z=random.uniform(-1, 1)
