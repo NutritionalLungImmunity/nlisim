@@ -11,7 +11,7 @@ from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
 
 class MacrophageCellData(CellData):
-    BOOLEAN_NETWORK_LENGTH = 23
+    BOOLEAN_NETWORK_LENGTH = 3 #place holder for now
 
     class Status(IntEnum):
         RESTING = 0
@@ -58,26 +58,6 @@ class MacrophageCellData(CellData):
                 True,
                 False,
                 True,
-                False,
-                True,
-                True,
-                True,
-                True,
-                True,
-                False,
-                False,
-                False,
-                True,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
             ]
         )
 
@@ -118,6 +98,7 @@ class Macrophage(Module):
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if(macrophage.init_num > 0):
+            #initialize the surfactant layer with some macrophage in random locations
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
             np.random.shuffle(indices)
 
@@ -125,9 +106,6 @@ class Macrophage(Module):
                 x = indices[i][2] + (random.uniform(-0.5, 0.5))
                 y = indices[i][1] + (random.uniform(-0.5, 0.5))
                 z = indices[i][0] + (random.uniform(-0.5, 0.5))
-                #x = (indices[i][2] + (random.uniform(-0.5, 0.5))) * self.config.getfloat('simulation', 'dx')
-                #y = (indices[i][1] + (random.uniform(-0.5, 0.5))) * self.config.getfloat('simulation', 'dy')
-                #z = (indices[i][0] + (random.uniform(-0.5, 0.5))) * self.config.getfloat('simulation', 'dz')
                 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
@@ -143,6 +121,10 @@ class Macrophage(Module):
         tissue: GeometryState = state.geometry.lung_tissue
 
         drift(macrophage.cells, tissue, grid)
+        # TODO - add recruitment
+        # TODO - add leaving
+        # TODO - add boolena network update
+        # TODO - add interaction?
 
         return state
 
@@ -162,7 +144,7 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
                     y=random.uniform(-1, 1),
                     z=random.uniform(-1, 1)
                 )
-
+    # TODO - use a more numpy solution to move more efficiently
     for index in cells.is_moveable(grid):
         cell = cells[index]
         new_point = cell['point'] + delta_point
