@@ -1,0 +1,1733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.2" />
+<title>simulation.modules.afumigatus API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.modules.afumigatus</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from collections.abc import MutableMapping
+from enum import IntEnum
+from typing import Iterable, List, Optional, Union
+
+import attr
+from h5py import Group
+import numpy as np
+from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
+from scipy.spatial.transform import Rotation
+
+from simulation.cell import CellData, CellList, CellType
+from simulation.coordinates import Point
+from simulation.module import Module, ModuleState
+from simulation.state import get_class_path, RectangularGrid, State
+
+
+class AfumigatusCellData(CellData):
+    GROWTH_SCALE_FACTOR = 0.02  # from original code
+    BOOLEAN_NETWORK_LENGTH = 23
+
+    class Status(IntEnum):
+        RESTING_CONIDIA = 0
+        SWELLING_CONIDIA = 1
+        HYPHAE = 2
+        DYING = 3
+        DEAD = 4
+
+    class State(IntEnum):
+        FREE = 0
+        INTERNALIZING = 1
+        RELEASING = 2
+
+    AFUMIGATUS_FIELDS = [
+        (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
+        (&#39;growth&#39;, Point.dtype),
+        (&#39;growable&#39;, &#39;b1&#39;),
+        (&#39;switched&#39;, &#39;b1&#39;),
+        (&#39;branchable&#39;, &#39;b1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iron&#39;, &#39;b1&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+    ]
+
+    FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING_CONIDIA,
+        state: State = State.FREE,
+        **kwargs,
+    ) -&gt; np.record:
+
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        network = cls.initial_boolean_network()
+        growable = True
+        switched = False
+        branchable = False
+        iteration = 0
+        iron = False
+
+        return CellData.create_cell_tuple(**kwargs) + (
+            network,
+            growth,
+            growable,
+            switched,
+            branchable,
+            state,
+            status,
+            iron_pool,
+            iron,
+            iteration,
+        )
+
+    @classmethod
+    def initial_boolean_network(cls) -&gt; np.ndarray:
+        return np.asarray(
+            [
+                True,
+                False,
+                True,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        )
+
+
+@attr.s(auto_attribs=True, kw_only=True, frozen=True)
+class AfumigatusCell(MutableMapping):
+    tree: &#39;AfumigatusCellTreeList&#39;
+    index: int = attr.ib()
+
+    @index.validator
+    def _validate_index(self, attribute, value):
+        if value &gt;= len(self.tree):
+            raise ValueError(&#39;Invalid cell index&#39;)
+
+    def __attrs_post_init__(self):
+        if self.index &lt; 0:
+            object.__setattr__(self, &#39;index&#39;, self.index + len(self.tree))
+
+    @property
+    def record(self) -&gt; CellType:
+        return self.tree.cells[self.index]
+
+    @property
+    def parent(self) -&gt; Optional[&#39;AfumigatusCell&#39;]:
+        indices = self.tree.adjacency[:, self.index].nonzero()[0]
+        if len(indices) == 1:
+            return None
+        if len(indices) == 2 and indices[0] == self.index:
+            index = indices[0]
+            if index == self.index:
+                index = indices[1]
+            return self.__class__(tree=self.tree, index=index)
+
+        raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)
+
+    @property
+    def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+        indices = self.tree.adjacency[self.index].nonzero()[1]
+        for index in indices:
+            if index != self.index:
+                yield self.__class__(tree=self.tree, index=index)
+
+    def add_child(self, cell: Union[CellType, &#39;AfumigatusCell&#39;]):
+        if isinstance(cell, AfumigatusCell):
+            cell = cell.record
+        self.tree.append(cell, parent=self.index)
+
+    def kill(self) -&gt; List[&#39;AfumigatusCell&#39;]:
+        &#34;&#34;&#34;Mark the current cell as dead and remove it from the tree.&#34;&#34;&#34;
+        return self.tree.kill(self.index)
+
+    def __getitem__(self, key):
+        return self.record.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self.tree.cell_data[key][self.index] = value
+
+    def __delitem__(self, key):
+        return self.record.__delitem__(key)
+
+    def __iter__(self):
+        for key in self.record.dtype.fields.keys():
+            yield key
+
+    def __contains__(self, key):
+        return key in self.record.dtype.fields
+
+    def __len__(self):
+        return len(self.record)
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class AfumigatusCellList(CellList):
+    CellDataClass = AfumigatusCellData
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class AfumigatusCellTreeList(object):
+    cells: CellList = attr.ib()
+    _adjacency: sparse_matrix = attr.ib()
+
+    @_adjacency.default
+    def __set_default_adjacency(self):
+        return sparse_matrix((0, 0))
+
+    def __attrs_post_init__(self):
+        cells = self.cells
+        adjacency = self._adjacency
+
+        object.__setattr__(self, &#39;_adjacency&#39;, sparse_matrix((cells.max_cells, cells.max_cells)))
+
+        if len(cells) &gt; 0:
+            for key, value in adjacency.items():
+                self._adjacency[key] = value
+
+    @property
+    def adjacency(self) -&gt; sparse_matrix:
+        return self._adjacency[: len(self), : len(self)]
+
+    @property
+    def roots(self) -&gt; List[CellType]:
+        # This is linear in the number of nodes... might need to be optimized.
+        roots = []
+        for i in range(len(self)):
+            cell = self[i]
+            if not cell[&#39;dead&#39;] and cell.parent is None:
+                roots.append(cell)
+        return roots
+
+    @property
+    def cell_data(self) -&gt; AfumigatusCellData:
+        return self.cells.cell_data
+
+    @property
+    def max_cells(self) -&gt; int:
+        return self.cells.max_cells
+
+    @property
+    def grid(self) -&gt; RectangularGrid:
+        return self.cells.grid
+
+    @classmethod
+    def random_branch_direction(cls, growth: np.ndarray) -&gt; np.ndarray:
+        &#34;&#34;&#34;Rotate by a random 45 degree angle from the axis of growth.&#34;&#34;&#34;
+        growth = Point.from_array(growth)
+
+        # get a random vector orthogonal to the growth vector
+        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = (np.pi / 4) * axis / axis.norm()
+
+        # rotate the growth vector 45 degrees along the random axis
+        rotation = Rotation.from_rotvec(axis)
+        return rotation.apply(growth)
+
+    @classmethod
+    def create_from_seed(cls, grid, **kwargs) -&gt; &#39;AfumigatusCellTreeList&#39;:
+        cells = AfumigatusCellList.create_from_seed(grid, **kwargs)
+        adjacency = sparse_matrix((1, 1))
+        adjacency[0, 0] = 1
+
+        return cls(cells=cells, adjacency=adjacency)
+
+    def __len__(self):
+        return len(self.cells)
+
+    def __getitem__(self, index: int) -&gt; AfumigatusCell:
+        if isinstance(index, str):
+            raise TypeError(&#39;Expected an integer index, did you mean `tree.cell_data[key]`?&#39;)
+        return AfumigatusCell(tree=self, index=index)
+
+    def append(self, cell, parent=None):
+        index = len(self)
+        self.cells.append(cell)
+        self._adjacency[index, index] = 1
+
+        if parent is not None:
+            self._adjacency[parent, index] = 1
+            iron_pool = self.cells[parent][&#39;iron_pool&#39;] / 2
+            self.cells[parent][&#39;iron_pool&#39;] = self.cells[-1][&#39;iron_pool&#39;] = iron_pool
+
+    def extend(self, cells: CellData, parents: Iterable[Union[int, None]] = None) -&gt; None:
+        if parents is None:
+            parents = [None] * len(cells)
+
+        for cell, parent in zip(cells, parents):
+            self.append(cell, parent)
+
+    def kill(self, index: int) -&gt; List[AfumigatusCell]:
+        &#34;&#34;&#34;Kill the cell at the given index and remove it from the tree.
+
+        This method will return a list of cells which were children of the
+        killed cell.  These children will be the roots of newly formed trees.
+        &#34;&#34;&#34;
+        self.cell_data[index][&#39;dead&#39;] = True
+        roots = []
+        for i in range(len(self)):
+            if i == index:
+                continue
+            if self._adjacency.pop((i, index), None):
+                self[i][&#39;growable&#39;] = True
+            if self._adjacency.pop((index, i), None):
+                roots.append(self[i])
+        return roots
+
+    def is_growable(self) -&gt; np.ndarray:
+        cells = self.cells.cell_data
+        return self.cells.alive(
+            cells[&#39;growable&#39;]
+            &amp; cells.point_mask(cells[&#39;point&#39;] + cells[&#39;growth&#39;], self.grid)
+            &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+        )
+
+    def is_branchable(self, branch_probability: float) -&gt; np.ndarray:
+        cells = self.cells.cell_data
+        return self.cells.alive(
+            cells[&#39;branchable&#39;]
+            &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+            &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+        )
+
+    def elongate(self):
+        cells = self.cell_data
+        mask = self.is_growable()
+        if len(mask) == 0:
+            return
+
+        cells[&#39;growable&#39;][mask] = False
+        cells[&#39;branchable&#39;][mask] = True
+
+        children = AfumigatusCellData(len(mask), initialize=True)
+        children[&#39;point&#39;] = cells[&#39;point&#39;][mask] + cells[&#39;growth&#39;][mask]
+        children[&#39;growth&#39;] = cells[&#39;growth&#39;][mask]
+
+        self.extend(children, parents=mask)
+
+    def branch(self, branch_probability: float):
+        cells = self.cell_data
+        indices = self.is_branchable(branch_probability)
+        if len(indices) == 0:
+            return
+
+        children = AfumigatusCellData(len(indices), initialize=True)
+        children[&#39;growth&#39;] = np.apply_along_axis(
+            self.random_branch_direction, 1, children[&#39;growth&#39;]
+        )
+
+        children[&#39;point&#39;] = cells[&#39;point&#39;][indices] + children[&#39;growth&#39;]
+
+        # filter out children lying outside of the domain
+        indices = indices[cells.point_mask(children[&#39;point&#39;], self.grid)]
+        if len(indices) == 0:
+            return
+
+        # set properties
+        cells[&#39;branchable&#39;][indices] = False
+        children[&#39;growable&#39;] = True
+        children[&#39;branchable&#39;] = False
+
+        self.extend(children, parents=indices)
+
+    def save(self, group: Group, name: str, metadata: dict) -&gt; Group:
+        composite_group = group.create_group(name)
+        composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+        composite_group.attrs[&#39;type&#39;] = &#39;CellTree&#39;
+        self.cells.save(composite_group, &#39;cells&#39;, metadata)
+
+        sp = self.adjacency.tocoo()
+        composite_group.create_dataset(name=&#39;row&#39;, data=sp.row)
+        composite_group.create_dataset(name=&#39;col&#39;, data=sp.col)
+        composite_group.create_dataset(name=&#39;value&#39;, data=sp.data)
+        return composite_group
+
+    @classmethod
+    def load(
+        cls, global_state: State, group: Group, name: str, metadata: dict
+    ) -&gt; &#39;AfumigatusCellTreeList&#39;:
+        composite_dataset = group[name]
+        cells = AfumigatusCellList.load(global_state, composite_dataset, &#39;cells&#39;, metadata)
+
+        adjacency = coo_matrix(
+            (composite_dataset[&#39;value&#39;], (composite_dataset[&#39;row&#39;], composite_dataset[&#39;col&#39;]),),
+            shape=(cells.max_cells, cells.max_cells),
+        ).todok()
+
+        return cls(cells=cells, adjacency=adjacency)
+
+
+def cell_list_factory(self: &#39;AfumigatusState&#39;):
+    cells = AfumigatusCellList(grid=self.global_state.grid)
+    return AfumigatusCellTreeList(cells=cells)
+
+
+@attr.s(kw_only=True)
+class AfumigatusState(ModuleState):
+    tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+
+
+class Afumigatus(Module):
+    name = &#39;afumigatus&#39;
+    StateClass = AfumigatusState</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="simulation.modules.afumigatus.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cell_list_factory(self: &#39;AfumigatusState&#39;):
+    cells = AfumigatusCellList(grid=self.global_state.grid)
+    return AfumigatusCellTreeList(cells=cells)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.modules.afumigatus.Afumigatus"><code class="flex name class">
+<span>class <span class="ident">Afumigatus</span></span>
+<span>(</span><span>config)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Afumigatus(Module):
+    name = &#39;afumigatus&#39;
+    StateClass = AfumigatusState</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
+<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
+<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCell"><code class="flex name class">
+<span>class <span class="ident">AfumigatusCell</span></span>
+<span>(</span><span>*, tree, index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusCell(MutableMapping):
+    tree: &#39;AfumigatusCellTreeList&#39;
+    index: int = attr.ib()
+
+    @index.validator
+    def _validate_index(self, attribute, value):
+        if value &gt;= len(self.tree):
+            raise ValueError(&#39;Invalid cell index&#39;)
+
+    def __attrs_post_init__(self):
+        if self.index &lt; 0:
+            object.__setattr__(self, &#39;index&#39;, self.index + len(self.tree))
+
+    @property
+    def record(self) -&gt; CellType:
+        return self.tree.cells[self.index]
+
+    @property
+    def parent(self) -&gt; Optional[&#39;AfumigatusCell&#39;]:
+        indices = self.tree.adjacency[:, self.index].nonzero()[0]
+        if len(indices) == 1:
+            return None
+        if len(indices) == 2 and indices[0] == self.index:
+            index = indices[0]
+            if index == self.index:
+                index = indices[1]
+            return self.__class__(tree=self.tree, index=index)
+
+        raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)
+
+    @property
+    def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+        indices = self.tree.adjacency[self.index].nonzero()[1]
+        for index in indices:
+            if index != self.index:
+                yield self.__class__(tree=self.tree, index=index)
+
+    def add_child(self, cell: Union[CellType, &#39;AfumigatusCell&#39;]):
+        if isinstance(cell, AfumigatusCell):
+            cell = cell.record
+        self.tree.append(cell, parent=self.index)
+
+    def kill(self) -&gt; List[&#39;AfumigatusCell&#39;]:
+        &#34;&#34;&#34;Mark the current cell as dead and remove it from the tree.&#34;&#34;&#34;
+        return self.tree.kill(self.index)
+
+    def __getitem__(self, key):
+        return self.record.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self.tree.cell_data[key][self.index] = value
+
+    def __delitem__(self, key):
+        return self.record.__delitem__(key)
+
+    def __iter__(self):
+        for key in self.record.dtype.fields.keys():
+            yield key
+
+    def __contains__(self, key):
+        return key in self.record.dtype.fields
+
+    def __len__(self):
+        return len(self.record)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>collections.abc.MutableMapping</li>
+<li>collections.abc.Mapping</li>
+<li>collections.abc.Collection</li>
+<li>collections.abc.Sized</li>
+<li>collections.abc.Iterable</li>
+<li>collections.abc.Container</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.children"><code class="name">var <span class="ident">children</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+    indices = self.tree.adjacency[self.index].nonzero()[1]
+    for index in indices:
+        if index != self.index:
+            yield self.__class__(tree=self.tree, index=index)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.parent"><code class="name">var <span class="ident">parent</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def parent(self) -&gt; Optional[&#39;AfumigatusCell&#39;]:
+    indices = self.tree.adjacency[:, self.index].nonzero()[0]
+    if len(indices) == 1:
+        return None
+    if len(indices) == 2 and indices[0] == self.index:
+        index = indices[0]
+        if index == self.index:
+            index = indices[1]
+        return self.__class__(tree=self.tree, index=index)
+
+    raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.record"><code class="name">var <span class="ident">record</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def record(self) -&gt; CellType:
+    return self.tree.cells[self.index]</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.add_child"><code class="name flex">
+<span>def <span class="ident">add_child</span></span>(<span>self, cell)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_child(self, cell: Union[CellType, &#39;AfumigatusCell&#39;]):
+    if isinstance(cell, AfumigatusCell):
+        cell = cell.record
+    self.tree.append(cell, parent=self.index)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Mark the current cell as dead and remove it from the tree.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kill(self) -&gt; List[&#39;AfumigatusCell&#39;]:
+    &#34;&#34;&#34;Mark the current cell as dead and remove it from the tree.&#34;&#34;&#34;
+    return self.tree.kill(self.index)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData"><code class="flex name class">
+<span>class <span class="ident">AfumigatusCellData</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs):
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusCellData(CellData):
+    GROWTH_SCALE_FACTOR = 0.02  # from original code
+    BOOLEAN_NETWORK_LENGTH = 23
+
+    class Status(IntEnum):
+        RESTING_CONIDIA = 0
+        SWELLING_CONIDIA = 1
+        HYPHAE = 2
+        DYING = 3
+        DEAD = 4
+
+    class State(IntEnum):
+        FREE = 0
+        INTERNALIZING = 1
+        RELEASING = 2
+
+    AFUMIGATUS_FIELDS = [
+        (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
+        (&#39;growth&#39;, Point.dtype),
+        (&#39;growable&#39;, &#39;b1&#39;),
+        (&#39;switched&#39;, &#39;b1&#39;),
+        (&#39;branchable&#39;, &#39;b1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iron&#39;, &#39;b1&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+    ]
+
+    FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING_CONIDIA,
+        state: State = State.FREE,
+        **kwargs,
+    ) -&gt; np.record:
+
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        network = cls.initial_boolean_network()
+        growable = True
+        switched = False
+        branchable = False
+        iteration = 0
+        iron = False
+
+        return CellData.create_cell_tuple(**kwargs) + (
+            network,
+            growth,
+            growable,
+            switched,
+            branchable,
+            state,
+            status,
+            iron_pool,
+            iron,
+            iteration,
+        )
+
+    @classmethod
+    def initial_boolean_network(cls) -&gt; np.ndarray:
+        return np.asarray(
+            [
+                True,
+                False,
+                True,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li>numpy.ndarray</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS"><code class="name">var <span class="ident">AFUMIGATUS_FIELDS</span></code></dt>
+<dd>
+<section class="desc"><p>Built-in mutable sequence.</p>
+<p>If no argument is given, the constructor creates a new empty list.
+The argument must be an iterable if specified.</p></section>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH"><code class="name">var <span class="ident">BOOLEAN_NETWORK_LENGTH</span></code></dt>
+<dd>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span></code></dt>
+<dd>
+<section class="desc"><p>Built-in mutable sequence.</p>
+<p>If no argument is given, the constructor creates a new empty list.
+The argument must be an iterable if specified.</p></section>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR"><code class="name">var <span class="ident">GROWTH_SCALE_FACTOR</span></code></dt>
+<dd>
+<section class="desc"><p>Convert a string or number to a floating point number, if possible.</p></section>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
+<dd>
+<section class="desc"><p>An enumeration.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class State(IntEnum):
+    FREE = 0
+    INTERNALIZING = 1
+    RELEASING = 2</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dd>
+<section class="desc"><p>An enumeration.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Status(IntEnum):
+    RESTING_CONIDIA = 0
+    SWELLING_CONIDIA = 1
+    HYPHAE = 2
+    DYING = 3
+    DEAD = 4</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network"><code class="name flex">
+<span>def <span class="ident">initial_boolean_network</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def initial_boolean_network(cls) -&gt; np.ndarray:
+    return np.asarray(
+        [
+            True,
+            False,
+            True,
+            False,
+            True,
+            True,
+            True,
+            True,
+            True,
+            False,
+            False,
+            False,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ]
+    )</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellList"><code class="flex name class">
+<span>class <span class="ident">AfumigatusCellList</span></span>
+<span>(</span><span>*, grid, max_cells=10000, cell_data=NOTHING)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A python view on top of a CellData array.</p>
+<p>This class represents a pythonic interface to the data contained in a
+CellData array.
+Because the CellData class is a low-level object, it does
+not allow dynamically appending new elements.
+Objects of this class get
+around this limitation by pre-allocating a large block of memory that is
+transparently available.
+User-facing properties are sliced to make it
+appear as if the extra data is not there.</p>
+<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
+a subclass of <code>CellData</code>.
+This provides information about the underlying
+low-level array.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>grid</code></strong> :&ensp;<code>&lt;a title="simulation.state.RectangularGrid" href="../state.html#simulation.state.RectangularGrid"&gt;</code>RectangularGrid<code>&lt;/a&gt;</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cells</code></strong> :&ensp;<code>&lt;a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData"&gt;</code>CellData<code>&lt;/a&gt;</code>, optional</dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusCellList(CellList):
+    CellDataClass = AfumigatusCellData</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellList.CellDataClass"><code class="name">var <span class="ident">CellDataClass</span></code></dt>
+<dd>
+<section class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs):
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusCellData(CellData):
+    GROWTH_SCALE_FACTOR = 0.02  # from original code
+    BOOLEAN_NETWORK_LENGTH = 23
+
+    class Status(IntEnum):
+        RESTING_CONIDIA = 0
+        SWELLING_CONIDIA = 1
+        HYPHAE = 2
+        DYING = 3
+        DEAD = 4
+
+    class State(IntEnum):
+        FREE = 0
+        INTERNALIZING = 1
+        RELEASING = 2
+
+    AFUMIGATUS_FIELDS = [
+        (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
+        (&#39;growth&#39;, Point.dtype),
+        (&#39;growable&#39;, &#39;b1&#39;),
+        (&#39;switched&#39;, &#39;b1&#39;),
+        (&#39;branchable&#39;, &#39;b1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iron&#39;, &#39;b1&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+    ]
+
+    FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING_CONIDIA,
+        state: State = State.FREE,
+        **kwargs,
+    ) -&gt; np.record:
+
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        network = cls.initial_boolean_network()
+        growable = True
+        switched = False
+        branchable = False
+        iteration = 0
+        iron = False
+
+        return CellData.create_cell_tuple(**kwargs) + (
+            network,
+            growth,
+            growable,
+            switched,
+            branchable,
+            state,
+            status,
+            iron_pool,
+            iron,
+            iteration,
+        )
+
+    @classmethod
+    def initial_boolean_network(cls) -&gt; np.ndarray:
+        return np.asarray(
+            [
+                True,
+                False,
+                True,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        )</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
+<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
+<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
+<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList"><code class="flex name class">
+<span>class <span class="ident">AfumigatusCellTreeList</span></span>
+<span>(</span><span>*, cells, adjacency=NOTHING)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusCellTreeList(object):
+    cells: CellList = attr.ib()
+    _adjacency: sparse_matrix = attr.ib()
+
+    @_adjacency.default
+    def __set_default_adjacency(self):
+        return sparse_matrix((0, 0))
+
+    def __attrs_post_init__(self):
+        cells = self.cells
+        adjacency = self._adjacency
+
+        object.__setattr__(self, &#39;_adjacency&#39;, sparse_matrix((cells.max_cells, cells.max_cells)))
+
+        if len(cells) &gt; 0:
+            for key, value in adjacency.items():
+                self._adjacency[key] = value
+
+    @property
+    def adjacency(self) -&gt; sparse_matrix:
+        return self._adjacency[: len(self), : len(self)]
+
+    @property
+    def roots(self) -&gt; List[CellType]:
+        # This is linear in the number of nodes... might need to be optimized.
+        roots = []
+        for i in range(len(self)):
+            cell = self[i]
+            if not cell[&#39;dead&#39;] and cell.parent is None:
+                roots.append(cell)
+        return roots
+
+    @property
+    def cell_data(self) -&gt; AfumigatusCellData:
+        return self.cells.cell_data
+
+    @property
+    def max_cells(self) -&gt; int:
+        return self.cells.max_cells
+
+    @property
+    def grid(self) -&gt; RectangularGrid:
+        return self.cells.grid
+
+    @classmethod
+    def random_branch_direction(cls, growth: np.ndarray) -&gt; np.ndarray:
+        &#34;&#34;&#34;Rotate by a random 45 degree angle from the axis of growth.&#34;&#34;&#34;
+        growth = Point.from_array(growth)
+
+        # get a random vector orthogonal to the growth vector
+        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = (np.pi / 4) * axis / axis.norm()
+
+        # rotate the growth vector 45 degrees along the random axis
+        rotation = Rotation.from_rotvec(axis)
+        return rotation.apply(growth)
+
+    @classmethod
+    def create_from_seed(cls, grid, **kwargs) -&gt; &#39;AfumigatusCellTreeList&#39;:
+        cells = AfumigatusCellList.create_from_seed(grid, **kwargs)
+        adjacency = sparse_matrix((1, 1))
+        adjacency[0, 0] = 1
+
+        return cls(cells=cells, adjacency=adjacency)
+
+    def __len__(self):
+        return len(self.cells)
+
+    def __getitem__(self, index: int) -&gt; AfumigatusCell:
+        if isinstance(index, str):
+            raise TypeError(&#39;Expected an integer index, did you mean `tree.cell_data[key]`?&#39;)
+        return AfumigatusCell(tree=self, index=index)
+
+    def append(self, cell, parent=None):
+        index = len(self)
+        self.cells.append(cell)
+        self._adjacency[index, index] = 1
+
+        if parent is not None:
+            self._adjacency[parent, index] = 1
+            iron_pool = self.cells[parent][&#39;iron_pool&#39;] / 2
+            self.cells[parent][&#39;iron_pool&#39;] = self.cells[-1][&#39;iron_pool&#39;] = iron_pool
+
+    def extend(self, cells: CellData, parents: Iterable[Union[int, None]] = None) -&gt; None:
+        if parents is None:
+            parents = [None] * len(cells)
+
+        for cell, parent in zip(cells, parents):
+            self.append(cell, parent)
+
+    def kill(self, index: int) -&gt; List[AfumigatusCell]:
+        &#34;&#34;&#34;Kill the cell at the given index and remove it from the tree.
+
+        This method will return a list of cells which were children of the
+        killed cell.  These children will be the roots of newly formed trees.
+        &#34;&#34;&#34;
+        self.cell_data[index][&#39;dead&#39;] = True
+        roots = []
+        for i in range(len(self)):
+            if i == index:
+                continue
+            if self._adjacency.pop((i, index), None):
+                self[i][&#39;growable&#39;] = True
+            if self._adjacency.pop((index, i), None):
+                roots.append(self[i])
+        return roots
+
+    def is_growable(self) -&gt; np.ndarray:
+        cells = self.cells.cell_data
+        return self.cells.alive(
+            cells[&#39;growable&#39;]
+            &amp; cells.point_mask(cells[&#39;point&#39;] + cells[&#39;growth&#39;], self.grid)
+            &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+        )
+
+    def is_branchable(self, branch_probability: float) -&gt; np.ndarray:
+        cells = self.cells.cell_data
+        return self.cells.alive(
+            cells[&#39;branchable&#39;]
+            &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+            &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+        )
+
+    def elongate(self):
+        cells = self.cell_data
+        mask = self.is_growable()
+        if len(mask) == 0:
+            return
+
+        cells[&#39;growable&#39;][mask] = False
+        cells[&#39;branchable&#39;][mask] = True
+
+        children = AfumigatusCellData(len(mask), initialize=True)
+        children[&#39;point&#39;] = cells[&#39;point&#39;][mask] + cells[&#39;growth&#39;][mask]
+        children[&#39;growth&#39;] = cells[&#39;growth&#39;][mask]
+
+        self.extend(children, parents=mask)
+
+    def branch(self, branch_probability: float):
+        cells = self.cell_data
+        indices = self.is_branchable(branch_probability)
+        if len(indices) == 0:
+            return
+
+        children = AfumigatusCellData(len(indices), initialize=True)
+        children[&#39;growth&#39;] = np.apply_along_axis(
+            self.random_branch_direction, 1, children[&#39;growth&#39;]
+        )
+
+        children[&#39;point&#39;] = cells[&#39;point&#39;][indices] + children[&#39;growth&#39;]
+
+        # filter out children lying outside of the domain
+        indices = indices[cells.point_mask(children[&#39;point&#39;], self.grid)]
+        if len(indices) == 0:
+            return
+
+        # set properties
+        cells[&#39;branchable&#39;][indices] = False
+        children[&#39;growable&#39;] = True
+        children[&#39;branchable&#39;] = False
+
+        self.extend(children, parents=indices)
+
+    def save(self, group: Group, name: str, metadata: dict) -&gt; Group:
+        composite_group = group.create_group(name)
+        composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+        composite_group.attrs[&#39;type&#39;] = &#39;CellTree&#39;
+        self.cells.save(composite_group, &#39;cells&#39;, metadata)
+
+        sp = self.adjacency.tocoo()
+        composite_group.create_dataset(name=&#39;row&#39;, data=sp.row)
+        composite_group.create_dataset(name=&#39;col&#39;, data=sp.col)
+        composite_group.create_dataset(name=&#39;value&#39;, data=sp.data)
+        return composite_group
+
+    @classmethod
+    def load(
+        cls, global_state: State, group: Group, name: str, metadata: dict
+    ) -&gt; &#39;AfumigatusCellTreeList&#39;:
+        composite_dataset = group[name]
+        cells = AfumigatusCellList.load(global_state, composite_dataset, &#39;cells&#39;, metadata)
+
+        adjacency = coo_matrix(
+            (composite_dataset[&#39;value&#39;], (composite_dataset[&#39;row&#39;], composite_dataset[&#39;col&#39;]),),
+            shape=(cells.max_cells, cells.max_cells),
+        ).todok()
+
+        return cls(cells=cells, adjacency=adjacency)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed"><code class="name flex">
+<span>def <span class="ident">create_from_seed</span></span>(<span>grid, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create_from_seed(cls, grid, **kwargs) -&gt; &#39;AfumigatusCellTreeList&#39;:
+    cells = AfumigatusCellList.create_from_seed(grid, **kwargs)
+    adjacency = sparse_matrix((1, 1))
+    adjacency[0, 0] = 1
+
+    return cls(cells=cells, adjacency=adjacency)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>global_state, group, name, metadata)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def load(
+    cls, global_state: State, group: Group, name: str, metadata: dict
+) -&gt; &#39;AfumigatusCellTreeList&#39;:
+    composite_dataset = group[name]
+    cells = AfumigatusCellList.load(global_state, composite_dataset, &#39;cells&#39;, metadata)
+
+    adjacency = coo_matrix(
+        (composite_dataset[&#39;value&#39;], (composite_dataset[&#39;row&#39;], composite_dataset[&#39;col&#39;]),),
+        shape=(cells.max_cells, cells.max_cells),
+    ).todok()
+
+    return cls(cells=cells, adjacency=adjacency)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction"><code class="name flex">
+<span>def <span class="ident">random_branch_direction</span></span>(<span>growth)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Rotate by a random 45 degree angle from the axis of growth.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def random_branch_direction(cls, growth: np.ndarray) -&gt; np.ndarray:
+    &#34;&#34;&#34;Rotate by a random 45 degree angle from the axis of growth.&#34;&#34;&#34;
+    growth = Point.from_array(growth)
+
+    # get a random vector orthogonal to the growth vector
+    axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+    axis = (np.pi / 4) * axis / axis.norm()
+
+    # rotate the growth vector 45 degrees along the random axis
+    rotation = Rotation.from_rotvec(axis)
+    return rotation.apply(growth)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency"><code class="name">var <span class="ident">adjacency</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def adjacency(self) -&gt; sparse_matrix:
+    return self._adjacency[: len(self), : len(self)]</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data"><code class="name">var <span class="ident">cell_data</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def cell_data(self) -&gt; AfumigatusCellData:
+    return self.cells.cell_data</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.grid"><code class="name">var <span class="ident">grid</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def grid(self) -&gt; RectangularGrid:
+    return self.cells.grid</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells"><code class="name">var <span class="ident">max_cells</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def max_cells(self) -&gt; int:
+    return self.cells.max_cells</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.roots"><code class="name">var <span class="ident">roots</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def roots(self) -&gt; List[CellType]:
+    # This is linear in the number of nodes... might need to be optimized.
+    roots = []
+    for i in range(len(self)):
+        cell = self[i]
+        if not cell[&#39;dead&#39;] and cell.parent is None:
+            roots.append(cell)
+    return roots</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.append"><code class="name flex">
+<span>def <span class="ident">append</span></span>(<span>self, cell, parent=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def append(self, cell, parent=None):
+    index = len(self)
+    self.cells.append(cell)
+    self._adjacency[index, index] = 1
+
+    if parent is not None:
+        self._adjacency[parent, index] = 1
+        iron_pool = self.cells[parent][&#39;iron_pool&#39;] / 2
+        self.cells[parent][&#39;iron_pool&#39;] = self.cells[-1][&#39;iron_pool&#39;] = iron_pool</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.branch"><code class="name flex">
+<span>def <span class="ident">branch</span></span>(<span>self, branch_probability)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def branch(self, branch_probability: float):
+    cells = self.cell_data
+    indices = self.is_branchable(branch_probability)
+    if len(indices) == 0:
+        return
+
+    children = AfumigatusCellData(len(indices), initialize=True)
+    children[&#39;growth&#39;] = np.apply_along_axis(
+        self.random_branch_direction, 1, children[&#39;growth&#39;]
+    )
+
+    children[&#39;point&#39;] = cells[&#39;point&#39;][indices] + children[&#39;growth&#39;]
+
+    # filter out children lying outside of the domain
+    indices = indices[cells.point_mask(children[&#39;point&#39;], self.grid)]
+    if len(indices) == 0:
+        return
+
+    # set properties
+    cells[&#39;branchable&#39;][indices] = False
+    children[&#39;growable&#39;] = True
+    children[&#39;branchable&#39;] = False
+
+    self.extend(children, parents=indices)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.elongate"><code class="name flex">
+<span>def <span class="ident">elongate</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def elongate(self):
+    cells = self.cell_data
+    mask = self.is_growable()
+    if len(mask) == 0:
+        return
+
+    cells[&#39;growable&#39;][mask] = False
+    cells[&#39;branchable&#39;][mask] = True
+
+    children = AfumigatusCellData(len(mask), initialize=True)
+    children[&#39;point&#39;] = cells[&#39;point&#39;][mask] + cells[&#39;growth&#39;][mask]
+    children[&#39;growth&#39;] = cells[&#39;growth&#39;][mask]
+
+    self.extend(children, parents=mask)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.extend"><code class="name flex">
+<span>def <span class="ident">extend</span></span>(<span>self, cells, parents=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extend(self, cells: CellData, parents: Iterable[Union[int, None]] = None) -&gt; None:
+    if parents is None:
+        parents = [None] * len(cells)
+
+    for cell, parent in zip(cells, parents):
+        self.append(cell, parent)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable"><code class="name flex">
+<span>def <span class="ident">is_branchable</span></span>(<span>self, branch_probability)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_branchable(self, branch_probability: float) -&gt; np.ndarray:
+    cells = self.cells.cell_data
+    return self.cells.alive(
+        cells[&#39;branchable&#39;]
+        &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+        &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+    )</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable"><code class="name flex">
+<span>def <span class="ident">is_growable</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_growable(self) -&gt; np.ndarray:
+    cells = self.cells.cell_data
+    return self.cells.alive(
+        cells[&#39;growable&#39;]
+        &amp; cells.point_mask(cells[&#39;point&#39;] + cells[&#39;growth&#39;], self.grid)
+        &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
+    )</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Kill the cell at the given index and remove it from the tree.</p>
+<p>This method will return a list of cells which were children of the
+killed cell.
+These children will be the roots of newly formed trees.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kill(self, index: int) -&gt; List[AfumigatusCell]:
+    &#34;&#34;&#34;Kill the cell at the given index and remove it from the tree.
+
+    This method will return a list of cells which were children of the
+    killed cell.  These children will be the roots of newly formed trees.
+    &#34;&#34;&#34;
+    self.cell_data[index][&#39;dead&#39;] = True
+    roots = []
+    for i in range(len(self)):
+        if i == index:
+            continue
+        if self._adjacency.pop((i, index), None):
+            self[i][&#39;growable&#39;] = True
+        if self._adjacency.pop((index, i), None):
+            roots.append(self[i])
+    return roots</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>self, group, name, metadata)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(self, group: Group, name: str, metadata: dict) -&gt; Group:
+    composite_group = group.create_group(name)
+    composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+    composite_group.attrs[&#39;type&#39;] = &#39;CellTree&#39;
+    self.cells.save(composite_group, &#39;cells&#39;, metadata)
+
+    sp = self.adjacency.tocoo()
+    composite_group.create_dataset(name=&#39;row&#39;, data=sp.row)
+    composite_group.create_dataset(name=&#39;col&#39;, data=sp.col)
+    composite_group.create_dataset(name=&#39;value&#39;, data=sp.data)
+    return composite_group</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusState"><code class="flex name class">
+<span>class <span class="ident">AfumigatusState</span></span>
+<span>(</span><span>*, global_state, tree=NOTHING)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AfumigatusState(ModuleState):
+    tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.cell_list_factory" href="#simulation.modules.afumigatus.cell_list_factory">cell_list_factory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.Afumigatus" href="#simulation.modules.afumigatus.Afumigatus">Afumigatus</a></code></h4>
+</li>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.add_child" href="#simulation.modules.afumigatus.AfumigatusCell.add_child">add_child</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.children" href="#simulation.modules.afumigatus.AfumigatusCell.children">children</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.kill" href="#simulation.modules.afumigatus.AfumigatusCell.kill">kill</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.parent" href="#simulation.modules.afumigatus.AfumigatusCell.parent">parent</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.record" href="#simulation.modules.afumigatus.AfumigatusCell.record">record</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellData" href="#simulation.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS" href="#simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS">AFUMIGATUS_FIELDS</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH" href="#simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH">BOOLEAN_NETWORK_LENGTH</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.FIELDS" href="#simulation.modules.afumigatus.AfumigatusCellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR" href="#simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR">GROWTH_SCALE_FACTOR</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.State" href="#simulation.modules.afumigatus.AfumigatusCellData.State">State</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.Status" href="#simulation.modules.afumigatus.AfumigatusCellData.Status">Status</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network" href="#simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network">initial_boolean_network</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellList" href="#simulation.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellList.CellDataClass" href="#simulation.modules.afumigatus.AfumigatusCellList.CellDataClass">CellDataClass</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency">adjacency</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.append" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.append">append</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.branch" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.branch">branch</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data">cell_data</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.elongate" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.elongate">elongate</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.extend" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.extend">extend</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.grid" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.grid">grid</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable">is_branchable</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable">is_growable</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.kill" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.kill">kill</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.load" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.load">load</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells">max_cells</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction">random_branch_direction</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.roots" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.roots">roots</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.save" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.save">save</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.afumigatus.AfumigatusState" href="#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

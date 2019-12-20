@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.2" />
+<title>simulation.module API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.module</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from importlib import import_module
+from typing import Any, Dict, Optional, Type, Union
+
+import attr
+from h5py import Dataset, Group
+import numpy as np
+
+from simulation.config import SimulationConfig
+from simulation.state import State
+
+AttrValue = Union[float, str, bool, np.ndarray]
+
+
+@attr.s(auto_attribs=True, kw_only=True)
+class ModuleState(object):
+    &#34;&#34;&#34;
+    Base type intended to store the state for simulation modules.
+
+    This class contains serialization support for basic types (float, int, str,
+    bool) and numpy arrays of those types.  Modules containing more complicated
+    state must override the serialization mechanism with custom behavior.
+    &#34;&#34;&#34;
+
+    global_state: &#39;State&#39;
+
+    def save_state(self, group: Group) -&gt; None:
+        &#34;&#34;&#34;Save the module state into an HDF5 group.&#34;&#34;&#34;
+        for field in attr.fields(type(self)):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            value = getattr(self, name)
+            self.save_attribute(group, name, value, field.metadata)
+
+    @classmethod
+    def load_state(cls, global_state: &#39;State&#39;, group: Group) -&gt; &#39;ModuleState&#39;:
+        &#34;&#34;&#34;Load this module&#39;s state from an HDF5 group.&#34;&#34;&#34;
+        kwargs: Dict[str, Any] = {&#39;global_state&#39;: global_state}
+        for field in attr.fields(cls):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            metadata = field.metadata or {}
+
+            group_object = group.get(name, None)
+            if group_object is None:
+                raise ValueError(f&#39;Could not read {name} from file.&#39;)
+
+            if isinstance(group_object, Group):
+                # TODO: break this out into helper methods so subclasses can customize
+                class_name = group_object.attrs.get(&#39;class&#39;)
+                if class_name is None:
+                    raise ValueError(f&#39;Field {name} contained an invalid composite type.&#39;)
+
+                module_name, class_name = class_name.split(&#39;:&#39;)
+                try:
+                    module = import_module(module_name)
+                except ImportError:
+                    raise TypeError(f&#39;File references unknown module {module_name} in {name}&#39;)
+
+                class_ = getattr(module, class_name, None)
+                if class_ is None:
+                    raise TypeError(f&#39;File references invalid class for {name}&#39;)
+
+                kwargs[name] = class_.load(global_state, group, name, metadata)
+
+            else:
+                kwargs[name] = cls.load_attribute(global_state, group, name, metadata)
+        return cls(**kwargs)
+
+    @classmethod
+    def save_attribute(
+        cls, group: Group, name: str, value: AttrValue, metadata: dict
+    ) -&gt; Union[Dataset, Group]:
+        &#34;&#34;&#34;Save an attribute into an HDF5 group.&#34;&#34;&#34;
+        metadata = metadata or {}
+        if isinstance(value, (float, int, str, bool, np.ndarray)):
+            return cls.save_simple_type(group, name, value, metadata)
+        elif hasattr(value, &#39;save&#39;):
+            return value.save(group, name, metadata)
+        else:
+            # modules must define serializers for unsupported types
+            raise TypeError(f&#39;Attribute {name} in {group.name} contains an unsupported datatype.&#39;)
+
+    @classmethod
+    def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -&gt; Dataset:
+        kwargs: Dict[str, Any] = {}
+        if metadata.get(&#39;grid&#39;):
+            kwargs = dict(
+                compression=&#39;gzip&#39;,  # transparent compression
+                shuffle=True,  # improve compressiblity
+                fletcher32=True,  # checksum
+            )
+
+        var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
+
+        # mark the original attribute as a scalar to unwrap the numpy array when loading
+        var.attrs[&#39;scalar&#39;] = not isinstance(value, np.ndarray)
+
+        if metadata.get(&#39;grid&#39;):
+            # attach grid scales to dataset dimensions
+            var.dims[0].attach_scale(var.file[&#39;z&#39;])
+            var.dims[1].attach_scale(var.file[&#39;y&#39;])
+            var.dims[2].attach_scale(var.file[&#39;x&#39;])
+
+        return var
+
+    @classmethod
+    def load_attribute(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -&gt; AttrValue:
+        &#34;&#34;&#34;Load a raw value from an HDF5 file group.&#34;&#34;&#34;
+        dataset = group[name]
+        if dataset.attrs.get(&#39;scalar&#39;, False):
+            value = dataset[()]
+        else:
+            value = dataset[:]
+        return value
+
+
+class Module(object):
+    #: a unique name for this module used for namespacing
+    name: str = &#39;&#39;
+
+    #: default values for all config options
+    defaults: Dict[str, str] = {}
+
+    #: container for extra state required by this module
+    StateClass: Type[ModuleState] = ModuleState
+
+    def __init__(self, config: SimulationConfig):
+        if not config.has_section(self.section):
+            config.add_section(self.section)
+
+        self.config = config[self.section]
+        values = dict(self.defaults, **self.config)
+        self.config.update(values)
+
+    @property
+    def section(self):
+        &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
+        return self.name
+
+    # The following are no-op hooks that a module can define to customize the
+    # behavior.  A module can override any of these methods to execute
+    # arbitrary code during the simulation lifetime.
+    def construct(self, state: State) -&gt; None:
+        &#34;&#34;&#34;Run after state construction.&#34;&#34;&#34;
+
+    def initialize(self, state: State) -&gt; State:
+        &#34;&#34;&#34;Run after state initialization.&#34;&#34;&#34;
+        return state
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        &#34;&#34;&#34;Run after advancing the simulation state in time.&#34;&#34;&#34;
+        return state</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.module.Module"><code class="flex name class">
+<span>class <span class="ident">Module</span></span>
+<span>(</span><span>config)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Module(object):
+    #: a unique name for this module used for namespacing
+    name: str = &#39;&#39;
+
+    #: default values for all config options
+    defaults: Dict[str, str] = {}
+
+    #: container for extra state required by this module
+    StateClass: Type[ModuleState] = ModuleState
+
+    def __init__(self, config: SimulationConfig):
+        if not config.has_section(self.section):
+            config.add_section(self.section)
+
+        self.config = config[self.section]
+        values = dict(self.defaults, **self.config)
+        self.config.update(values)
+
+    @property
+    def section(self):
+        &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
+        return self.name
+
+    # The following are no-op hooks that a module can define to customize the
+    # behavior.  A module can override any of these methods to execute
+    # arbitrary code during the simulation lifetime.
+    def construct(self, state: State) -&gt; None:
+        &#34;&#34;&#34;Run after state construction.&#34;&#34;&#34;
+
+    def initialize(self, state: State) -&gt; State:
+        &#34;&#34;&#34;Run after state initialization.&#34;&#34;&#34;
+        return state
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        &#34;&#34;&#34;Run after advancing the simulation state in time.&#34;&#34;&#34;
+        return state</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="simulation.modules.geometry.Geometry" href="modules/geometry/index.html#simulation.modules.geometry.Geometry">Geometry</a></li>
+<li><a title="simulation.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#simulation.modules.afumigatus.Afumigatus">Afumigatus</a></li>
+<li><a title="simulation.modules.save.FileOutput" href="modules/save.html#simulation.modules.save.FileOutput">FileOutput</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.module.Module.StateClass"><code class="name">var <span class="ident">StateClass</span></code></dt>
+<dd>
+<section class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ModuleState(object):
+    &#34;&#34;&#34;
+    Base type intended to store the state for simulation modules.
+
+    This class contains serialization support for basic types (float, int, str,
+    bool) and numpy arrays of those types.  Modules containing more complicated
+    state must override the serialization mechanism with custom behavior.
+    &#34;&#34;&#34;
+
+    global_state: &#39;State&#39;
+
+    def save_state(self, group: Group) -&gt; None:
+        &#34;&#34;&#34;Save the module state into an HDF5 group.&#34;&#34;&#34;
+        for field in attr.fields(type(self)):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            value = getattr(self, name)
+            self.save_attribute(group, name, value, field.metadata)
+
+    @classmethod
+    def load_state(cls, global_state: &#39;State&#39;, group: Group) -&gt; &#39;ModuleState&#39;:
+        &#34;&#34;&#34;Load this module&#39;s state from an HDF5 group.&#34;&#34;&#34;
+        kwargs: Dict[str, Any] = {&#39;global_state&#39;: global_state}
+        for field in attr.fields(cls):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            metadata = field.metadata or {}
+
+            group_object = group.get(name, None)
+            if group_object is None:
+                raise ValueError(f&#39;Could not read {name} from file.&#39;)
+
+            if isinstance(group_object, Group):
+                # TODO: break this out into helper methods so subclasses can customize
+                class_name = group_object.attrs.get(&#39;class&#39;)
+                if class_name is None:
+                    raise ValueError(f&#39;Field {name} contained an invalid composite type.&#39;)
+
+                module_name, class_name = class_name.split(&#39;:&#39;)
+                try:
+                    module = import_module(module_name)
+                except ImportError:
+                    raise TypeError(f&#39;File references unknown module {module_name} in {name}&#39;)
+
+                class_ = getattr(module, class_name, None)
+                if class_ is None:
+                    raise TypeError(f&#39;File references invalid class for {name}&#39;)
+
+                kwargs[name] = class_.load(global_state, group, name, metadata)
+
+            else:
+                kwargs[name] = cls.load_attribute(global_state, group, name, metadata)
+        return cls(**kwargs)
+
+    @classmethod
+    def save_attribute(
+        cls, group: Group, name: str, value: AttrValue, metadata: dict
+    ) -&gt; Union[Dataset, Group]:
+        &#34;&#34;&#34;Save an attribute into an HDF5 group.&#34;&#34;&#34;
+        metadata = metadata or {}
+        if isinstance(value, (float, int, str, bool, np.ndarray)):
+            return cls.save_simple_type(group, name, value, metadata)
+        elif hasattr(value, &#39;save&#39;):
+            return value.save(group, name, metadata)
+        else:
+            # modules must define serializers for unsupported types
+            raise TypeError(f&#39;Attribute {name} in {group.name} contains an unsupported datatype.&#39;)
+
+    @classmethod
+    def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -&gt; Dataset:
+        kwargs: Dict[str, Any] = {}
+        if metadata.get(&#39;grid&#39;):
+            kwargs = dict(
+                compression=&#39;gzip&#39;,  # transparent compression
+                shuffle=True,  # improve compressiblity
+                fletcher32=True,  # checksum
+            )
+
+        var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
+
+        # mark the original attribute as a scalar to unwrap the numpy array when loading
+        var.attrs[&#39;scalar&#39;] = not isinstance(value, np.ndarray)
+
+        if metadata.get(&#39;grid&#39;):
+            # attach grid scales to dataset dimensions
+            var.dims[0].attach_scale(var.file[&#39;z&#39;])
+            var.dims[1].attach_scale(var.file[&#39;y&#39;])
+            var.dims[2].attach_scale(var.file[&#39;x&#39;])
+
+        return var
+
+    @classmethod
+    def load_attribute(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -&gt; AttrValue:
+        &#34;&#34;&#34;Load a raw value from an HDF5 file group.&#34;&#34;&#34;
+        dataset = group[name]
+        if dataset.attrs.get(&#39;scalar&#39;, False):
+            value = dataset[()]
+        else:
+            value = dataset[:]
+        return value</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.Module.defaults"><code class="name">var <span class="ident">defaults</span></code></dt>
+<dd>
+<section class="desc"><p>dict() -&gt; new empty dictionary
+dict(mapping) -&gt; new dictionary initialized from a mapping object's
+(key, value) pairs
+dict(iterable) -&gt; new dictionary initialized as if via:
+d = {}
+for k, v in iterable:
+d[k] = v
+dict(**kwargs) -&gt; new dictionary initialized with the name=value pairs
+in the keyword argument list.
+For example:
+dict(one=1, two=2)</p></section>
+</dd>
+<dt id="simulation.module.Module.name"><code class="name">var <span class="ident">name</span></code></dt>
+<dd>
+<section class="desc"><p>str(object='') -&gt; str
+str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<p>Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.<strong>str</strong>() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.</p></section>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="simulation.module.Module.section"><code class="name">var <span class="ident">section</span></code></dt>
+<dd>
+<section class="desc"><p>Return the section in the configuration object used by this module.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def section(self):
+    &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
+    return self.name</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.module.Module.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state, previous_time)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Run after advancing the simulation state in time.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def advance(self, state: State, previous_time: float) -&gt; State:
+    &#34;&#34;&#34;Run after advancing the simulation state in time.&#34;&#34;&#34;
+    return state</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.Module.construct"><code class="name flex">
+<span>def <span class="ident">construct</span></span>(<span>self, state)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Run after state construction.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def construct(self, state: State) -&gt; None:
+    &#34;&#34;&#34;Run after state construction.&#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.Module.initialize"><code class="name flex">
+<span>def <span class="ident">initialize</span></span>(<span>self, state)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Run after state initialization.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def initialize(self, state: State) -&gt; State:
+    &#34;&#34;&#34;Run after state initialization.&#34;&#34;&#34;
+    return state</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.module.ModuleState"><code class="flex name class">
+<span>class <span class="ident">ModuleState</span></span>
+<span>(</span><span>*, global_state)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ModuleState(object):
+    &#34;&#34;&#34;
+    Base type intended to store the state for simulation modules.
+
+    This class contains serialization support for basic types (float, int, str,
+    bool) and numpy arrays of those types.  Modules containing more complicated
+    state must override the serialization mechanism with custom behavior.
+    &#34;&#34;&#34;
+
+    global_state: &#39;State&#39;
+
+    def save_state(self, group: Group) -&gt; None:
+        &#34;&#34;&#34;Save the module state into an HDF5 group.&#34;&#34;&#34;
+        for field in attr.fields(type(self)):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            value = getattr(self, name)
+            self.save_attribute(group, name, value, field.metadata)
+
+    @classmethod
+    def load_state(cls, global_state: &#39;State&#39;, group: Group) -&gt; &#39;ModuleState&#39;:
+        &#34;&#34;&#34;Load this module&#39;s state from an HDF5 group.&#34;&#34;&#34;
+        kwargs: Dict[str, Any] = {&#39;global_state&#39;: global_state}
+        for field in attr.fields(cls):
+            name = field.name
+            if name == &#39;global_state&#39;:
+                continue
+            metadata = field.metadata or {}
+
+            group_object = group.get(name, None)
+            if group_object is None:
+                raise ValueError(f&#39;Could not read {name} from file.&#39;)
+
+            if isinstance(group_object, Group):
+                # TODO: break this out into helper methods so subclasses can customize
+                class_name = group_object.attrs.get(&#39;class&#39;)
+                if class_name is None:
+                    raise ValueError(f&#39;Field {name} contained an invalid composite type.&#39;)
+
+                module_name, class_name = class_name.split(&#39;:&#39;)
+                try:
+                    module = import_module(module_name)
+                except ImportError:
+                    raise TypeError(f&#39;File references unknown module {module_name} in {name}&#39;)
+
+                class_ = getattr(module, class_name, None)
+                if class_ is None:
+                    raise TypeError(f&#39;File references invalid class for {name}&#39;)
+
+                kwargs[name] = class_.load(global_state, group, name, metadata)
+
+            else:
+                kwargs[name] = cls.load_attribute(global_state, group, name, metadata)
+        return cls(**kwargs)
+
+    @classmethod
+    def save_attribute(
+        cls, group: Group, name: str, value: AttrValue, metadata: dict
+    ) -&gt; Union[Dataset, Group]:
+        &#34;&#34;&#34;Save an attribute into an HDF5 group.&#34;&#34;&#34;
+        metadata = metadata or {}
+        if isinstance(value, (float, int, str, bool, np.ndarray)):
+            return cls.save_simple_type(group, name, value, metadata)
+        elif hasattr(value, &#39;save&#39;):
+            return value.save(group, name, metadata)
+        else:
+            # modules must define serializers for unsupported types
+            raise TypeError(f&#39;Attribute {name} in {group.name} contains an unsupported datatype.&#39;)
+
+    @classmethod
+    def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -&gt; Dataset:
+        kwargs: Dict[str, Any] = {}
+        if metadata.get(&#39;grid&#39;):
+            kwargs = dict(
+                compression=&#39;gzip&#39;,  # transparent compression
+                shuffle=True,  # improve compressiblity
+                fletcher32=True,  # checksum
+            )
+
+        var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
+
+        # mark the original attribute as a scalar to unwrap the numpy array when loading
+        var.attrs[&#39;scalar&#39;] = not isinstance(value, np.ndarray)
+
+        if metadata.get(&#39;grid&#39;):
+            # attach grid scales to dataset dimensions
+            var.dims[0].attach_scale(var.file[&#39;z&#39;])
+            var.dims[1].attach_scale(var.file[&#39;y&#39;])
+            var.dims[2].attach_scale(var.file[&#39;x&#39;])
+
+        return var
+
+    @classmethod
+    def load_attribute(
+        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+    ) -&gt; AttrValue:
+        &#34;&#34;&#34;Load a raw value from an HDF5 file group.&#34;&#34;&#34;
+        dataset = group[name]
+        if dataset.attrs.get(&#39;scalar&#39;, False):
+            value = dataset[()]
+        else:
+            value = dataset[:]
+        return value</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="simulation.modules.geometry.GeometryState" href="modules/geometry/index.html#simulation.modules.geometry.GeometryState">GeometryState</a></li>
+<li><a title="simulation.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
+<li><a title="simulation.modules.save.FileOutput.StateClass" href="#simulation.module.Module.StateClass">FileOutput.StateClass</a></li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="simulation.module.ModuleState.load_attribute"><code class="name flex">
+<span>def <span class="ident">load_attribute</span></span>(<span>global_state, group, name, metadata=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Load a raw value from an HDF5 file group.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def load_attribute(
+    cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+) -&gt; AttrValue:
+    &#34;&#34;&#34;Load a raw value from an HDF5 file group.&#34;&#34;&#34;
+    dataset = group[name]
+    if dataset.attrs.get(&#39;scalar&#39;, False):
+        value = dataset[()]
+    else:
+        value = dataset[:]
+    return value</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.ModuleState.load_state"><code class="name flex">
+<span>def <span class="ident">load_state</span></span>(<span>global_state, group)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Load this module's state from an HDF5 group.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def load_state(cls, global_state: &#39;State&#39;, group: Group) -&gt; &#39;ModuleState&#39;:
+    &#34;&#34;&#34;Load this module&#39;s state from an HDF5 group.&#34;&#34;&#34;
+    kwargs: Dict[str, Any] = {&#39;global_state&#39;: global_state}
+    for field in attr.fields(cls):
+        name = field.name
+        if name == &#39;global_state&#39;:
+            continue
+        metadata = field.metadata or {}
+
+        group_object = group.get(name, None)
+        if group_object is None:
+            raise ValueError(f&#39;Could not read {name} from file.&#39;)
+
+        if isinstance(group_object, Group):
+            # TODO: break this out into helper methods so subclasses can customize
+            class_name = group_object.attrs.get(&#39;class&#39;)
+            if class_name is None:
+                raise ValueError(f&#39;Field {name} contained an invalid composite type.&#39;)
+
+            module_name, class_name = class_name.split(&#39;:&#39;)
+            try:
+                module = import_module(module_name)
+            except ImportError:
+                raise TypeError(f&#39;File references unknown module {module_name} in {name}&#39;)
+
+            class_ = getattr(module, class_name, None)
+            if class_ is None:
+                raise TypeError(f&#39;File references invalid class for {name}&#39;)
+
+            kwargs[name] = class_.load(global_state, group, name, metadata)
+
+        else:
+            kwargs[name] = cls.load_attribute(global_state, group, name, metadata)
+    return cls(**kwargs)</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.ModuleState.save_attribute"><code class="name flex">
+<span>def <span class="ident">save_attribute</span></span>(<span>group, name, value, metadata)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Save an attribute into an HDF5 group.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def save_attribute(
+    cls, group: Group, name: str, value: AttrValue, metadata: dict
+) -&gt; Union[Dataset, Group]:
+    &#34;&#34;&#34;Save an attribute into an HDF5 group.&#34;&#34;&#34;
+    metadata = metadata or {}
+    if isinstance(value, (float, int, str, bool, np.ndarray)):
+        return cls.save_simple_type(group, name, value, metadata)
+    elif hasattr(value, &#39;save&#39;):
+        return value.save(group, name, metadata)
+    else:
+        # modules must define serializers for unsupported types
+        raise TypeError(f&#39;Attribute {name} in {group.name} contains an unsupported datatype.&#39;)</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.ModuleState.save_simple_type"><code class="name flex">
+<span>def <span class="ident">save_simple_type</span></span>(<span>group, name, value, metadata)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -&gt; Dataset:
+    kwargs: Dict[str, Any] = {}
+    if metadata.get(&#39;grid&#39;):
+        kwargs = dict(
+            compression=&#39;gzip&#39;,  # transparent compression
+            shuffle=True,  # improve compressiblity
+            fletcher32=True,  # checksum
+        )
+
+    var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
+
+    # mark the original attribute as a scalar to unwrap the numpy array when loading
+    var.attrs[&#39;scalar&#39;] = not isinstance(value, np.ndarray)
+
+    if metadata.get(&#39;grid&#39;):
+        # attach grid scales to dataset dimensions
+        var.dims[0].attach_scale(var.file[&#39;z&#39;])
+        var.dims[1].attach_scale(var.file[&#39;y&#39;])
+        var.dims[2].attach_scale(var.file[&#39;x&#39;])
+
+    return var</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.module.ModuleState.save_state"><code class="name flex">
+<span>def <span class="ident">save_state</span></span>(<span>self, group)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Save the module state into an HDF5 group.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_state(self, group: Group) -&gt; None:
+    &#34;&#34;&#34;Save the module state into an HDF5 group.&#34;&#34;&#34;
+    for field in attr.fields(type(self)):
+        name = field.name
+        if name == &#39;global_state&#39;:
+            continue
+        value = getattr(self, name)
+        self.save_attribute(group, name, value, field.metadata)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.module.Module" href="#simulation.module.Module">Module</a></code></h4>
+<ul class="two-column">
+<li><code><a title="simulation.module.Module.StateClass" href="#simulation.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.module.Module.advance" href="#simulation.module.Module.advance">advance</a></code></li>
+<li><code><a title="simulation.module.Module.construct" href="#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.defaults" href="#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.initialize" href="#simulation.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="simulation.module.Module.name" href="#simulation.module.Module.name">name</a></code></li>
+<li><code><a title="simulation.module.Module.section" href="#simulation.module.Module.section">section</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.module.ModuleState" href="#simulation.module.ModuleState">ModuleState</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_simple_type" href="#simulation.module.ModuleState.save_simple_type">save_simple_type</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="#simulation.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.2" />
+<title>simulation API documentation</title>
+<meta name="description" content="A multiscale simulation framework of *Aspergillus fumigatus* …" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation</code></h1>
+</header>
+<section id="section-intro">
+<p>A multiscale simulation framework of <em>Aspergillus fumigatus</em>.</p>
+<h1 id="introduction">Introduction</h1>
+<h2 id="installing">Installing</h2>
+<p>While not required, it is recommended you use
+<a href="https://github.com/pypa/pipenv">pipenv</a> to create an isolated environment for
+running and developing.
+To do so, run</p>
+<pre><code>pipenv install --dev
+</code></pre>
+<p>See <a href="https://pipenv.kennethreitz.org/">pipenv</a> for details.
+Once this is done,
+you can run <code>pipenv shell</code> to enter the newly created environment.</p>
+<h2 id="downloading-initialization-data">Downloading initialization data</h2>
+<p>For now, running the simulation requires the existence of a pregenerated HDF5
+file containing information about the simulation domain.
+This file can be
+downloaded from
+<a href="https://data.nutritionallungimmunity.org/api/v1/file/5dc778b2ef2e2603553c5a12/download">Girder</a>.
+This file is expected to be found as <code>geometry.hdf5</code> in the directory you
+are running the simulation from.</p>
+<h2 id="running">Running</h2>
+<p>With the simulation package installed, you should have a new commandline
+program called <code>simulation</code> available.
+Try running <code>simulation --help</code> to get
+more information.
+To run a simulation, you will need configure a configuration.
+There are two example configurations in the repository to get you started.</p>
+<p>Now run simulation up to 50 seconds using the first example config.</p>
+<pre><code>cp config.ini.example config.ini
+simulation run 50
+</code></pre>
+<p>You should now have files like <code>output/simulation-000001.000.hdf5</code> containing
+the simulation state at 1 second intervals through the full simulation.</p>
+<h2 id="testing">Testing</h2>
+<p>There is a basic test suite included in the package using <a href="https://tox.readthedocs.io/en/latest/">tox</a>
+as a test runner.
+Try running the tests now with</p>
+<pre><code>tox
+</code></pre>
+<p>This will install the simulation code into a new isolated environment and run
+all of the tests.
+It will even test against multiple python versions if you
+have them installed.</p>
+<p>If you want, you can even run these tests outside of tox.
+For example, try
+running <code>pytest --cov</code> to get coverage information for the tests run from your
+current python environment.
+Tox also handles running the linting and type
+checking as well.
+These can be run standalone with <code>flake8 simulation</code> or
+<code>mypy simulation</code> respectively.</p>
+<h1 id="code-organization">Code organization</h1>
+<ul>
+<li>
+<p><code>state.py</code></p>
+<p>This module defines classes intended to contain all of the variables that
+make up the simulation state.
+An object of the "State" type is passed
+around through all of the simulation methods.</p>
+<p>By design, the state class does not contain any methods that mutate its own
+data.
+The state object is primarily a container that can be serialized and
+deserialized easily for simulation diagnostic output and checkpoints.</p>
+</li>
+<li>
+<p><code>cell.py</code></p>
+<p>This module contains high level, but efficient, data structures representing
+"cells" in the simulation.
+At minimum, a cell is an object containing two
+attributes representing the position of the cell in the domain and whether
+or not it is alive.
+This data structure is intended to be extended by
+modules to create cells with additional attributes and behavior.</p>
+</li>
+<li>
+<p><code>config.py</code></p>
+<p>This module defines a subclass of a python
+<a href="https://docs.python.org/3/library/configparser.html?highlight=configparser#configparser.ConfigParser">ConfigParser</a>
+which parses ".ini" style files for runtime configuration of the
+simulation.
+While not currently enforced, it is expected that all values
+in the configuration object are immutable.
+This is the primary distinction
+between the simulation config and the simulation state.</p>
+</li>
+<li>
+<p><code>module.py</code></p>
+<p>This defines the "module" API for extending the simulation.
+See below for
+a detailed description of this API.</p>
+</li>
+<li>
+<p><code>modules/*</code></p>
+<p>Modules under <code>modules</code> are "optional" extensions to the main simulation.
+They contain functions that are called in one of the extension points in
+the main solver: initialization and iteration.
+These functions could be
+moved to an external package, but for simplicity in this proof of concept
+are included with the main simulation.</p>
+</li>
+<li>
+<p><code>validation.py</code></p>
+<p>This module contains a custom exception type dedicated for errors thrown by
+validation methods.
+This along with a custom context generator defined
+here are intended to provide extra information about the source of errors
+(e.g. which module was executing) after they are thrown.</p>
+</li>
+<li>
+<p><code>cli.py</code></p>
+<p>This module uses <a href="https://click.palletsprojects.com/en/7.x/">click</a> to generate
+a commandline interface for executing the simulation.
+Click provides a flexible
+API for designing high quality CLI's.</p>
+</li>
+</ul>
+<h1 id="simulation-state">Simulation state</h1>
+<p>Absent any additional modules, the simulation state is an object containing only the
+following attributes:</p>
+<ul>
+<li>time: The simulation time as a floating point number</li>
+<li>grid: An instance of <code>RectangularGrid</code> defining the simulation discretization</li>
+<li>config: An instance of <code>SimulationConfig</code> providing configuration options</li>
+</ul>
+<p>When a module is included in the runtime configuration, its own state is
+included as an additional "dynamic" attribute on this object.
+For example when
+the "afumigatus" module is included, you have access to <code>state.afumigatus</code>
+containing the afumigatus module's state.</p>
+<p>The State object API directly uses the API of the <a href="https://www.attrs.org">attr</a>
+library.
+This provides things like type annotation integration, data
+validation, initialization, and many more features.
+Developers should read the
+attrs documentation to learn more about how to work with the state object.</p>
+<h1 id="extension-modules">Extension modules</h1>
+<p>At a high level, an extension module contains the following features:</p>
+<ul>
+<li>configuration options</li>
+<li>state variables</li>
+<li>simulation lifecycle handlers:</li>
+<li>construction (state memory allocation)</li>
+<li>initialization (initial conditions)</li>
+<li>iteration (advancing the state in time)</li>
+</ul>
+<p>An extension module is registered with the simulation by providing a subclass
+of <code>simulation.module.Module</code>.
+Features are added by overriding attributes on
+this class.
+The following is small example demonstrating some of the features:</p>
+<pre><code class="python">import attr
+
+from simulation.module import Module, ModuleState
+
+
+class HelloWorld(Module):
+    name = 'hello_world'
+    defaults = {
+        'target_string': 'World'
+    }
+
+    @attr.s(kw_only=True, auto_attribs=True)
+    class StateClass(ModuleState):
+        target: str = attr.ib(default='')
+
+    def initialize(self, state):
+        state.hello_world.target = self.config.get('target_string')
+        return state
+
+    def advance(self, state, previous_time):
+        print(f'Hello {state.hello_world.target}!')
+        return state
+</code></pre>
+<p>When enabled, this module will
+* add its <code>hello_world</code> namespace to the simulation state containing a new
+scalar value, <code>target</code>
+* add a configuration option under the section <code>[hello_world]</code>
+* initialize the state variable <code>target</code> to what is provided in the
+config file
+* print a message on every time step</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+A multiscale simulation framework of *Aspergillus fumigatus*.
+
+.. include:: ../README.md
+&#34;&#34;&#34;</code></pre>
+</details>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="simulation.cell" href="cell.html">simulation.cell</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.cli" href="cli.html">simulation.cli</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.config" href="config.html">simulation.config</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.coordinates" href="coordinates.html">simulation.coordinates</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.diffusion" href="diffusion.html">simulation.diffusion</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.module" href="module.html">simulation.module</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.modules" href="modules/index.html">simulation.modules</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.solver" href="solver.html">simulation.solver</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.state" href="state.html">simulation.state</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="simulation.validation" href="validation.html">simulation.validation</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a><ul>
+<li><a href="#installing">Installing</a></li>
+<li><a href="#downloading-initialization-data">Downloading initialization data</a></li>
+<li><a href="#running">Running</a></li>
+<li><a href="#testing">Testing</a></li>
+</ul>
+</li>
+<li><a href="#code-organization">Code organization</a></li>
+<li><a href="#simulation-state">Simulation state</a></li>
+<li><a href="#extension-modules">Extension modules</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="simulation.cell" href="cell.html">simulation.cell</a></code></li>
+<li><code><a title="simulation.cli" href="cli.html">simulation.cli</a></code></li>
+<li><code><a title="simulation.config" href="config.html">simulation.config</a></code></li>
+<li><code><a title="simulation.coordinates" href="coordinates.html">simulation.coordinates</a></code></li>
+<li><code><a title="simulation.diffusion" href="diffusion.html">simulation.diffusion</a></code></li>
+<li><code><a title="simulation.module" href="module.html">simulation.module</a></code></li>
+<li><code><a title="simulation.modules" href="modules/index.html">simulation.modules</a></code></li>
+<li><code><a title="simulation.solver" href="solver.html">simulation.solver</a></code></li>
+<li><code><a title="simulation.state" href="state.html">simulation.state</a></code></li>
+<li><code><a title="simulation.validation" href="validation.html">simulation.validation</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
