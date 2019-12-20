@@ -1,36 +1,5 @@
 # Introduction
 
-This repository contains a "proof of concept" implementation of an extensible
-simulation framework.  The problem it solves is not intended to be relevant,
-nor is the numeric method used intended to be the most appropriate.
-
-The goals of this code are to illustrate a number of proposed patterns
-and best practices:
-* how to load external code via configuration vectorizing code using
-* using numpy primatives to accelerate computation organizing numeric operations as
-  "pure functions" and keeping all state in a single serializable object
-* classic issues related to numeric stability when using low order methods
-* modern best practices for developing python code including unit testing,
-  type checking, generating command line interfaces, and packaging for external
-  users
-
-## Simulation
-
-The core code solves the 2D advection-diffusion equation given by
-```
-    ∂T
-    -- =  d ∆T - w ⋅ ∇T + S
-    ∂t
-```
-where
-* `T`: concentration of the advected quantity (e.g. heat)
-* `d`: diffusivity (assumed homogeneous)
-* `w`: velocity (e.g. wind)
-* `S`: source
-
-This equation is solved using low order finite differences in space and first
-order explicit time steps (Euler's method).
-
 ## Installing
 
 While not required, it is recommended you use
@@ -39,9 +8,17 @@ running and developing.  To do so, run
 ```
 pipenv install --dev
 ```
-See [pipenv](https://github.com/pypa/pipenv) for details.  Once this is done,
+See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
 you can run `pipenv shell` to enter the newly created environment.
 
+## Downloading initialization data
+
+For now, running the simulation requires the existence of a pregenerated HDF5
+file containing information about the simulation domain.  This file can be
+downloaded from
+[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5dc778b2ef2e2603553c5a12/download).
+This file is expected to be found as `geometry.hdf5` in the directory you
+are running the simulation from.
 
 ## Running
 
@@ -55,26 +32,8 @@ Now run simulation up to 50 seconds using the first example config.
 cp config.ini.example config.ini
 simulation run 50
 ```
-This will open a plot window that will update roughly every half second as the
-simulation executes.  This contains a single point source in the middle of the
-domain with a constant and homogeneous wind.
-
-The output was saved for every second on simulation time.  You can plot the
-contents of one of these files with the command.
-```
-simulation show output/simulation-000010.000.pkl
-```
-
-Now try running with an unstable configuration.  This is the same as the
-original, but the time step has been increased to `0.04`.
-```
-cp config.ini.unstable config.ini
-rm -fr output
-simulation run 50
-```
-Notice how the solution develops large oscillations despite starting from the
-same conditions as the original.  This is a classic example of numeric
-instability encountered when solving differential equations computationally.
+You should now have files like `output/simulation-000001.000.hdf5` containing
+the simulation state at 1 second intervals through the full simulation.
 
 ## Testing
 
@@ -105,6 +64,14 @@ checking as well.  These can be run standalone with `flake8 simulation` or
     data.  The state object is primarily a container that can be serialized and
     deserialized easily for simulation diagnostic output and checkpoints.
 
+* `cell.py`
+
+    This module contains high level, but efficient, data structures representing
+    "cells" in the simulation.  At minimum, a cell is an object containing two
+    attributes representing the position of the cell in the domain and whether
+    or not it is alive.  This data structure is intended to be extended by
+    modules to create cells with additional attributes and behavior.
+
 * `config.py`
 
     This module defines a subclass of a python
@@ -127,7 +94,7 @@ checking as well.  These can be run standalone with `flake8 simulation` or
     moved to an external package, but for simplicity in this proof of concept
     are included with the main simulation.
 
-* `validator.py`
+* `validation.py`
 
     This module contains a custom exception type dedicated for errors thrown by
     validation methods.  This along with a custom context generator defined
@@ -151,8 +118,8 @@ following attributes:
 
 When a module is included in the runtime configuration, its own state is
 included as an additional "dynamic" attribute on this object.  For example when
-the "advection" module is included, you have access to `state.advection`
-containing the advection module's state.
+the "afumigatus" module is included, you have access to `state.afumigatus`
+containing the afumigatus module's state.
 
 The State object API directly uses the API of the [attr](https://www.attrs.org)
 library.  This provides things like type annotation integration, data
@@ -183,7 +150,7 @@ from simulation.module import Module, ModuleState
 class HelloWorld(Module):
     name = 'hello_world'
     defaults = {
-        'target': 'World'
+        'target_string': 'World'
     }
 
     @attr.s(kw_only=True, auto_attribs=True)
@@ -191,7 +158,7 @@ class HelloWorld(Module):
         target: str = attr.ib(default='')
 
     def initialize(self, state):
-        state.hello_world.target = self.config.get('target')
+        state.hello_world.target = self.config.get('target_string')
         return state
 
     def advance(self, state, previous_time):
@@ -206,8 +173,3 @@ When enabled, this module will
 * initialize the state variable `target` to what is provided in the
   config file
 * print a message on every time step
-
-# Geometry Importation
-
-An example geometry file can be found at [Girder](https://data.nutritionallungimmunity.org/#item/5dc778b2ef2e2603553c5a11).
-To import the geometry, place the geometry.hdf5 to the current directory.
