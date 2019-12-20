@@ -103,9 +103,9 @@ class Macrophage(Module):
             np.random.shuffle(indices)
 
             for i in range(0, macrophage.init_num):
-                x = indices[i][2] + (random.uniform(-0.5, 0.5))
-                y = indices[i][1] + (random.uniform(-0.5, 0.5))
-                z = indices[i][0] + (random.uniform(-0.5, 0.5))
+                x = indices[i][2] + (random.uniform(0, 1))
+                y = indices[i][1] + (random.uniform(0, 1))
+                z = indices[i][0] + (random.uniform(0, 1))
                 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
@@ -122,8 +122,14 @@ class Macrophage(Module):
 
         drift(macrophage.cells, tissue, grid)
         # TODO - add recruitment
+            # indices = np.argwhere(molecule_to_recruit >= threshold_value)
+            # then for each index create a cell with prob 'rec_rate'
         # TODO - add leaving
+            # indices = np.argwhere(molecule_to_leave <= threshold_value)
+            # then for each index kill a cell with prob 'leave_rate'
         # TODO - add boolena network update
+            # for index in cells.alive:
+            #   cells[index].update_boolean network
         # TODO - add interaction?
 
         return state
@@ -148,20 +154,17 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
     for index in cells.is_moveable(grid):
         cell = cells[index]
         new_point = cell['point'] + delta_point
-        iz = int(new_point.z)
-        iy = int(new_point.y)
-        ix = int(new_point.x)
+        vox = grid.get_voxel(new_point)
         while not(valid_point(new_point, grid) and 
-            tissue[iz][iy][ix] == TissueTypes.SURFACTANT.value):
+            tissue[vox.z, vox.y, vox.x] == TissueTypes.SURFACTANT.value):
             x = random.uniform(-1, 1)
             y = random.uniform(-1, 1)
             z = random.uniform(-1, 1)
             new_point = cell['point'] + Point(x=x, y=y, z=z)
-            iz = int(new_point.z)
-            iy = int(new_point.y)
-            ix = int(new_point.x)
+            vox = grid.get_voxel(new_point)
 
         cell['point'] = new_point
         cells.update_voxel_index([index])
 
     return cells
+    
