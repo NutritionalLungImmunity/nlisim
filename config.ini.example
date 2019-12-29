@@ -66,7 +66,7 @@ preview_geometry = False
 
 [visualization]
 # list of variables to visualize [varibale_name | vtk_type]
-# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, RPOLY_DATA
+# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables = advection.concentration|STRUCTURED_POINTS
                    geometry.lung_tissue|STRUCTURED_POINTS
 visualize_interval = 1
