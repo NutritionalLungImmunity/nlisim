@@ -1,10 +1,57 @@
 version: 2.1
+
 jobs:
-  build:
+  test:
     docker:
       - image: jbeezley/tox:latest
     steps:
       - checkout
-      - setup_remote_docker
       - run: tox
 
+  docs-build:
+    docker:
+      - image: jbeezley/tox:latest
+    steps:
+      - checkout
+      - run:
+          name: Build docs
+          command: tox -e docs
+      - persist_to_workspace:
+          root: docs
+          paths: simulation
+
+  # https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
+  docs-deploy:
+    docker:
+      - image: node:12.14.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: docs
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci-build@nutritionallungimmunity.org"
+            git config user.name "CI Build"
+      - add_ssh_keys:
+          fingerprints:
+            - "78:29:f4:32:31:b1:c1:93:99:6d:2f:66:aa:8e:41:90"
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --message "[skip ci] Update docs" --dist docs/simulation
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
+      - docs-build
+      - docs-deploy:
+          requires:
+            - test
+            - docs-build
+          filters:
+            branches:
+              only: master

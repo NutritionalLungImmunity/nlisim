@@ -1,10 +1,11 @@
-from typing import Any, Iterable, Type, Union
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Set, Type, Union
 
 import attr
 from h5py import Group
 import numpy as np
 
-from simulation.coordinates import Point
+from simulation.coordinates import Point, Voxel
 from simulation.state import get_class_path, RectangularGrid, State
 
 MAX_CELL_LIST_SIZE = 10000
@@ -33,25 +34,22 @@ class CellData(np.ndarray):
     associated with each cell.
 
     ```python
-    class DerivedCell(Cell):
-        DERIVED_FIELDS = [
-            ('iron_content', 'f8'),
+    class DerivedCell(CellData):
+        FIELDS = CellData.FIELDS + [
+            ('iron_content', 'f8')
         ]
 
-        dtype = np.dtype(Cell.BASE_FIELDS + DERIVED_FIELDS,
-                         align=True)
+        dtype = np.dtype(CellData.FIELDS, align=True)
 
         @classmethod
-        def create_cell(cls, point=None, iron_content=0):
-            return np.rec.array(
-                [(point, iron_content)],
-                dtype=cls.dtype
-            )[0]
+        def create_cell_tuple(cls, iron_content=0, **kwargs):
+            return CellData.create_cell_tuple(**kwargs) + (iron_content,)
     ```
     """
 
-    BASE_FIELDS = [
+    FIELDS: List[Any] = [
         ('point', Point.dtype),
+        ('dead', 'b1'),
     ]
     """
     This variable contains the base fields that all subclasses should include
@@ -59,7 +57,7 @@ class CellData(np.ndarray):
     """
 
     # typing for dtype doesn't work correctly with this argument
-    dtype = np.dtype(BASE_FIELDS, align=True)  # type: ignore
+    dtype = np.dtype(FIELDS, align=True)  # type: ignore
     """
     Subclasses **must** override this value to append custom fields into each
     cell record.
@@ -76,16 +74,28 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell(cls, point: Point = None, **kwargs) -> np.record:
+    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
+        """Create a tuple of fields attached to a single cell.
+
+        The base class version of this method returns the fields associated with
+        just the bare cell.  Subclasses that append additional attributes onto
+        the cell must override this method to append their own fields to this
+        tuple.  Care must be taken to ensure that the order of the tuple is
+        identical to the order of the fields listed in `cls.dtype`.
+        """
+        if point is None:
+            point = Point()
+
+        return (point, dead)
+
+    @classmethod
+    def create_cell(cls, **kwargs) -> np.record:
         """Create a single record with type `cls.dtype`.
 
         Subclasses appending fields must override this with custom default
         values.
         """
-        if point is None:
-            point = Point()
-
-        return np.rec.array([(point,)], dtype=cls.dtype)[0]
+        return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
 
     @classmethod
     def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
@@ -141,6 +151,8 @@ class CellList(object):
     max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
     _cell_data: CellData = attr.ib()
     _ncells: int = attr.ib(init=False)
+    _voxel_index: Dict[Voxel, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
+    _reverse_voxel_index: List[Voxel] = attr.ib(init=False, factory=list)
 
     @_cell_data.default
     def __set_default_cells(self) -> CellData:
@@ -154,6 +166,8 @@ class CellList(object):
 
         if len(cells) > 0:
             self._cell_data[: len(cells)] = cells
+
+        self._compute_voxel_index()
 
     def __len__(self) -> int:
         return self._ncells
@@ -183,6 +197,50 @@ class CellList(object):
 
         return cls(grid=grid, cell_data=cell_data)
 
+    def alive(self, sample: Iterable = None) -> np.ndarray:
+        """Get a list of indices containing cells that are alive.
+
+        This method will filter out cells that are dead according to the
+        value of the `dead` field.  Optionally, you can also pass in a boolean
+        mask or index array.  This method will then filter the given list of
+        cells rather than the full list.
+
+        For example, to iterate over all living cells:
+        ```python
+        for index in cells.alive():
+            cell = cells[index]
+            # do something...
+        ```
+
+        To iterate over a sub-sample of living cells:
+        ```python
+        sample = [1, 10, 15]
+        for index in cells.alive(sample):
+            cell = cells[index]
+            # do something...
+        ```
+
+        To iterate over a boolean mask of living cells:
+        ```python
+        sample = cells.cell_data['iron'] > 0.5
+        for index in cells.alive(sample):
+            cell = cells[index]
+            # do something...
+        ```
+        """
+        cell_data = self.cell_data
+        if sample is None:
+            return (cell_data['dead'] == False).nonzero()[0]  # noqa: E712
+
+        sample_indices = np.asarray(sample)
+        if sample_indices.dtype == 'b1':
+            if sample_indices.shape != self.cell_data.shape:
+                raise ValueError('Expected boolean mask the same size as the cell list')
+            sample_indices = sample_indices.nonzero()[0]
+
+        mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
+        return sample_indices[mask]
+
     def append(self, cell: CellType) -> None:
         """Append a new cell the the list."""
         if len(self) >= self.max_cells:
@@ -191,6 +249,9 @@ class CellList(object):
         index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[index] = cell
+        voxel = self.grid.get_voxel(cell['point'])
+        self._voxel_index[voxel].add(index)
+        self._reverse_voxel_index.append(voxel)
 
     def extend(self, cells: Iterable[CellData]) -> None:
         """Extend the cell list by multiple cells."""
@@ -230,3 +291,47 @@ class CellList(object):
         cell_data = composite_dataset['cell_data'][:].view(cls.CellDataClass)
 
         return cls(max_cells=max_cells, grid=global_state.grid, cell_data=cell_data)
+
+    def get_cells_in_voxel(self, voxel: Voxel) -> np.ndarray:
+        """Return a list of cell indices contained in a given voxel."""
+        return np.asarray(sorted((self._voxel_index[voxel])))
+
+    def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
+        """Return a list of cells indices in the same voxel."""
+        return self.get_cells_in_voxel(self.grid.get_voxel(cell['point']))
+
+    def update_voxel_index(self, indices: Iterable = None):
+        """Update the embedded voxel index.
+
+        This method will update the voxel indices for a given list of cells,
+        or if no parameter is provided, for all of the cells.  Currently,
+        calling this method is only required if the `point` field of a cell
+        is changed... i.e. if the cell is moved to a potentially different
+        voxel.
+        """
+        if indices is None:
+            self._voxel_index.clear()
+            self._reverse_voxel_index.clear()
+            self._compute_voxel_index()
+            return
+
+        for index in indices:
+            cell = self[index]
+            old_voxel = self._reverse_voxel_index[index]
+            new_voxel = self.grid.get_voxel(cell['point'])
+            if old_voxel != new_voxel:
+                self._voxel_index[old_voxel].remove(index)
+                self._voxel_index[new_voxel].add(index)
+                self._reverse_voxel_index[index] = new_voxel
+
+    def _compute_voxel_index(self):
+        """Generate a dictionary mapping voxel index to cell index.
+
+        This index exists to maintain efficient (sub-linear) access to cells contained
+        in a single voxel.  This method is called automatically on initialization.
+        """
+        for cell_index in range(len(self)):
+            cell = self[cell_index]
+            voxel = self.grid.get_voxel(cell['point'])
+            self._voxel_index[voxel].add(cell_index)
+            self._reverse_voxel_index.append(voxel)

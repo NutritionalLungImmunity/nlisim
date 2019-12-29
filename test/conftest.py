@@ -16,7 +16,7 @@ def base_config():
 @fixture
 def config():
     yield SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.advection.Advection'}}
+        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
     )
 
 
@@ -33,7 +33,7 @@ def grid():
 
 @fixture
 def point():
-    yield Point(50, 50, 50)
+    yield Point(x=50, y=50, z=50)
 
 
 @fixture

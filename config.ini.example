@@ -1,6 +1,6 @@
 [simulation]
 # maximum time step duration
-time_step = 0.05
+time_step = 0.5
 
 # number of grid points in each direction
 nx = 80
@@ -16,43 +16,12 @@ dz = 0.1
 validate = True
 
 # a list of modules to run with the simulation
-modules = simulation.modules.advection.Advection
-          simulation.modules.plot.Plot2dSlice
+modules = simulation.modules.geometry.Geometry
+          simulation.modules.afumigatus.Afumigatus
           simulation.modules.save.FileOutput
           simulation.modules.geometry.Geometry
           simulation.modules.visualization.Visualization
 
-[advection]
-# state variable initialization
-diffusivity = 0.05
-wind_x = 0.1
-wind_y = -0.2
-wind_z = 0.0
-
-# point source initialization
-px = 0.5
-py = 0.5
-pz = 0.5
-value = 1.0
-
-[plot2d_slice]
-# plot the simulation while it runs at most once every 0.5 seconds
-draw_interval = 0.1
-
-# a list of variables to plot
-variables = advection.concentration
-
-# block running the simulation after plotting
-block = False
-
-# the z plane to display (value in [0, 1])
-z_plane = 0.5
-
-# a matplotlib colormap to use
-cmap = hot
-
-# don't show values with absolute value less than this
-mask_threshold = 0
 
 [file_output]
 # save the simulation state every 1 simulation second
