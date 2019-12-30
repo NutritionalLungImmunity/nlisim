@@ -384,3 +384,23 @@ class AfumigatusState(ModuleState):
 class Afumigatus(Module):
     name = 'afumigatus'
     StateClass = AfumigatusState
+
+    def initialize(self, state: State):
+        afumigatus: AfumigatusState = state.afumigatus
+        point = Point(x=4, y=4, z=4)
+        afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
+            grid=state.grid,
+            point=point,
+            status=AfumigatusCellData.Status.HYPHAE
+        )
+
+        return state
+
+    def advance(self, state: State, previous_time: float) -> State:
+        afumigatus : AfumigatusState = state.afumigatus
+        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
+        afumigatus.tree.elongate()
+        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
+        afumigatus.tree.branch(0.1)
+
+        return state
