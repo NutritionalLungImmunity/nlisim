@@ -33,9 +33,24 @@ geometry_path = geometry.hdf5
 preview_geometry = False
 
 [visualization]
-# list of variables to visualize [varibale_name | vtk_type]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
-visual_variables = afumigatus.tree|POLY_DATA
-                   geometry.lung_tissue|STRUCTURED_POINTS
+visual_variables =  [
+						{
+							"module":"afumigatus",
+							"variable":"tree",
+							"vtk_type":"POLY_DATA",
+							"attributes":["iron_pool", "iteration"]
+						},
+						{
+							"module":"geometry",
+							"variable":"lung_tissue",
+							"vtk_type":"STRUCTURED_POINTS",
+							"attributes":[]
+						}
+					]
+
+
+				   # afumigatus.tree|POLY_DATA
+                   # geometry.lung_tissue|STRUCTURED_POINTS
 visualize_interval = 1
 visualization_file_name = output/<variable>-<time>.vtk
