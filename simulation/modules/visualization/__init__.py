@@ -45,10 +45,6 @@ class Visualization(Module):
         lines = vtk.vtkCellArray()
 
         if isinstance(var, AfumigatusCellTreeList):
-            for index in var.cells.alive():
-                cell = var.cells[index]
-                verts.InsertNextPoint(cell['point'][2], cell['point'][1], cell['point'][0])
-
             adjacency = var.adjacency
 
             for i, j in adjacency.keys():
