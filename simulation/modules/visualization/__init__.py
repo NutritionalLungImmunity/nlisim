@@ -80,7 +80,7 @@ class Visualization(Module):
 
     @classmethod
     def write_structured_points(
-        cls, var: np.ndarray, filename: str, dx: float = 0.1, dy: float = 0.1, dz: float = 0.1
+        cls, var: np.ndarray, filename: str, dx: float, dy: float, dz: float
     ) -> None:
 
         vol = vtk.vtkStructuredPoints()
@@ -107,7 +107,14 @@ class Visualization(Module):
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
-            Visualization.write_structured_points(var, file_name)
+            spacing = (
+                state.config.getfloat('simulation', 'dz'),
+                state.config.getfloat('simulation', 'dy'),
+                state.config.getfloat('simulation', 'dx'),
+            )
+            Visualization.write_structured_points(
+                var, file_name, spacing[2], spacing[1], spacing[0]
+            )
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             Visualization.write_poly_data(var, file_name, attr_names)
