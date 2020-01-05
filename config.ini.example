@@ -35,22 +35,18 @@ preview_geometry = False
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
-						{
-							"module":"afumigatus",
-							"variable":"tree",
-							"vtk_type":"POLY_DATA",
-							"attributes":["iron_pool", "iteration"]
-						},
-						{
-							"module":"geometry",
-							"variable":"lung_tissue",
-							"vtk_type":"STRUCTURED_POINTS",
-							"attributes":[]
-						}
-					]
-
-
-				   # afumigatus.tree|POLY_DATA
-                   # geometry.lung_tissue|STRUCTURED_POINTS
+                        {
+                            "module":"afumigatus",
+                            "variable":"tree",
+                            "vtk_type":"POLY_DATA",
+                            "attributes":["iron_pool", "iteration"]
+                        },
+                        {
+                            "module":"geometry",
+                            "variable":"lung_tissue",
+                            "vtk_type":"STRUCTURED_POINTS",
+                            "attributes":[]
+                        }
+                    ]
 visualize_interval = 1
 visualization_file_name = output/<variable>-<time>.vtk
