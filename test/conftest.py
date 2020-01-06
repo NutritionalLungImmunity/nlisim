@@ -5,7 +5,8 @@ from pytest import fixture
 
 from simulation.config import SimulationConfig
 from simulation.coordinates import Point
-from simulation.state import RectangularGrid, State
+from simulation.grid import RectangularGrid
+from simulation.state import State
 
 
 @fixture

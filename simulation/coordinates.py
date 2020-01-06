@@ -2,6 +2,8 @@ import numpy as np
 
 
 class Coordinate(np.ndarray):
+    """A base class for representing 3D vectors as numpy arrays."""
+
     def __new__(cls, *, x: float = 0, y: float = 0, z: float = 0) -> 'Coordinate':
         return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)
 
@@ -10,12 +12,14 @@ class Coordinate(np.ndarray):
 
     @classmethod
     def from_array(cls, array: np.ndarray) -> 'Coordinate':
+        """Generate a `Coordinate` vector from a 3-element array."""
         if array.shape != (3,):
             raise ValueError('Invalid shape for a coordinate object')
         return array.view(cls)
 
     @property
     def x(self) -> float:
+        """Return the `x`-coordinate of the vector."""
         return self[2]
 
     @x.setter
@@ -24,6 +28,7 @@ class Coordinate(np.ndarray):
 
     @property
     def y(self) -> float:
+        """Return the `y`-coordinate of the vector."""
         return self[1]
 
     @y.setter
@@ -32,14 +37,16 @@ class Coordinate(np.ndarray):
 
     @property
     def z(self) -> float:
+        """Return the `z`-coordinate of the vector."""
         return self[0]
 
     @z.setter
     def z(self, value: float):
         self[0] = value
 
-    def norm(self, ord: float = 2):
-        return np.linalg.norm(self, ord=ord)
+    def norm(self):
+        """Return the euclidean norm of the vector."""
+        return np.linalg.norm(self, ord=2)
 
 
 class Point(Coordinate):

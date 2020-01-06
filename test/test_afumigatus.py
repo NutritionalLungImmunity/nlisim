@@ -5,12 +5,13 @@ from pytest import fixture
 
 from simulation.config import SimulationConfig
 from simulation.coordinates import Point
+from simulation.grid import RectangularGrid
 from simulation.modules.afumigatus import (
     AfumigatusCellData,
     AfumigatusCellTreeList,
     AfumigatusState,
 )
-from simulation.state import RectangularGrid, State
+from simulation.state import State
 
 Status = AfumigatusCellData.Status
 

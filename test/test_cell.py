@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
-from simulation.state import RectangularGrid
+from simulation.grid import RectangularGrid
 
 
 @fixture

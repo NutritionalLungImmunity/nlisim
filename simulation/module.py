@@ -119,14 +119,14 @@ class ModuleState(object):
 
 
 class Module(object):
-    #: a unique name for this module used for namespacing
     name: str = ''
+    """A unique name for this module used for namespacing"""
 
-    #: default values for all config options
     defaults: Dict[str, str] = {}
+    """Default values for all config options"""
 
-    #: container for extra state required by this module
     StateClass: Type[ModuleState] = ModuleState
+    """Container for extra state required by this module."""
 
     def __init__(self, config: SimulationConfig):
         if not config.has_section(self.section):
