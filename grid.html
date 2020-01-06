@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.2" />
+<title>simulation.grid API documentation</title>
+<meta name="description" content="Domain discretization interface …" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.grid</code></h1>
+</header>
+<section id="section-intro">
+<p>Domain discretization interface.</p>
+<p>This module contains defines a common interface for representing the
+<a href="https://en.wikipedia.org/wiki/Discretization">discretization</a> of the 3D
+simulation domain.
+In this context, the "grid" is a discrete representation of
+the region of 3D space where the simulation occurs (the domain).
+The code
+will generally assume the domain is the cartesian product of intervals,
+<span><span class="MathJax_Preview">
+\Omega = [x_0, x_1] \times [y_0, y_1] \times [z_0, z_1].
+</span><script type="math/tex; mode=display">
+\Omega = [x_0, x_1] \times [y_0, y_1] \times [z_0, z_1].
+</script></span>
+Users should assume that the units of these quantities are in physical quantities
+(nanometers) so that, for example,
+<span><span class="MathJax_Preview"> x_1 - x_0 </span><script type="math/tex"> x_1 - x_0 </script></span> is the length of the <code>x</code>-axis
+of the domain in nanometers.
+There is also no requirement that the lower left
+corner of the domain is aligned with the origin.</p>
+<p>The grid breaks the continuous domain up into discrete "voxels" each of which
+will be centered about a specific point inside the domain.
+In general, the
+geometry of these voxels is arbitrary and unstructured, but currently only
+<a href="https://en.wikipedia.org/wiki/Regular_grid">rectangular grids</a> are
+implemented.
+For these grids, all voxels are hyper-rectangles and are aligned
+along the domains axes.
+See the <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid"><code>RectangularGrid</code></a> implementation
+for details.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">r&#34;&#34;&#34;
+Domain discretization interface.
+
+This module contains defines a common interface for representing the
+[discretization](https://en.wikipedia.org/wiki/Discretization) of the 3D
+simulation domain.  In this context, the &#34;grid&#34; is a discrete representation of
+the region of 3D space where the simulation occurs (the domain).  The code
+will generally assume the domain is the cartesian product of intervals,
+\[
+    \Omega = [x_0, x_1] \times [y_0, y_1] \times [z_0, z_1].
+\]
+Users should assume that the units of these quantities are in physical quantities
+(nanometers) so that, for example,  \( x_1 - x_0 \) is the length of the `x`-axis
+of the domain in nanometers.  There is also no requirement that the lower left
+corner of the domain is aligned with the origin.
+
+The grid breaks the continuous domain up into discrete &#34;voxels&#34; each of which
+will be centered about a specific point inside the domain.  In general, the
+geometry of these voxels is arbitrary and unstructured, but currently only
+[rectangular grids](https://en.wikipedia.org/wiki/Regular_grid) are
+implemented.  For these grids, all voxels are hyper-rectangles and are aligned
+along the domains axes.  See the `simulation.grid.RectangularGrid` implementation
+for details.
+&#34;&#34;&#34;
+from functools import reduce
+from typing import List, Tuple
+
+import attr
+from h5py import File as H5File
+import numpy as np
+
+from simulation.coordinates import Point, Voxel
+
+ShapeType = Tuple[int, int, int]
+SpacingType = Tuple[float, float, float]
+
+_dtype_float64 = np.dtype(&#39;float64&#39;)
+
+
+@attr.s(auto_attribs=True, repr=False)
+class RectangularGrid(object):
+    r&#34;&#34;&#34;
+    A class representation of a rectangular grid.
+
+    This class breaks the simulation domain into a \(n_x \times n_y \times
+    n_z\) array of hyper-rectangles.  As is the case for the full domain, each
+    grid element is cartesian product of intervals,
+    \[
+        \Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
+    \]
+    In addition, there is a &#34;center&#34; for each grid cell contained within the
+    grid element,
+    \[
+        (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
+    \]
+    For a perticular function defined over the domain, \(f\), the
+    descritization is defined relative to this point,
+    \[
+        f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
+    \]
+    This center is usually (but not required to be) the true center of the
+    interval.
+
+    As a concrete example, if you are representing a &#34;gridded variable&#34;
+    such as the iron concentration throughout the domain as a numpy array, `iron`,
+    then the value of `iron[k, j, i]` would be the iron concentration at the point
+    \((\bar{x}_i, \bar{y}_j, \bar{z}_k)\).
+
+    This class is initialized with several arrays of numbers representing these
+    coordinates.  Considering just the `x`-axis, the argument `x` is an array
+    of length \(n_x\).  The element of this array at index `i` represents the
+    value \(\bar{x}_i\).  In other words, this array contains coordinate of the
+    center of all cells in the `x` direction.
+
+    The `xv` argument contains the coordinates of the edges of each cell.  This
+    array should be of length \(n_x + 1\) or one element larger than `x`.  The
+    element at index `i` in this array represents the value \(x_i\) or the left
+    edge of the element.  Because the elements are all aligned, this is also the
+    right edge of the previous element.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        The `x`-coordinates of the centers of each grid cell.
+    y : np.ndarray
+        The `y`-coordinates of the centers of each grid cell.
+    z : np.ndarray
+        The `z`-coordinates of the centers of each grid cell.
+    xv : np.ndarray
+        The `x`-coordinates of the edges of each grid cell.
+    yv : np.ndarray
+        The `y`-coordinates of the edges of each grid cell.
+    zv : np.ndarray
+        The `z`-coordinates of the edges of each grid cell.
+
+    &#34;&#34;&#34;
+
+    # cell centered coordinates (1-d arrays)
+    x: np.ndarray
+    y: np.ndarray
+    z: np.ndarray
+
+    # vertex coordinates (1-d arrays)
+    xv: np.ndarray
+    yv: np.ndarray
+    zv: np.ndarray
+
+    @classmethod
+    def _make_coordinate_arrays(cls, size: int, spacing: float) -&gt; Tuple[np.ndarray, np.ndarray]:
+        vertex = np.arange(size + 1) * spacing
+        cell = spacing / 2 + vertex[:-1]
+        vertex.flags[&#39;WRITEABLE&#39;] = False
+        cell.flags[&#39;WRITEABLE&#39;] = False
+        return cell, vertex
+
+    @classmethod
+    def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -&gt; &#39;RectangularGrid&#39;:
+        &#34;&#34;&#34;Create a rectangular grid with uniform spacing in each axis.&#34;&#34;&#34;
+        nz, ny, nx = shape
+        dz, dy, dx = spacing
+        x, xv = cls._make_coordinate_arrays(nx, dx)
+        y, yv = cls._make_coordinate_arrays(ny, dy)
+        z, zv = cls._make_coordinate_arrays(nz, dz)
+        return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)
+
+    @property
+    def meshgrid(self) -&gt; List[np.ndarray]:
+        &#34;&#34;&#34;Return the coordinate grid representation.
+
+        This returns three 3D arrays containing the z, y, x coordinates
+        respectively.  For example,
+
+        &gt;&gt;&gt; Z, Y, X = grid.meshgrid()
+
+        `X[zi, yi, xi]` is is the x-coordinate of the point at indices `(xi, yi,
+        zi)`.  The data returned is a read-only view into the coordinate arrays
+        and is efficient to compute on demand.
+        &#34;&#34;&#34;
+        return np.meshgrid(self.z, self.y, self.x, indexing=&#39;ij&#39;, copy=False)
+
+    def delta(self, axis: int) -&gt; np.ndarray:
+        &#34;&#34;&#34;Return grid spacing along the given axis.&#34;&#34;&#34;
+        if axis == 0:
+            meshgrid = np.meshgrid(self.zv, self.y, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+        elif axis == 1:
+            meshgrid = np.meshgrid(self.z, self.yv, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+        elif axis == 2:
+            meshgrid = np.meshgrid(self.z, self.y, self.xv, indexing=&#39;ij&#39;, copy=False)[axis]
+        else:
+            raise ValueError(&#39;Invalid axis provided&#39;)
+
+        return np.diff(meshgrid, axis=axis)
+
+    @property
+    def shape(self) -&gt; ShapeType:
+        return (len(self.z), len(self.y), len(self.x))
+
+    def __len__(self):
+        return reduce(lambda x, y: x * y, self.shape, 1)
+
+    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -&gt; np.ndarray:
+        &#34;&#34;&#34;Allocate a numpy array defined over this grid.&#34;&#34;&#34;
+        return np.zeros(self.shape, dtype=dtype)
+
+    def __repr__(self):
+        shp = self.shape
+        return f&#39;RectangularGrid(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})&#39;
+
+    def save(self, file: H5File) -&gt; None:
+        &#34;&#34;&#34;Save the grid state into an HDF5 file.&#34;&#34;&#34;
+        for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+            d = file.create_dataset(dim, data=getattr(self, dim))
+            d.make_scale(dim)
+
+    @classmethod
+    def load(cls, file: H5File) -&gt; &#39;RectangularGrid&#39;:
+        &#34;&#34;&#34;Generate a grid object from an existing HDF5 file.&#34;&#34;&#34;
+        kwargs = {}
+        for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+            kwargs[dim] = file[dim][:]
+        return cls(**kwargs)
+
+    @classmethod
+    def _find_dimension_index(cls, vertices: np.ndarray, coordinate: float) -&gt; int:
+        indices = (vertices &gt;= coordinate).nonzero()[0]
+        if len(indices) == 0:
+            return -1
+        return indices[0]
+
+    def get_voxel(self, point: Point) -&gt; Voxel:
+        &#34;&#34;&#34;Return the voxel containing the given point.
+
+        For points outside of the grid, this method will return invalid
+        indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
+        `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
+        the `is_valid_voxel` method to determine if the voxel is valid.
+        &#34;&#34;&#34;
+        # For some reason, extracting fields from a recordarray results in a
+        # transposed point object (shape (1,3) rather than (3,)).  This code
+        # ensures the representation is as expected.
+        point = point.ravel().view(Point)
+        assert len(point) == 3, &#39;This method does not handle arrays of points&#39;
+
+        ix = self._find_dimension_index(self.xv, point.x)
+        iy = self._find_dimension_index(self.yv, point.y)
+        iz = self._find_dimension_index(self.zv, point.z)
+        return Voxel(x=ix, y=iy, z=iz)
+
+    def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
+        &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
+        v = voxel
+        return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.grid.RectangularGrid"><code class="flex name class">
+<span>class <span class="ident">RectangularGrid</span></span>
+<span>(</span><span>x, y, z, xv, yv, zv)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A class representation of a rectangular grid.</p>
+<p>This class breaks the simulation domain into a <span><span class="MathJax_Preview">n_x \times n_y \times
+n_z</span><script type="math/tex">n_x \times n_y \times
+n_z</script></span> array of hyper-rectangles.
+As is the case for the full domain, each
+grid element is cartesian product of intervals,
+<span><span class="MathJax_Preview">
+\Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
+</span><script type="math/tex; mode=display">
+\Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
+</script></span>
+In addition, there is a "center" for each grid cell contained within the
+grid element,
+<span><span class="MathJax_Preview">
+(\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
+</span><script type="math/tex; mode=display">
+(\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
+</script></span>
+For a perticular function defined over the domain, <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span>, the
+descritization is defined relative to this point,
+<span><span class="MathJax_Preview">
+f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
+</span><script type="math/tex; mode=display">
+f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
+</script></span>
+This center is usually (but not required to be) the true center of the
+interval.</p>
+<p>As a concrete example, if you are representing a "gridded variable"
+such as the iron concentration throughout the domain as a numpy array, <code>iron</code>,
+then the value of <code>iron[k, j, i]</code> would be the iron concentration at the point
+<span><span class="MathJax_Preview">(\bar{x}_i, \bar{y}_j, \bar{z}_k)</span><script type="math/tex">(\bar{x}_i, \bar{y}_j, \bar{z}_k)</script></span>.</p>
+<p>This class is initialized with several arrays of numbers representing these
+coordinates.
+Considering just the <code>x</code>-axis, the argument <code>x</code> is an array
+of length <span><span class="MathJax_Preview">n_x</span><script type="math/tex">n_x</script></span>.
+The element of this array at index <code>i</code> represents the
+value <span><span class="MathJax_Preview">\bar{x}_i</span><script type="math/tex">\bar{x}_i</script></span>.
+In other words, this array contains coordinate of the
+center of all cells in the <code>x</code> direction.</p>
+<p>The <code>xv</code> argument contains the coordinates of the edges of each cell.
+This
+array should be of length <span><span class="MathJax_Preview">n_x + 1</span><script type="math/tex">n_x + 1</script></span> or one element larger than <code>x</code>.
+The
+element at index <code>i</code> in this array represents the value <span><span class="MathJax_Preview">x_i</span><script type="math/tex">x_i</script></span> or the left
+edge of the element.
+Because the elements are all aligned, this is also the
+right edge of the previous element.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>x</code>-coordinates of the centers of each grid cell.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>y</code>-coordinates of the centers of each grid cell.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>z</code>-coordinates of the centers of each grid cell.</dd>
+<dt><strong><code>xv</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>x</code>-coordinates of the edges of each grid cell.</dd>
+<dt><strong><code>yv</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>y</code>-coordinates of the edges of each grid cell.</dd>
+<dt><strong><code>zv</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>The <code>z</code>-coordinates of the edges of each grid cell.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RectangularGrid(object):
+    r&#34;&#34;&#34;
+    A class representation of a rectangular grid.
+
+    This class breaks the simulation domain into a \(n_x \times n_y \times
+    n_z\) array of hyper-rectangles.  As is the case for the full domain, each
+    grid element is cartesian product of intervals,
+    \[
+        \Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
+    \]
+    In addition, there is a &#34;center&#34; for each grid cell contained within the
+    grid element,
+    \[
+        (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
+    \]
+    For a perticular function defined over the domain, \(f\), the
+    descritization is defined relative to this point,
+    \[
+        f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
+    \]
+    This center is usually (but not required to be) the true center of the
+    interval.
+
+    As a concrete example, if you are representing a &#34;gridded variable&#34;
+    such as the iron concentration throughout the domain as a numpy array, `iron`,
+    then the value of `iron[k, j, i]` would be the iron concentration at the point
+    \((\bar{x}_i, \bar{y}_j, \bar{z}_k)\).
+
+    This class is initialized with several arrays of numbers representing these
+    coordinates.  Considering just the `x`-axis, the argument `x` is an array
+    of length \(n_x\).  The element of this array at index `i` represents the
+    value \(\bar{x}_i\).  In other words, this array contains coordinate of the
+    center of all cells in the `x` direction.
+
+    The `xv` argument contains the coordinates of the edges of each cell.  This
+    array should be of length \(n_x + 1\) or one element larger than `x`.  The
+    element at index `i` in this array represents the value \(x_i\) or the left
+    edge of the element.  Because the elements are all aligned, this is also the
+    right edge of the previous element.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        The `x`-coordinates of the centers of each grid cell.
+    y : np.ndarray
+        The `y`-coordinates of the centers of each grid cell.
+    z : np.ndarray
+        The `z`-coordinates of the centers of each grid cell.
+    xv : np.ndarray
+        The `x`-coordinates of the edges of each grid cell.
+    yv : np.ndarray
+        The `y`-coordinates of the edges of each grid cell.
+    zv : np.ndarray
+        The `z`-coordinates of the edges of each grid cell.
+
+    &#34;&#34;&#34;
+
+    # cell centered coordinates (1-d arrays)
+    x: np.ndarray
+    y: np.ndarray
+    z: np.ndarray
+
+    # vertex coordinates (1-d arrays)
+    xv: np.ndarray
+    yv: np.ndarray
+    zv: np.ndarray
+
+    @classmethod
+    def _make_coordinate_arrays(cls, size: int, spacing: float) -&gt; Tuple[np.ndarray, np.ndarray]:
+        vertex = np.arange(size + 1) * spacing
+        cell = spacing / 2 + vertex[:-1]
+        vertex.flags[&#39;WRITEABLE&#39;] = False
+        cell.flags[&#39;WRITEABLE&#39;] = False
+        return cell, vertex
+
+    @classmethod
+    def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -&gt; &#39;RectangularGrid&#39;:
+        &#34;&#34;&#34;Create a rectangular grid with uniform spacing in each axis.&#34;&#34;&#34;
+        nz, ny, nx = shape
+        dz, dy, dx = spacing
+        x, xv = cls._make_coordinate_arrays(nx, dx)
+        y, yv = cls._make_coordinate_arrays(ny, dy)
+        z, zv = cls._make_coordinate_arrays(nz, dz)
+        return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)
+
+    @property
+    def meshgrid(self) -&gt; List[np.ndarray]:
+        &#34;&#34;&#34;Return the coordinate grid representation.
+
+        This returns three 3D arrays containing the z, y, x coordinates
+        respectively.  For example,
+
+        &gt;&gt;&gt; Z, Y, X = grid.meshgrid()
+
+        `X[zi, yi, xi]` is is the x-coordinate of the point at indices `(xi, yi,
+        zi)`.  The data returned is a read-only view into the coordinate arrays
+        and is efficient to compute on demand.
+        &#34;&#34;&#34;
+        return np.meshgrid(self.z, self.y, self.x, indexing=&#39;ij&#39;, copy=False)
+
+    def delta(self, axis: int) -&gt; np.ndarray:
+        &#34;&#34;&#34;Return grid spacing along the given axis.&#34;&#34;&#34;
+        if axis == 0:
+            meshgrid = np.meshgrid(self.zv, self.y, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+        elif axis == 1:
+            meshgrid = np.meshgrid(self.z, self.yv, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+        elif axis == 2:
+            meshgrid = np.meshgrid(self.z, self.y, self.xv, indexing=&#39;ij&#39;, copy=False)[axis]
+        else:
+            raise ValueError(&#39;Invalid axis provided&#39;)
+
+        return np.diff(meshgrid, axis=axis)
+
+    @property
+    def shape(self) -&gt; ShapeType:
+        return (len(self.z), len(self.y), len(self.x))
+
+    def __len__(self):
+        return reduce(lambda x, y: x * y, self.shape, 1)
+
+    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -&gt; np.ndarray:
+        &#34;&#34;&#34;Allocate a numpy array defined over this grid.&#34;&#34;&#34;
+        return np.zeros(self.shape, dtype=dtype)
+
+    def __repr__(self):
+        shp = self.shape
+        return f&#39;RectangularGrid(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})&#39;
+
+    def save(self, file: H5File) -&gt; None:
+        &#34;&#34;&#34;Save the grid state into an HDF5 file.&#34;&#34;&#34;
+        for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+            d = file.create_dataset(dim, data=getattr(self, dim))
+            d.make_scale(dim)
+
+    @classmethod
+    def load(cls, file: H5File) -&gt; &#39;RectangularGrid&#39;:
+        &#34;&#34;&#34;Generate a grid object from an existing HDF5 file.&#34;&#34;&#34;
+        kwargs = {}
+        for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+            kwargs[dim] = file[dim][:]
+        return cls(**kwargs)
+
+    @classmethod
+    def _find_dimension_index(cls, vertices: np.ndarray, coordinate: float) -&gt; int:
+        indices = (vertices &gt;= coordinate).nonzero()[0]
+        if len(indices) == 0:
+            return -1
+        return indices[0]
+
+    def get_voxel(self, point: Point) -&gt; Voxel:
+        &#34;&#34;&#34;Return the voxel containing the given point.
+
+        For points outside of the grid, this method will return invalid
+        indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
+        `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
+        the `is_valid_voxel` method to determine if the voxel is valid.
+        &#34;&#34;&#34;
+        # For some reason, extracting fields from a recordarray results in a
+        # transposed point object (shape (1,3) rather than (3,)).  This code
+        # ensures the representation is as expected.
+        point = point.ravel().view(Point)
+        assert len(point) == 3, &#39;This method does not handle arrays of points&#39;
+
+        ix = self._find_dimension_index(self.xv, point.x)
+        iy = self._find_dimension_index(self.yv, point.y)
+        iz = self._find_dimension_index(self.zv, point.z)
+        return Voxel(x=ix, y=iy, z=iz)
+
+    def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
+        &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
+        v = voxel
+        return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="simulation.grid.RectangularGrid.construct_uniform"><code class="name flex">
+<span>def <span class="ident">construct_uniform</span></span>(<span>shape, spacing)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Create a rectangular grid with uniform spacing in each axis.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -&gt; &#39;RectangularGrid&#39;:
+    &#34;&#34;&#34;Create a rectangular grid with uniform spacing in each axis.&#34;&#34;&#34;
+    nz, ny, nx = shape
+    dz, dy, dx = spacing
+    x, xv = cls._make_coordinate_arrays(nx, dx)
+    y, yv = cls._make_coordinate_arrays(ny, dy)
+    z, zv = cls._make_coordinate_arrays(nz, dz)
+    return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>file)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Generate a grid object from an existing HDF5 file.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def load(cls, file: H5File) -&gt; &#39;RectangularGrid&#39;:
+    &#34;&#34;&#34;Generate a grid object from an existing HDF5 file.&#34;&#34;&#34;
+    kwargs = {}
+    for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+        kwargs[dim] = file[dim][:]
+    return cls(**kwargs)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="simulation.grid.RectangularGrid.meshgrid"><code class="name">var <span class="ident">meshgrid</span></code></dt>
+<dd>
+<section class="desc"><p>Return the coordinate grid representation.</p>
+<p>This returns three 3D arrays containing the z, y, x coordinates
+respectively.
+For example,</p>
+<pre><code>&gt;&gt;&gt; Z, Y, X = grid.meshgrid()
+</code></pre>
+<p><code>X[zi, yi, xi]</code> is is the x-coordinate of the point at indices <code>(xi, yi,
+zi)</code>.
+The data returned is a read-only view into the coordinate arrays
+and is efficient to compute on demand.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def meshgrid(self) -&gt; List[np.ndarray]:
+    &#34;&#34;&#34;Return the coordinate grid representation.
+
+    This returns three 3D arrays containing the z, y, x coordinates
+    respectively.  For example,
+
+    &gt;&gt;&gt; Z, Y, X = grid.meshgrid()
+
+    `X[zi, yi, xi]` is is the x-coordinate of the point at indices `(xi, yi,
+    zi)`.  The data returned is a read-only view into the coordinate arrays
+    and is efficient to compute on demand.
+    &#34;&#34;&#34;
+    return np.meshgrid(self.z, self.y, self.x, indexing=&#39;ij&#39;, copy=False)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.shape"><code class="name">var <span class="ident">shape</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def shape(self) -&gt; ShapeType:
+    return (len(self.z), len(self.y), len(self.x))</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.grid.RectangularGrid.allocate_variable"><code class="name flex">
+<span>def <span class="ident">allocate_variable</span></span>(<span>self, dtype=dtype('float64'))</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Allocate a numpy array defined over this grid.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def allocate_variable(self, dtype: np.dtype = _dtype_float64) -&gt; np.ndarray:
+    &#34;&#34;&#34;Allocate a numpy array defined over this grid.&#34;&#34;&#34;
+    return np.zeros(self.shape, dtype=dtype)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.delta"><code class="name flex">
+<span>def <span class="ident">delta</span></span>(<span>self, axis)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Return grid spacing along the given axis.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delta(self, axis: int) -&gt; np.ndarray:
+    &#34;&#34;&#34;Return grid spacing along the given axis.&#34;&#34;&#34;
+    if axis == 0:
+        meshgrid = np.meshgrid(self.zv, self.y, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+    elif axis == 1:
+        meshgrid = np.meshgrid(self.z, self.yv, self.x, indexing=&#39;ij&#39;, copy=False)[axis]
+    elif axis == 2:
+        meshgrid = np.meshgrid(self.z, self.y, self.xv, indexing=&#39;ij&#39;, copy=False)[axis]
+    else:
+        raise ValueError(&#39;Invalid axis provided&#39;)
+
+    return np.diff(meshgrid, axis=axis)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.get_voxel"><code class="name flex">
+<span>def <span class="ident">get_voxel</span></span>(<span>self, point)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Return the voxel containing the given point.</p>
+<p>For points outside of the grid, this method will return invalid
+indices.
+For example, given vertex coordinates <code>[1.5, 2.7, 6.5]</code> and point
+<code>-1.5</code> or <code>7.1</code>, this method will return <code>-1</code> and <code>3</code>, respectively.
+Call the
+the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_voxel(self, point: Point) -&gt; Voxel:
+    &#34;&#34;&#34;Return the voxel containing the given point.
+
+    For points outside of the grid, this method will return invalid
+    indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
+    `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
+    the `is_valid_voxel` method to determine if the voxel is valid.
+    &#34;&#34;&#34;
+    # For some reason, extracting fields from a recordarray results in a
+    # transposed point object (shape (1,3) rather than (3,)).  This code
+    # ensures the representation is as expected.
+    point = point.ravel().view(Point)
+    assert len(point) == 3, &#39;This method does not handle arrays of points&#39;
+
+    ix = self._find_dimension_index(self.xv, point.x)
+    iy = self._find_dimension_index(self.yv, point.y)
+    iz = self._find_dimension_index(self.zv, point.z)
+    return Voxel(x=ix, y=iy, z=iz)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.is_valid_voxel"><code class="name flex">
+<span>def <span class="ident">is_valid_voxel</span></span>(<span>self, voxel)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Return whether or not a voxel index is valid.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
+    &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
+    v = voxel
+    return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>self, file)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Save the grid state into an HDF5 file.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(self, file: H5File) -&gt; None:
+    &#34;&#34;&#34;Save the grid state into an HDF5 file.&#34;&#34;&#34;
+    for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
+        d = file.create_dataset(dim, data=getattr(self, dim))
+        d.make_scale(dim)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></code></h4>
+<ul class="two-column">
+<li><code><a title="simulation.grid.RectangularGrid.allocate_variable" href="#simulation.grid.RectangularGrid.allocate_variable">allocate_variable</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.construct_uniform" href="#simulation.grid.RectangularGrid.construct_uniform">construct_uniform</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.delta" href="#simulation.grid.RectangularGrid.delta">delta</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.get_voxel" href="#simulation.grid.RectangularGrid.get_voxel">get_voxel</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.is_valid_voxel" href="#simulation.grid.RectangularGrid.is_valid_voxel">is_valid_voxel</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.load" href="#simulation.grid.RectangularGrid.load">load</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.meshgrid" href="#simulation.grid.RectangularGrid.meshgrid">meshgrid</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.save" href="#simulation.grid.RectangularGrid.save">save</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.shape" href="#simulation.grid.RectangularGrid.shape">shape</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
