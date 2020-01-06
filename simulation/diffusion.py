@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse.linalg import cg, LinearOperator
 
-from simulation.state import RectangularGrid
+from simulation.grid import RectangularGrid
 
 
 # TODO: Boundary conditions?
