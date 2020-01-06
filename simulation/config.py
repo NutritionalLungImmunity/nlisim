@@ -85,19 +85,19 @@ class SimulationConfig(ConfigParser):
         it by: new lines, spaces, and commas.  The values in the returned list are
         stripped of all white space and removed if empty.
 
-        For example, the following values all parse as ``['a', 'b', 'c']``:
+        For example, the following values all parse as <code>`['a', 'b', 'c']`</code>:
 
-        value = a,b,c
-        value = a b c
-        value = a, b, c
-        value = a
-                b
-                c
-        value = a,
-                b,
-                c
-        value = a b
-                ,c
+            value = a,b,c
+            value = a b c
+            value = a, b, c
+            value = a
+                    b
+                    c
+            value = a,
+                    b,
+                    c
+            value = a b
+                    ,c
         """
         return self.parselist(self.get(section, option, fallback=''))
 

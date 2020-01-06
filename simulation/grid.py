@@ -54,8 +54,8 @@ class RectangularGrid(object):
 
         >>> Z, Y, X = grid.meshgrid()
 
-        X[zi, yi, xi] is is the x-coordinate of the point at indices (xi, yi,
-        zi).  The data returned is a read-only view into the coordinate arrays
+        `X[zi, yi, xi]` is is the x-coordinate of the point at indices `(xi, yi,
+        zi)`.  The data returned is a read-only view into the coordinate arrays
         and is efficient to compute on demand.
         """
         return np.meshgrid(self.z, self.y, self.x, indexing='ij', copy=False)
@@ -113,8 +113,8 @@ class RectangularGrid(object):
         """Return the voxel containing the given point.
 
         For points outside of the grid, this method will return invalid
-        indices.  For example, given vertex coordinates [1.5, 2.7, 6.5] and point
-        -1.5 or 7.1, this method will return -1 and 3, respectively.  Call the
+        indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
+        `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
         the `is_valid_voxel` method to determine if the voxel is valid.
         """
         # For some reason, extracting fields from a recordarray results in a
