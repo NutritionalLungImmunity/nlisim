@@ -352,6 +352,7 @@ class AfumigatusCellTreeList(object):
             return
 
         children = AfumigatusCellData(len(indices), initialize=True)
+        children[&#39;growth&#39;] = cells[indices][&#39;growth&#39;]
         children[&#39;growth&#39;] = np.apply_along_axis(
             self.random_branch_direction, 1, children[&#39;growth&#39;]
         )
@@ -1239,6 +1240,7 @@ associated with each cell.</p>
             return
 
         children = AfumigatusCellData(len(indices), initialize=True)
+        children[&#39;growth&#39;] = cells[indices][&#39;growth&#39;]
         children[&#39;growth&#39;] = np.apply_along_axis(
             self.random_branch_direction, 1, children[&#39;growth&#39;]
         )
@@ -1458,6 +1460,7 @@ def roots(self) -&gt; List[CellType]:
         return
 
     children = AfumigatusCellData(len(indices), initialize=True)
+    children[&#39;growth&#39;] = cells[indices][&#39;growth&#39;]
     children[&#39;growth&#39;] = np.apply_along_axis(
         self.random_branch_direction, 1, children[&#39;growth&#39;]
     )
