@@ -1,3 +1,27 @@
+r"""
+Domain discretization interface.
+
+This module contains defines a common interface for representing the
+[discretization](https://en.wikipedia.org/wiki/Discretization) of the 3D
+simulation domain.  In this context, the "grid" is a discrete representation of
+the region of 3D space where the simulation occurs (the domain).  The code
+will generally assume the domain is the cartesian product of intervals,
+\[
+    \Omega = [x_0, x_1] \times [y_0, y_1] \times [z_0, z_1].
+\]
+Users should assume that the units of these quantities are in physical quantities
+(nanometers) so that, for example,  \( x_1 - x_0 \) is the length of the `x`-axis
+of the domain in nanometers.  There is also no requirement that the lower left
+corner of the domain is aligned with the origin.
+
+The grid breaks the continuous domain up into discrete "voxels" each of which
+will be centered about a specific point inside the domain.  In general, the
+geometry of these voxels is arbitrary and unstructured, but currently only
+[rectangular grids](https://en.wikipedia.org/wiki/Regular_grid) are
+implemented.  For these grids, all voxels are hyper-rectangles and are aligned
+along the domains axes.  See the `simulation.grid.RectangularGrid` implementation
+for details.
+"""
 from functools import reduce
 from typing import List, Tuple
 
@@ -15,7 +39,61 @@ _dtype_float64 = np.dtype('float64')
 
 @attr.s(auto_attribs=True, repr=False)
 class RectangularGrid(object):
-    """A class representation of a rectangular grid."""
+    r"""
+    A class representation of a rectangular grid.
+
+    This class breaks the simulation domain into a \(n_x \times n_y \times
+    n_z\) array of hyper-rectangles.  As is the case for the full domain, each
+    grid element is cartesian product of intervals,
+    \[
+        \Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
+    \]
+    In addition, there is a "center" for each grid cell contained within the
+    grid element,
+    \[
+        (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
+    \]
+    For a perticular function defined over the domain, \(f\), the
+    descritization is defined relative to this point,
+    \[
+        f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
+    \]
+    This center is usually (but not required to be) the true center of the
+    interval.
+
+    As a concrete example, if you are representing a "gridded variable"
+    such as the iron concentration throughout the domain as a numpy array, `iron`,
+    then the value of `iron[k, j, i]` would be the iron concentration at the point
+    \((\bar{x}_i, \bar{y}_j, \bar{z}_k)\).
+
+    This class is initialized with several arrays of numbers representing these
+    coordinates.  Considering just the `x`-axis, the argument `x` is an array
+    of length \(n_x\).  The element of this array at index `i` represents the
+    value \(\bar{x}_i\).  In other words, this array contains coordinate of the
+    center of all cells in the `x` direction.
+
+    The `xv` argument contains the coordinates of the edges of each cell.  This
+    array should be of length \(n_x + 1\) or one element larger than `x`.  The
+    element at index `i` in this array represents the value \(x_i\) or the left
+    edge of the element.  Because the elements are all aligned, this is also the
+    right edge of the previous element.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        The `x`-coordinates of the centers of each grid cell.
+    y : np.ndarray
+        The `y`-coordinates of the centers of each grid cell.
+    z : np.ndarray
+        The `z`-coordinates of the centers of each grid cell.
+    xv : np.ndarray
+        The `x`-coordinates of the edges of each grid cell.
+    yv : np.ndarray
+        The `y`-coordinates of the edges of each grid cell.
+    zv : np.ndarray
+        The `z`-coordinates of the edges of each grid cell.
+
+    """
 
     # cell centered coordinates (1-d arrays)
     x: np.ndarray
