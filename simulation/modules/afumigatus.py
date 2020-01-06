@@ -326,6 +326,7 @@ class AfumigatusCellTreeList(object):
             return
 
         children = AfumigatusCellData(len(indices), initialize=True)
+        children['growth'] = cells[indices]['growth']
         children['growth'] = np.apply_along_axis(
             self.random_branch_direction, 1, children['growth']
         )
