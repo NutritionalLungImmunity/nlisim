@@ -112,6 +112,7 @@ class Macrophage(Module):
         tissue: GeometryState = state.geometry.lung_tissue
 
         drift(macrophage.cells, tissue, grid)
+        interact(state)
         # TODO - add recruitment
         # indices = np.argwhere(molecule_to_recruit >= threshold_value)
         # then for each index create a cell with prob 'rec_rate'

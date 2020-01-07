@@ -10,6 +10,8 @@ from simulation.state import grid_variable, State
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
     concentration = grid_variable()
+    # we may want to identify sources of iron in the tissue e.g. blood 
+    #  that preferentially increase at a time step
     # source = grid_variable()
 
     def __repr__(self):
@@ -26,6 +28,7 @@ class Iron(Module):
 
         init_val = self.config.getfloat('init_concentration')
 
+        # TODO initialize in a user/geometry specific way
         iron.concentration[:] = init_val
         # iron.source[:] = 0
 
@@ -36,8 +39,20 @@ class Iron(Module):
         iron: IronState = state.iron
 
         concentration = iron.concentration
-
-        #diffuse(concentration)
-        #degrade(concentration)
+        
+        diffuse(concentration)
+        degrade(concentration)
 
         return state
+
+    def diffuse(self, concentration):
+        # TODO These 2 functions should be implemented for all molecules
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module. 
+        return
+
+    def degrade(self, concentration):
+        # TODO These 2 functions should be implemented for all molecules
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module. 
+        return
