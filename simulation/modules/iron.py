@@ -9,7 +9,7 @@ from simulation.state import grid_variable, State
 
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
-    concentration = grid_variable()
+    concentration = grid_variable(np.float)
     # we may want to identify sources of iron in the tissue e.g. blood 
     #  that preferentially increase at a time step
     # source = grid_variable()
@@ -22,6 +22,18 @@ class Iron(Module):
     name = 'iron'
     defaults = {}
     StateClass = IronState
+
+    def diffuse(self, concentration):
+        # TODO These 2 functions should be implemented for all molecules
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module. 
+        return
+
+    def degrade(self, concentration):
+        # TODO These 2 functions should be implemented for all molecules
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module. 
+        return
 
     def initialize(self, state: State):
         iron: IronState = state.iron
@@ -40,19 +52,7 @@ class Iron(Module):
 
         concentration = iron.concentration
         
-        diffuse(concentration)
-        degrade(concentration)
+        Iron.diffuse(self, concentration)
+        Iron.degrade(self, concentration)
 
         return state
-
-    def diffuse(self, concentration):
-        # TODO These 2 functions should be implemented for all molecules
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module. 
-        return
-
-    def degrade(self, concentration):
-        # TODO These 2 functions should be implemented for all molecules
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module. 
-        return
