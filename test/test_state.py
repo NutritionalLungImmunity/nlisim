@@ -16,7 +16,5 @@ def test_serialize_state(state: State):
 
 
 def test_load_state(state: State):
-    state.advection.concentration[:] = 1
     new_state = state.load(state.serialize())
     assert new_state is not state
-    assert (new_state.advection.concentration == state.advection.concentration).all()

@@ -6,7 +6,8 @@ from h5py import Group
 import numpy as np
 
 from simulation.coordinates import Point, Voxel
-from simulation.state import get_class_path, RectangularGrid, State
+from simulation.grid import RectangularGrid
+from simulation.state import get_class_path, State
 
 MAX_CELL_LIST_SIZE = 10000
 
@@ -135,7 +136,7 @@ class CellList(object):
 
     Parameters
     ------
-    grid : `simulation.state.RectangularGrid`
+    grid : `simulation.grid.RectangularGrid`
     max_cells : int, optional
     cells : `simulation.cell.CellData`, optional
 

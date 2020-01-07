@@ -10,8 +10,9 @@ from scipy.spatial.transform import Rotation
 
 from simulation.cell import CellData, CellList, CellType
 from simulation.coordinates import Point
+from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
-from simulation.state import get_class_path, RectangularGrid, State
+from simulation.state import get_class_path, State
 
 
 class AfumigatusCellData(CellData):
@@ -326,6 +327,7 @@ class AfumigatusCellTreeList(object):
             return
 
         children = AfumigatusCellData(len(indices), initialize=True)
+        children['growth'] = cells[indices]['growth']
         children['growth'] = np.apply_along_axis(
             self.random_branch_direction, 1, children['growth']
         )
