@@ -85,6 +85,8 @@ class Macrophage(Module):
         tissue: GeometryState = state.geometry.lung_tissue
 
         macrophage.init_num = self.config.getint('init_num')
+        macrophage.MPH_UPTAKE_QTTY = self.config.getfloat('MPH_UPTAKE_QTTY')
+        macrophage.TF_ENHANCE = self.config.getfloat('TF_ENHANCE')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -123,6 +125,50 @@ class Macrophage(Module):
 
         return state
 
+    def interact(self, state: State):
+        #get molecules in voxel
+        iron = state.iron.concentration
+        cells = state.macrophage.cells
+        grid = state.grid
+
+        uptake = state.macrophage.MPH_UPTAKE_QTTY
+        enhance = state.macrophage.TF_ENHANCE
+
+        # 1. Get cells that are alive
+        for index in cells.alive():
+            
+            # 2. Get voxel for each cell to get agents in that voxel
+            cell = cells[index]
+            vox = grid.get_voxel(cell['point'])
+
+            # 3. Interact with all molecules
+
+            #  Iron -----------------------------------------------------
+            iron_amount = iron[vox.z, vox.y, vox.x]
+            if hillProbability(iron_amount) > random.random():
+                    qtty = uptake * iron_amount
+                    iron[vox.z, vox.y, vox.x] -= qtty
+                    cell['iron_pool'] += qtty
+                    # print(qtty)
+                    # print(iron[vox.z, vox.y, vox.x])
+                    # print(cell['iron_pool'])
+
+            fpn = 0 # TODO replace with actual boolean network
+            tf = 1 # TODO replace with actual boolean network
+            cell['boolean_network'][fpn] = True
+            cell['boolean_network'][tf] = False
+
+            if cell['boolean_network'][fpn]:
+                enhancer = enhance if cell['boolean_network'][tf] else 1
+                qtty = cell['iron_pool'] * (1 if uptake * enhancer > 1 else uptake * enhancer)
+                iron[vox.z, vox.y, vox.x] += qtty
+                cell['iron_pool'] -= qtty
+                # print(qtty)
+                # print(iron[vox.z, vox.y, vox.x])
+                # print(cell['iron_pool'])
+            
+            #  Next_Mol -----------------------------------------------------
+            #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
 
 def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
     # currently randomly drifts resting macrophages, need to add molecule dependence
@@ -157,3 +203,6 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
         cells.update_voxel_index([index])
 
     return cells
+
+def hillProbability(substract, km = 10):
+    return substract * substract / (substract * substract + km * km)
