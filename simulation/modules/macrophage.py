@@ -8,7 +8,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
-from simulation.modules.geometry import GeometryState, TissueTypes
+from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 
@@ -82,7 +82,7 @@ class Macrophage(Module):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue: GeometryState = state.geometry.lung_tissue
+        tissue = state.geometry.lung_tissue
 
         macrophage.init_num = self.config.getint('init_num')
         macrophage.cells = MacrophageCellList(grid=grid)
@@ -107,7 +107,7 @@ class Macrophage(Module):
     def advance(self, state: State, previous_time: float):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue: GeometryState = state.geometry.lung_tissue
+        tissue = state.geometry.lung_tissue
 
         drift(macrophage.cells, tissue, grid)
         # TODO - add recruitment
@@ -124,7 +124,7 @@ class Macrophage(Module):
         return state
 
 
-def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
+def drift(cells: MacrophageCellList, tissue, grid: RectangularGrid):
     # currently randomly drifts resting macrophages, need to add molecule dependence
     def valid_point(point: Point, grid: RectangularGrid):
         return (
