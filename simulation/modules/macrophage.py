@@ -1,14 +1,15 @@
 from enum import IntEnum
+import random
 
 import attr
-import random
 import numpy as np
 
-from simulation.cell import CellList, CellData
+from simulation.cell import CellData, CellList
 from simulation.coordinates import Point
-from simulation.state import State, RectangularGrid
+from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
+from simulation.state import State
 
 
 class MacrophageCellData(CellData):
@@ -45,7 +46,7 @@ class MacrophageCellData(CellData):
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([True, False, True,])
+        return np.asarray([True, False, True, ])
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
