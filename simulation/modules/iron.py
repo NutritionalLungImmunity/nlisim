@@ -40,8 +40,8 @@ class Iron(Module):
 
         concentration = iron.concentration
         
-        Iron.diffuse(self, concentration)
-        Iron.degrade(self, concentration)
+        diffuse(self, concentration)
+        degrade(self, concentration)
 
         return state
 
