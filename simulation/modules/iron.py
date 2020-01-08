@@ -23,18 +23,6 @@ class Iron(Module):
     defaults = {}
     StateClass = IronState
 
-    def diffuse(self, concentration):
-        # TODO These 2 functions should be implemented for all molecules
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module. 
-        return
-
-    def degrade(self, concentration):
-        # TODO These 2 functions should be implemented for all molecules
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module. 
-        return
-
     def initialize(self, state: State):
         iron: IronState = state.iron
 
@@ -56,3 +44,15 @@ class Iron(Module):
         Iron.degrade(self, concentration)
 
         return state
+
+def diffuse(self, concentration):
+    # TODO These 2 functions should be implemented for all molecules
+    # the rest of the behavior (uptake, secretion, etc.) should be
+    # handled in the cell specific module. 
+    return
+    
+def degrade(self, concentration):
+    # TODO These 2 functions should be implemented for all molecules
+    # the rest of the behavior (uptake, secretion, etc.) should be
+    # handled in the cell specific module. 
+    return
