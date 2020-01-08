@@ -8,7 +8,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
-from simulation.modules.geometry import GeometryState, TissueTypes
+from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 
@@ -46,7 +46,7 @@ class MacrophageCellData(CellData):
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([True, False, True,])
+        return np.asarray([True, False, True])
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -82,7 +82,7 @@ class Macrophage(Module):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue: GeometryState = state.geometry.lung_tissue
+        tissue = state.geometry.lung_tissue
 
         macrophage.init_num = self.config.getint('init_num')
         macrophage.MPH_UPTAKE_QTTY = self.config.getfloat('MPH_UPTAKE_QTTY')
@@ -112,7 +112,7 @@ class Macrophage(Module):
     def advance(self, state: State, previous_time: float):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue: GeometryState = state.geometry.lung_tissue
+        tissue = state.geometry.lung_tissue
 
         # drift(macrophage.cells, tissue, grid)
         interact(self, state)
@@ -188,7 +188,7 @@ def interact(self, state: State):
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
 
 
-def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
+def drift(cells: MacrophageCellList, tissue, grid: RectangularGrid):
     # currently randomly drifts resting macrophages, need to add molecule dependence
     def valid_point(point: Point, grid: RectangularGrid):
         return (
