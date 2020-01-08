@@ -1,11 +1,11 @@
 from enum import IntEnum
-import random
+import random, math
 
 import attr
 import numpy as np
 
 from simulation.cell import CellData, CellList
-from simulation.coordinates import Point
+from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
@@ -87,6 +87,9 @@ class Macrophage(Module):
         macrophage.init_num = self.config.getint('init_num')
         macrophage.MPH_UPTAKE_QTTY = self.config.getfloat('MPH_UPTAKE_QTTY')
         macrophage.TF_ENHANCE = self.config.getfloat('TF_ENHANCE')
+        macrophage.DRIFT_LAMBDA = self.config.getfloat('DRIFT_LAMBDA')
+        macrophage.DRIFT_BIAS = self.config.getfloat('DRIFT_BIAS')
+        macrophage.P = self.config.getfloat('DRIFT_PROBABILITY')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -111,8 +114,19 @@ class Macrophage(Module):
         grid: RectangularGrid = state.grid
         tissue: GeometryState = state.geometry.lung_tissue
 
-        drift(macrophage.cells, tissue, grid)
-        Macrophage.interact(self, state)
+        #drift(macrophage.cells, tissue, grid)
+        interact(self, state)
+
+        chemotaxis(
+            state.iron.concentration,
+            macrophage.P, 
+            macrophage.DRIFT_LAMBDA,
+            macrophage.DRIFT_BIAS, 
+            macrophage.cells, 
+            tissue, 
+            grid)
+
+        print(macrophage.cells.cell_data['point'])
         # TODO - add recruitment
         # indices = np.argwhere(molecule_to_recruit >= threshold_value)
         # then for each index create a cell with prob 'rec_rate'
@@ -126,50 +140,50 @@ class Macrophage(Module):
 
         return state
 
-    def interact(self, state: State):
-        #get molecules in voxel
-        iron = state.iron.concentration
-        cells = state.macrophage.cells
-        grid = state.grid
+def interact(self, state: State):
+    #get molecules in voxel
+    iron = state.iron.concentration
+    cells = state.macrophage.cells
+    grid = state.grid
 
-        uptake = state.macrophage.MPH_UPTAKE_QTTY
-        enhance = state.macrophage.TF_ENHANCE
+    uptake = state.macrophage.MPH_UPTAKE_QTTY
+    enhance = state.macrophage.TF_ENHANCE
 
-        # 1. Get cells that are alive
-        for index in cells.alive():
-            
-            # 2. Get voxel for each cell to get agents in that voxel
-            cell = cells[index]
-            vox = grid.get_voxel(cell['point'])
+    # 1. Get cells that are alive
+    for index in cells.alive():
+        
+        # 2. Get voxel for each cell to get agents in that voxel
+        cell = cells[index]
+        vox = grid.get_voxel(cell['point'])
 
-            # 3. Interact with all molecules
+        # 3. Interact with all molecules
 
-            #  Iron -----------------------------------------------------
-            iron_amount = iron[vox.z, vox.y, vox.x]
-            if hillProbability(iron_amount) > random.random():
-                    qtty = uptake * iron_amount
-                    iron[vox.z, vox.y, vox.x] -= qtty
-                    cell['iron_pool'] += qtty
-                    # print(qtty)
-                    # print(iron[vox.z, vox.y, vox.x])
-                    # print(cell['iron_pool'])
-
-            fpn = 0 # TODO replace with actual boolean network
-            tf = 1 # TODO replace with actual boolean network
-            cell['boolean_network'][fpn] = True
-            cell['boolean_network'][tf] = False
-
-            if cell['boolean_network'][fpn]:
-                enhancer = enhance if cell['boolean_network'][tf] else 1
-                qtty = cell['iron_pool'] * (1 if uptake * enhancer > 1 else uptake * enhancer)
-                iron[vox.z, vox.y, vox.x] += qtty
-                cell['iron_pool'] -= qtty
+        #  Iron -----------------------------------------------------
+        iron_amount = iron[vox.z, vox.y, vox.x]
+        if hillProbability(iron_amount) > random.random():
+                qtty = uptake * iron_amount
+                iron[vox.z, vox.y, vox.x] -= qtty
+                cell['iron_pool'] += qtty
                 # print(qtty)
                 # print(iron[vox.z, vox.y, vox.x])
                 # print(cell['iron_pool'])
-            
-            #  Next_Mol -----------------------------------------------------
-            #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
+
+        fpn = 0 # TODO replace with actual boolean network
+        tf = 1 # TODO replace with actual boolean network
+        cell['boolean_network'][fpn] = True
+        cell['boolean_network'][tf] = False
+
+        if cell['boolean_network'][fpn]:
+            enhancer = enhance if cell['boolean_network'][tf] else 1
+            qtty = cell['iron_pool'] * (1 if uptake * enhancer > 1 else uptake * enhancer)
+            iron[vox.z, vox.y, vox.x] += qtty
+            cell['iron_pool'] -= qtty
+            # print(qtty)
+            # print(iron[vox.z, vox.y, vox.x])
+            # print(cell['iron_pool'])
+        
+        #  Next_Mol -----------------------------------------------------
+        #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
 
 def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
     # currently randomly drifts resting macrophages, need to add molecule dependence
@@ -207,3 +221,67 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
 
 def hillProbability(substract, km = 10):
     return substract * substract / (substract * substract + km * km)
+
+def logistic(x, l, b):
+    return 1-b*math.exp(-(x/l)**2)
+
+def chemotaxis(molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList, tissue, grid: RectangularGrid):
+    # 'molecule' = state.'molecule'.concentration
+    # P = some probability to move
+
+    # 1. Get cells that are alive
+    for index in cells.alive():
+
+        # 2. Get voxel for each cell to get molecule in that voxel
+        cell = cells[index]
+        vox = grid.get_voxel(cell['point'])
+
+        # 3. Set prob for neighboring voxels
+        p = []
+        vox_list = []
+        p_tot = 0
+        i = -1
+
+        # calculate individual probability
+        for x in [0,1,-1]:
+            for y in [0,1,-1]:
+                for z in [0,1,-1]:
+                    p.append(0.0)
+                    vox_list.append([x,y,z])
+                    i += 1
+                    if(
+                        (grid.xv[0] <= x)
+                        & (x <= grid.xv[-1])
+                        & (grid.yv[0] <= y)
+                        & (y <= grid.yv[-1])
+                        & (grid.zv[0] <= z)
+                        & (z <= grid.zv[-1])
+                    ):
+                        voxel = Voxel(z=(vox.z+z), y=(vox.y+y), x=(vox.x+x))
+                        if tissue[voxel.z, voxel.y, voxel.x] == (
+                            TissueTypes.SURFACTANT.value or 
+                            TissueTypes.BLOOD.value or 
+                            TissueTypes.EPITHELIUM.value or
+                            TissueTypes.PORE.value):
+                            p[i] = logistic(
+                                molecule[voxel.z, voxel.y, voxel.x],
+                                drift_lambda,
+                                drift_bias)
+                            p_tot += p[i]
+        
+        # scale to sum of probabilities
+        if p_tot:
+            for i in range(9):
+                p[i] = p[i] / p_tot
+
+        #chose vox from neighbors
+        cumP = 0
+        for i in range(len(p)):
+            cumP += p[i]
+            if P <= cumP:
+                cell['point'] = cell['point'] + Point(
+                    x=vox_list[i][0], # TODO + some random amount?
+                    y=vox_list[i][1], # TODO + some random amount?
+                    z=vox_list[i][2] # TODO+ some random amount?
+                ) 
+                cells.update_voxel_index([index])
