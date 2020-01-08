@@ -46,7 +46,7 @@ class MacrophageCellData(CellData):
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([True, False, True, ])
+        return np.asarray([True, False, True,])
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -114,17 +114,18 @@ class Macrophage(Module):
         grid: RectangularGrid = state.grid
         tissue: GeometryState = state.geometry.lung_tissue
 
-        #drift(macrophage.cells, tissue, grid)
+        # drift(macrophage.cells, tissue, grid)
         interact(self, state)
 
         chemotaxis(
             state.iron.concentration,
-            macrophage.P, 
+            macrophage.P,
             macrophage.DRIFT_LAMBDA,
-            macrophage.DRIFT_BIAS, 
-            macrophage.cells, 
-            tissue, 
-            grid)
+            macrophage.DRIFT_BIAS,
+            macrophage.cells,
+            tissue,
+            grid,
+        )
 
         print(macrophage.cells.cell_data['point'])
         # TODO - add recruitment
@@ -140,8 +141,9 @@ class Macrophage(Module):
 
         return state
 
+
 def interact(self, state: State):
-    #get molecules in voxel
+    # get molecules in voxel
     iron = state.iron.concentration
     cells = state.macrophage.cells
     grid = state.grid
@@ -151,7 +153,7 @@ def interact(self, state: State):
 
     # 1. Get cells that are alive
     for index in cells.alive():
-        
+
         # 2. Get voxel for each cell to get agents in that voxel
         cell = cells[index]
         vox = grid.get_voxel(cell['point'])
@@ -161,15 +163,15 @@ def interact(self, state: State):
         #  Iron -----------------------------------------------------
         iron_amount = iron[vox.z, vox.y, vox.x]
         if hillProbability(iron_amount) > random.random():
-                qtty = uptake * iron_amount
-                iron[vox.z, vox.y, vox.x] -= qtty
-                cell['iron_pool'] += qtty
-                # print(qtty)
-                # print(iron[vox.z, vox.y, vox.x])
-                # print(cell['iron_pool'])
+            qtty = uptake * iron_amount
+            iron[vox.z, vox.y, vox.x] -= qtty
+            cell['iron_pool'] += qtty
+            # print(qtty)
+            # print(iron[vox.z, vox.y, vox.x])
+            # print(cell['iron_pool'])
 
-        fpn = 0 # TODO replace with actual boolean network
-        tf = 1 # TODO replace with actual boolean network
+        fpn = 0  # TODO replace with actual boolean network
+        tf = 1  # TODO replace with actual boolean network
         cell['boolean_network'][fpn] = True
         cell['boolean_network'][tf] = False
 
@@ -181,9 +183,10 @@ def interact(self, state: State):
             # print(qtty)
             # print(iron[vox.z, vox.y, vox.x])
             # print(cell['iron_pool'])
-        
+
         #  Next_Mol -----------------------------------------------------
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
+
 
 def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGrid):
     # currently randomly drifts resting macrophages, need to add molecule dependence
@@ -219,13 +222,18 @@ def drift(cells: MacrophageCellList, tissue: GeometryState, grid: RectangularGri
 
     return cells
 
-def hillProbability(substract, km = 10):
+
+def hillProbability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
 
-def logistic(x, l, b):
-    return 1-b*math.exp(-(x/l)**2)
 
-def chemotaxis(molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList, tissue, grid: RectangularGrid):
+def logistic(x, l, b):
+    return 1 - b * math.exp(-((x / l) ** 2))
+
+
+def chemotaxis(
+    molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList, tissue, grid: RectangularGrid
+):
     # 'molecule' = state.'molecule'.concentration
     # P = some probability to move
 
@@ -243,13 +251,13 @@ def chemotaxis(molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList,
         i = -1
 
         # calculate individual probability
-        for x in [0,1,-1]:
-            for y in [0,1,-1]:
-                for z in [0,1,-1]:
+        for x in [0, 1, -1]:
+            for y in [0, 1, -1]:
+                for z in [0, 1, -1]:
                     p.append(0.0)
-                    vox_list.append([x,y,z])
+                    vox_list.append([x, y, z])
                     i += 1
-                    if(
+                    if (
                         (grid.xv[0] <= x)
                         & (x <= grid.xv[-1])
                         & (grid.yv[0] <= y)
@@ -257,31 +265,31 @@ def chemotaxis(molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList,
                         & (grid.zv[0] <= z)
                         & (z <= grid.zv[-1])
                     ):
-                        voxel = Voxel(z=(vox.z+z), y=(vox.y+y), x=(vox.x+x))
+                        voxel = Voxel(z=(vox.z + z), y=(vox.y + y), x=(vox.x + x))
                         if tissue[voxel.z, voxel.y, voxel.x] == (
-                            TissueTypes.SURFACTANT.value or 
-                            TissueTypes.BLOOD.value or 
-                            TissueTypes.EPITHELIUM.value or
-                            TissueTypes.PORE.value):
+                            TissueTypes.SURFACTANT.value
+                            or TissueTypes.BLOOD.value
+                            or TissueTypes.EPITHELIUM.value
+                            or TissueTypes.PORE.value
+                        ):
                             p[i] = logistic(
-                                molecule[voxel.z, voxel.y, voxel.x],
-                                drift_lambda,
-                                drift_bias)
+                                molecule[voxel.z, voxel.y, voxel.x], drift_lambda, drift_bias
+                            )
                             p_tot += p[i]
-        
+
         # scale to sum of probabilities
         if p_tot:
             for i in range(9):
                 p[i] = p[i] / p_tot
 
-        #chose vox from neighbors
+        # chose vox from neighbors
         cumP = 0
         for i in range(len(p)):
             cumP += p[i]
             if P <= cumP:
                 cell['point'] = cell['point'] + Point(
-                    x=vox_list[i][0], # TODO + some random amount?
-                    y=vox_list[i][1], # TODO + some random amount?
-                    z=vox_list[i][2] # TODO+ some random amount?
-                ) 
+                    x=vox_list[i][0],  # TODO + some random amount?
+                    y=vox_list[i][1],  # TODO + some random amount?
+                    z=vox_list[i][2],  # TODO+ some random amount?
+                )
                 cells.update_voxel_index([index])
