@@ -46,7 +46,7 @@ class MacrophageCellData(CellData):
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([True, False, True, ])
+        return np.asarray([True, False, True,])
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
