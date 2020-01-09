@@ -89,7 +89,6 @@ class Macrophage(Module):
         macrophage.TF_ENHANCE = self.config.getfloat('TF_ENHANCE')
         macrophage.DRIFT_LAMBDA = self.config.getfloat('DRIFT_LAMBDA')
         macrophage.DRIFT_BIAS = self.config.getfloat('DRIFT_BIAS')
-        macrophage.P = self.config.getfloat('DRIFT_PROBABILITY')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -115,11 +114,11 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
 
         # drift(macrophage.cells, tissue, grid)
-        interact(self, state)
+        interact(state)
 
         chemotaxis(
             state.iron.concentration,
-            macrophage.P,
+            random.random(),
             macrophage.DRIFT_LAMBDA,
             macrophage.DRIFT_BIAS,
             macrophage.cells,
@@ -142,7 +141,7 @@ class Macrophage(Module):
         return state
 
 
-def interact(self, state: State):
+def interact(state: State):
     # get molecules in voxel
     iron = state.iron.concentration
     cells = state.macrophage.cells
@@ -188,41 +187,6 @@ def interact(self, state: State):
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
 
 
-def drift(cells: MacrophageCellList, tissue, grid: RectangularGrid):
-    # currently randomly drifts resting macrophages, need to add molecule dependence
-    def valid_point(point: Point, grid: RectangularGrid):
-        return (
-            (grid.xv[0] <= point.x)
-            & (point.x <= grid.xv[-1])
-            & (grid.yv[0] <= point.y)
-            & (point.y <= grid.yv[-1])
-            & (grid.zv[0] <= point.z)
-            & (point.z <= grid.zv[-1])
-        )
-
-    # TODO - replace random 'delta_point' with logic based on chemokines
-    delta_point = Point(x=random.uniform(-1, 1), y=random.uniform(-1, 1), z=random.uniform(-1, 1))
-    # TODO - use a more numpy solution to move more efficiently
-    for index in cells.is_moveable(grid):
-        cell = cells[index]
-        new_point = cell['point'] + delta_point
-        vox = grid.get_voxel(new_point)
-        while not (
-            valid_point(new_point, grid)
-            and tissue[vox.z, vox.y, vox.x] == TissueTypes.SURFACTANT.value
-        ):
-            x = random.uniform(-1, 1)
-            y = random.uniform(-1, 1)
-            z = random.uniform(-1, 1)
-            new_point = cell['point'] + Point(x=x, y=y, z=z)
-            vox = grid.get_voxel(new_point)
-
-        cell['point'] = new_point
-        cells.update_voxel_index([index])
-
-    return cells
-
-
 def hillProbability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
 
@@ -257,6 +221,9 @@ def chemotaxis(
                     p.append(0.0)
                     vox_list.append([x, y, z])
                     i += 1
+                    z = (vox.z + z)
+                    y = (vox.y + y)
+                    x = (vox.x + x)
                     if (
                         (grid.xv[0] <= x)
                         & (x <= grid.xv[-1])
@@ -265,21 +232,20 @@ def chemotaxis(
                         & (grid.zv[0] <= z)
                         & (z <= grid.zv[-1])
                     ):
-                        voxel = Voxel(z=(vox.z + z), y=(vox.y + y), x=(vox.x + x))
-                        if tissue[voxel.z, voxel.y, voxel.x] == (
+                        if tissue[z, y, x] in [
                             TissueTypes.SURFACTANT.value
                             or TissueTypes.BLOOD.value
                             or TissueTypes.EPITHELIUM.value
                             or TissueTypes.PORE.value
-                        ):
+                        ]:
                             p[i] = logistic(
-                                molecule[voxel.z, voxel.y, voxel.x], drift_lambda, drift_bias
+                                molecule[z, y, x], drift_lambda, drift_bias
                             )
                             p_tot += p[i]
 
         # scale to sum of probabilities
         if p_tot:
-            for i in range(9):
+            for i in range(len(p)):
                 p[i] = p[i] / p_tot
 
         # chose vox from neighbors
@@ -293,3 +259,4 @@ def chemotaxis(
                     z=vox_list[i][2],  # TODO+ some random amount?
                 )
                 cells.update_voxel_index([index])
+                break
