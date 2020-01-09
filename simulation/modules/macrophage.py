@@ -81,7 +81,7 @@ class MacrophageState(ModuleState):
     init_num: int = 0
     MPH_UPTAKE_QTTY: float = 0.1
     TF_ENHANCE: float = 1
-    DRIFT_LAMBDA: float =  10
+    DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
 
 
@@ -133,6 +133,12 @@ class Macrophage(Module):
 
         # drift(macrophage.cells, tissue, grid)
         interact(state)
+
+        recruit(macrophage.cells, tissue, grid)
+
+        remove(macrophage.cells, tissue, grid)
+
+        update(macrophage.cells, tissue, grid)
 
         chemotaxis(
             state.iron.concentration,
@@ -239,7 +245,7 @@ def chemotaxis(
         # 3. Set prob for neighboring voxels
         p = []
         vox_list = []
-        p_tot = 0
+        p_tot = 0.0
         i = -1
 
         # calculate individual probability
@@ -249,24 +255,24 @@ def chemotaxis(
                     p.append(0.0)
                     vox_list.append([x, y, z])
                     i += 1
-                    z = vox.z + z
-                    y = vox.y + y
-                    x = vox.x + x
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
                     if (
-                        (grid.xv[0] <= x)
-                        & (x <= grid.xv[-1])
-                        & (grid.yv[0] <= y)
-                        & (y <= grid.yv[-1])
-                        & (grid.zv[0] <= z)
-                        & (z <= grid.zv[-1])
+                        (grid.xv[0] <= xi)
+                        & (xi <= grid.xv[-1])
+                        & (grid.yv[0] <= yj)
+                        & (yj <= grid.yv[-1])
+                        & (grid.zv[0] <= zk)
+                        & (zk <= grid.zv[-1])
                     ):
-                        if tissue[z, y, x] in [
+                        if tissue[zk, yj, xi] in [
                             TissueTypes.SURFACTANT.value
                             or TissueTypes.BLOOD.value
                             or TissueTypes.EPITHELIUM.value
                             or TissueTypes.PORE.value
                         ]:
-                            p[i] = logistic(molecule[z, y, x], drift_lambda, drift_bias)
+                            p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                             p_tot += p[i]
 
         # scale to sum of probabilities
@@ -275,7 +281,7 @@ def chemotaxis(
                 p[i] = p[i] / p_tot
 
         # chose vox from neighbors
-        cum_p = 0
+        cum_p = 0.0
         for i in range(len(p)):
             cum_p += p[i]
             if prob <= cum_p:

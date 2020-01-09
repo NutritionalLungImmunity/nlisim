@@ -18,7 +18,7 @@ class IronState(ModuleState):
 
 class Iron(Module):
     name = 'iron'
-    defaults = {}
+    defaults = {'concentration': ''}
     StateClass = IronState
 
     def initialize(self, state: State):
