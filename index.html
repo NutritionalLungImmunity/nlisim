@@ -211,6 +211,33 @@ scalar value, <code>target</code></li>
 config file</li>
 <li>print a message on every time step</li>
 </ul>
+<h1 id="visualization-config">Visualization Config</h1>
+<p>To visualize the output of the simulation, please add the variable names to the list <code>visual_variables</code> in the cofig file <code>config.ini</code> under the <code>[visualization]</code> section</p>
+<pre><code>[visualization]
+# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
+visual_variables =  [
+                        {
+                            &quot;module&quot;:&quot;afumigatus&quot;,
+                            &quot;variable&quot;:&quot;tree&quot;,
+                            &quot;vtk_type&quot;:&quot;POLY_DATA&quot;,
+                            &quot;attributes&quot;:[&quot;iron_pool&quot;, &quot;iteration&quot;]
+                        },
+                        {
+                            &quot;module&quot;:&quot;geometry&quot;,
+                            &quot;variable&quot;:&quot;lung_tissue&quot;,
+                            &quot;vtk_type&quot;:&quot;STRUCTURED_POINTS&quot;,
+                            &quot;attributes&quot;:[]
+                        }
+                    ]
+</code></pre>
+<p>For example, to visualize the aspergillus and the alveolar geometry, the variable <code>afumigatus.tree</code> with attributes <code>iron_pool</code> and <code>iteration</code> and the variable <code>geometry.lung_tissue</code> are added to the list, followed by their <a href="https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf">VTK dataset formats</a>.</p>
+<ul>
+<li>structured point: points data are regularly and uniformly spaced</li>
+<li>rectilinear grid: points data are regularly spaced but can be not uniform</li>
+<li>structured grid: points data are not regularly and not uniformly spaced</li>
+<li>unstructured grid: consists of arbitrary combinations of any possible cell type</li>
+<li>polygonal data: consists of a set of discrete points, vertices, lines or polygons</li>
+</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -292,6 +319,7 @@ A multiscale simulation framework of *Aspergillus fumigatus*.
 <li><a href="#code-organization">Code organization</a></li>
 <li><a href="#simulation-state">Simulation state</a></li>
 <li><a href="#extension-modules">Extension modules</a></li>
+<li><a href="#visualization-config">Visualization Config</a></li>
 </ul>
 </div>
 <ul id="index">
