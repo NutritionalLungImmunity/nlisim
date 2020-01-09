@@ -267,10 +267,10 @@ def chemotaxis(
                         & (zk <= grid.zv[-1])
                     ):
                         if tissue[zk, yj, xi] in [
-                            TissueTypes.SURFACTANT.value
-                            or TissueTypes.BLOOD.value
-                            or TissueTypes.EPITHELIUM.value
-                            or TissueTypes.PORE.value
+                            TissueTypes.SURFACTANT.value,
+                            TissueTypes.BLOOD.value,
+                            TissueTypes.EPITHELIUM.value,
+                            TissueTypes.PORE.value
                         ]:
                             p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                             p_tot += p[i]
