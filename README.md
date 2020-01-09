@@ -179,7 +179,6 @@ When enabled, this module will
 To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
 ```
 [visualization]
-# list of variables to visualize [variable_name|vtk_type]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
@@ -204,9 +203,4 @@ For example, to visualize the aspergillus and the alveolar geometry, the variabl
 * structured grid: points data are not regularly and not uniformly spaced
 * unstructured grid: consists of arbitrary combinations of any possible cell type
 * polygonal data: consists of a set of discrete points, vertices, lines or polygons
-
-# Geometry Importation
-
-An example geometry file can be found at [Girder](https://data.nutritionallungimmunity.org/#item/5dc778b2ef2e2603553c5a11).
-To import the geometry, place the geometry.hdf5 to the current directory.
 
