@@ -305,6 +305,24 @@ class AfumigatusCellTreeList(object):
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
         )
 
+    def absorb_iron(self):
+        """Absorb iron from the environment.
+
+        This is a dummy method for the visualization testing purpose.
+        """
+        #  TODO: implement a real iron uptake model
+        cells = self.cells.cell_data
+        iron = np.random.uniform(size=len(self.cells))
+        cells['iron_pool'] = np.add(cells['iron_pool'], iron)
+
+    def age(self):
+        """Add 1 to iteration each timestep."""
+        cells = self.cells.cell_data
+        cells['iteration'] += 1
+
+    def alive(self):
+        return self.cells.alive()
+
     def elongate(self):
         cells = self.cell_data
         mask = self.is_growable()
@@ -386,3 +404,23 @@ class AfumigatusState(ModuleState):
 class Afumigatus(Module):
     name = 'afumigatus'
     StateClass = AfumigatusState
+
+    def initialize(self, state: State):
+        afumigatus: AfumigatusState = state.afumigatus
+        point = Point(x=4, y=4, z=4)
+        afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
+            grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
+        )
+
+        return state
+
+    def advance(self, state: State, previous_time: float) -> State:
+        afumigatus: AfumigatusState = state.afumigatus
+        afumigatus.tree.absorb_iron()
+        afumigatus.tree.age()
+        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
+        afumigatus.tree.elongate()
+        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
+        afumigatus.tree.branch(0.1)
+
+        return state

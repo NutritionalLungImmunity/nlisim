@@ -179,3 +179,34 @@ When enabled, this module will
 * initialize the state variable `target` to what is provided in the
   config file
 * print a message on every time step
+
+# Visualization Config
+
+To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
+```
+[visualization]
+# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
+visual_variables =  [
+                        {
+                            "module":"afumigatus",
+                            "variable":"tree",
+                            "vtk_type":"POLY_DATA",
+                            "attributes":["iron_pool", "iteration"]
+                        },
+                        {
+                            "module":"geometry",
+                            "variable":"lung_tissue",
+                            "vtk_type":"STRUCTURED_POINTS",
+                            "attributes":[]
+                        }
+                    ]
+```
+
+For example, to visualize the aspergillus and the alveolar geometry, the variable `afumigatus.tree` with attributes `iron_pool` and `iteration` and the variable `geometry.lung_tissue` are added to the list, followed by their [VTK dataset formats](https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf).
+
+* structured point: points data are regularly and uniformly spaced
+* rectilinear grid: points data are regularly spaced but can be not uniform
+* structured grid: points data are not regularly and not uniformly spaced
+* unstructured grid: consists of arbitrary combinations of any possible cell type
+* polygonal data: consists of a set of discrete points, vertices, lines or polygons
+

@@ -19,6 +19,8 @@ validate = True
 modules = simulation.modules.geometry.Geometry
           simulation.modules.afumigatus.Afumigatus
           simulation.modules.save.FileOutput
+          simulation.modules.visualization.Visualization
+
 
 [file_output]
 # save the simulation state every 1 simulation second
@@ -29,3 +31,22 @@ save_file_name = output/simulation-<time>.hdf5
 # path of the imported geoemtry file
 geometry_path = geometry.hdf5
 preview_geometry = False
+
+[visualization]
+# vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
+visual_variables =  [
+                        {
+                            "module":"afumigatus",
+                            "variable":"tree",
+                            "vtk_type":"POLY_DATA",
+                            "attributes":["iron_pool", "iteration"]
+                        },
+                        {
+                            "module":"geometry",
+                            "variable":"lung_tissue",
+                            "vtk_type":"STRUCTURED_POINTS",
+                            "attributes":[]
+                        }
+                    ]
+visualize_interval = 1
+visualization_file_name = output/<variable>-<time>.vtk
