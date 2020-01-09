@@ -1,15 +1,19 @@
 from enum import Enum
 import json
+import warnings
 
 import attr
 import numpy as np
 import vtk
+from vtk.util import numpy_support
 
 from simulation.cell import CellList
 from simulation.module import Module, ModuleState
 from simulation.modules.afumigatus import AfumigatusCellTreeList
 from simulation.state import State
-from simulation.vtk_support import numpy_to_vtk
+
+# suppress the future warning caused by numpy_to_vtk
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 class VTKTypes(Enum):
@@ -40,6 +44,7 @@ class Visualization(Module):
 
     @classmethod
     def write_poly_data(cls, var, filename: str, attr_names: str) -> None:
+
         vol = vtk.vtkPolyData()
         verts = vtk.vtkPoints()
         lines = vtk.vtkCellArray()
@@ -67,7 +72,7 @@ class Visualization(Module):
         alive_cells = np.take(var.cell_data, var.alive())
         for attr_name in attr_names:
             attr = alive_cells[attr_name]
-            scalars = numpy_to_vtk(num_array=attr)
+            scalars = numpy_support.numpy_to_vtk(num_array=attr)
             scalars.SetName(attr_name)
             vol.GetPointData().AddArray(scalars)
 
@@ -90,7 +95,7 @@ class Visualization(Module):
         vol.SetOrigin(0, 0, 0)
         vol.SetSpacing(dx, dy, dz)
 
-        scalars = numpy_to_vtk(num_array=var.ravel())
+        scalars = numpy_support.numpy_to_vtk(num_array=var.ravel())
 
         vol.GetPointData().SetScalars(scalars)
         writer = vtk.vtkStructuredPointsWriter()
