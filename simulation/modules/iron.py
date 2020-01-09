@@ -1,5 +1,3 @@
-from math import floor
-
 import attr
 import numpy as np
 
