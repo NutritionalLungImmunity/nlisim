@@ -12,6 +12,14 @@ from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 
+def hillProbability(substract, km=10):
+    return substract * substract / (substract * substract + km * km)
+
+
+def logistic(x, l, b):
+    return 1 - b * math.exp(-((x / l) ** 2))
+
+
 class MacrophageCellData(CellData):
     BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
 
@@ -24,6 +32,7 @@ class MacrophageCellData(CellData):
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
+        LEFT = 8
 
     MACROPHAGE_FIELDS = [
         ('boolean_network', 'b1', BOOLEAN_NETWORK_LENGTH),
@@ -126,17 +135,7 @@ class Macrophage(Module):
             grid,
         )
 
-        print(macrophage.cells.cell_data['point'])
-        # TODO - add recruitment
-        # indices = np.argwhere(molecule_to_recruit >= threshold_value)
-        # then for each index create a cell with prob 'rec_rate'
-        # TODO - add leaving
-        # indices = np.argwhere(molecule_to_leave <= threshold_value)
-        # then for each index kill a cell with prob 'leave_rate'
-        # TODO - add boolena network update
-        # for index in cells.alive:
-        #   cells[index].update_boolean network
-        # TODO - add interaction?
+        # print(macrophage.cells.cell_data['point'])
 
         return state
 
@@ -187,19 +186,33 @@ def interact(state: State):
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
 
 
-def hillProbability(substract, km=10):
-    return substract * substract / (substract * substract + km * km)
+def recruit(cells: MacrophageCellList, tissue, grid: RectangularGrid):
+    # TODO - add recruitment
+    # indices = np.argwhere(molecule_to_recruit >= threshold_value)
+    # then for each index create a cell with prob 'rec_rate'
+    return
 
 
-def logistic(x, l, b):
-    return 1 - b * math.exp(-((x / l) ** 2))
+def remove(cells: MacrophageCellList, tissue, grid: RectangularGrid):
+    # TODO - add leaving
+    # indices = np.argwhere(molecule_to_leave <= threshold_value)
+    # then for each index kill a cell with prob 'leave_rate'
+    return
 
 
+def update(cells: MacrophageCellList, tissue, grid: RectangularGrid):
+    # TODO - add boolena network update
+    # for index in cells.alive:
+    #   cells[index].update_boolean network
+    return
+
+
+# move
 def chemotaxis(
     molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList, tissue, grid: RectangularGrid
 ):
     # 'molecule' = state.'molecule'.concentration
-    # P = some probability to move
+    # P = 0-1 random number to determine which voxel is chosen to move
 
     # 1. Get cells that are alive
     for index in cells.alive():
@@ -221,9 +234,9 @@ def chemotaxis(
                     p.append(0.0)
                     vox_list.append([x, y, z])
                     i += 1
-                    z = (vox.z + z)
-                    y = (vox.y + y)
-                    x = (vox.x + x)
+                    z = vox.z + z
+                    y = vox.y + y
+                    x = vox.x + x
                     if (
                         (grid.xv[0] <= x)
                         & (x <= grid.xv[-1])
@@ -238,9 +251,7 @@ def chemotaxis(
                             or TissueTypes.EPITHELIUM.value
                             or TissueTypes.PORE.value
                         ]:
-                            p[i] = logistic(
-                                molecule[z, y, x], drift_lambda, drift_bias
-                            )
+                            p[i] = logistic(molecule[z, y, x], drift_lambda, drift_bias)
                             p_tot += p[i]
 
         # scale to sum of probabilities
@@ -256,7 +267,7 @@ def chemotaxis(
                 cell['point'] = cell['point'] + Point(
                     x=vox_list[i][0],  # TODO + some random amount?
                     y=vox_list[i][1],  # TODO + some random amount?
-                    z=vox_list[i][2],  # TODO+ some random amount?
+                    z=vox_list[i][2],  # TODO + some random amount?
                 )
                 cells.update_voxel_index([index])
                 break
