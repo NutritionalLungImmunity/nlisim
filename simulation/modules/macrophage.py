@@ -270,7 +270,7 @@ def chemotaxis(
                             TissueTypes.SURFACTANT.value,
                             TissueTypes.BLOOD.value,
                             TissueTypes.EPITHELIUM.value,
-                            TissueTypes.PORE.value
+                            TissueTypes.PORE.value,
                         ]:
                             p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                             p_tot += p[i]
