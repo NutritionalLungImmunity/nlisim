@@ -1,18 +1,19 @@
 from enum import IntEnum
-import random, math
+import math
+import random
 
 import attr
 import numpy as np
 
 from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
+from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 
-def hillProbability(substract, km=10):
+def hill_probability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
 
 
@@ -77,7 +78,11 @@ def cell_list_factory(self: 'MacrophageState'):
 @attr.s(kw_only=True)
 class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_num: int
+    init_num: int = 0
+    MPH_UPTAKE_QTTY: float = 0.1
+    TF_ENHANCE: float = 1
+    DRIFT_LAMBDA: float =  10
+    DRIFT_BIAS: float = 0.9
 
 
 class Macrophage(Module):
@@ -85,6 +90,10 @@ class Macrophage(Module):
     defaults = {
         'cells': '',
         'init_num': '0',
+        'MPH_UPTAKE_QTTY': '0.1',
+        'TF_ENHANCE': '1',
+        'DRIFT_LAMBDA': '10',
+        'DRIFT_BIAS': '0.9',
     }
     StateClass = MacrophageState
 
@@ -160,7 +169,7 @@ def interact(state: State):
 
         #  Iron -----------------------------------------------------
         iron_amount = iron[vox.z, vox.y, vox.x]
-        if hillProbability(iron_amount) > random.random():
+        if hill_probability(iron_amount) > random.random():
             qtty = uptake * iron_amount
             iron[vox.z, vox.y, vox.x] -= qtty
             cell['iron_pool'] += qtty
@@ -209,10 +218,16 @@ def update(cells: MacrophageCellList, tissue, grid: RectangularGrid):
 
 # move
 def chemotaxis(
-    molecule, P, drift_lambda, drift_bias, cells: MacrophageCellList, tissue, grid: RectangularGrid
+    molecule,
+    prob,
+    drift_lambda,
+    drift_bias,
+    cells: MacrophageCellList,
+    tissue,
+    grid: RectangularGrid,
 ):
     # 'molecule' = state.'molecule'.concentration
-    # P = 0-1 random number to determine which voxel is chosen to move
+    # prob = 0-1 random number to determine which voxel is chosen to move
 
     # 1. Get cells that are alive
     for index in cells.alive():
@@ -260,10 +275,10 @@ def chemotaxis(
                 p[i] = p[i] / p_tot
 
         # chose vox from neighbors
-        cumP = 0
+        cum_p = 0
         for i in range(len(p)):
-            cumP += p[i]
-            if P <= cumP:
+            cum_p += p[i]
+            if prob <= cum_p:
                 cell['point'] = cell['point'] + Point(
                     x=vox_list[i][0],  # TODO + some random amount?
                     y=vox_list[i][1],  # TODO + some random amount?
