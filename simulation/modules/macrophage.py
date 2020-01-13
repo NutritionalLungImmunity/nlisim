@@ -141,7 +141,7 @@ class Macrophage(Module):
         update(macrophage.cells, tissue, grid)
 
         chemotaxis(
-            state.iron.concentration,
+            state.molecules.iron,
             random.random(),
             macrophage.DRIFT_LAMBDA,
             macrophage.DRIFT_BIAS,
@@ -157,7 +157,7 @@ class Macrophage(Module):
 
 def interact(state: State):
     # get molecules in voxel
-    iron = state.iron.concentration
+    iron = state.molecules.iron
     cells = state.macrophage.cells
     grid = state.grid
 
