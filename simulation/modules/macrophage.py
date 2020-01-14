@@ -6,7 +6,7 @@ import attr
 import numpy as np
 
 from simulation.cell import CellData, CellList
-from simulation.coordinates import Point
+from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
@@ -115,9 +115,9 @@ class Macrophage(Module):
             np.random.shuffle(indices)
 
             for i in range(0, macrophage.init_num):
-                x = indices[i][2] + (random.uniform(0, 1))
-                y = indices[i][1] + (random.uniform(0, 1))
-                z = indices[i][0] + (random.uniform(0, 1))
+                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
+                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
+                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
@@ -258,21 +258,16 @@ def chemotaxis(
                     zk = vox.z + z
                     yj = vox.y + y
                     xi = vox.x + x
-                    if (
-                        (grid.xv[0] <= xi)
-                        & (xi <= grid.xv[-1])
-                        & (grid.yv[0] <= yj)
-                        & (yj <= grid.yv[-1])
-                        & (grid.zv[0] <= zk)
-                        & (zk <= grid.zv[-1])
-                    ):
-                        if tissue[zk, yj, xi] in [
+                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        if tissue[zk - 1, yj - 1, xi - 1] in [
                             TissueTypes.SURFACTANT.value,
                             TissueTypes.BLOOD.value,
                             TissueTypes.EPITHELIUM.value,
                             TissueTypes.PORE.value,
                         ]:
-                            p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
+                            p[i] = logistic(
+                                molecule[zk - 1, yj - 1, xi - 1], drift_lambda, drift_bias
+                            )
                             p_tot += p[i]
 
         # scale to sum of probabilities
@@ -285,10 +280,10 @@ def chemotaxis(
         for i in range(len(p)):
             cum_p += p[i]
             if prob <= cum_p:
-                cell['point'] = cell['point'] + Point(
-                    x=vox_list[i][0],  # TODO + some random amount?
-                    y=vox_list[i][1],  # TODO + some random amount?
-                    z=vox_list[i][2],  # TODO + some random amount?
+                cell['point'] = Point(
+                    x=grid.x[vox.x + vox_list[i][0] - 1],  # TODO plus random,
+                    y=grid.y[vox.y + vox_list[i][1] - 1],  # TODO plus random,
+                    z=grid.z[vox.z + vox_list[i][2] - 1],  # TODO plus random,
                 )
                 cells.update_voxel_index([index])
                 break

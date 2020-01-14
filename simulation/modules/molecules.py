@@ -53,7 +53,7 @@ class Molecules(Module):
         'mcp1': '',
         'mip2': '',
         'mip1b': '',
-        }
+    }
 
     StateClass = MoleculesState
 
