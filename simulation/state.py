@@ -147,8 +147,13 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
         grid = self.global_state.grid
         if value.shape != grid.shape:
             raise ValidationError(f'Invalid shape for gridded variable {attribute.name}')
-        if not np.isfinite(value).all():
-            raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
+        if value.dtype.names:
+            for name in value.dtype.names:
+                if not np.isfinite(value[name]).all():
+                    raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
+        else:
+            if not np.isfinite(value).all():
+                raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
 
     metadata = {'grid': True}
     return attr.ib(

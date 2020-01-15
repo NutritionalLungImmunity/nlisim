@@ -20,6 +20,7 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.afumigatus.Afumigatus
           simulation.modules.save.FileOutput
           simulation.modules.visualization.Visualization
+          simulation.modules.molecules.Molecules
 
 
 [file_output]
@@ -31,6 +32,9 @@ save_file_name = output/simulation-<time>.hdf5
 # path of the imported geoemtry file
 geometry_path = geometry.hdf5
 preview_geometry = False
+
+[molecules]
+iron_init_concentration = 0.5
 
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
