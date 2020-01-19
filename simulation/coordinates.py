@@ -66,7 +66,7 @@ class Voxel(Coordinate):
     def __eq__(self, other):
         value = super().__eq__(other)
         if isinstance(value, np.ndarray):
-            value = value.all()
+            value = bool(value.all())
         return value
 
     def __ne__(self, other):
