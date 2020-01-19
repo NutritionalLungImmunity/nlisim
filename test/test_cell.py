@@ -82,7 +82,7 @@ def test_get_neighboring_cells(grid: RectangularGrid):
     cells.extend(raw_cells)
 
     assert_array_equal(cells.get_neighboring_cells(cells[0]), [0, 2, 3])
-    assert_array_equal(cells.get_cells_in_voxel(Voxel(x=0, y=0, z=0)), [])
+    assert_array_equal(cells.get_cells_in_voxel(Voxel(x=0, y=0, z=0)), [0, 2, 3])
 
 
 def test_move_cell(grid: RectangularGrid):

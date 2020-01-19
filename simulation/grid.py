@@ -23,7 +23,7 @@ along the domains axes.  See the `simulation.grid.RectangularGrid` implementatio
 for details.
 """
 from functools import reduce
-from typing import List, Tuple
+from typing import Iterator, List, Tuple
 
 import attr
 from h5py import File as H5File
@@ -185,7 +185,7 @@ class RectangularGrid(object):
         indices = (vertices >= coordinate).nonzero()[0]
         if len(indices) == 0:
             return -1
-        return indices[0]
+        return indices[0] - 1
 
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.
@@ -210,3 +210,103 @@ class RectangularGrid(object):
         """Return whether or not a voxel index is valid."""
         v = voxel
         return 0 <= v.x <= len(self.x) and 0 <= v.y <= len(self.y) and 0 <= v.z <= len(self.z)
+
+    def is_point_in_domain(self, point: Point) -> bool:
+        """Return whether or not a point in inside the domain."""
+        return (
+            (self.xv[0] <= point.x <= self.xv[-1])
+            and (self.yv[0] <= point.y <= self.yv[-1])
+            and (self.zv[0] <= point.z <= self.zv[-1])
+        )
+
+    def get_adjecent_voxels(self, voxel: Voxel) -> Iterator[Voxel]:
+        """Return an iterator over all neighbors of a given voxel.
+
+        This method will only return voxels sharing and edge.   Specifically,
+        it will not return voxels touching only at a corner.
+
+        Parameters
+        ----------
+        voxel : simulation.coordinates.Voxel
+            The target voxel
+
+        """
+        dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+        for di, dj, dk in dirs:
+            i = voxel.x + di
+            j = voxel.y + dj
+            k = voxel.z + dk
+            neighbor = Voxel(x=i, y=j, z=k)
+
+            if self.is_valid_voxel(neighbor):
+                yield neighbor
+
+    def get_nearest_voxel(self, point: Point) -> Voxel:
+        """Return the nearest voxel to a given point.
+
+        Parameters
+        ----------
+        point : simulation.coordinates.Point
+            The target point
+
+        """
+        if not self.is_point_in_domain(point):
+            raise NotImplementedError(
+                'Getting the closest domain voxel to a point outside the domain is not implemented'
+            )
+        return self.get_voxel(point)
+
+    def get_voxels_in_range(self, point: Point, distance: float) -> Iterator[Tuple[Voxel, float]]:
+        """Return an iterator of voxels within a given distance of a point.
+
+        The values returned by the iterator are tuples of `(Voxel, distance)`
+        pairs.  For example,
+
+            voxel, distance = next(self.get_voxels_in_range(point, 1))
+
+        where `distance` is the distance from `point` to the center of `voxel`.
+
+        Note: no guarantee is given to the order over which the voxels are
+        iterated.
+
+        Parameters
+        ----------
+        point : simulation.coordinates.Point
+            The center point
+        distance : float
+            Return all voxels with centers less than the distance from the center point
+
+        """
+        # Get a hyper-square containing a superset of what we want.  This
+        # restricts the set of points that we need to explicitly compute.
+        dp = Point(x=distance, y=distance, z=distance)
+        z0, y0, x0 = point - dp
+        z1, y1, x1 = point + dp
+
+        x0 = max(x0, self.x[0])
+        x1 = min(x1, self.x[-1])
+
+        y0 = max(y0, self.y[0])
+        y1 = min(y1, self.y[-1])
+
+        z0 = max(z0, self.z[0])
+        z1 = min(z1, self.z[-1])
+
+        # get voxel indices of the lower left and upper right corners
+        k0, j0, i0 = self.get_voxel(Point(x=x0, y=y0, z=z0))
+        k1, j1, i1 = self.get_voxel(Point(x=x1, y=y1, z=z1))
+
+        # get a distance matrix over all voxels in the candidate range
+        z, y, x = self.meshgrid
+        dx = x[k0 : k1 + 1, j0 : j1 + 1, i0 : i1 + 1] - point.x
+        dy = y[k0 : k1 + 1, j0 : j1 + 1, i0 : i1 + 1] - point.y
+        dz = z[k0 : k1 + 1, j0 : j1 + 1, i0 : i1 + 1] - point.z
+        distances = np.sqrt(dx * dx + dy * dy + dz * dz)
+
+        # iterate over all voxels and yield those in range
+        for k in range(distances.shape[0]):
+            for j in range(distances.shape[1]):
+                for i in range(distances.shape[2]):
+                    d = distances[k, j, i]
+                    if d <= distance:
+                        yield Voxel(x=(i + i0), y=(j + j0), z=(k + k0)), d
