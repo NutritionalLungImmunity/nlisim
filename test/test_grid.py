@@ -211,3 +211,18 @@ def test_get_voxels_in_large_range(grid: RectangularGrid):
     for voxel, distance in grid.get_voxels_in_range(Point(x=4, y=4, z=4), 10):
         assert distance <= 10
         assert grid.is_valid_voxel(voxel)
+
+
+@pytest.mark.parametrize(
+    'voxel,index',
+    [
+        (v(0, 0, 0), 0),
+        (v(1, 0, 0), 1),
+        (v(0, 1, 0), 30),
+        (v(0, 0, 1), 600),
+        (v(1, 1, 1), 631)
+    ]
+)
+def test_get_flattened_index(voxel, index, grid: RectangularGrid):
+    assert grid.get_flattened_index(voxel) == index
+    assert grid.voxel_from_flattened_index(index) == voxel
