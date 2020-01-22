@@ -34,7 +34,19 @@ geometry_path = geometry.hdf5
 preview_geometry = False
 
 [molecules]
-iron_init_concentration = 0.5
+# init_loc: AIR, BLOOD, EPITHELIUM, SURFACTANT
+molecules = [
+                {
+                    "name":"iron",
+                    "init_val":10,
+                    "init_loc":"BLOOD"
+                },
+                {
+                    "name":"tafc",
+                    "init_val":5,
+                    "init_loc":"SURFACTANT"
+                }
+            ]
 
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
