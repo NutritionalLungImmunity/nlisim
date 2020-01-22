@@ -23,7 +23,8 @@ along the domains axes.  See the `simulation.grid.RectangularGrid` implementatio
 for details.
 """
 from functools import reduce
-from typing import Iterator, List, Tuple
+from itertools import product
+from typing import Iterable, Iterator, List, Tuple
 
 import attr
 from h5py import File as H5File
@@ -187,6 +188,21 @@ class RectangularGrid(object):
             return -1
         return indices[0] - 1
 
+    def get_flattened_index(self, voxel: Voxel) -> int:
+        """Return the flattened index of a voxel inside the grid.
+
+        This is a convenience method that wraps numpy.ravel_multi_index.
+        """
+        return np.ravel_multi_index(voxel, self.shape)
+
+    def voxel_from_flattened_index(self, index: int) -> 'Voxel':
+        """Create a Voxel from flattened index of the grid.
+
+        This is a convenience method that wraps numpy.unravel_index.
+        """
+        z, y, x = np.unravel_index(index, self.shape)
+        return Voxel(x=x, y=y, z=z)
+
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.
 
@@ -206,10 +222,14 @@ class RectangularGrid(object):
         iz = self._find_dimension_index(self.zv, point.z)
         return Voxel(x=ix, y=iy, z=iz)
 
+    def get_voxel_center(self, voxel: Voxel) -> Point:
+        """Get the coordinates of the center point of a voxel."""
+        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
+
     def is_valid_voxel(self, voxel: Voxel) -> bool:
         """Return whether or not a voxel index is valid."""
         v = voxel
-        return 0 <= v.x <= len(self.x) and 0 <= v.y <= len(self.y) and 0 <= v.z <= len(self.z)
+        return 0 <= v.x < len(self.x) and 0 <= v.y < len(self.y) and 0 <= v.z < len(self.z)
 
     def is_point_in_domain(self, point: Point) -> bool:
         """Return whether or not a point in inside the domain."""
@@ -219,19 +239,23 @@ class RectangularGrid(object):
             and (self.zv[0] <= point.z <= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel) -> Iterator[Voxel]:
+    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
         """Return an iterator over all neighbors of a given voxel.
-
-        This method will only return voxels sharing and edge.   Specifically,
-        it will not return voxels touching only at a corner.
 
         Parameters
         ----------
         voxel : simulation.coordinates.Voxel
             The target voxel
+        corners : bool
+            Include voxels sharing corners and edges in addition to those sharing sides.
 
         """
-        dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+        dirs: Iterable[Tuple[int, int, int]]
+        if corners:
+            dirs = filter(lambda x: x != (0, 0, 0), product([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]))
+        else:
+            dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+
         for di, dj, dk in dirs:
             i = voxel.x + di
             j = voxel.y + dj
