@@ -97,6 +97,33 @@ def test_get_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
     assert set(grid.get_adjecent_voxels(voxel)) == neighbors
 
 
+# fmt: off
+@pytest.mark.parametrize(
+    'voxel,neighbors',
+    [
+        (
+            v(5, 5, 5),
+            26
+        ),
+        (
+            v(0, 5, 5),
+            17
+        ),
+        (
+            v(0, 0, 5),
+            11
+        ),
+        (
+            v(0, 0, 0),
+            7
+        )
+    ]
+)
+# fmt: on
+def test_get_corner_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
+    assert len(list(grid.get_adjecent_voxels(voxel, corners=True))) == neighbors
+
+
 @pytest.mark.parametrize(
     'point,in_domain',
     [
