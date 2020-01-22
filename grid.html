@@ -79,7 +79,8 @@ along the domains axes.  See the `simulation.grid.RectangularGrid` implementatio
 for details.
 &#34;&#34;&#34;
 from functools import reduce
-from typing import Iterator, List, Tuple
+from itertools import product
+from typing import Iterable, Iterator, List, Tuple
 
 import attr
 from h5py import File as H5File
@@ -243,6 +244,21 @@ class RectangularGrid(object):
             return -1
         return indices[0] - 1
 
+    def get_flattened_index(self, voxel: Voxel) -&gt; int:
+        &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
+
+        This is a convenience method that wraps numpy.ravel_multi_index.
+        &#34;&#34;&#34;
+        return np.ravel_multi_index(voxel, self.shape)
+
+    def voxel_from_flattened_index(self, index: int) -&gt; &#39;Voxel&#39;:
+        &#34;&#34;&#34;Create a Voxel from flattened index of the grid.
+
+        This is a convenience method that wraps numpy.unravel_index.
+        &#34;&#34;&#34;
+        z, y, x = np.unravel_index(index, self.shape)
+        return Voxel(x=x, y=y, z=z)
+
     def get_voxel(self, point: Point) -&gt; Voxel:
         &#34;&#34;&#34;Return the voxel containing the given point.
 
@@ -262,10 +278,14 @@ class RectangularGrid(object):
         iz = self._find_dimension_index(self.zv, point.z)
         return Voxel(x=ix, y=iy, z=iz)
 
+    def get_voxel_center(self, voxel: Voxel) -&gt; Point:
+        &#34;&#34;&#34;Get the coordinates of the center point of a voxel.&#34;&#34;&#34;
+        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
+
     def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
         &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
         v = voxel
-        return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)
+        return 0 &lt;= v.x &lt; len(self.x) and 0 &lt;= v.y &lt; len(self.y) and 0 &lt;= v.z &lt; len(self.z)
 
     def is_point_in_domain(self, point: Point) -&gt; bool:
         &#34;&#34;&#34;Return whether or not a point in inside the domain.&#34;&#34;&#34;
@@ -275,19 +295,23 @@ class RectangularGrid(object):
             and (self.zv[0] &lt;= point.z &lt;= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel) -&gt; Iterator[Voxel]:
+    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
         &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
-
-        This method will only return voxels sharing and edge.   Specifically,
-        it will not return voxels touching only at a corner.
 
         Parameters
         ----------
         voxel : simulation.coordinates.Voxel
             The target voxel
+        corners : bool
+            Include voxels sharing corners and edges in addition to those sharing sides.
 
         &#34;&#34;&#34;
-        dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+        dirs: Iterable[Tuple[int, int, int]]
+        if corners:
+            dirs = filter(lambda x: x != (0, 0, 0), product([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]))
+        else:
+            dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+
         for di, dj, dk in dirs:
             i = voxel.x + di
             j = voxel.y + dj
@@ -597,6 +621,21 @@ right edge of the previous element.</p>
             return -1
         return indices[0] - 1
 
+    def get_flattened_index(self, voxel: Voxel) -&gt; int:
+        &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
+
+        This is a convenience method that wraps numpy.ravel_multi_index.
+        &#34;&#34;&#34;
+        return np.ravel_multi_index(voxel, self.shape)
+
+    def voxel_from_flattened_index(self, index: int) -&gt; &#39;Voxel&#39;:
+        &#34;&#34;&#34;Create a Voxel from flattened index of the grid.
+
+        This is a convenience method that wraps numpy.unravel_index.
+        &#34;&#34;&#34;
+        z, y, x = np.unravel_index(index, self.shape)
+        return Voxel(x=x, y=y, z=z)
+
     def get_voxel(self, point: Point) -&gt; Voxel:
         &#34;&#34;&#34;Return the voxel containing the given point.
 
@@ -616,10 +655,14 @@ right edge of the previous element.</p>
         iz = self._find_dimension_index(self.zv, point.z)
         return Voxel(x=ix, y=iy, z=iz)
 
+    def get_voxel_center(self, voxel: Voxel) -&gt; Point:
+        &#34;&#34;&#34;Get the coordinates of the center point of a voxel.&#34;&#34;&#34;
+        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
+
     def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
         &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
         v = voxel
-        return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)
+        return 0 &lt;= v.x &lt; len(self.x) and 0 &lt;= v.y &lt; len(self.y) and 0 &lt;= v.z &lt; len(self.z)
 
     def is_point_in_domain(self, point: Point) -&gt; bool:
         &#34;&#34;&#34;Return whether or not a point in inside the domain.&#34;&#34;&#34;
@@ -629,19 +672,23 @@ right edge of the previous element.</p>
             and (self.zv[0] &lt;= point.z &lt;= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel) -&gt; Iterator[Voxel]:
+    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
         &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
-
-        This method will only return voxels sharing and edge.   Specifically,
-        it will not return voxels touching only at a corner.
 
         Parameters
         ----------
         voxel : simulation.coordinates.Voxel
             The target voxel
+        corners : bool
+            Include voxels sharing corners and edges in addition to those sharing sides.
 
         &#34;&#34;&#34;
-        dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+        dirs: Iterable[Tuple[int, int, int]]
+        if corners:
+            dirs = filter(lambda x: x != (0, 0, 0), product([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]))
+        else:
+            dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+
         for di, dj, dk in dirs:
             i = voxel.x + di
             j = voxel.y + dj
@@ -849,35 +896,38 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_adjecent_voxels"><code class="name flex">
-<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel)</span>
+<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel, corners=False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Return an iterator over all neighbors of a given voxel.</p>
-<p>This method will only return voxels sharing and edge.
-Specifically,
-it will not return voxels touching only at a corner.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>voxel</code></strong> :&ensp;<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel"><code>Voxel</code></a></dt>
 <dd>The target voxel</dd>
+<dt><strong><code>corners</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Include voxels sharing corners and edges in addition to those sharing sides.</dd>
 </dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_adjecent_voxels(self, voxel: Voxel) -&gt; Iterator[Voxel]:
+<pre><code class="python">def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
     &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
-
-    This method will only return voxels sharing and edge.   Specifically,
-    it will not return voxels touching only at a corner.
 
     Parameters
     ----------
     voxel : simulation.coordinates.Voxel
         The target voxel
+    corners : bool
+        Include voxels sharing corners and edges in addition to those sharing sides.
 
     &#34;&#34;&#34;
-    dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+    dirs: Iterable[Tuple[int, int, int]]
+    if corners:
+        dirs = filter(lambda x: x != (0, 0, 0), product([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]))
+    else:
+        dirs = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+
     for di, dj, dk in dirs:
         i = voxel.x + di
         j = voxel.y + dj
@@ -886,6 +936,24 @@ it will not return voxels touching only at a corner.</p>
 
         if self.is_valid_voxel(neighbor):
             yield neighbor</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.get_flattened_index"><code class="name flex">
+<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Return the flattened index of a voxel inside the grid.</p>
+<p>This is a convenience method that wraps numpy.ravel_multi_index.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_flattened_index(self, voxel: Voxel) -&gt; int:
+    &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
+
+    This is a convenience method that wraps numpy.ravel_multi_index.
+    &#34;&#34;&#34;
+    return np.ravel_multi_index(voxel, self.shape)</code></pre>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_nearest_voxel"><code class="name flex">
@@ -951,6 +1019,20 @@ the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></
     iy = self._find_dimension_index(self.yv, point.y)
     iz = self._find_dimension_index(self.zv, point.z)
     return Voxel(x=ix, y=iy, z=iz)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.get_voxel_center"><code class="name flex">
+<span>def <span class="ident">get_voxel_center</span></span>(<span>self, voxel)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Get the coordinates of the center point of a voxel.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_voxel_center(self, voxel: Voxel) -&gt; Point:
+    &#34;&#34;&#34;Get the coordinates of the center point of a voxel.&#34;&#34;&#34;
+    return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])</code></pre>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_voxels_in_range"><code class="name flex">
@@ -1063,7 +1145,7 @@ iterated.</p>
 <pre><code class="python">def is_valid_voxel(self, voxel: Voxel) -&gt; bool:
     &#34;&#34;&#34;Return whether or not a voxel index is valid.&#34;&#34;&#34;
     v = voxel
-    return 0 &lt;= v.x &lt;= len(self.x) and 0 &lt;= v.y &lt;= len(self.y) and 0 &lt;= v.z &lt;= len(self.z)</code></pre>
+    return 0 &lt;= v.x &lt; len(self.x) and 0 &lt;= v.y &lt; len(self.y) and 0 &lt;= v.z &lt; len(self.z)</code></pre>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.save"><code class="name flex">
@@ -1080,6 +1162,25 @@ iterated.</p>
     for dim in (&#39;x&#39;, &#39;xv&#39;, &#39;y&#39;, &#39;yv&#39;, &#39;z&#39;, &#39;zv&#39;):
         d = file.create_dataset(dim, data=getattr(self, dim))
         d.make_scale(dim)</code></pre>
+</details>
+</dd>
+<dt id="simulation.grid.RectangularGrid.voxel_from_flattened_index"><code class="name flex">
+<span>def <span class="ident">voxel_from_flattened_index</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Create a Voxel from flattened index of the grid.</p>
+<p>This is a convenience method that wraps numpy.unravel_index.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def voxel_from_flattened_index(self, index: int) -&gt; &#39;Voxel&#39;:
+    &#34;&#34;&#34;Create a Voxel from flattened index of the grid.
+
+    This is a convenience method that wraps numpy.unravel_index.
+    &#34;&#34;&#34;
+    z, y, x = np.unravel_index(index, self.shape)
+    return Voxel(x=x, y=y, z=z)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1102,13 +1203,15 @@ iterated.</p>
 <ul>
 <li>
 <h4><code><a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="simulation.grid.RectangularGrid.allocate_variable" href="#simulation.grid.RectangularGrid.allocate_variable">allocate_variable</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.construct_uniform" href="#simulation.grid.RectangularGrid.construct_uniform">construct_uniform</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.delta" href="#simulation.grid.RectangularGrid.delta">delta</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.get_adjecent_voxels" href="#simulation.grid.RectangularGrid.get_adjecent_voxels">get_adjecent_voxels</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.get_flattened_index" href="#simulation.grid.RectangularGrid.get_flattened_index">get_flattened_index</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.get_nearest_voxel" href="#simulation.grid.RectangularGrid.get_nearest_voxel">get_nearest_voxel</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.get_voxel" href="#simulation.grid.RectangularGrid.get_voxel">get_voxel</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.get_voxel_center" href="#simulation.grid.RectangularGrid.get_voxel_center">get_voxel_center</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.get_voxels_in_range" href="#simulation.grid.RectangularGrid.get_voxels_in_range">get_voxels_in_range</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.is_point_in_domain" href="#simulation.grid.RectangularGrid.is_point_in_domain">is_point_in_domain</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.is_valid_voxel" href="#simulation.grid.RectangularGrid.is_valid_voxel">is_valid_voxel</a></code></li>
@@ -1116,6 +1219,7 @@ iterated.</p>
 <li><code><a title="simulation.grid.RectangularGrid.meshgrid" href="#simulation.grid.RectangularGrid.meshgrid">meshgrid</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.save" href="#simulation.grid.RectangularGrid.save">save</a></code></li>
 <li><code><a title="simulation.grid.RectangularGrid.shape" href="#simulation.grid.RectangularGrid.shape">shape</a></code></li>
+<li><code><a title="simulation.grid.RectangularGrid.voxel_from_flattened_index" href="#simulation.grid.RectangularGrid.voxel_from_flattened_index">voxel_from_flattened_index</a></code></li>
 </ul>
 </li>
 </ul>
