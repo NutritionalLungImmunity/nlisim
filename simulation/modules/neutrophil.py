@@ -1,6 +1,7 @@
 import attr
 import numpy as np
 
+from simulation.cell import CellData
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
