@@ -127,9 +127,15 @@ class PhagocyteCellList(CellList):
                 cum_p += p[i]
                 if prob <= cum_p:
                     cell['point'] = Point(
-                        x=grid.x[vox.x + vox_list[i][0]],  # TODO plus random,
-                        y=grid.y[vox.y + vox_list[i][1]],  # TODO plus random,
-                        z=grid.z[vox.z + vox_list[i][2]],  # TODO plus random,
+                        x=random.uniform(
+                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                        ),
+                        y=random.uniform(
+                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                        ),
+                        z=random.uniform(
+                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                        ),
                     )
                     self.update_voxel_index([index])
                     break
