@@ -93,9 +93,9 @@ class Macrophage(Module):
             np.random.shuffle(indices)
 
             for i in range(0, macrophage.init_num):
-                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
-                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
-                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
+                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
