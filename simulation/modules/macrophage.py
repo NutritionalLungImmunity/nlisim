@@ -115,9 +115,9 @@ class Macrophage(Module):
             np.random.shuffle(indices)
 
             for i in range(0, macrophage.init_num):
-                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
-                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
-                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
+                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
@@ -259,15 +259,13 @@ def chemotaxis(
                     yj = vox.y + y
                     xi = vox.x + x
                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        if tissue[zk - 1, yj - 1, xi - 1] in [
+                        if tissue[zk, yj, xi] in [
                             TissueTypes.SURFACTANT.value,
                             TissueTypes.BLOOD.value,
                             TissueTypes.EPITHELIUM.value,
                             TissueTypes.PORE.value,
                         ]:
-                            p[i] = logistic(
-                                molecule[zk - 1, yj - 1, xi - 1], drift_lambda, drift_bias
-                            )
+                            p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                             p_tot += p[i]
 
         # scale to sum of probabilities
@@ -281,9 +279,15 @@ def chemotaxis(
             cum_p += p[i]
             if prob <= cum_p:
                 cell['point'] = Point(
-                    x=grid.x[vox.x + vox_list[i][0] - 1],  # TODO plus random,
-                    y=grid.y[vox.y + vox_list[i][1] - 1],  # TODO plus random,
-                    z=grid.z[vox.z + vox_list[i][2] - 1],  # TODO plus random,
+                    x=random.uniform(
+                        grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                    ),
+                    y=random.uniform(
+                        grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                    ),
+                    z=random.uniform(
+                        grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                    ),
                 )
                 cells.update_voxel_index([index])
                 break
