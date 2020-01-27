@@ -1,4 +1,3 @@
-from enum import Enum, unique
 import json
 
 import attr
@@ -6,54 +5,17 @@ import numpy as np
 
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
-from simulation.state import grid_variable, State
-from simulation.validation import ValidationError
+from simulation.molecule import MoleculeGrid, MoleculeTypes
+from simulation.state import State
 
 
-@unique
-class MoleculeTypes(Enum):
-    """a enum class for the molecule type."""
-
-    iron = 0
-    tf = 1
-    tfbi = 2
-    tafc = 3
-    tafcbi = 4
-    ros = 5
-    lactoferrin = 6
-    lactoferrinbi = 7
-    il6 = 8
-    tnfa = 9
-    il8 = 10
-    il10 = 11
-    hepcidin = 12
-    tgfb = 13
-    mcp1 = 14
-    mip2 = 15
-    mip1b = 16
+def molecule_grid_factory(self: 'MoleculesState'):
+    return MoleculeGrid(grid=self.global_state.grid)
 
 
 @attr.s(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
-    concentration = grid_variable(
-        dtype={
-            'names': [molecule.name for molecule in MoleculeTypes],
-            'formats': ['f4'] * len(MoleculeTypes),
-        }
-    )
-
-    # we may want to identify sources of molecules in the tissue e.g. blood
-    # that preferentially increase at a time step
-    # source = grid_variable()
-
-    @concentration.validator
-    def _validate_concentration(self, attribute: attr.Attribute, value: np.ndarray) -> None:
-        for name in value.dtype.names:
-            if not np.greater_equal(value[name], 0).all():
-                raise ValidationError('concentration must >= 0')
-
-    def __repr__(self):
-        return f'MoleculesState(iron)'
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
 
 
 class Molecules(Module):
@@ -81,25 +43,35 @@ class Molecules(Module):
             elif init_loc not in [e.name for e in TissueTypes]:
                 raise TypeError(f'Cannot find lung tissue type {init_loc}')
 
-            molecules.concentration[name][
+            molecules.grid.concentrations[name][
                 np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
             ] = init_val
 
-        molecules.concentration = np.rec.array(molecules.concentration)
+            if 'source' in molecule:
+                source = molecule['source']
+                incr = molecule['incr']
+                if source not in [e.name for e in TissueTypes]:
+                    raise TypeError(f'Cannot find lung tissue type {source}')
+
+                molecules.grid.sources[name][
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                ] = incr
 
         return state
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         molecules: MoleculesState = state.molecules
-        # grid: RectangularGrid = state.grid
 
-        tafc = molecules.concentration.tafc
-        self.diffuse(tafc)
-        self.degrade(tafc)
+        # iron = molecules.grid['iron']
         # with open('testfile.txt', 'w') as outfile:
-        #     for data_slice in tafc:
+        #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
+
+        for molecule in MoleculeTypes:
+            self.diffuse(molecules.grid[molecule.name])
+            self.degrade(molecules.grid[molecule.name])
+        molecules.grid.incr()
 
         return state
 
