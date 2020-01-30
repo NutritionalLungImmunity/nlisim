@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.7.4" />
-<title>simulation.modules.macrophage API documentation</title>
+<title>simulation.modules.neutrophil API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -18,16 +18,14 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.macrophage</code></h1>
+<h1 class="title">Module <code>simulation.modules.neutrophil</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import random
-
-import attr
+<pre><code class="python">import attr
 import numpy as np
 
 from simulation.cell import CellData
@@ -39,127 +37,99 @@ from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
 from simulation.state import State
 
 
-class MacrophageCellData(PhagocyteCellData):
-    BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
-    MACROPHAGE_FIELDS = [
-        (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
-    ]
-
+class NeutrophilCellData(PhagocyteCellData):
     dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
     )  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
-        network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
-
-    @classmethod
-    def initial_boolean_network(cls) -&gt; np.ndarray:
-        return np.asarray([True, False, True])
+        return PhagocyteCellData.create_cell_tuple(**kwargs)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
-class MacrophageCellList(PhagocyteCellList):
-    CellDataClass = MacrophageCellData
-
-    def update(self, tissue, grid: RectangularGrid):
-        # TODO - add boolena network update
-        # for index in self.alive:
-        #   self[index].update_boolean network
-        return
+class NeutrophilCellList(PhagocyteCellList):
+    CellDataClass = NeutrophilCellData
 
 
-def cell_list_factory(self: &#39;MacrophageState&#39;):
-    return MacrophageCellList(grid=self.global_state.grid)
+def cell_list_factory(self: &#39;NeutrophilState&#39;):
+    return NeutrophilCellList(grid=self.global_state.grid)
 
 
 @attr.s(kw_only=True)
-class MacrophageState(ModuleState):
-    cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+class NeutrophilState(ModuleState):
+    cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     init_num: int = 0
-    MPH_UPTAKE_QTTY: float = 0.1
-    TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
 
 
-class Macrophage(Module):
-    name = &#39;macrophage&#39;
+class Neutrophil(Module):
+    name = &#39;neutrophil&#39;
     defaults = {
         &#39;cells&#39;: &#39;&#39;,
         &#39;init_num&#39;: &#39;0&#39;,
-        &#39;MPH_UPTAKE_QTTY&#39;: &#39;0.1&#39;,
-        &#39;TF_ENHANCE&#39;: &#39;1&#39;,
         &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
         &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
     }
-    StateClass = MacrophageState
+    StateClass = NeutrophilState
 
     def initialize(self, state: State):
-        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
 
-        macrophage.init_num = self.config.getint(&#39;init_num&#39;)
-        macrophage.MPH_UPTAKE_QTTY = self.config.getfloat(&#39;MPH_UPTAKE_QTTY&#39;)
-        macrophage.TF_ENHANCE = self.config.getfloat(&#39;TF_ENHANCE&#39;)
-        macrophage.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
-        macrophage.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
-        MacrophageCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
-        MacrophageCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
-        macrophage.cells = MacrophageCellList(grid=grid)
+        neutrophil.init_num = self.config.getint(&#39;init_num&#39;)
+        neutrophil.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
+        neutrophil.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
+        NeutrophilCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
+        NeutrophilCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
 
-        if macrophage.init_num &gt; 0:
-            # initialize the surfactant layer with some macrophage in random locations
+        neutrophil.cells = NeutrophilCellList(grid=grid)
+
+        if neutrophil.init_num &gt; 0:
+            # initialize the surfactant layer with some neutrophil in random locations
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
             np.random.shuffle(indices)
 
-            for i in range(0, macrophage.init_num):
-                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+            for i in range(0, neutrophil.init_num):
+                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
+                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
+                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
 
                 point = Point(x=x, y=y, z=z)
-                status = MacrophageCellData.Status.RESTING
+                status = NeutrophilCellData.Status.RESTING
 
-                macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=status))
+                neutrophil.cells.append(NeutrophilCellData.create_cell(point=point, status=status))
 
         return state
 
     def advance(self, state: State, previous_time: float):
-        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
-        cells = macrophage.cells
-        # drift(macrophage.cells, tissue, grid)
+
+        cells = neutrophil.cells
+        # drift(neutrophil.cells, tissue, grid)
         interact(state)
 
-        cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
-
-        cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
-
-        cells.update(tissue, grid)
-
+        cells.recruit(NeutrophilCellData.RECRUIT_RATE, tissue, grid)
+        cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
+        # cells.update
         cells.chemotaxis(
-            state.molecules.iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
+            state.molecules.iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
         )
+
+        # print(neutrophil.cells.cell_data[&#39;point&#39;])
 
         return state
 
 
-def hill_probability(substract, km=10):
-    return substract * substract / (substract * substract + km * km)
-
-
 def interact(state: State):
     # get molecules in voxel
-    iron = state.molecules.iron
-    cells = state.macrophage.cells
+    iron = state.molecules.iron  # TODO implement real behavior
+    cells = state.neutrophil.cells
     grid = state.grid
-
-    uptake = state.macrophage.MPH_UPTAKE_QTTY
-    enhance = state.macrophage.TF_ENHANCE
 
     # 1. Get cells that are alive
     for index in cells.alive():
@@ -172,27 +142,9 @@ def interact(state: State):
 
         #  Iron -----------------------------------------------------
         iron_amount = iron[vox.z, vox.y, vox.x]
-        if hill_probability(iron_amount) &gt; random.random():
-            qtty = uptake * iron_amount
-            iron[vox.z, vox.y, vox.x] -= qtty
-            cell[&#39;iron_pool&#39;] += qtty
-            # print(qtty)
-            # print(iron[vox.z, vox.y, vox.x])
-            # print(cell[&#39;iron_pool&#39;])
-
-        fpn = 0  # TODO replace with actual boolean network
-        tf = 1  # TODO replace with actual boolean network
-        cell[&#39;boolean_network&#39;][fpn] = True
-        cell[&#39;boolean_network&#39;][tf] = False
-
-        if cell[&#39;boolean_network&#39;][fpn]:
-            enhancer = enhance if cell[&#39;boolean_network&#39;][tf] else 1
-            qtty = cell[&#39;iron_pool&#39;] * (1 if uptake * enhancer &gt; 1 else uptake * enhancer)
-            iron[vox.z, vox.y, vox.x] += qtty
-            cell[&#39;iron_pool&#39;] -= qtty
-            # print(qtty)
-            # print(iron[vox.z, vox.y, vox.x])
-            # print(cell[&#39;iron_pool&#39;])
+        qtty = 0.5 * iron_amount
+        iron[vox.z, vox.y, vox.x] -= qtty
+        cell[&#39;iron_pool&#39;] += qtty
 
         #  Next_Mol -----------------------------------------------------
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...</code></pre>
@@ -205,7 +157,7 @@ def interact(state: State):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.macrophage.cell_list_factory"><code class="name flex">
+<dt id="simulation.modules.neutrophil.cell_list_factory"><code class="name flex">
 <span>def <span class="ident">cell_list_factory</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -214,24 +166,11 @@ def interact(state: State):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def cell_list_factory(self: &#39;MacrophageState&#39;):
-    return MacrophageCellList(grid=self.global_state.grid)</code></pre>
+<pre><code class="python">def cell_list_factory(self: &#39;NeutrophilState&#39;):
+    return NeutrophilCellList(grid=self.global_state.grid)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.hill_probability"><code class="name flex">
-<span>def <span class="ident">hill_probability</span></span>(<span>substract, km=10)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def hill_probability(substract, km=10):
-    return substract * substract / (substract * substract + km * km)</code></pre>
-</details>
-</dd>
-<dt id="simulation.modules.macrophage.interact"><code class="name flex">
+<dt id="simulation.modules.neutrophil.interact"><code class="name flex">
 <span>def <span class="ident">interact</span></span>(<span>state)</span>
 </code></dt>
 <dd>
@@ -242,12 +181,9 @@ def interact(state: State):
 </summary>
 <pre><code class="python">def interact(state: State):
     # get molecules in voxel
-    iron = state.molecules.iron
-    cells = state.macrophage.cells
+    iron = state.molecules.iron  # TODO implement real behavior
+    cells = state.neutrophil.cells
     grid = state.grid
-
-    uptake = state.macrophage.MPH_UPTAKE_QTTY
-    enhance = state.macrophage.TF_ENHANCE
 
     # 1. Get cells that are alive
     for index in cells.alive():
@@ -260,24 +196,9 @@ def interact(state: State):
 
         #  Iron -----------------------------------------------------
         iron_amount = iron[vox.z, vox.y, vox.x]
-        if hill_probability(iron_amount) &gt; random.random():
-            qtty = uptake * iron_amount
-            iron[vox.z, vox.y, vox.x] -= qtty
-            cell[&#39;iron_pool&#39;] += qtty
-            # print(qtty)
-            # print(iron[vox.z, vox.y, vox.x])
-            # print(cell[&#39;iron_pool&#39;])
-
-        fpn = 0  # TODO replace with actual boolean network
-        tf = 1  # TODO replace with actual boolean network
-        cell[&#39;boolean_network&#39;][fpn] = True
-        cell[&#39;boolean_network&#39;][tf] = False
-
-        if cell[&#39;boolean_network&#39;][fpn]:
-            enhancer = enhance if cell[&#39;boolean_network&#39;][tf] else 1
-            qtty = cell[&#39;iron_pool&#39;] * (1 if uptake * enhancer &gt; 1 else uptake * enhancer)
-            iron[vox.z, vox.y, vox.x] += qtty
-            cell[&#39;iron_pool&#39;] -= qtty</code></pre>
+        qtty = 0.5 * iron_amount
+        iron[vox.z, vox.y, vox.x] -= qtty
+        cell[&#39;iron_pool&#39;] += qtty</code></pre>
 </details>
 </dd>
 </dl>
@@ -285,8 +206,8 @@ def interact(state: State):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.macrophage.Macrophage"><code class="flex name class">
-<span>class <span class="ident">Macrophage</span></span>
+<dt id="simulation.modules.neutrophil.Neutrophil"><code class="flex name class">
+<span>class <span class="ident">Neutrophil</span></span>
 <span>(</span><span>config)</span>
 </code></dt>
 <dd>
@@ -295,66 +216,63 @@ def interact(state: State):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Macrophage(Module):
-    name = &#39;macrophage&#39;
+<pre><code class="python">class Neutrophil(Module):
+    name = &#39;neutrophil&#39;
     defaults = {
         &#39;cells&#39;: &#39;&#39;,
         &#39;init_num&#39;: &#39;0&#39;,
-        &#39;MPH_UPTAKE_QTTY&#39;: &#39;0.1&#39;,
-        &#39;TF_ENHANCE&#39;: &#39;1&#39;,
         &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
         &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
     }
-    StateClass = MacrophageState
+    StateClass = NeutrophilState
 
     def initialize(self, state: State):
-        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
 
-        macrophage.init_num = self.config.getint(&#39;init_num&#39;)
-        macrophage.MPH_UPTAKE_QTTY = self.config.getfloat(&#39;MPH_UPTAKE_QTTY&#39;)
-        macrophage.TF_ENHANCE = self.config.getfloat(&#39;TF_ENHANCE&#39;)
-        macrophage.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
-        macrophage.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
-        MacrophageCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
-        MacrophageCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
-        macrophage.cells = MacrophageCellList(grid=grid)
+        neutrophil.init_num = self.config.getint(&#39;init_num&#39;)
+        neutrophil.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
+        neutrophil.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
+        NeutrophilCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
+        NeutrophilCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
 
-        if macrophage.init_num &gt; 0:
-            # initialize the surfactant layer with some macrophage in random locations
+        neutrophil.cells = NeutrophilCellList(grid=grid)
+
+        if neutrophil.init_num &gt; 0:
+            # initialize the surfactant layer with some neutrophil in random locations
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
             np.random.shuffle(indices)
 
-            for i in range(0, macrophage.init_num):
-                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+            for i in range(0, neutrophil.init_num):
+                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
+                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
+                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
 
                 point = Point(x=x, y=y, z=z)
-                status = MacrophageCellData.Status.RESTING
+                status = NeutrophilCellData.Status.RESTING
 
-                macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=status))
+                neutrophil.cells.append(NeutrophilCellData.create_cell(point=point, status=status))
 
         return state
 
     def advance(self, state: State, previous_time: float):
-        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
-        cells = macrophage.cells
-        # drift(macrophage.cells, tissue, grid)
+
+        cells = neutrophil.cells
+        # drift(neutrophil.cells, tissue, grid)
         interact(state)
 
-        cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
-
-        cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
-
-        cells.update(tissue, grid)
-
+        cells.recruit(NeutrophilCellData.RECRUIT_RATE, tissue, grid)
+        cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
+        # cells.update
         cells.chemotaxis(
-            state.molecules.iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
+            state.molecules.iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
         )
+
+        # print(neutrophil.cells.cell_data[&#39;point&#39;])
 
         return state</code></pre>
 </details>
@@ -364,7 +282,7 @@ def interact(state: State):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.macrophage.Macrophage.StateClass"><code class="name">var <span class="ident">StateClass</span></code></dt>
+<dt id="simulation.modules.neutrophil.Neutrophil.StateClass"><code class="name">var <span class="ident">StateClass</span></code></dt>
 <dd>
 <section class="desc"><p>Base type intended to store the state for simulation modules.</p>
 <p>This class contains serialization support for basic types (float, int, str,
@@ -375,16 +293,14 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageState(ModuleState):
-    cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+<pre><code class="python">class NeutrophilState(ModuleState):
+    cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     init_num: int = 0
-    MPH_UPTAKE_QTTY: float = 0.1
-    TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.Macrophage.defaults"><code class="name">var <span class="ident">defaults</span></code></dt>
+<dt id="simulation.modules.neutrophil.Neutrophil.defaults"><code class="name">var <span class="ident">defaults</span></code></dt>
 <dd>
 <section class="desc"><p>dict() -&gt; new empty dictionary
 dict(mapping) -&gt; new dictionary initialized from a mapping object's
@@ -398,7 +314,7 @@ in the keyword argument list.
 For example:
 dict(one=1, two=2)</p></section>
 </dd>
-<dt id="simulation.modules.macrophage.Macrophage.name"><code class="name">var <span class="ident">name</span></code></dt>
+<dt id="simulation.modules.neutrophil.Neutrophil.name"><code class="name">var <span class="ident">name</span></code></dt>
 <dd>
 <section class="desc"><p>str(object='') -&gt; str
 str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
@@ -423,8 +339,8 @@ errors defaults to 'strict'.</p></section>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellData"><code class="flex name class">
-<span>class <span class="ident">MacrophageCellData</span></span>
+<dt id="simulation.modules.neutrophil.NeutrophilCellData"><code class="flex name class">
+<span>class <span class="ident">NeutrophilCellData</span></span>
 <span>(</span><span>arg, initialize=False, **kwargs)</span>
 </code></dt>
 <dd>
@@ -460,24 +376,14 @@ associated with each cell.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageCellData(PhagocyteCellData):
-    BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
-    MACROPHAGE_FIELDS = [
-        (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
-    ]
-
+<pre><code class="python">class NeutrophilCellData(PhagocyteCellData):
     dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
     )  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
-        network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
-
-    @classmethod
-    def initial_boolean_network(cls) -&gt; np.ndarray:
-        return np.asarray([True, False, True])</code></pre>
+        return PhagocyteCellData.create_cell_tuple(**kwargs)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -485,52 +391,6 @@ associated with each cell.</p>
 <li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="simulation.modules.macrophage.MacrophageCellData.BOOLEAN_NETWORK_LENGTH"><code class="name">var <span class="ident">BOOLEAN_NETWORK_LENGTH</span></code></dt>
-<dd>
-<section class="desc"><p>int(x=0) -&gt; integer
-int(x, base=10) -&gt; integer</p>
-<p>Convert a number or string to an integer, or return 0 if no arguments
-are given.
-If x is a number, return x.<strong>int</strong>().
-For floating point
-numbers, this truncates towards zero.</p>
-<p>If x is not a number or if base is given, then x must be a string,
-bytes, or bytearray instance representing an integer literal in the
-given base.
-The literal can be preceded by '+' or '-' and be surrounded
-by whitespace.
-The base defaults to 10.
-Valid bases are 0 and 2-36.
-Base 0 means to interpret the base from the string as an integer literal.</p>
-<pre><code>&gt;&gt;&gt; int('0b100', base=0)
-4
-</code></pre></section>
-</dd>
-<dt id="simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS"><code class="name">var <span class="ident">MACROPHAGE_FIELDS</span></code></dt>
-<dd>
-<section class="desc"><p>list() -&gt; new empty list
-list(iterable) -&gt; new list initialized from iterable's items</p></section>
-</dd>
-</dl>
-<h3>Static methods</h3>
-<dl>
-<dt id="simulation.modules.macrophage.MacrophageCellData.initial_boolean_network"><code class="name flex">
-<span>def <span class="ident">initial_boolean_network</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@classmethod
-def initial_boolean_network(cls) -&gt; np.ndarray:
-    return np.asarray([True, False, True])</code></pre>
-</details>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="simulation.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
@@ -554,8 +414,8 @@ def initial_boolean_network(cls) -&gt; np.ndarray:
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList"><code class="flex name class">
-<span>class <span class="ident">MacrophageCellList</span></span>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList"><code class="flex name class">
+<span>class <span class="ident">NeutrophilCellList</span></span>
 <span>(</span><span>*, grid, max_cells=10000, cell_data=NOTHING)</span>
 </code></dt>
 <dd>
@@ -586,39 +446,14 @@ low-level array.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageCellList(PhagocyteCellList):
-    CellDataClass = MacrophageCellData
-
-    def update(self, tissue, grid: RectangularGrid):
-        # TODO - add boolena network update
-        # for index in self.alive:
-        #   self[index].update_boolean network
-        return</code></pre>
+<pre><code class="python">class NeutrophilCellList(PhagocyteCellList):
+    CellDataClass = NeutrophilCellData</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="simulation.modules.phagocyte.PhagocyteCellList" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></li>
 <li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
 </ul>
-<h3>Methods</h3>
-<dl>
-<dt id="simulation.modules.macrophage.MacrophageCellList.update"><code class="name flex">
-<span>def <span class="ident">update</span></span>(<span>self, tissue, grid)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def update(self, tissue, grid: RectangularGrid):
-    # TODO - add boolena network update
-    # for index in self.alive:
-    #   self[index].update_boolean network
-    return</code></pre>
-</details>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="simulation.modules.phagocyte.PhagocyteCellList" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></b></code>:
@@ -638,8 +473,8 @@ low-level array.</p>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState"><code class="flex name class">
-<span>class <span class="ident">MacrophageState</span></span>
+<dt id="simulation.modules.neutrophil.NeutrophilState"><code class="flex name class">
+<span>class <span class="ident">NeutrophilState</span></span>
 <span>(</span><span>*, global_state, cells=NOTHING)</span>
 </code></dt>
 <dd>
@@ -652,11 +487,9 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageState(ModuleState):
-    cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+<pre><code class="python">class NeutrophilState(ModuleState):
+    cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     init_num: int = 0
-    MPH_UPTAKE_QTTY: float = 0.1
-    TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9</code></pre>
 </details>
@@ -666,12 +499,12 @@ state must override the serialization mechanism with custom behavior.</p></secti
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.macrophage.MacrophageState.DRIFT_BIAS"><code class="name">var <span class="ident">DRIFT_BIAS</span></code></dt>
+<dt id="simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS"><code class="name">var <span class="ident">DRIFT_BIAS</span></code></dt>
 <dd>
 <section class="desc"><p>float(x) -&gt; floating point number</p>
 <p>Convert a string or number to a floating point number, if possible.</p></section>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.DRIFT_LAMBDA"><code class="name">var <span class="ident">DRIFT_LAMBDA</span></code></dt>
+<dt id="simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA"><code class="name">var <span class="ident">DRIFT_LAMBDA</span></code></dt>
 <dd>
 <section class="desc"><p>int(x=0) -&gt; integer
 int(x, base=10) -&gt; integer</p>
@@ -692,33 +525,7 @@ Base 0 means to interpret the base from the string as an integer literal.</p>
 4
 </code></pre></section>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.MPH_UPTAKE_QTTY"><code class="name">var <span class="ident">MPH_UPTAKE_QTTY</span></code></dt>
-<dd>
-<section class="desc"><p>float(x) -&gt; floating point number</p>
-<p>Convert a string or number to a floating point number, if possible.</p></section>
-</dd>
-<dt id="simulation.modules.macrophage.MacrophageState.TF_ENHANCE"><code class="name">var <span class="ident">TF_ENHANCE</span></code></dt>
-<dd>
-<section class="desc"><p>int(x=0) -&gt; integer
-int(x, base=10) -&gt; integer</p>
-<p>Convert a number or string to an integer, or return 0 if no arguments
-are given.
-If x is a number, return x.<strong>int</strong>().
-For floating point
-numbers, this truncates towards zero.</p>
-<p>If x is not a number or if base is given, then x must be a string,
-bytes, or bytearray instance representing an integer literal in the
-given base.
-The literal can be preceded by '+' or '-' and be surrounded
-by whitespace.
-The base defaults to 10.
-Valid bases are 0 and 2-36.
-Base 0 means to interpret the base from the string as an integer literal.</p>
-<pre><code>&gt;&gt;&gt; int('0b100', base=0)
-4
-</code></pre></section>
-</dd>
-<dt id="simulation.modules.macrophage.MacrophageState.init_num"><code class="name">var <span class="ident">init_num</span></code></dt>
+<dt id="simulation.modules.neutrophil.NeutrophilState.init_num"><code class="name">var <span class="ident">init_num</span></code></dt>
 <dd>
 <section class="desc"><p>int(x=0) -&gt; integer
 int(x, base=10) -&gt; integer</p>
@@ -768,43 +575,32 @@ Base 0 means to interpret the base from the string as an integer literal.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.cell_list_factory" href="#simulation.modules.macrophage.cell_list_factory">cell_list_factory</a></code></li>
-<li><code><a title="simulation.modules.macrophage.hill_probability" href="#simulation.modules.macrophage.hill_probability">hill_probability</a></code></li>
-<li><code><a title="simulation.modules.macrophage.interact" href="#simulation.modules.macrophage.interact">interact</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.cell_list_factory" href="#simulation.modules.neutrophil.cell_list_factory">cell_list_factory</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.interact" href="#simulation.modules.neutrophil.interact">interact</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.macrophage.Macrophage" href="#simulation.modules.macrophage.Macrophage">Macrophage</a></code></h4>
+<h4><code><a title="simulation.modules.neutrophil.Neutrophil" href="#simulation.modules.neutrophil.Neutrophil">Neutrophil</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.Macrophage.StateClass" href="#simulation.modules.macrophage.Macrophage.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.modules.macrophage.Macrophage.defaults" href="#simulation.modules.macrophage.Macrophage.defaults">defaults</a></code></li>
-<li><code><a title="simulation.modules.macrophage.Macrophage.name" href="#simulation.modules.macrophage.Macrophage.name">name</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.Neutrophil.StateClass" href="#simulation.modules.neutrophil.Neutrophil.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.Neutrophil.defaults" href="#simulation.modules.neutrophil.Neutrophil.defaults">defaults</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.Neutrophil.name" href="#simulation.modules.neutrophil.Neutrophil.name">name</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageCellData" href="#simulation.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></h4>
-<ul class="">
-<li><code><a title="simulation.modules.macrophage.MacrophageCellData.BOOLEAN_NETWORK_LENGTH" href="#simulation.modules.macrophage.MacrophageCellData.BOOLEAN_NETWORK_LENGTH">BOOLEAN_NETWORK_LENGTH</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS" href="#simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS">MACROPHAGE_FIELDS</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellData.initial_boolean_network" href="#simulation.modules.macrophage.MacrophageCellData.initial_boolean_network">initial_boolean_network</a></code></li>
-</ul>
+<h4><code><a title="simulation.modules.neutrophil.NeutrophilCellData" href="#simulation.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageCellList" href="#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></h4>
-<ul class="">
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.update" href="#simulation.modules.macrophage.MacrophageCellList.update">update</a></code></li>
-</ul>
+<h4><code><a title="simulation.modules.neutrophil.NeutrophilCellList" href="#simulation.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageState" href="#simulation.modules.macrophage.MacrophageState">MacrophageState</a></code></h4>
+<h4><code><a title="simulation.modules.neutrophil.NeutrophilState" href="#simulation.modules.neutrophil.NeutrophilState">NeutrophilState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.MacrophageState.DRIFT_BIAS" href="#simulation.modules.macrophage.MacrophageState.DRIFT_BIAS">DRIFT_BIAS</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.DRIFT_LAMBDA" href="#simulation.modules.macrophage.MacrophageState.DRIFT_LAMBDA">DRIFT_LAMBDA</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.MPH_UPTAKE_QTTY" href="#simulation.modules.macrophage.MacrophageState.MPH_UPTAKE_QTTY">MPH_UPTAKE_QTTY</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.TF_ENHANCE" href="#simulation.modules.macrophage.MacrophageState.TF_ENHANCE">TF_ENHANCE</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.init_num" href="#simulation.modules.macrophage.MacrophageState.init_num">init_num</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS" href="#simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS">DRIFT_BIAS</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA" href="#simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA">DRIFT_LAMBDA</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilState.init_num" href="#simulation.modules.neutrophil.NeutrophilState.init_num">init_num</a></code></li>
 </ul>
 </li>
 </ul>
