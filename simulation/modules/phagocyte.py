@@ -10,9 +10,12 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.modules.geometry import TissueTypes
 
+
 class PhagocyteCellData(CellData):
     RECRUIT_RATE = 0.0
     LEAVE_RATE = 0.0
+    CHEMOKINE_THRESHOLD = 0.0
+    LEAVES_BOOL = True
 
     class Status(IntEnum):
         RESTING = 0
@@ -54,28 +57,21 @@ class PhagocyteCellList(CellList):
             & cells.point_mask(cells['point'], grid)
         )
 
-    def recruit(self, rate, tissue, grid: RectangularGrid):
+    def recruit(self, rate, molecule, grid: RectangularGrid):
         # TODO - add recruitment
         # indices = np.argwhere(molecule_to_recruit >= threshold_value)
         # then for each index create a cell with prob 'rec_rate'
         return
 
-
-    def remove(self, rate, tissue, grid: RectangularGrid):
+    def remove(self, rate, molecule, grid: RectangularGrid):
         # TODO - add leaving
         # indices = np.argwhere(molecule_to_leave <= threshold_value)
         # then for each index kill a cell with prob 'leave_rate'
         return
 
-
     # move
     def chemotaxis(
-        self,
-        molecule,
-        drift_lambda,
-        drift_bias,
-        tissue,
-        grid: RectangularGrid,
+        self, molecule, drift_lambda, drift_bias, tissue, grid: RectangularGrid,
     ):
         # 'molecule' = state.'molecule'.concentration
         # prob = 0-1 random number to determine which voxel is chosen to move
@@ -83,7 +79,7 @@ class PhagocyteCellList(CellList):
         # 1. Get cells that are alive
         for index in self.alive():
             prob = random.random()
-            
+
             # 2. Get voxel for each cell to get molecule in that voxel
             cell = self[index]
             vox = grid.get_voxel(cell['point'])
@@ -111,9 +107,7 @@ class PhagocyteCellList(CellList):
                                 TissueTypes.EPITHELIUM.value,
                                 TissueTypes.PORE.value,
                             ]:
-                                p[i] = logistic(
-                                    molecule[zk, yj, xi], drift_lambda, drift_bias
-                                )
+                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                                 p_tot += p[i]
 
             # scale to sum of probabilities

@@ -2,6 +2,7 @@ import attr
 import numpy as np
 
 from simulation.cell import CellData
+from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
@@ -12,7 +13,7 @@ from simulation.state import State
 class NeutrophilCellData(PhagocyteCellData):
     dtype = np.dtype(
         CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
-        )  # type: ignore
+    )  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:

@@ -1,12 +1,10 @@
-from enum import IntEnum
-import math
 import random
 
 import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
+from simulation.cell import CellData
+from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
@@ -21,10 +19,8 @@ class MacrophageCellData(PhagocyteCellData):
     ]
 
     dtype = np.dtype(
-        CellData.FIELDS + 
-        PhagocyteCellData.PHAGOCYTE_FIELDS + 
-        MACROPHAGE_FIELDS, 
-        align=True)  # type: ignore
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
+    )  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:
@@ -83,8 +79,8 @@ class Macrophage(Module):
         macrophage.TF_ENHANCE = self.config.getfloat('TF_ENHANCE')
         macrophage.DRIFT_LAMBDA = self.config.getfloat('DRIFT_LAMBDA')
         macrophage.DRIFT_BIAS = self.config.getfloat('DRIFT_BIAS')
-        macrophage.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
-        macrophage.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
+        MacrophageCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
+        MacrophageCellData.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -112,18 +108,14 @@ class Macrophage(Module):
         # drift(macrophage.cells, tissue, grid)
         interact(state)
 
-        cells.recruit(macrophage.RECRUIT_RATE, tissue, grid)
-        
-        cells.remove(macrophage.LEAVE_RATE, tissue, grid)
-        
+        cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
+
+        cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
+
         cells.update(tissue, grid)
-        
+
         cells.chemotaxis(
-            state.molecules.iron,
-            macrophage.DRIFT_LAMBDA,
-            macrophage.DRIFT_BIAS,
-            tissue,
-            grid,
+            state.molecules.iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
         )
 
         return state
@@ -177,4 +169,3 @@ def interact(state: State):
 
         #  Next_Mol -----------------------------------------------------
         #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
-
