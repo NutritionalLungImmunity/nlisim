@@ -1,4 +1,5 @@
 from enum import Enum, unique
+from typing import List
 
 import attr
 from h5py import Group
@@ -38,6 +39,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
+    _molecule_type: List[str] = attr.ib(init=False, factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
@@ -71,26 +73,38 @@ class MoleculeGrid(object):
             ),
         )
 
+    @property
+    def concentrations(self):
+        return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)
+
+    @property
+    def sources(self):
+        return self._sources[[name for name in self._molecule_type]].view(np.recarray)
+
+    @property
+    def types(self):
+        return self._molecule_type
+
     def __getitem__(self, index: str) -> np.ndarray:
         if not isinstance(index, str):
             raise TypeError('Expected an str index representing the type of molecule')
-        if index not in self._concentrations.dtype.names:
+        if index not in self._molecule_type:
             raise KeyError(f'Molecule {index} is not declared or is knocked out')
         return self._concentrations[index]
+
+    def append_molecule_type(self, molecule: str):
+        if molecule not in self._concentrations.dtype.names:
+            raise KeyError(f'Molecule {molecule} is not declared')
+        self._molecule_type.append(molecule)
 
     def incr(self):
         concentrations = self._concentrations
         sources = self._sources
-        for name in concentrations.dtype.names:
+        for name in self._molecule_type:
             concentrations[name] += sources[name]
 
-    @property
-    def concentrations(self):
-        return self._concentrations.view(np.recarray)
-
-    @property
-    def sources(self):
-        return self._sources.view(np.recarray)
+    def shape(self):
+        return self._concentrations.shape
 
     def save(self, group: Group, name: str, metadata: dict) -> Group:
         """Save the molecule grid.

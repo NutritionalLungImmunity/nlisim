@@ -37,11 +37,14 @@ class Molecules(Module):
             name = molecule['name']
             init_val = molecule['init_val']
             init_loc = molecule['init_loc']
+
             if name not in [e.name for e in MoleculeTypes]:
                 raise TypeError(f'Molecule {name} is not implemented yet')
 
             elif init_loc not in [e.name for e in TissueTypes]:
                 raise TypeError(f'Cannot find lung tissue type {init_loc}')
+
+            molecules.grid.append_molecule_type(name)
 
             molecules.grid.concentrations[name][
                 np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
@@ -68,9 +71,9 @@ class Molecules(Module):
         #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
 
-        for molecule in MoleculeTypes:
-            self.diffuse(molecules.grid[molecule.name])
-            self.degrade(molecules.grid[molecule.name])
+        for molecule in molecules.grid.types:
+            self.diffuse(molecules.grid[molecule])
+            self.degrade(molecules.grid[molecule])
         molecules.grid.incr()
 
         return state
