@@ -21,6 +21,8 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.save.FileOutput
           simulation.modules.visualization.Visualization
           simulation.modules.molecules.Molecules
+          simulation.modules.macrophage.Macrophage
+          simulation.modules.neutrophil.Neutrophil
 
 
 [file_output]
@@ -39,12 +41,12 @@ molecules = [
                 {
                     "name":"iron",
                     "init_val":10,
-                    "init_loc":"BLOOD"
+                    "init_loc":["BLOOD","SURFACTANT"]
                 },
                 {
                     "name":"tafc",
                     "init_val":5,
-                    "init_loc":"SURFACTANT"
+                    "init_loc":["SURFACTANT"]
                 }
             ]
 

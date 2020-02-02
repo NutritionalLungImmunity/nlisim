@@ -41,14 +41,16 @@ class Molecules(Module):
             if name not in [e.name for e in MoleculeTypes]:
                 raise TypeError(f'Molecule {name} is not implemented yet')
 
-            elif init_loc not in [e.name for e in TissueTypes]:
-                raise TypeError(f'Cannot find lung tissue type {init_loc}')
+            for loc in init_loc:
+                if loc not in [e.name for e in TissueTypes]:
+                    raise TypeError(f'Cannot find lung tissue type {loc}')
 
             molecules.grid.append_molecule_type(name)
 
-            molecules.grid.concentrations[name][
-                np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
-            ] = init_val
+            for loc in init_loc:
+                molecules.grid.concentrations[name][
+                    np.where(geometry.lung_tissue == TissueTypes[loc].value)
+                ] = init_val
 
             if 'source' in molecule:
                 source = molecule['source']
