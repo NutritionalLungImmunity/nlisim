@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Type, Union
+from typing import Any, cast, Dict, Iterable, List, Set, Type, Union
 
 import attr
 from h5py import Group
@@ -66,6 +66,7 @@ class CellData(np.ndarray):
 
     def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
         if isinstance(arg, (int, np.int64, np.int32)):
+            arg = cast(int, arg)
             array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
             if initialize:
                 for index in range(arg):
