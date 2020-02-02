@@ -1,45 +1,73 @@
 import numpy as np
-from scipy.sparse.linalg import cg, LinearOperator
+from scipy.sparse import csr_matrix, dok_matrix, eye
+from scipy.sparse.linalg import cg
 
+from simulation.coordinates import Voxel
 from simulation.grid import RectangularGrid
 
 
-# TODO: Boundary conditions?
-def discrete_laplacian(grid: RectangularGrid, dtype: np.dtype, dt: float) -> LinearOperator:
-    """Return a discrete laplacian operator for the given grid."""
-    dz = grid.delta(0)
-    dy = grid.delta(1)
-    dx = grid.delta(2)
+def discrete_laplacian(
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+) -> csr_matrix:
+    """Return a discrete laplacian operator for the given restricted grid.
 
-    hz2 = dt / np.square(dz[1:-1, :, :])
-    hy2 = dt / np.square(dy[:, 1:-1, :])
-    hx2 = dt / np.square(dx[:, :, 1:-1])
+    This computes a standard laplacian operator as a scipy linear operator, except it is
+    restricted to a grid mask.  The use case for this is to compute surface diffusion
+    on a gridded variable.  The mask is generated from a category on the lung_tissue
+    variable.
+    """
+    graph_shape = len(grid), len(grid)
+    laplacian = dok_matrix(graph_shape)
 
-    def matvec(var: np.ndarray) -> np.ndarray:
-        var = var.reshape(grid.shape)
+    delta_z = grid.delta(0)
+    delta_y = grid.delta(1)
+    delta_x = grid.delta(2)
 
-        # Discrete laplacian
-        lapl = np.zeros(grid.shape, dtype=var.dtype)
-        lapl[1:-1, :, :] -= (var[2:, :, :] - 2 * var[1:-1, :, :] + var[:-2, :, :]) * hz2
-        lapl[:, 1:-1, :] -= (var[:, 2:, :] - 2 * var[:, 1:-1, :] + var[:, :-2, :]) * hy2
-        lapl[:, :, 1:-1] -= (var[:, :, 2:] - 2 * var[:, :, 1:-1] + var[:, :, :-2]) * hx2
+    for k, j, i in zip(*(mask).nonzero()):
+        voxel = Voxel(x=i, y=j, z=k)
+        voxel_index = grid.get_flattened_index(voxel)
+        normalization = 0
 
-        # RHS (TODO: implement 2nd order time stepping?)
-        lapl += var
-        return lapl
+        for neighbor in grid.get_adjecent_voxels(voxel, corners=False):
+            ni = neighbor.x
+            nj = neighbor.y
+            nk = neighbor.z
 
-    n = len(grid)
-    return LinearOperator(matvec=matvec, dtype=dtype, shape=(n, n))
+            if not mask[nk, nj, ni]:
+                continue
+
+            neighbor_index = grid.get_flattened_index(neighbor)
+
+            dx = delta_x[k, j, i] * (i - ni)
+            dy = delta_y[k, j, i] * (j - nj)
+            dz = delta_z[k, j, i] * (k - nk)
+            distance2 = 1 / (dx * dx + dy * dy + dz * dz)
+
+            normalization -= distance2
+            laplacian[voxel_index, neighbor_index] = distance2
+
+        laplacian[voxel_index, voxel_index] = normalization
+
+    return laplacian.tocsr()
 
 
-def diffusion_step(grid: RectangularGrid, var: np.ndarray, diffusivity: float, dt: float) -> None:
+def apply_diffusion(
+    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
+) -> np.ndarray:
     """Apply diffusion to a variable.
 
     Solves laplaces equation in 3D using implicit time steps.  The variable is
-    advanced in time by `dt` time units using gmres.
+    advanced in time by `dt` time units using GMRES.
+
+    The intended use case for this method is to perform "surface diffusion" generated
+    by a mask from the `lung_tissue` variable, e.g.
+
+        surface_mask = lung_tissue == TissueTypes.EPITHELIUM
+        laplacian = discrete_laplacian(grid, mask)
+        iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     """
-    lapl = discrete_laplacian(grid, var.dtype, dt)
-    var_next, info = cg(lapl, var.ravel())
+    operator = eye(*laplacian.shape) - (diffusivity * dt) * laplacian
+    var_next, info = cg(operator, variable.ravel())
     if info != 0:
         raise Exception(f'GMRES failed ({info})')
-    var[:] = var_next.reshape(grid.shape)
+    return var_next.reshape(variable.shape)
