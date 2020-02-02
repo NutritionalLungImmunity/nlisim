@@ -135,7 +135,7 @@ class MoleculeGrid(object):
         """Load a molecule grid object."""
         composite_dataset = group[name]
 
-        # molecule_list = composite_dataset['molecule_list'][:]
+        # TODO: load back the molecule types
 
         concentrations = composite_dataset['concentrations'][:]
         sources = composite_dataset['sources'][:]

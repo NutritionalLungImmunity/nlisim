@@ -110,7 +110,6 @@ class Visualization(Module):
         attr_names = json_config['attributes']
         var = getattr(getattr(state, module_name), var_name)
 
-
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
             spacing = (
                 state.config.getfloat('simulation', 'dz'),
@@ -139,7 +138,6 @@ class Visualization(Module):
                 Visualization.write_structured_points(
                     var, file_name, spacing[2], spacing[1], spacing[0]
                 )
-                
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             file_name = filename.replace('<variable>', module_name + '-' + var_name)
