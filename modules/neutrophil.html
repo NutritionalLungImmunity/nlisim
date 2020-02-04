@@ -110,6 +110,7 @@ class Neutrophil(Module):
         tissue = state.geometry.lung_tissue
 
         cells = neutrophil.cells
+        iron = state.molecules.grid.concentrations.iron
         # drift(neutrophil.cells, tissue, grid)
         interact(state)
 
@@ -117,7 +118,7 @@ class Neutrophil(Module):
         cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
         # cells.update
         cells.chemotaxis(
-            state.molecules.iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
+            iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
         )
 
         # print(neutrophil.cells.cell_data[&#39;point&#39;])
@@ -127,7 +128,7 @@ class Neutrophil(Module):
 
 def interact(state: State):
     # get molecules in voxel
-    iron = state.molecules.iron  # TODO implement real behavior
+    iron = state.molecules.grid.concentrations.iron  # TODO implement real behavior
     cells = state.neutrophil.cells
     grid = state.grid
 
@@ -181,7 +182,7 @@ def interact(state: State):
 </summary>
 <pre><code class="python">def interact(state: State):
     # get molecules in voxel
-    iron = state.molecules.iron  # TODO implement real behavior
+    iron = state.molecules.grid.concentrations.iron  # TODO implement real behavior
     cells = state.neutrophil.cells
     grid = state.grid
 
@@ -262,6 +263,7 @@ def interact(state: State):
         tissue = state.geometry.lung_tissue
 
         cells = neutrophil.cells
+        iron = state.molecules.grid.concentrations.iron
         # drift(neutrophil.cells, tissue, grid)
         interact(state)
 
@@ -269,7 +271,7 @@ def interact(state: State):
         cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
         # cells.update
         cells.chemotaxis(
-            state.molecules.iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
+            iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
         )
 
         # print(neutrophil.cells.cell_data[&#39;point&#39;])

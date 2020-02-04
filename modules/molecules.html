@@ -25,73 +25,69 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import attr
+<pre><code class="python">import json
+
+import attr
 import numpy as np
 
 from simulation.module import Module, ModuleState
-from simulation.state import grid_variable, State
+from simulation.modules.geometry import GeometryState, TissueTypes
+from simulation.molecule import MoleculeGrid, MoleculeTypes
+from simulation.state import State
+
+
+def molecule_grid_factory(self: &#39;MoleculesState&#39;):
+    return MoleculeGrid(grid=self.global_state.grid)
 
 
 @attr.s(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
-    iron = grid_variable(np.float)
-    tf = grid_variable(np.float)
-    tfbi = grid_variable(np.float)
-    tafc = grid_variable(np.float)
-    tafcbi = grid_variable(np.float)
-    ros = grid_variable(np.float)
-    lactoferrin = grid_variable(np.float)
-    lactoferrinbi = grid_variable(np.float)
-    il6 = grid_variable(np.float)
-    tnfa = grid_variable(np.float)
-    il8 = grid_variable(np.float)
-    il10 = grid_variable(np.float)
-    hepcidin = grid_variable(np.float)
-    tgfb = grid_variable(np.float)
-    mcp1 = grid_variable(np.float)
-    mip2 = grid_variable(np.float)
-    mip1b = grid_variable(np.float)
-
-    # we may want to identify sources of molecules in the tissue e.g. blood
-    #  that preferentially increase at a time step
-    # source = grid_variable()
-
-    def __repr__(self):
-        return f&#39;MoleculesState(iron)&#39;
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
 
 
 class Molecules(Module):
     name = &#39;molecules&#39;
-    defaults = {
-        &#39;iron&#39;: &#39;&#39;,
-        &#39;tf&#39;: &#39;&#39;,
-        &#39;tfbi&#39;: &#39;&#39;,
-        &#39;tafc&#39;: &#39;&#39;,
-        &#39;tafcbi&#39;: &#39;&#39;,
-        &#39;ros&#39;: &#39;&#39;,
-        &#39;lactoferrin&#39;: &#39;&#39;,
-        &#39;lactoferrinbi&#39;: &#39;&#39;,
-        &#39;il6&#39;: &#39;&#39;,
-        &#39;tnfa&#39;: &#39;&#39;,
-        &#39;il8&#39;: &#39;&#39;,
-        &#39;il10&#39;: &#39;&#39;,
-        &#39;hepcidin&#39;: &#39;&#39;,
-        &#39;tgfb&#39;: &#39;&#39;,
-        &#39;mcp1&#39;: &#39;&#39;,
-        &#39;mip2&#39;: &#39;&#39;,
-        &#39;mip1b&#39;: &#39;&#39;,
-    }
-
     StateClass = MoleculesState
 
     def initialize(self, state: State):
         molecules: MoleculesState = state.molecules
+        geometry: GeometryState = state.geometry
 
-        iron_init_val = self.config.getfloat(&#39;iron_init_concentration&#39;)
+        # check if the geometry array is empty
+        if not np.any(geometry.lung_tissue):
+            raise RuntimeError(&#39;geometry molecule has to be initialized first&#39;)
 
-        # TODO initialize in a user/geometry specific way
-        molecules.iron[:] = iron_init_val
-        # molecules.source[:] = 0
+        molecules_config = self.config.get(&#39;molecules&#39;)
+        json_config = json.loads(molecules_config)
+
+        for molecule in json_config:
+            name = molecule[&#39;name&#39;]
+            init_val = molecule[&#39;init_val&#39;]
+            init_loc = molecule[&#39;init_loc&#39;]
+
+            if name not in [e.name for e in MoleculeTypes]:
+                raise TypeError(f&#39;Molecule {name} is not implemented yet&#39;)
+
+            for loc in init_loc:
+                if loc not in [e.name for e in TissueTypes]:
+                    raise TypeError(f&#39;Cannot find lung tissue type {loc}&#39;)
+
+            molecules.grid.append_molecule_type(name)
+
+            for loc in init_loc:
+                molecules.grid.concentrations[name][
+                    np.where(geometry.lung_tissue == TissueTypes[loc].value)
+                ] = init_val
+
+            if &#39;source&#39; in molecule:
+                source = molecule[&#39;source&#39;]
+                incr = molecule[&#39;incr&#39;]
+                if source not in [e.name for e in TissueTypes]:
+                    raise TypeError(f&#39;Cannot find lung tissue type {source}&#39;)
+
+                molecules.grid.sources[name][
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                ] = incr
 
         return state
 
@@ -99,26 +95,31 @@ class Molecules(Module):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         molecules: MoleculesState = state.molecules
 
-        iron = molecules.iron
+        # iron = molecules.grid[&#39;iron&#39;]
+        # with open(&#39;testfile.txt&#39;, &#39;w&#39;) as outfile:
+        #     for data_slice in iron:
+        #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-        diffuse(iron)
-        degrade(iron)
+        for molecule in molecules.grid.types:
+            self.diffuse(molecules.grid[molecule])
+            self.degrade(molecules.grid[molecule])
+        molecules.grid.incr()
 
         return state
 
+    @classmethod
+    def diffuse(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return
 
-def diffuse(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return
-
-
-def degrade(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return</code></pre>
+    @classmethod
+    def degrade(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return</code></pre>
 </details>
 </section>
 <section>
@@ -128,8 +129,8 @@ def degrade(molecule):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.molecules.degrade"><code class="name flex">
-<span>def <span class="ident">degrade</span></span>(<span>molecule)</span>
+<dt id="simulation.modules.molecules.molecule_grid_factory"><code class="name flex">
+<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
@@ -137,27 +138,8 @@ def degrade(molecule):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def degrade(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return</code></pre>
-</details>
-</dd>
-<dt id="simulation.modules.molecules.diffuse"><code class="name flex">
-<span>def <span class="ident">diffuse</span></span>(<span>molecule)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def diffuse(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return</code></pre>
+<pre><code class="python">def molecule_grid_factory(self: &#39;MoleculesState&#39;):
+    return MoleculeGrid(grid=self.global_state.grid)</code></pre>
 </details>
 </dd>
 </dl>
@@ -177,36 +159,47 @@ def degrade(molecule):
 </summary>
 <pre><code class="python">class Molecules(Module):
     name = &#39;molecules&#39;
-    defaults = {
-        &#39;iron&#39;: &#39;&#39;,
-        &#39;tf&#39;: &#39;&#39;,
-        &#39;tfbi&#39;: &#39;&#39;,
-        &#39;tafc&#39;: &#39;&#39;,
-        &#39;tafcbi&#39;: &#39;&#39;,
-        &#39;ros&#39;: &#39;&#39;,
-        &#39;lactoferrin&#39;: &#39;&#39;,
-        &#39;lactoferrinbi&#39;: &#39;&#39;,
-        &#39;il6&#39;: &#39;&#39;,
-        &#39;tnfa&#39;: &#39;&#39;,
-        &#39;il8&#39;: &#39;&#39;,
-        &#39;il10&#39;: &#39;&#39;,
-        &#39;hepcidin&#39;: &#39;&#39;,
-        &#39;tgfb&#39;: &#39;&#39;,
-        &#39;mcp1&#39;: &#39;&#39;,
-        &#39;mip2&#39;: &#39;&#39;,
-        &#39;mip1b&#39;: &#39;&#39;,
-    }
-
     StateClass = MoleculesState
 
     def initialize(self, state: State):
         molecules: MoleculesState = state.molecules
+        geometry: GeometryState = state.geometry
 
-        iron_init_val = self.config.getfloat(&#39;iron_init_concentration&#39;)
+        # check if the geometry array is empty
+        if not np.any(geometry.lung_tissue):
+            raise RuntimeError(&#39;geometry molecule has to be initialized first&#39;)
 
-        # TODO initialize in a user/geometry specific way
-        molecules.iron[:] = iron_init_val
-        # molecules.source[:] = 0
+        molecules_config = self.config.get(&#39;molecules&#39;)
+        json_config = json.loads(molecules_config)
+
+        for molecule in json_config:
+            name = molecule[&#39;name&#39;]
+            init_val = molecule[&#39;init_val&#39;]
+            init_loc = molecule[&#39;init_loc&#39;]
+
+            if name not in [e.name for e in MoleculeTypes]:
+                raise TypeError(f&#39;Molecule {name} is not implemented yet&#39;)
+
+            for loc in init_loc:
+                if loc not in [e.name for e in TissueTypes]:
+                    raise TypeError(f&#39;Cannot find lung tissue type {loc}&#39;)
+
+            molecules.grid.append_molecule_type(name)
+
+            for loc in init_loc:
+                molecules.grid.concentrations[name][
+                    np.where(geometry.lung_tissue == TissueTypes[loc].value)
+                ] = init_val
+
+            if &#39;source&#39; in molecule:
+                source = molecule[&#39;source&#39;]
+                incr = molecule[&#39;incr&#39;]
+                if source not in [e.name for e in TissueTypes]:
+                    raise TypeError(f&#39;Cannot find lung tissue type {source}&#39;)
+
+                molecules.grid.sources[name][
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                ] = incr
 
         return state
 
@@ -214,12 +207,31 @@ def degrade(molecule):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         molecules: MoleculesState = state.molecules
 
-        iron = molecules.iron
+        # iron = molecules.grid[&#39;iron&#39;]
+        # with open(&#39;testfile.txt&#39;, &#39;w&#39;) as outfile:
+        #     for data_slice in iron:
+        #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-        diffuse(iron)
-        degrade(iron)
+        for molecule in molecules.grid.types:
+            self.diffuse(molecules.grid[molecule])
+            self.degrade(molecules.grid[molecule])
+        molecules.grid.incr()
 
-        return state</code></pre>
+        return state
+
+    @classmethod
+    def diffuse(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return
+
+    @classmethod
+    def degrade(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -239,45 +251,8 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MoleculesState(ModuleState):
-    iron = grid_variable(np.float)
-    tf = grid_variable(np.float)
-    tfbi = grid_variable(np.float)
-    tafc = grid_variable(np.float)
-    tafcbi = grid_variable(np.float)
-    ros = grid_variable(np.float)
-    lactoferrin = grid_variable(np.float)
-    lactoferrinbi = grid_variable(np.float)
-    il6 = grid_variable(np.float)
-    tnfa = grid_variable(np.float)
-    il8 = grid_variable(np.float)
-    il10 = grid_variable(np.float)
-    hepcidin = grid_variable(np.float)
-    tgfb = grid_variable(np.float)
-    mcp1 = grid_variable(np.float)
-    mip2 = grid_variable(np.float)
-    mip1b = grid_variable(np.float)
-
-    # we may want to identify sources of molecules in the tissue e.g. blood
-    #  that preferentially increase at a time step
-    # source = grid_variable()
-
-    def __repr__(self):
-        return f&#39;MoleculesState(iron)&#39;</code></pre>
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))</code></pre>
 </details>
-</dd>
-<dt id="simulation.modules.molecules.Molecules.defaults"><code class="name">var <span class="ident">defaults</span></code></dt>
-<dd>
-<section class="desc"><p>dict() -&gt; new empty dictionary
-dict(mapping) -&gt; new dictionary initialized from a mapping object's
-(key, value) pairs
-dict(iterable) -&gt; new dictionary initialized as if via:
-d = {}
-for k, v in iterable:
-d[k] = v
-dict(**kwargs) -&gt; new dictionary initialized with the name=value pairs
-in the keyword argument list.
-For example:
-dict(one=1, two=2)</p></section>
 </dd>
 <dt id="simulation.modules.molecules.Molecules.name"><code class="name">var <span class="ident">name</span></code></dt>
 <dd>
@@ -290,6 +265,43 @@ Otherwise, returns the result of object.<strong>str</strong>() (if defined)
 or repr(object).
 encoding defaults to sys.getdefaultencoding().
 errors defaults to 'strict'.</p></section>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="simulation.modules.molecules.Molecules.degrade"><code class="name flex">
+<span>def <span class="ident">degrade</span></span>(<span>molecule)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def degrade(cls, molecule: np.ndarray):
+    # TODO These 2 functions should be implemented for all moleculess
+    # the rest of the behavior (uptake, secretion, etc.) should be
+    # handled in the cell specific module.
+    return</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.molecules.Molecules.diffuse"><code class="name flex">
+<span>def <span class="ident">diffuse</span></span>(<span>molecule)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def diffuse(cls, molecule: np.ndarray):
+    # TODO These 2 functions should be implemented for all moleculess
+    # the rest of the behavior (uptake, secretion, etc.) should be
+    # handled in the cell specific module.
+    return</code></pre>
+</details>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -307,10 +319,15 @@ errors defaults to 'strict'.</p></section>
     &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
     molecules: MoleculesState = state.molecules
 
-    iron = molecules.iron
+    # iron = molecules.grid[&#39;iron&#39;]
+    # with open(&#39;testfile.txt&#39;, &#39;w&#39;) as outfile:
+    #     for data_slice in iron:
+    #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-    diffuse(iron)
-    degrade(iron)
+    for molecule in molecules.grid.types:
+        self.diffuse(molecules.grid[molecule])
+        self.degrade(molecules.grid[molecule])
+    molecules.grid.incr()
 
     return state</code></pre>
 </details>
@@ -321,6 +338,7 @@ errors defaults to 'strict'.</p></section>
 <li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
 <ul class="hlist">
 <li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
 <li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
 </ul>
@@ -329,7 +347,7 @@ errors defaults to 'strict'.</p></section>
 </dd>
 <dt id="simulation.modules.molecules.MoleculesState"><code class="flex name class">
 <span>class <span class="ident">MoleculesState</span></span>
-<span>(</span><span>*, global_state, iron=NOTHING, tf=NOTHING, tfbi=NOTHING, tafc=NOTHING, tafcbi=NOTHING, ros=NOTHING, lactoferrin=NOTHING, lactoferrinbi=NOTHING, il6=NOTHING, tnfa=NOTHING, il8=NOTHING, il10=NOTHING, hepcidin=NOTHING, tgfb=NOTHING, mcp1=NOTHING, mip2=NOTHING, mip1b=NOTHING)</span>
+<span>(</span><span>*, global_state, grid=NOTHING)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -342,30 +360,7 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MoleculesState(ModuleState):
-    iron = grid_variable(np.float)
-    tf = grid_variable(np.float)
-    tfbi = grid_variable(np.float)
-    tafc = grid_variable(np.float)
-    tafcbi = grid_variable(np.float)
-    ros = grid_variable(np.float)
-    lactoferrin = grid_variable(np.float)
-    lactoferrinbi = grid_variable(np.float)
-    il6 = grid_variable(np.float)
-    tnfa = grid_variable(np.float)
-    il8 = grid_variable(np.float)
-    il10 = grid_variable(np.float)
-    hepcidin = grid_variable(np.float)
-    tgfb = grid_variable(np.float)
-    mcp1 = grid_variable(np.float)
-    mip2 = grid_variable(np.float)
-    mip1b = grid_variable(np.float)
-
-    # we may want to identify sources of molecules in the tissue e.g. blood
-    #  that preferentially increase at a time step
-    # source = grid_variable()
-
-    def __repr__(self):
-        return f&#39;MoleculesState(iron)&#39;</code></pre>
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -399,8 +394,7 @@ state must override the serialization mechanism with custom behavior.</p></secti
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.molecules.degrade" href="#simulation.modules.molecules.degrade">degrade</a></code></li>
-<li><code><a title="simulation.modules.molecules.diffuse" href="#simulation.modules.molecules.diffuse">diffuse</a></code></li>
+<li><code><a title="simulation.modules.molecules.molecule_grid_factory" href="#simulation.modules.molecules.molecule_grid_factory">molecule_grid_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -410,7 +404,8 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <ul class="">
 <li><code><a title="simulation.modules.molecules.Molecules.StateClass" href="#simulation.modules.molecules.Molecules.StateClass">StateClass</a></code></li>
 <li><code><a title="simulation.modules.molecules.Molecules.advance" href="#simulation.modules.molecules.Molecules.advance">advance</a></code></li>
-<li><code><a title="simulation.modules.molecules.Molecules.defaults" href="#simulation.modules.molecules.Molecules.defaults">defaults</a></code></li>
+<li><code><a title="simulation.modules.molecules.Molecules.degrade" href="#simulation.modules.molecules.Molecules.degrade">degrade</a></code></li>
+<li><code><a title="simulation.modules.molecules.Molecules.diffuse" href="#simulation.modules.molecules.Molecules.diffuse">diffuse</a></code></li>
 <li><code><a title="simulation.modules.molecules.Molecules.name" href="#simulation.modules.molecules.Molecules.name">name</a></code></li>
 </ul>
 </li>

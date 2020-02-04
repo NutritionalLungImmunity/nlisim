@@ -135,7 +135,6 @@ class Visualization(Module):
         var_name = json_config[&#39;variable&#39;]
         vtk_type = json_config[&#39;vtk_type&#39;]
         attr_names = json_config[&#39;attributes&#39;]
-        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -144,11 +143,31 @@ class Visualization(Module):
                 state.config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
                 state.config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
             )
-            Visualization.write_structured_points(
-                var, file_name, spacing[2], spacing[1], spacing[0]
-            )
+            if attr_names:
+                for attr_name in attr_names:
+                    attr = getattr(var, attr_name)
+
+                    # composite data
+                    if attr.dtype.names:
+                        for name in attr.dtype.names:
+                            file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + name)
+                            Visualization.write_structured_points(
+                                attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                            )
+                    else:
+                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr)
+                        Visualization.write_structured_points(
+                            attr, file_name, spacing[2], spacing[1], spacing[0]
+                        )
+
+            else:
+                file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
+                Visualization.write_structured_points(
+                    var, file_name, spacing[2], spacing[1], spacing[0]
+                )
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
+            file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
@@ -319,7 +338,6 @@ class Visualization(Module):
         var_name = json_config[&#39;variable&#39;]
         vtk_type = json_config[&#39;vtk_type&#39;]
         attr_names = json_config[&#39;attributes&#39;]
-        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -328,11 +346,31 @@ class Visualization(Module):
                 state.config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
                 state.config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
             )
-            Visualization.write_structured_points(
-                var, file_name, spacing[2], spacing[1], spacing[0]
-            )
+            if attr_names:
+                for attr_name in attr_names:
+                    attr = getattr(var, attr_name)
+
+                    # composite data
+                    if attr.dtype.names:
+                        for name in attr.dtype.names:
+                            file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + name)
+                            Visualization.write_structured_points(
+                                attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                            )
+                    else:
+                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr)
+                        Visualization.write_structured_points(
+                            attr, file_name, spacing[2], spacing[1], spacing[0]
+                        )
+
+            else:
+                file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
+                Visualization.write_structured_points(
+                    var, file_name, spacing[2], spacing[1], spacing[0]
+                )
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
+            file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
@@ -364,7 +402,7 @@ class Visualization(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../../module.html#simulation.module.Module">Module</a></li>
+<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -513,7 +551,6 @@ def write_structured_points(
     var_name = json_config[&#39;variable&#39;]
     vtk_type = json_config[&#39;vtk_type&#39;]
     attr_names = json_config[&#39;attributes&#39;]
-    file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
     var = getattr(getattr(state, module_name), var_name)
 
     if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -522,11 +559,31 @@ def write_structured_points(
             state.config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
             state.config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
         )
-        Visualization.write_structured_points(
-            var, file_name, spacing[2], spacing[1], spacing[0]
-        )
+        if attr_names:
+            for attr_name in attr_names:
+                attr = getattr(var, attr_name)
+
+                # composite data
+                if attr.dtype.names:
+                    for name in attr.dtype.names:
+                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + name)
+                        Visualization.write_structured_points(
+                            attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                        )
+                else:
+                    file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr)
+                    Visualization.write_structured_points(
+                        attr, file_name, spacing[2], spacing[1], spacing[0]
+                    )
+
+        else:
+            file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
+            Visualization.write_structured_points(
+                var, file_name, spacing[2], spacing[1], spacing[0]
+            )
 
     elif vtk_type == VTKTypes.POLY_DATA.name:
+        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_name)
         Visualization.write_poly_data(var, file_name, attr_names)
 
     elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
@@ -545,12 +602,12 @@ def write_structured_points(
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.advance" href="../../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
+<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
@@ -577,16 +634,16 @@ state must override the serialization mechanism with custom behavior.</p></secti
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -602,7 +659,7 @@ state must override the serialization mechanism with custom behavior.</p></secti
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="../index.html">simulation.modules</a></code></li>
+<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
