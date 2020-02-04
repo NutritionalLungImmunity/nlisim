@@ -108,7 +108,6 @@ class Visualization(Module):
         var_name = json_config['variable']
         vtk_type = json_config['vtk_type']
         attr_names = json_config['attributes']
-        file_name = filename.replace('<variable>', module_name + '-' + var_name)
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -117,11 +116,31 @@ class Visualization(Module):
                 state.config.getfloat('simulation', 'dy'),
                 state.config.getfloat('simulation', 'dx'),
             )
-            Visualization.write_structured_points(
-                var, file_name, spacing[2], spacing[1], spacing[0]
-            )
+            if attr_names:
+                for attr_name in attr_names:
+                    attr = getattr(var, attr_name)
+
+                    # composite data
+                    if attr.dtype.names:
+                        for name in attr.dtype.names:
+                            file_name = filename.replace('<variable>', module_name + '-' + name)
+                            Visualization.write_structured_points(
+                                attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                            )
+                    else:
+                        file_name = filename.replace('<variable>', module_name + '-' + attr)
+                        Visualization.write_structured_points(
+                            attr, file_name, spacing[2], spacing[1], spacing[0]
+                        )
+
+            else:
+                file_name = filename.replace('<variable>', module_name + '-' + var_name)
+                Visualization.write_structured_points(
+                    var, file_name, spacing[2], spacing[1], spacing[0]
+                )
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
+            file_name = filename.replace('<variable>', module_name + '-' + var_name)
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:

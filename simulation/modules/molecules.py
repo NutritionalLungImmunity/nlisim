@@ -1,70 +1,66 @@
+import json
+
 import attr
 import numpy as np
 
 from simulation.module import Module, ModuleState
-from simulation.state import grid_variable, State
+from simulation.modules.geometry import GeometryState, TissueTypes
+from simulation.molecule import MoleculeGrid, MoleculeTypes
+from simulation.state import State
+
+
+def molecule_grid_factory(self: 'MoleculesState'):
+    return MoleculeGrid(grid=self.global_state.grid)
 
 
 @attr.s(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
-    iron = grid_variable(np.float)
-    tf = grid_variable(np.float)
-    tfbi = grid_variable(np.float)
-    tafc = grid_variable(np.float)
-    tafcbi = grid_variable(np.float)
-    ros = grid_variable(np.float)
-    lactoferrin = grid_variable(np.float)
-    lactoferrinbi = grid_variable(np.float)
-    il6 = grid_variable(np.float)
-    tnfa = grid_variable(np.float)
-    il8 = grid_variable(np.float)
-    il10 = grid_variable(np.float)
-    hepcidin = grid_variable(np.float)
-    tgfb = grid_variable(np.float)
-    mcp1 = grid_variable(np.float)
-    mip2 = grid_variable(np.float)
-    mip1b = grid_variable(np.float)
-
-    # we may want to identify sources of molecules in the tissue e.g. blood
-    #  that preferentially increase at a time step
-    # source = grid_variable()
-
-    def __repr__(self):
-        return f'MoleculesState(iron)'
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
 
 
 class Molecules(Module):
     name = 'molecules'
-    defaults = {
-        'iron': '',
-        'tf': '',
-        'tfbi': '',
-        'tafc': '',
-        'tafcbi': '',
-        'ros': '',
-        'lactoferrin': '',
-        'lactoferrinbi': '',
-        'il6': '',
-        'tnfa': '',
-        'il8': '',
-        'il10': '',
-        'hepcidin': '',
-        'tgfb': '',
-        'mcp1': '',
-        'mip2': '',
-        'mip1b': '',
-    }
-
     StateClass = MoleculesState
 
     def initialize(self, state: State):
         molecules: MoleculesState = state.molecules
+        geometry: GeometryState = state.geometry
 
-        iron_init_val = self.config.getfloat('iron_init_concentration')
+        # check if the geometry array is empty
+        if not np.any(geometry.lung_tissue):
+            raise RuntimeError('geometry molecule has to be initialized first')
 
-        # TODO initialize in a user/geometry specific way
-        molecules.iron[:] = iron_init_val
-        # molecules.source[:] = 0
+        molecules_config = self.config.get('molecules')
+        json_config = json.loads(molecules_config)
+
+        for molecule in json_config:
+            name = molecule['name']
+            init_val = molecule['init_val']
+            init_loc = molecule['init_loc']
+
+            if name not in [e.name for e in MoleculeTypes]:
+                raise TypeError(f'Molecule {name} is not implemented yet')
+
+            for loc in init_loc:
+                if loc not in [e.name for e in TissueTypes]:
+                    raise TypeError(f'Cannot find lung tissue type {loc}')
+
+            molecules.grid.append_molecule_type(name)
+
+            for loc in init_loc:
+                molecules.grid.concentrations[name][
+                    np.where(geometry.lung_tissue == TissueTypes[loc].value)
+                ] = init_val
+
+            if 'source' in molecule:
+                source = molecule['source']
+                incr = molecule['incr']
+                if source not in [e.name for e in TissueTypes]:
+                    raise TypeError(f'Cannot find lung tissue type {source}')
+
+                molecules.grid.sources[name][
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                ] = incr
 
         return state
 
@@ -72,23 +68,28 @@ class Molecules(Module):
         """Advance the state by a single time step."""
         molecules: MoleculesState = state.molecules
 
-        iron = molecules.iron
+        # iron = molecules.grid['iron']
+        # with open('testfile.txt', 'w') as outfile:
+        #     for data_slice in iron:
+        #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
 
-        diffuse(iron)
-        degrade(iron)
+        for molecule in molecules.grid.types:
+            self.diffuse(molecules.grid[molecule])
+            self.degrade(molecules.grid[molecule])
+        molecules.grid.incr()
 
         return state
 
+    @classmethod
+    def diffuse(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return
 
-def diffuse(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return
-
-
-def degrade(molecule):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return
+    @classmethod
+    def degrade(cls, molecule: np.ndarray):
+        # TODO These 2 functions should be implemented for all moleculess
+        # the rest of the behavior (uptake, secretion, etc.) should be
+        # handled in the cell specific module.
+        return

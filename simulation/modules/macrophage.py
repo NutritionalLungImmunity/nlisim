@@ -105,6 +105,7 @@ class Macrophage(Module):
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
         cells = macrophage.cells
+        iron = state.molecules.grid.concentrations.iron
         # drift(macrophage.cells, tissue, grid)
         interact(state)
 
@@ -115,7 +116,7 @@ class Macrophage(Module):
         cells.update(tissue, grid)
 
         cells.chemotaxis(
-            state.molecules.iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
+            iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
         )
 
         return state
@@ -127,7 +128,7 @@ def hill_probability(substract, km=10):
 
 def interact(state: State):
     # get molecules in voxel
-    iron = state.molecules.iron
+    iron = state.molecules.grid.concentrations.iron
     cells = state.macrophage.cells
     grid = state.grid
 

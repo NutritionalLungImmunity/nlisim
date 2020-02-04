@@ -20,6 +20,9 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.afumigatus.Afumigatus
           simulation.modules.save.FileOutput
           simulation.modules.visualization.Visualization
+          simulation.modules.molecules.Molecules
+          simulation.modules.macrophage.Macrophage
+          simulation.modules.neutrophil.Neutrophil
 
 
 [file_output]
@@ -31,6 +34,21 @@ save_file_name = output/simulation-<time>.hdf5
 # path of the imported geoemtry file
 geometry_path = geometry.hdf5
 preview_geometry = False
+
+[molecules]
+# init_loc: AIR, BLOOD, EPITHELIUM, SURFACTANT
+molecules = [
+                {
+                    "name":"iron",
+                    "init_val":10,
+                    "init_loc":["BLOOD","SURFACTANT"]
+                },
+                {
+                    "name":"tafc",
+                    "init_val":5,
+                    "init_loc":["SURFACTANT"]
+                }
+            ]
 
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
