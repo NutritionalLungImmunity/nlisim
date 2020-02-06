@@ -42,6 +42,7 @@ class AfumigatusCellData(CellData):
         ('iron_pool', 'f8'),
         ('iron', 'b1'),
         ('iteration', 'i4'),
+        ('name','U10'),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -64,6 +65,7 @@ class AfumigatusCellData(CellData):
         branchable = False
         iteration = 0
         iron = False
+        name = 'afumigatus'
 
         return CellData.create_cell_tuple(**kwargs) + (
             network,
@@ -76,6 +78,7 @@ class AfumigatusCellData(CellData):
             iron_pool,
             iron,
             iteration,
+            name,
         )
 
     @classmethod

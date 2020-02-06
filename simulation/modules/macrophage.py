@@ -16,6 +16,7 @@ class MacrophageCellData(PhagocyteCellData):
     BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
     MACROPHAGE_FIELDS = [
         ('boolean_network', 'b1', BOOLEAN_NETWORK_LENGTH),
+        ('name', 'U10'),
     ]
 
     dtype = np.dtype(
@@ -25,7 +26,8 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:
         network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
+        name = 'macrophage'
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,name,)
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:

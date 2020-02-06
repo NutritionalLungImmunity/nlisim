@@ -11,13 +11,17 @@ from simulation.state import State
 
 
 class NeutrophilCellData(PhagocyteCellData):
+    NEUTROPHIL_FIELDS = [
+        ('name', 'U10'),
+    ]
     dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + NEUTROPHIL_FIELDS, align=True
     )  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:
-        return PhagocyteCellData.create_cell_tuple(**kwargs)
+        name = 'neutrophil'
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (name,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
