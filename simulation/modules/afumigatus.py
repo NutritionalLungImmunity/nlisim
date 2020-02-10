@@ -415,6 +415,8 @@ class Afumigatus(Module):
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
         )
 
+        raw_cells = [AfumigatusCellData.create_cell(point=point) for _ in range(2)]
+        afumigatus.tree.extend(raw_cells)        
         return state
 
     def advance(self, state: State, previous_time: float) -> State:

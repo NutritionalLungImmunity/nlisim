@@ -1,3 +1,5 @@
+import random
+
 import attr
 import numpy as np
 
@@ -67,12 +69,12 @@ class Neutrophil(Module):
         if neutrophil.init_num > 0:
             # initialize the surfactant layer with some neutrophil in random locations
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
 
             for i in range(0, neutrophil.init_num):
-                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
-                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
-                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
+                j = random.randint(0, len(indices)-1)
+                x = random.uniform(grid.xv[indices[j][2]], grid.xv[indices[j][2] + 1])
+                y = random.uniform(grid.yv[indices[j][1]], grid.yv[indices[j][1] + 1])
+                z = random.uniform(grid.zv[indices[j][0]], grid.zv[indices[j][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
                 status = NeutrophilCellData.Status.RESTING

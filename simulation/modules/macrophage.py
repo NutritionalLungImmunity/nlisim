@@ -88,12 +88,12 @@ class Macrophage(Module):
         if macrophage.init_num > 0:
             # initialize the surfactant layer with some macrophage in random locations
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
 
             for i in range(0, macrophage.init_num):
-                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+                j = random.randint(0, len(indices)-1)
+                x = random.uniform(grid.xv[indices[j][2]], grid.xv[indices[j][2] + 1])
+                y = random.uniform(grid.yv[indices[j][1]], grid.yv[indices[j][1] + 1])
+                z = random.uniform(grid.zv[indices[j][0]], grid.zv[indices[j][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING
