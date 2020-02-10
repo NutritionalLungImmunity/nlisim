@@ -64,6 +64,7 @@ class CellCellInteract(Module):
             
             size = len(cells_in_voxel)
             if(size > 1):
+                shuffle(cells_in_voxel)
                 for i in range(size):
                     for j in range(i+1, size):
                         interact(cells_in_voxel[i], cells_in_voxel[j])
