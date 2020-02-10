@@ -3,6 +3,7 @@ from math import ceil
 import attr
 import click
 
+from geometry.generator import generate_geometry
 from simulation.config import SimulationConfig
 from simulation.solver import advance, initialize
 from simulation.state import State
@@ -11,6 +12,21 @@ from simulation.state import State
 @click.group()
 def main():
     pass
+
+
+@main.command()
+@click.option(
+    '--config',
+    type=click.Path(exists=True),
+    default='geometry.json',
+    help='Path to a geometry config',
+    show_default=True,
+)
+def generate(config):
+    click.echo('generating geometry')
+    generate_geometry(config)
+    pass
+    
 
 
 @main.command()
