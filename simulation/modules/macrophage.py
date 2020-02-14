@@ -27,7 +27,7 @@ class MacrophageCellData(PhagocyteCellData):
     def create_cell_tuple(cls, **kwargs,) -> np.record:
         network = cls.initial_boolean_network()
         name = 'macrophage'
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,name,)
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network, name,)
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
@@ -90,10 +90,10 @@ class Macrophage(Module):
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
 
             for i in range(0, macrophage.init_num):
-                j = random.randint(0, len(indices)-1)
-                x = random.uniform(grid.xv[indices[j][2]], grid.xv[indices[j][2] + 1])
-                y = random.uniform(grid.yv[indices[j][1]], grid.yv[indices[j][1] + 1])
-                z = random.uniform(grid.zv[indices[j][0]], grid.zv[indices[j][0] + 1])
+                j = random.randint(0, len(indices) - 1)
+                x = 4#random.uniform(grid.xv[indices[j][2]], grid.xv[indices[j][2] + 1])
+                y = 4#random.uniform(grid.yv[indices[j][1]], grid.yv[indices[j][1] + 1])
+                z = 4#random.uniform(grid.zv[indices[j][0]], grid.zv[indices[j][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
                 status = MacrophageCellData.Status.RESTING

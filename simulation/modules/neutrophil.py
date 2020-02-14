@@ -71,7 +71,7 @@ class Neutrophil(Module):
             indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
 
             for i in range(0, neutrophil.init_num):
-                j = random.randint(0, len(indices)-1)
+                j = random.randint(0, len(indices) - 1)
                 x = random.uniform(grid.xv[indices[j][2]], grid.xv[indices[j][2] + 1])
                 y = random.uniform(grid.yv[indices[j][1]], grid.yv[indices[j][1] + 1])
                 z = random.uniform(grid.zv[indices[j][0]], grid.zv[indices[j][0] + 1])

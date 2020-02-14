@@ -18,15 +18,17 @@ class PhagocyteCellData(CellData):
     LEAVES_BOOL = True
 
     class Status(IntEnum):
-        RESTING = 0
-        ACTIVE = 1
-        INTERACTING = 2
-        SECRETING = 3
-        SYNERGIC = 4
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
-        LEFT = 8
+
+        FREE = 0
+        INTERACTING = 1
 
     PHAGOCYTE_FIELDS = [
         ('status', 'u1'),

@@ -42,7 +42,7 @@ class AfumigatusCellData(CellData):
         ('iron_pool', 'f8'),
         ('iron', 'b1'),
         ('iteration', 'i4'),
-        ('name','U10'),
+        ('name', 'U10'),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -415,8 +415,8 @@ class Afumigatus(Module):
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
         )
 
-        raw_cells = [AfumigatusCellData.create_cell(point=point) for _ in range(2)]
-        afumigatus.tree.extend(raw_cells)        
+        raw_cells = [AfumigatusCellData.create_cell(point=point) for _ in range(5)]
+        afumigatus.tree.extend(raw_cells)
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
