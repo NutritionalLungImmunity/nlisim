@@ -2,8 +2,8 @@ from math import ceil
 
 import attr
 import click
-
 from geometry.generator import generate_geometry
+
 from simulation.config import SimulationConfig
 from simulation.solver import advance, initialize
 from simulation.state import State
@@ -22,11 +22,24 @@ def main():
     help='Path to a geometry config',
     show_default=True,
 )
-def generate(config):
+@click.option(
+    '--output',
+    type=click.Path(),
+    default='geometry.hdf5',
+    help='Name of the output file. Support .vtk and .hdf5',
+    show_default=True,
+)
+@click.option(
+    '--preview',
+    is_flag=True,
+    default=False,
+    help='Preview geometry as VTK file',
+    show_default=True,
+)
+def generate(config, output, preview):
     click.echo('generating geometry')
-    generate_geometry(config)
+    generate_geometry(config, output, preview)
     pass
-    
 
 
 @main.command()
