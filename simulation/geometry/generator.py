@@ -3,7 +3,6 @@ import struct
 import time
 from typing import List, Tuple, Union
 
-from geometry.math_function import Cylinder, Sphere
 import h5py
 import numpy as np
 from scipy import ndimage
@@ -11,6 +10,7 @@ import vtk
 
 from simulation.coordinates import Point
 from simulation.diffusion import discrete_laplacian
+from simulation.geometry.math_function import Cylinder, Sphere
 from simulation.grid import RectangularGrid
 
 # tissue type

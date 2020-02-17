@@ -2,9 +2,9 @@ from math import ceil
 
 import attr
 import click
-from geometry.generator import generate_geometry
 
 from simulation.config import SimulationConfig
+from simulation.geometry.generator import generate_geometry
 from simulation.solver import advance, initialize
 from simulation.state import State
 
