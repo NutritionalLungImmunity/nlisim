@@ -3,6 +3,7 @@ from enum import Enum
 import attr
 import h5py
 import numpy as np
+from scipy.sparse import csr_matrix
 import vtk
 
 from simulation.module import Module, ModuleState
@@ -10,7 +11,6 @@ from simulation.state import grid_variable, State
 from simulation.validation import ValidationError
 
 
-# I am not quite sure if we should put the definition of the lung tissue types here
 class TissueTypes(Enum):
     AIR = 0
     BLOOD = 1
@@ -27,8 +27,32 @@ class TissueTypes(Enum):
 
 
 @attr.s(kw_only=True, repr=False)
+class LaplacianMatrix(object):
+    surf_lapl: csr_matrix = attr.ib(init=False)
+
+    def save(self, group: h5py.Group, name: str, metadata: dict) -> h5py.Group:
+        """Save an attribute into an HDF5 group."""
+        surf_lapl = self.surf_lapl
+        composite_group = group.create_group(name)
+        composite_group.create_dataset('data', data=surf_lapl.data)
+        composite_group.create_dataset('indptr', data=surf_lapl.indptr)
+        composite_group.create_dataset('indices', data=surf_lapl.indices)
+        composite_group.attrs['shape'] = surf_lapl.shape
+        return composite_group
+
+    @classmethod
+    def create_matrix(cls):
+        return LaplacianMatrix()
+
+
+@attr.s(kw_only=True, repr=False)
 class GeometryState(ModuleState):
     lung_tissue = grid_variable(np.dtype('int'))
+    laplacian_matrix: LaplacianMatrix = attr.ib()
+
+    @laplacian_matrix.default
+    def __set_default_laplacian_matrix(self):
+        return LaplacianMatrix.create_matrix()
 
     @lung_tissue.validator
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -> None:
@@ -53,6 +77,13 @@ class Geometry(Module):
                 if f['geometry'][:].shape != state.grid.shape:
                     raise ValidationError("shape doesn\'t match")
                 geometry.lung_tissue[:] = f['geometry'][:]
+
+                surf_lapl = f['surf_lapl']
+                geometry.laplacian_matrix.surf_lapl = csr_matrix(
+                    (surf_lapl['data'][:], surf_lapl['indices'][:], surf_lapl['indptr'][:]),
+                    surf_lapl.attrs['shape'],
+                )
+
         except Exception:
             print(f'Error loading geometry file at {path}.')
             raise
@@ -61,14 +92,6 @@ class Geometry(Module):
             Geometry.preview(geometry.lung_tissue)
 
         return state
-
-    '''
-    same as the super class. not needed for now
-    def advance(self, state: State, previous_time: float):
-        """Advance the state by a single time step."""
-        # do nothing since the geoemtry is constant
-        return state
-    '''
 
     @classmethod
     def preview(cls, grid: np.ndarray):
