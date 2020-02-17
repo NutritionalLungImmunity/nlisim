@@ -45,18 +45,22 @@ class PhagocyteCellData(CellData):
     LEAVES_BOOL = True
 
     class Status(IntEnum):
-        RESTING = 0
-        ACTIVE = 1
-        INTERACTING = 2
-        SECRETING = 3
-        SYNERGIC = 4
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
-        LEFT = 8
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
 
     PHAGOCYTE_FIELDS = [
         (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
     ]
@@ -65,12 +69,17 @@ class PhagocyteCellData(CellData):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
     ) -&gt; np.record:
 
         iteration = 0
 
-        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration,)
+        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -235,18 +244,22 @@ associated with each cell.</p>
     LEAVES_BOOL = True
 
     class Status(IntEnum):
-        RESTING = 0
-        ACTIVE = 1
-        INTERACTING = 2
-        SECRETING = 3
-        SYNERGIC = 4
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
-        LEFT = 8
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
 
     PHAGOCYTE_FIELDS = [
         (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
     ]
@@ -255,12 +268,17 @@ associated with each cell.</p>
 
     @classmethod
     def create_cell_tuple(
-        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
     ) -&gt; np.record:
 
         iteration = 0
 
-        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration,)</code></pre>
+        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -301,6 +319,18 @@ list(iterable) -&gt; new list initialized from iterable's items</p></section>
 <section class="desc"><p>float(x) -&gt; floating point number</p>
 <p>Convert a string or number to a floating point number, if possible.</p></section>
 </dd>
+<dt id="simulation.modules.phagocyte.PhagocyteCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
+<dd>
+<section class="desc"><p>An enumeration.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class State(IntEnum):
+    FREE = 0
+    INTERACTING = 1</code></pre>
+</details>
+</dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
 <dd>
 <section class="desc"><p>An enumeration.</p></section>
@@ -309,15 +339,14 @@ list(iterable) -&gt; new list initialized from iterable's items</p></section>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Status(IntEnum):
-    RESTING = 0
-    ACTIVE = 1
-    INTERACTING = 2
-    SECRETING = 3
-    SYNERGIC = 4
+    INACTIVE = 0
+    INACTIVATING = 1
+    RESTING = 2
+    ACTIVATING = 3
+    ACTIVE = 4
     APOPTOTIC = 5
     NECROTIC = 6
-    DEAD = 7
-    LEFT = 8</code></pre>
+    DEAD = 7</code></pre>
 </details>
 </dd>
 </dl>
@@ -505,18 +534,22 @@ associated with each cell.</p>
     LEAVES_BOOL = True
 
     class Status(IntEnum):
-        RESTING = 0
-        ACTIVE = 1
-        INTERACTING = 2
-        SECRETING = 3
-        SYNERGIC = 4
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
-        LEFT = 8
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
 
     PHAGOCYTE_FIELDS = [
         (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
     ]
@@ -525,12 +558,17 @@ associated with each cell.</p>
 
     @classmethod
     def create_cell_tuple(
-        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
     ) -&gt; np.record:
 
         iteration = 0
 
-        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration,)</code></pre>
+        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)</code></pre>
 </details>
 </dd>
 </dl>
@@ -707,6 +745,7 @@ associated with each cell.</p>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.State" href="#simulation.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.Status" href="#simulation.modules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
 </ul>
 </li>
