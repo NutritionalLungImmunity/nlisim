@@ -36,10 +36,45 @@ class MacrophageCellData(PhagocyteCellData):
 class MacrophageCellList(PhagocyteCellList):
     CellDataClass = MacrophageCellData
 
-    def update(self, tissue, grid: RectangularGrid):
+    def update(self, iter_to_change_status):
         # TODO - add boolena network update
         # for index in self.alive:
         #   self[index].update_boolean network
+        cells = self.cell_data
+        for cell in cells:
+            # if cell['status'] == PhagocyteCellData.Status.DEAD:
+            #    return
+            if cell['status'] == PhagocyteCellData.Status.NECROTIC:
+                cell['status'] = PhagocyteCellData.Status.DEAD
+                # for _, a in self.phagosome.agents.items():
+                #    a.state = Afumigatus.RELEASING
+            # elif len(self.phagosome.agents) > MAX_INTERNALIZED_CONIDIA:
+            #    cell['status'] = Phagocyte.NECROTIC
+            elif cell['status'] == PhagocyteCellData.Status.ACTIVE:
+                if cell['iteration'] >= iter_to_change_status:
+                    cell['iteration'] = 0
+                    cell['status'] = PhagocyteCellData.Status.RESTING
+                    cell['state'] = PhagocyteCellData.State.FREE
+                else:
+                    cell['iteration'] += 1
+            elif cell['status'] == PhagocyteCellData.Status.INACTIVE:
+                if cell['iteration'] >= iter_to_change_status:
+                    cell['iteration'] = 0
+                    cell['status'] = PhagocyteCellData.Status.RESTING
+                else:
+                    cell['iteration'] += 1
+            elif cell['status'] == PhagocyteCellData.Status.ACTIVATING:
+                if cell['iteration'] >= iter_to_change_status:
+                    cell['iteration'] = 0
+                    cell['status'] = PhagocyteCellData.Status.ACTIVE
+                else:
+                    cell['iteration'] += 1
+            elif cell['status'] == PhagocyteCellData.Status.INACTIVATING:
+                if cell['iteration'] >= iter_to_change_status:
+                    cell['iteration'] = 0
+                    cell['status'] = PhagocyteCellData.Status.INACTIVE
+                else:
+                    cell['iteration'] += 1
         return
 
 
@@ -55,6 +90,7 @@ class MacrophageState(ModuleState):
     TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
+    ITER_TO_CHANGE_STATUS: int = 0
 
 
 class Macrophage(Module):
@@ -66,6 +102,7 @@ class Macrophage(Module):
         'TF_ENHANCE': '1',
         'DRIFT_LAMBDA': '10',
         'DRIFT_BIAS': '0.9',
+        'ITER_TO_CHANGE_STATUS': '0',
     }
     StateClass = MacrophageState
 
@@ -81,6 +118,7 @@ class Macrophage(Module):
         macrophage.DRIFT_BIAS = self.config.getfloat('DRIFT_BIAS')
         MacrophageCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
         MacrophageCellData.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
+        MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat('ITER_TO_CHANGE_STATUS')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -113,7 +151,7 @@ class Macrophage(Module):
 
         cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
 
-        cells.update(tissue, grid)
+        cells.update(macrophage.ITER_TO_CHANGE_STATUS)
 
         cells.chemotaxis(
             iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,

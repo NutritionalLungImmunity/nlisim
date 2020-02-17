@@ -18,18 +18,22 @@ class PhagocyteCellData(CellData):
     LEAVES_BOOL = True
 
     class Status(IntEnum):
-        RESTING = 0
-        ACTIVE = 1
-        INTERACTING = 2
-        SECRETING = 3
-        SYNERGIC = 4
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
         APOPTOTIC = 5
         NECROTIC = 6
         DEAD = 7
-        LEFT = 8
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
 
     PHAGOCYTE_FIELDS = [
         ('status', 'u1'),
+        ('state', 'u1'),
         ('iron_pool', 'f8'),
         ('iteration', 'i4'),
     ]
@@ -38,12 +42,17 @@ class PhagocyteCellData(CellData):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
     ) -> np.record:
 
         iteration = 0
 
-        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration,)
+        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
