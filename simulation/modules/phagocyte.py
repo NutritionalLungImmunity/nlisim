@@ -12,6 +12,7 @@ from simulation.modules.geometry import TissueTypes
 
 MAX_PHAGOSOME_LENGTH = 5
 
+
 class PhagocyteCellData(CellData):
     RECRUIT_RATE = 0.0
     LEAVE_RATE = 0.0
@@ -38,7 +39,7 @@ class PhagocyteCellData(CellData):
         ('state', 'u1'),
         ('iron_pool', 'f8'),
         ('iteration', 'i4'),
-        ('phagosome', (np.int32,(MAX_CONIDIA))),
+        ('phagosome', (np.int32, (MAX_CONIDIA))),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -56,7 +57,13 @@ class PhagocyteCellData(CellData):
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration, phagosome,)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -74,7 +81,6 @@ class PhagocyteCellList(CellList):
         cell = self[index]
         return len(np.argwhere(cell['phagosome'] != -1))
 
-
     def append_to_phagosome(self, index, pathogen_index):
         cell = self[index]
         index_to_append = PhagocyteCellList.len_phagosome(self, index)
@@ -83,34 +89,25 @@ class PhagocyteCellList(CellList):
             return True
         else:
             return False
-    
 
     def remove_from_phagosome(self, index, pathogen_index):
         phagosome = self[index]['phagosome']
         if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome==pathogen_index)[0][0]
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
             size = PhagocyteCellList.len_phagosome(self, index)
             if itemindex == size - 1:
-                #full phagosome
-                phagosome[itemindex] = -1  
-                return True  
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
             else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1:]
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
                 phagosome[-1] = -1
                 return True
         else:
             return False
 
-
     def clear_all_phagosome(self, index):
         self[index]['phagosome'].fill(-1)
-
-    #def kill_phagosome(self, index, pathogen_cell_list):
-    #    cell = self[index]
-    #    pathogen_cells = pathogen_cell_list.cell_data
-    #    for ind in np.argwhere(cell['phagosome'] != -1):
-    #        pathogen_cells[ind]['status'] = AfumigatusCellData.Status.DEAD
-
 
     def recruit(self, rate, molecule, grid: RectangularGrid):
         # TODO - add recruitment
