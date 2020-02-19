@@ -10,7 +10,7 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.modules.geometry import TissueTypes
 
-MAX_PHAGOSOME_LENGTH = 5
+MAX_PHAGOSOME_LENGTH = 50
 
 
 class PhagocyteCellData(CellData):
@@ -81,10 +81,10 @@ class PhagocyteCellList(CellList):
         cell = self[index]
         return len(np.argwhere(cell['phagosome'] != -1))
 
-    def append_to_phagosome(self, index, pathogen_index):
+    def append_to_phagosome(self, index, pathogen_index, max_size):
         cell = self[index]
         index_to_append = PhagocyteCellList.len_phagosome(self, index)
-        if index_to_append < MAX_PHAGOSOME_LENGTH:
+        if index_to_append < MAX_PHAGOSOME_LENGTH and index_to_append < max_size:
             cell['phagosome'][index_to_append] = pathogen_index
             return True
         else:

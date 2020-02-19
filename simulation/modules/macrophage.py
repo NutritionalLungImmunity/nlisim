@@ -91,6 +91,7 @@ class MacrophageState(ModuleState):
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
     ITER_TO_CHANGE_STATUS: int = 0
+    MAX_CONIDIA: int = 50
 
 
 class Macrophage(Module):
@@ -103,6 +104,7 @@ class Macrophage(Module):
         'DRIFT_LAMBDA': '10',
         'DRIFT_BIAS': '0.9',
         'ITER_TO_CHANGE_STATUS': '0',
+        'MAX_CONIDIA': '50',
     }
     StateClass = MacrophageState
 
@@ -119,6 +121,7 @@ class Macrophage(Module):
         MacrophageCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
         MacrophageCellData.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
         MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat('ITER_TO_CHANGE_STATUS')
+        MacrophageCellData.MAX_CONIDIA = self.config.getint('MAX_CONIDIA')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
