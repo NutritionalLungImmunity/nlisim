@@ -7,6 +7,7 @@ from simulation.cell import CellData
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellList
 from simulation.modules.geometry import TissueTypes
 from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
 from simulation.state import State
@@ -16,6 +17,7 @@ class MacrophageCellData(PhagocyteCellData):
     BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
     MACROPHAGE_FIELDS = [
         ('boolean_network', 'b1', BOOLEAN_NETWORK_LENGTH),
+        ('release_phagosome', 'b1'),
     ]
 
     dtype = np.dtype(
@@ -25,7 +27,8 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:
         network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
+        release_phagosome = False
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network, release_phagosome)
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
@@ -40,16 +43,17 @@ class MacrophageCellList(PhagocyteCellList):
         # TODO - add boolena network update
         # for index in self.alive:
         #   self[index].update_boolean network
-        cells = self.cell_data
-        for cell in cells:
-            # if cell['status'] == PhagocyteCellData.Status.DEAD:
-            #    return
+        #
+        # if cell['status'] == PhagocyteCellData.Status.DEAD:
+        #    do nothing
+
+        for index in self.alive():
+            cell = self[index]
             if cell['status'] == PhagocyteCellData.Status.NECROTIC:
                 cell['status'] = PhagocyteCellData.Status.DEAD
-                # for _, a in self.phagosome.agents.items():
-                #    a.state = Afumigatus.RELEASING
-            # elif len(self.phagosome.agents) > MAX_INTERNALIZED_CONIDIA:
-            #    cell['status'] = Phagocyte.NECROTIC
+                cell['release_phagosome'] = True
+            elif self.len_phagosome(index) > MacrophageCellData.MAX_INTERNAL_CONIDIA:
+                cell['status'] = PhagocyteCellData.Status.NECROTIC
             elif cell['status'] == PhagocyteCellData.Status.ACTIVE:
                 if cell['iteration'] >= iter_to_change_status:
                     cell['iteration'] = 0
@@ -91,6 +95,7 @@ class MacrophageState(ModuleState):
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
     ITER_TO_CHANGE_STATUS: int = 0
+    MAX_INTERNAL_CONIDIA: int = 50
 
 
 class Macrophage(Module):
@@ -103,6 +108,7 @@ class Macrophage(Module):
         'DRIFT_LAMBDA': '10',
         'DRIFT_BIAS': '0.9',
         'ITER_TO_CHANGE_STATUS': '0',
+        'MAX_INTERNAL_CONIDIA': '50',
     }
     StateClass = MacrophageState
 
@@ -119,6 +125,7 @@ class Macrophage(Module):
         MacrophageCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
         MacrophageCellData.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
         MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat('ITER_TO_CHANGE_STATUS')
+        MacrophageCellData.MAX_INTERNAL_CONIDIA = self.config.getint('MAX_INTERNAL_CONIDIA')
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num > 0:
@@ -144,7 +151,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         cells = macrophage.cells
         iron = state.molecules.grid.concentrations.iron
-        # drift(macrophage.cells, tissue, grid)
+
         interact(state)
 
         cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
@@ -152,6 +159,8 @@ class Macrophage(Module):
         cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
 
         cells.update(macrophage.ITER_TO_CHANGE_STATUS)
+
+        release_phagosomes(cells, state.afumigatus.tree.cells)
 
         cells.chemotaxis(
             iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
@@ -162,6 +171,15 @@ class Macrophage(Module):
 
 def hill_probability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
+
+
+def release_phagosomes(macrophage_cells: MacrophageCellList, afumigatus_cells: AfumigatusCellList):
+    for index in macrophage_cells.alive(macrophage_cells.cell_data['release_phagosome']):
+        for phag_index in range(0, macrophage_cells.len_phagosome(index)):
+            afumigatus_cells.cell_data[macrophage_cells.cell_data[index]['phagosome'][phag_index]][
+                'state'
+            ] = AfumigatusCellData.State.RELEASING
+        macrophage_cells.clear_all_phagosome(index)
 
 
 def interact(state: State):
