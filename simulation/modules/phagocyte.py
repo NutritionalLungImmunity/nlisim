@@ -10,7 +10,7 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.modules.geometry import TissueTypes
 
-MAX_PHAGOSOME_LENGTH = 50
+MAX_PHAGOSOME_LENGTH = 100
 
 
 class PhagocyteCellData(CellData):
