@@ -37,12 +37,15 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.modules.geometry import TissueTypes
 
+MAX_PHAGOSOME_LENGTH = 100
+
 
 class PhagocyteCellData(CellData):
     RECRUIT_RATE = 0.0
     LEAVE_RATE = 0.0
     CHEMOKINE_THRESHOLD = 0.0
     LEAVES_BOOL = True
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
 
     class Status(IntEnum):
         INACTIVE = 0
@@ -63,6 +66,7 @@ class PhagocyteCellData(CellData):
         (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -78,8 +82,15 @@ class PhagocyteCellData(CellData):
     ) -&gt; np.record:
 
         iteration = 0
-
-        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -92,6 +103,38 @@ class PhagocyteCellList(CellList):
             (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
             &amp; cells.point_mask(cells[&#39;point&#39;], grid)
         )
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = PhagocyteCellList.len_phagosome(self, index)
+        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = PhagocyteCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index):
+        self[index][&#39;phagosome&#39;].fill(-1)
 
     def recruit(self, rate, molecule, grid: RectangularGrid):
         # TODO - add recruitment
@@ -242,6 +285,7 @@ associated with each cell.</p>
     LEAVE_RATE = 0.0
     CHEMOKINE_THRESHOLD = 0.0
     LEAVES_BOOL = True
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
 
     class Status(IntEnum):
         INACTIVE = 0
@@ -262,6 +306,7 @@ associated with each cell.</p>
         (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -277,8 +322,15 @@ associated with each cell.</p>
     ) -&gt; np.record:
 
         iteration = 0
-
-        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)</code></pre>
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -308,6 +360,27 @@ The class bool is a subclass of the class int, and cannot be subclassed.</p></se
 <dd>
 <section class="desc"><p>float(x) -&gt; floating point number</p>
 <p>Convert a string or number to a floating point number, if possible.</p></section>
+</dd>
+<dt id="simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
+<dd>
+<section class="desc"><p>int(x=0) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
 <dd>
@@ -404,6 +477,38 @@ low-level array.</p>
             (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
             &amp; cells.point_mask(cells[&#39;point&#39;], grid)
         )
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = PhagocyteCellList.len_phagosome(self, index)
+        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = PhagocyteCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index):
+        self[index][&#39;phagosome&#39;].fill(-1)
 
     def recruit(self, rate, molecule, grid: RectangularGrid):
         # TODO - add recruitment
@@ -532,6 +637,7 @@ associated with each cell.</p>
     LEAVE_RATE = 0.0
     CHEMOKINE_THRESHOLD = 0.0
     LEAVES_BOOL = True
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
 
     class Status(IntEnum):
         INACTIVE = 0
@@ -552,6 +658,7 @@ associated with each cell.</p>
         (&#39;state&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -567,13 +674,39 @@ associated with each cell.</p>
     ) -&gt; np.record:
 
         iteration = 0
-
-        return CellData.create_cell_tuple(**kwargs) + (status, state, iron_pool, iteration,)</code></pre>
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome"><code class="name flex">
+<span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def append_to_phagosome(self, index, pathogen_index, max_size):
+    cell = self[index]
+    index_to_append = PhagocyteCellList.len_phagosome(self, index)
+    if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+        cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+        return True
+    else:
+        return False</code></pre>
+</details>
+</dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellList.chemotaxis"><code class="name flex">
 <span>def <span class="ident">chemotaxis</span></span>(<span>self, molecule, drift_lambda, drift_bias, tissue, grid)</span>
 </code></dt>
@@ -648,6 +781,19 @@ associated with each cell.</p>
                 break</code></pre>
 </details>
 </dd>
+<dt id="simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome"><code class="name flex">
+<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_all_phagosome(self, index):
+    self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
+</details>
+</dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellList.is_moveable"><code class="name flex">
 <span>def <span class="ident">is_moveable</span></span>(<span>self, grid)</span>
 </code></dt>
@@ -663,6 +809,20 @@ associated with each cell.</p>
         (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
         &amp; cells.point_mask(cells[&#39;point&#39;], grid)
     )</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.phagocyte.PhagocyteCellList.len_phagosome"><code class="name flex">
+<span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def len_phagosome(self, index):
+    cell = self[index]
+    return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
 </details>
 </dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellList.recruit"><code class="name flex">
@@ -695,6 +855,32 @@ associated with each cell.</p>
     # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
     # then for each index kill a cell with prob &#39;leave_rate&#39;
     return</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome"><code class="name flex">
+<span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_from_phagosome(self, index, pathogen_index):
+    phagosome = self[index][&#39;phagosome&#39;]
+    if pathogen_index in phagosome:
+        itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+        size = PhagocyteCellList.len_phagosome(self, index)
+        if itemindex == size - 1:
+            # full phagosome
+            phagosome[itemindex] = -1
+            return True
+        else:
+            phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+            phagosome[-1] = -1
+            return True
+    else:
+        return False</code></pre>
 </details>
 </dd>
 </dl>
@@ -743,6 +929,7 @@ associated with each cell.</p>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD" href="#simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD">CHEMOKINE_THRESHOLD</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="#simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="#simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.State" href="#simulation.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
@@ -753,10 +940,14 @@ associated with each cell.</p>
 <h4><code><a title="simulation.modules.phagocyte.PhagocyteCellList" href="#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></code></h4>
 <ul class="">
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.CellDataClass" href="#simulation.modules.phagocyte.PhagocyteCellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome">append_to_phagosome</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.chemotaxis" href="#simulation.modules.phagocyte.PhagocyteCellList.chemotaxis">chemotaxis</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.is_moveable" href="#simulation.modules.phagocyte.PhagocyteCellList.is_moveable">is_moveable</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.len_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.len_phagosome">len_phagosome</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.recruit" href="#simulation.modules.phagocyte.PhagocyteCellList.recruit">recruit</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.remove" href="#simulation.modules.phagocyte.PhagocyteCellList.remove">remove</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
 </ul>
 </li>
 </ul>

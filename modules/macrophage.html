@@ -34,6 +34,7 @@ from simulation.cell import CellData
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellList
 from simulation.modules.geometry import TissueTypes
 from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
 from simulation.state import State
@@ -43,6 +44,7 @@ class MacrophageCellData(PhagocyteCellData):
     BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
     MACROPHAGE_FIELDS = [
         (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
+        (&#39;release_phagosome&#39;, &#39;b1&#39;),
     ]
 
     dtype = np.dtype(
@@ -52,7 +54,8 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
         network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
+        release_phagosome = False
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network, release_phagosome)
 
     @classmethod
     def initial_boolean_network(cls) -&gt; np.ndarray:
@@ -67,16 +70,17 @@ class MacrophageCellList(PhagocyteCellList):
         # TODO - add boolena network update
         # for index in self.alive:
         #   self[index].update_boolean network
-        cells = self.cell_data
-        for cell in cells:
-            # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
-            #    return
+        #
+        # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
+        #    do nothing
+
+        for index in self.alive():
+            cell = self[index]
             if cell[&#39;status&#39;] == PhagocyteCellData.Status.NECROTIC:
                 cell[&#39;status&#39;] = PhagocyteCellData.Status.DEAD
-                # for _, a in self.phagosome.agents.items():
-                #    a.state = Afumigatus.RELEASING
-            # elif len(self.phagosome.agents) &gt; MAX_INTERNALIZED_CONIDIA:
-            #    cell[&#39;status&#39;] = Phagocyte.NECROTIC
+                cell[&#39;release_phagosome&#39;] = True
+            elif self.len_phagosome(index) &gt; MacrophageCellData.MAX_INTERNAL_CONIDIA:
+                cell[&#39;status&#39;] = PhagocyteCellData.Status.NECROTIC
             elif cell[&#39;status&#39;] == PhagocyteCellData.Status.ACTIVE:
                 if cell[&#39;iteration&#39;] &gt;= iter_to_change_status:
                     cell[&#39;iteration&#39;] = 0
@@ -118,6 +122,7 @@ class MacrophageState(ModuleState):
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
     ITER_TO_CHANGE_STATUS: int = 0
+    MAX_INTERNAL_CONIDIA: int = 50
 
 
 class Macrophage(Module):
@@ -130,6 +135,7 @@ class Macrophage(Module):
         &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
         &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
         &#39;ITER_TO_CHANGE_STATUS&#39;: &#39;0&#39;,
+        &#39;MAX_INTERNAL_CONIDIA&#39;: &#39;50&#39;,
     }
     StateClass = MacrophageState
 
@@ -146,6 +152,7 @@ class Macrophage(Module):
         MacrophageCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
         MacrophageCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
         MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat(&#39;ITER_TO_CHANGE_STATUS&#39;)
+        MacrophageCellData.MAX_INTERNAL_CONIDIA = self.config.getint(&#39;MAX_INTERNAL_CONIDIA&#39;)
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num &gt; 0:
@@ -171,7 +178,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         cells = macrophage.cells
         iron = state.molecules.grid.concentrations.iron
-        # drift(macrophage.cells, tissue, grid)
+
         interact(state)
 
         cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
@@ -179,6 +186,8 @@ class Macrophage(Module):
         cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
 
         cells.update(macrophage.ITER_TO_CHANGE_STATUS)
+
+        release_phagosomes(cells, state.afumigatus.tree.cells)
 
         cells.chemotaxis(
             iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
@@ -189,6 +198,15 @@ class Macrophage(Module):
 
 def hill_probability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
+
+
+def release_phagosomes(macrophage_cells: MacrophageCellList, afumigatus_cells: AfumigatusCellList):
+    for index in macrophage_cells.alive(macrophage_cells.cell_data[&#39;release_phagosome&#39;]):
+        for phag_index in range(0, macrophage_cells.len_phagosome(index)):
+            afumigatus_cells.cell_data[macrophage_cells.cell_data[index][&#39;phagosome&#39;][phag_index]][
+                &#39;state&#39;
+            ] = AfumigatusCellData.State.RELEASING
+        macrophage_cells.clear_all_phagosome(index)
 
 
 def interact(state: State):
@@ -319,6 +337,24 @@ def interact(state: State):
             cell[&#39;iron_pool&#39;] -= qtty</code></pre>
 </details>
 </dd>
+<dt id="simulation.modules.macrophage.release_phagosomes"><code class="name flex">
+<span>def <span class="ident">release_phagosomes</span></span>(<span>macrophage_cells, afumigatus_cells)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def release_phagosomes(macrophage_cells: MacrophageCellList, afumigatus_cells: AfumigatusCellList):
+    for index in macrophage_cells.alive(macrophage_cells.cell_data[&#39;release_phagosome&#39;]):
+        for phag_index in range(0, macrophage_cells.len_phagosome(index)):
+            afumigatus_cells.cell_data[macrophage_cells.cell_data[index][&#39;phagosome&#39;][phag_index]][
+                &#39;state&#39;
+            ] = AfumigatusCellData.State.RELEASING
+        macrophage_cells.clear_all_phagosome(index)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -344,6 +380,7 @@ def interact(state: State):
         &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
         &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
         &#39;ITER_TO_CHANGE_STATUS&#39;: &#39;0&#39;,
+        &#39;MAX_INTERNAL_CONIDIA&#39;: &#39;50&#39;,
     }
     StateClass = MacrophageState
 
@@ -360,6 +397,7 @@ def interact(state: State):
         MacrophageCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
         MacrophageCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
         MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat(&#39;ITER_TO_CHANGE_STATUS&#39;)
+        MacrophageCellData.MAX_INTERNAL_CONIDIA = self.config.getint(&#39;MAX_INTERNAL_CONIDIA&#39;)
         macrophage.cells = MacrophageCellList(grid=grid)
 
         if macrophage.init_num &gt; 0:
@@ -385,7 +423,7 @@ def interact(state: State):
         tissue = state.geometry.lung_tissue
         cells = macrophage.cells
         iron = state.molecules.grid.concentrations.iron
-        # drift(macrophage.cells, tissue, grid)
+
         interact(state)
 
         cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
@@ -393,6 +431,8 @@ def interact(state: State):
         cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
 
         cells.update(macrophage.ITER_TO_CHANGE_STATUS)
+
+        release_phagosomes(cells, state.afumigatus.tree.cells)
 
         cells.chemotaxis(
             iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
@@ -424,7 +464,8 @@ state must override the serialization mechanism with custom behavior.</p></secti
     TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
-    ITER_TO_CHANGE_STATUS: int = 0</code></pre>
+    ITER_TO_CHANGE_STATUS: int = 0
+    MAX_INTERNAL_CONIDIA: int = 50</code></pre>
 </details>
 </dd>
 <dt id="simulation.modules.macrophage.Macrophage.defaults"><code class="name">var <span class="ident">defaults</span></code></dt>
@@ -507,6 +548,7 @@ associated with each cell.</p>
     BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
     MACROPHAGE_FIELDS = [
         (&#39;boolean_network&#39;, &#39;b1&#39;, BOOLEAN_NETWORK_LENGTH),
+        (&#39;release_phagosome&#39;, &#39;b1&#39;),
     ]
 
     dtype = np.dtype(
@@ -516,7 +558,8 @@ associated with each cell.</p>
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
         network = cls.initial_boolean_network()
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network,)
+        release_phagosome = False
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network, release_phagosome)
 
     @classmethod
     def initial_boolean_network(cls) -&gt; np.ndarray:
@@ -582,6 +625,7 @@ def initial_boolean_network(cls) -&gt; np.ndarray:
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
+<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
 <li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.State" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
@@ -637,16 +681,17 @@ low-level array.</p>
         # TODO - add boolena network update
         # for index in self.alive:
         #   self[index].update_boolean network
-        cells = self.cell_data
-        for cell in cells:
-            # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
-            #    return
+        #
+        # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
+        #    do nothing
+
+        for index in self.alive():
+            cell = self[index]
             if cell[&#39;status&#39;] == PhagocyteCellData.Status.NECROTIC:
                 cell[&#39;status&#39;] = PhagocyteCellData.Status.DEAD
-                # for _, a in self.phagosome.agents.items():
-                #    a.state = Afumigatus.RELEASING
-            # elif len(self.phagosome.agents) &gt; MAX_INTERNALIZED_CONIDIA:
-            #    cell[&#39;status&#39;] = Phagocyte.NECROTIC
+                cell[&#39;release_phagosome&#39;] = True
+            elif self.len_phagosome(index) &gt; MacrophageCellData.MAX_INTERNAL_CONIDIA:
+                cell[&#39;status&#39;] = PhagocyteCellData.Status.NECROTIC
             elif cell[&#39;status&#39;] == PhagocyteCellData.Status.ACTIVE:
                 if cell[&#39;iteration&#39;] &gt;= iter_to_change_status:
                     cell[&#39;iteration&#39;] = 0
@@ -694,16 +739,17 @@ low-level array.</p>
     # TODO - add boolena network update
     # for index in self.alive:
     #   self[index].update_boolean network
-    cells = self.cell_data
-    for cell in cells:
-        # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
-        #    return
+    #
+    # if cell[&#39;status&#39;] == PhagocyteCellData.Status.DEAD:
+    #    do nothing
+
+    for index in self.alive():
+        cell = self[index]
         if cell[&#39;status&#39;] == PhagocyteCellData.Status.NECROTIC:
             cell[&#39;status&#39;] = PhagocyteCellData.Status.DEAD
-            # for _, a in self.phagosome.agents.items():
-            #    a.state = Afumigatus.RELEASING
-        # elif len(self.phagosome.agents) &gt; MAX_INTERNALIZED_CONIDIA:
-        #    cell[&#39;status&#39;] = Phagocyte.NECROTIC
+            cell[&#39;release_phagosome&#39;] = True
+        elif self.len_phagosome(index) &gt; MacrophageCellData.MAX_INTERNAL_CONIDIA:
+            cell[&#39;status&#39;] = PhagocyteCellData.Status.NECROTIC
         elif cell[&#39;status&#39;] == PhagocyteCellData.Status.ACTIVE:
             if cell[&#39;iteration&#39;] &gt;= iter_to_change_status:
                 cell[&#39;iteration&#39;] = 0
@@ -773,7 +819,8 @@ state must override the serialization mechanism with custom behavior.</p></secti
     TF_ENHANCE: float = 1
     DRIFT_LAMBDA: float = 10
     DRIFT_BIAS: float = 0.9
-    ITER_TO_CHANGE_STATUS: int = 0</code></pre>
+    ITER_TO_CHANGE_STATUS: int = 0
+    MAX_INTERNAL_CONIDIA: int = 50</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -808,6 +855,27 @@ Base 0 means to interpret the base from the string as an integer literal.</p>
 </code></pre></section>
 </dd>
 <dt id="simulation.modules.macrophage.MacrophageState.ITER_TO_CHANGE_STATUS"><code class="name">var <span class="ident">ITER_TO_CHANGE_STATUS</span></code></dt>
+<dd>
+<section class="desc"><p>int(x=0) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
+</dd>
+<dt id="simulation.modules.macrophage.MacrophageState.MAX_INTERNAL_CONIDIA"><code class="name">var <span class="ident">MAX_INTERNAL_CONIDIA</span></code></dt>
 <dd>
 <section class="desc"><p>int(x=0) -&gt; integer
 int(x, base=10) -&gt; integer</p>
@@ -907,6 +975,7 @@ Base 0 means to interpret the base from the string as an integer literal.</p>
 <li><code><a title="simulation.modules.macrophage.cell_list_factory" href="#simulation.modules.macrophage.cell_list_factory">cell_list_factory</a></code></li>
 <li><code><a title="simulation.modules.macrophage.hill_probability" href="#simulation.modules.macrophage.hill_probability">hill_probability</a></code></li>
 <li><code><a title="simulation.modules.macrophage.interact" href="#simulation.modules.macrophage.interact">interact</a></code></li>
+<li><code><a title="simulation.modules.macrophage.release_phagosomes" href="#simulation.modules.macrophage.release_phagosomes">release_phagosomes</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -939,6 +1008,7 @@ Base 0 means to interpret the base from the string as an integer literal.</p>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.DRIFT_BIAS" href="#simulation.modules.macrophage.MacrophageState.DRIFT_BIAS">DRIFT_BIAS</a></code></li>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.DRIFT_LAMBDA" href="#simulation.modules.macrophage.MacrophageState.DRIFT_LAMBDA">DRIFT_LAMBDA</a></code></li>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.ITER_TO_CHANGE_STATUS" href="#simulation.modules.macrophage.MacrophageState.ITER_TO_CHANGE_STATUS">ITER_TO_CHANGE_STATUS</a></code></li>
+<li><code><a title="simulation.modules.macrophage.MacrophageState.MAX_INTERNAL_CONIDIA" href="#simulation.modules.macrophage.MacrophageState.MAX_INTERNAL_CONIDIA">MAX_INTERNAL_CONIDIA</a></code></li>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.MPH_UPTAKE_QTTY" href="#simulation.modules.macrophage.MacrophageState.MPH_UPTAKE_QTTY">MPH_UPTAKE_QTTY</a></code></li>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.TF_ENHANCE" href="#simulation.modules.macrophage.MacrophageState.TF_ENHANCE">TF_ENHANCE</a></code></li>
 <li><code><a title="simulation.modules.macrophage.MacrophageState.init_num" href="#simulation.modules.macrophage.MacrophageState.init_num">init_num</a></code></li>
