@@ -7,6 +7,7 @@ from simulation.cell import CellData
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellList
 from simulation.modules.geometry import TissueTypes
 from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
 from simulation.state import State
@@ -44,7 +45,7 @@ class MacrophageCellList(PhagocyteCellList):
         #   self[index].update_boolean network
         #
         # if cell['status'] == PhagocyteCellData.Status.DEAD:
-            #    do nothing
+        #    do nothing
 
         for index in self.alive():
             cell = self[index]
@@ -150,7 +151,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         cells = macrophage.cells
         iron = state.molecules.grid.concentrations.iron
-        # drift(macrophage.cells, tissue, grid)
+
         interact(state)
 
         cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
@@ -159,7 +160,7 @@ class Macrophage(Module):
 
         cells.update(macrophage.ITER_TO_CHANGE_STATUS)
 
-        #release_phagosome(cells, state.afumigatus.tree.cells)
+        release_phagosomes(cells, state.afumigatus.tree.cells)
 
         cells.chemotaxis(
             iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
@@ -171,8 +172,15 @@ class Macrophage(Module):
 def hill_probability(substract, km=10):
     return substract * substract / (substract * substract + km * km)
 
-#def release_phagosome(cells, state.afumigatus.tree.cells):
-#    
+
+def release_phagosomes(macrophage_cells: MacrophageCellList, afumigatus_cells: AfumigatusCellList):
+    for index in macrophage_cells.alive(macrophage_cells.cell_data['release_phagosome']):
+        for phag_index in range(0, macrophage_cells.len_phagosome(index)):
+            afumigatus_cells.cell_data[macrophage_cells.cell_data[index]['phagosome'][phag_index]][
+                'state'
+            ] = AfumigatusCellData.State.RELEASING
+        macrophage_cells.clear_all_phagosome(index)
+
 
 def interact(state: State):
     # get molecules in voxel
