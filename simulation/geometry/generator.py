@@ -31,33 +31,22 @@ SpacingType = Tuple[float, float, float]
 
 
 class Geometry(object):
-    def __init__(self, shape: ShapeType, space: SpacingType):
-        self.shape = shape
+    def __init__(self, shape: ShapeType, space: SpacingType, scale: int):
+        self.scale = scale
+        self.shape = [x * scale for x in shape]
         self.space = space
-        self.grid = RectangularGrid.construct_uniform(shape, space)
+        self.grid = RectangularGrid.construct_uniform(self.shape, self.space)
+
         self.geo = self.grid.allocate_variable(dtype=np.int8)
         self.geo.fill(2)
-        self.fixed = np.zeros(shape)
+        self.fixed = np.zeros(self.shape)
 
         self.duct_f: List[Union[Sphere, Cylinder]] = []
         self.sac_f: List[Union[Sphere, Cylinder]] = []
 
-    def scaling(self, n):
-        for f in self.duct_f:
-            f.scale(n)
-
-        for f in self.sac_f:
-            f.scale(n)
-
-        self.xbin = self.xbin * n
-        self.ybin = self.ybin * n
-        self.zbin = self.zbin * n
-
-        self.geo = np.zeros((self.zbin, self.ybin, self.xbin))
-        self.geo.fill(2)
-        self.fixed = np.zeros((self.zbin, self.ybin, self.xbin))
-
     def add(self, function):
+        """Add functions to the generator."""
+        function.scale(self.scale)
         if function.type == SAC:
             self.sac_f.append(function)
         elif function.type == DUCT:
@@ -157,15 +146,29 @@ class Geometry(object):
 
         # surfactant layer laplacian
         surf_lapl = discrete_laplacian(self.grid, self.geo == SURF)
+        # epithelium layer laplacian
+        epi_lapl = discrete_laplacian(self.grid, self.geo == EPITHELIUM)
+        # capillary layer laplacian
+        blood_lapl = discrete_laplacian(self.grid, self.geo == BLOOD)
+
+        d = {
+            'surf_lapl': surf_lapl, 
+            'epi_lapl': epi_lapl, 
+            'blood_lapl': blood_lapl
+        }
 
         # Write data to HDF5
         with h5py.File(filename, 'w') as data_file:
             data_file.create_dataset('geometry', data=self.geo)
-            matrix = data_file.create_group('surf_lapl')
-            matrix.create_dataset('data', data=surf_lapl.data)
-            matrix.create_dataset('indptr', data=surf_lapl.indptr)
-            matrix.create_dataset('indices', data=surf_lapl.indices)
-            matrix.attrs['shape'] = surf_lapl.shape
+
+            # embed laplacian matrix for all layers
+            matrices = data_file.create_group('lapl_matrices')
+            for name, lapl in d.items():
+                matrix = matrices.create_group(name)
+                matrix.create_dataset('data', data=lapl.data)
+                matrix.create_dataset('indptr', data=lapl.indptr)
+                matrix.create_dataset('indices', data=lapl.indices)
+                matrix.attrs['shape'] = lapl.shape
 
     def preview(self):
         zbin, ybin, xbin = self.shape
@@ -240,11 +243,11 @@ def generate_geometry(config, output, preview):
     with open(config) as f:
         data = json.load(f)
 
+        scale = data['scaling']
         shape = (data['shape']['zbin'], data['shape']['ybin'], data['shape']['xbin'])
-
         space = (data['space']['dz'], data['space']['dy'], data['space']['dx'])
 
-        g = Geometry(shape, space)
+        g = Geometry(shape, space, scale)
 
         for function in data['function']:
 
@@ -265,6 +268,7 @@ def generate_geometry(config, output, preview):
         # g.scaling(data["scaling"])
         g.construct()
         g.write_to_hdf5(output)
+        g.write_to_vtk()
     print(f'--- {(time.time() - start_time)} seconds ---')
     if preview:
         g.preview()

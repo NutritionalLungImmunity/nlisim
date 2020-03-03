@@ -59,6 +59,9 @@ def apply_diffusion(
     Solves laplaces equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
 
+    Notes that the output of this function might contain negative values caused by
+    rounding error. You can truncate the result by var_next[var_next < 0] = 0.
+
     The intended use case for this method is to perform "surface diffusion" generated
     by a mask from the `lung_tissue` variable, e.g.
 

@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Dict
 
 import attr
 import h5py
@@ -28,16 +29,32 @@ class TissueTypes(Enum):
 
 @attr.s(kw_only=True, repr=False)
 class LaplacianMatrix(object):
-    surf_lapl: csr_matrix = attr.ib(init=False)
+    _lapl_dict: Dict[str, csr_matrix] = attr.ib(default=attr.Factory(dict))
+    # surf_lapl: csr_matrix = attr.ib(init=False)
+    # epi_lapl: csr_matrix = attr.ib(init=False)
+    # blood_lapl: csr_matrix = attr.ib(init=False)
+
+    @property
+    def matrices(self):
+        return self._lapl_dict.values()
+    
+    def __setitem__(self, key: str, value: csr_matrix):
+        if not isinstance(value, csr_matrix):
+            raise TypeError(f'value has to be a csr_matrix class. Got {type(value)}.')
+        self._lapl_dict[key] = value
+
+    def __getitem__(self, key: str) -> csr_matrix:
+        return self._lapl_dict[key]
 
     def save(self, group: h5py.Group, name: str, metadata: dict) -> h5py.Group:
         """Save an attribute into an HDF5 group."""
-        surf_lapl = self.surf_lapl
         composite_group = group.create_group(name)
-        composite_group.create_dataset('data', data=surf_lapl.data)
-        composite_group.create_dataset('indptr', data=surf_lapl.indptr)
-        composite_group.create_dataset('indices', data=surf_lapl.indices)
-        composite_group.attrs['shape'] = surf_lapl.shape
+        for matrix_name, matrix_data in self._lapl_dict.items():
+            matrix_group = composite_group.create_group(matrix_name)
+            matrix_group.create_dataset('data', data=matrix_data.data)
+            matrix_group.create_dataset('indptr', data=matrix_data.indptr)
+            matrix_group.create_dataset('indices', data=matrix_data.indices)
+            matrix_group.attrs['shape'] = matrix_data.shape
         return composite_group
 
     @classmethod
@@ -72,17 +89,19 @@ class Geometry(Module):
         geometry: GeometryState = state.geometry
         preview_geometry = self.config.getboolean('preview_geometry')
         path = self.config.get('geometry_path')
+
         try:
             with h5py.File(path, 'r') as f:
                 if f['geometry'][:].shape != state.grid.shape:
-                    raise ValidationError("shape doesn\'t match")
+                    raise ValidationError(f"shape doesn\'t match")
                 geometry.lung_tissue[:] = f['geometry'][:]
 
-                surf_lapl = f['surf_lapl']
-                geometry.laplacian_matrix.surf_lapl = csr_matrix(
-                    (surf_lapl['data'][:], surf_lapl['indices'][:], surf_lapl['indptr'][:]),
-                    surf_lapl.attrs['shape'],
-                )
+                matrices = f['lapl_matrices']
+                for name, lapl in matrices.items():
+                    geometry.laplacian_matrix[name] = csr_matrix(
+                        (lapl['data'][:], lapl['indices'][:], lapl['indptr'][:]),
+                        lapl.attrs['shape'],
+                    )
 
         except Exception:
             print(f'Error loading geometry file at {path}.')
