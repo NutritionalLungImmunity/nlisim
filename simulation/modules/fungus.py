@@ -95,6 +95,9 @@ class Fungus(Module):
         fungus.p_lodge = self.config.getfloat('p_lodge')
         fungus.p_internal_swell = self.config.getfloat('p_internal_swell')
         fungus.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
+        fungus.iron_min = self.config.getint('iron_min')
+        fungus.iron_max = self.config.getfloat('iron_max')
+        fungus.iron_absorb = self.config.getfloat('iron_absorb')
 
         fungus.cells = FungusCellList(grid=grid)
         if fungus.init_num > 0:
@@ -118,7 +121,7 @@ class Fungus(Module):
         iron = state.molecules.grid.concentrations.iron
 
         update(state)       
-        #iron_uptake(state)
+        iron_uptake(state)
         #grow_hyphae(state)
 
         return state
@@ -177,3 +180,32 @@ def update(state):
             # TODO - check ODD protocol
             if cell['status'] == FungusCellData.Status.SWOLLEN:
                 cell['iteration'] = 0
+
+
+def iron_uptake(state):
+    fungus: FungusState = state.fungus
+    grid: RectangularGrid = state.grid
+    tissue = state.geometry.lung_tissue
+    cells = fungus.cells
+    iron = state.molecules.grid['iron']
+
+    hyphae = FungusCellList(grid=grid)
+    mask = (
+        cells.cell_data['form'] == FungusCellData.Form.HYPHAE and
+        cells.cell_data['internalized'] == False and
+        cells.cell_data['iron'] < fungus.iron_max
+    )
+    hyphae.extend(cells[mask])
+
+    for vox_index in np.argwhere(iron > fungus.iron_min):
+        vox = Voxel(x=vox_index[2],y=vox_index[1],z=vox_index[0])
+
+        cells_here = hyphae.get_cells_in_voxel(vox)
+        iron_split = fungus.iron_absorb * (iron[vox.z, vox.y, vox.x] / len(cells_here))
+        for cell_index in cells_here:
+            cells[cell_index]['iron'] += iron_split
+            if cells[cell_index]['iron'] > fungus.iron_max:
+                cells[cell_index]['iron'] = fungus.iron_max
+        
+        iron[vox.z, vox.y, vox.x] = (1 - fungus.iron_absorb) * iron[vox.z, vox.y, vox.x]
+
