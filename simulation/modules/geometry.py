@@ -37,7 +37,7 @@ class LaplacianMatrix(object):
     @property
     def matrices(self):
         return self._lapl_dict.values()
-    
+
     def __setitem__(self, key: str, value: csr_matrix):
         if not isinstance(value, csr_matrix):
             raise TypeError(f'value has to be a csr_matrix class. Got {type(value)}.')

@@ -87,9 +87,7 @@ class Molecules(Module):
         for molecule in molecules.grid.types:
             diffusivity = molecules.grid.diffusivity[molecule]
             molecule_grid = molecules.grid[molecule]
-            molecule_grid[:] = apply_diffusion(
-                molecules.grid[molecule], surf_lapl, diffusivity, dt
-            )
+            molecule_grid[:] = apply_diffusion(molecules.grid[molecule], surf_lapl, diffusivity, dt)
             molecule_grid[molecule_grid < 1e-10] = 0
 
             self.degrade(molecules.grid[molecule])

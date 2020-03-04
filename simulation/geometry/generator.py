@@ -33,7 +33,7 @@ SpacingType = Tuple[float, float, float]
 class Geometry(object):
     def __init__(self, shape: ShapeType, space: SpacingType, scale: int):
         self.scale = scale
-        self.shape = [x * scale for x in shape]
+        self.shape = (shape[0] * scale, shape[1] * scale, shape[2] * scale)
         self.space = space
         self.grid = RectangularGrid.construct_uniform(self.shape, self.space)
 
@@ -151,11 +151,7 @@ class Geometry(object):
         # capillary layer laplacian
         blood_lapl = discrete_laplacian(self.grid, self.geo == BLOOD)
 
-        d = {
-            'surf_lapl': surf_lapl, 
-            'epi_lapl': epi_lapl, 
-            'blood_lapl': blood_lapl
-        }
+        d = {'surf_lapl': surf_lapl, 'epi_lapl': epi_lapl, 'blood_lapl': blood_lapl}
 
         # Write data to HDF5
         with h5py.File(filename, 'w') as data_file:
