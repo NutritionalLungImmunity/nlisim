@@ -16,7 +16,7 @@ from simulation.state import State
 class FungusCellData(CellData):
     
     class Status(IntEnum):
-        DRIFTING = -1
+        DRIFTING = 99
         RESTING = 0 # CONIDIA relevant
         SWOLLEN = 1 # CONIDIA relevant
         GERMINATED = 2 # CONIDIA relevant
@@ -47,13 +47,12 @@ class FungusCellData(CellData):
         iron: float = 0,
         status: Status = Status.DRIFTING,
         form: Form = Form.CONIDIA,
+        iteration = 0,
+        mobile = True,
+        internalized = False,
+        health = 100,
         **kwargs,
     ) -> np.record:
-
-        iteration = 0
-        mobile = True
-        internalized = False
-        health = 100
         
         return CellData.create_cell_tuple(**kwargs) + (
             form, 
@@ -98,6 +97,10 @@ class Fungus(Module):
         fungus.iron_min = self.config.getint('iron_min')
         fungus.iron_max = self.config.getfloat('iron_max')
         fungus.iron_absorb = self.config.getfloat('iron_absorb')
+        fungus.spacing = self.config.getfloat('spacing')
+        fungus.iron_min_grow = self.config.getfloat('iron_min_grow')
+        fungus.grow_time = self.config.getfloat('grow_time')
+        fungus.p_branch = self.config.getfloat('p_branch')
 
         fungus.cells = FungusCellList(grid=grid)
         if fungus.init_num > 0:
@@ -111,7 +114,7 @@ class Fungus(Module):
                 z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                 point = Point(x=x, y=y, z=z)
-                status = FungusCellData.Status.RESTING
+                status = FungusCellData.Status.DRIFTING
 
                 fungus.cells.append(FungusCellData.create_cell(point=point, status=status))
 
@@ -122,7 +125,7 @@ class Fungus(Module):
 
         update(state)       
         iron_uptake(state)
-        #grow_hyphae(state)
+        grow_hyphae(state)
 
         return state
 
@@ -163,23 +166,30 @@ def update(state):
         # change status
         if cell['iteration'] >= fungus.ITER_TO_CHANGE_STATUS:
             if cell['internalized']:
-                print('internal')
                 if cell['status'] == FungusCellData.Status.RESTING:
                     if (fungus.p_internal_swell > random.random()):
                         cell['status'] = FungusCellData.Status.SWOLLEN
-                elif cell['status'] == FungusCellData.Status.SWOLLEN:
-                    cell['status'] = FungusCellData.Status.GERMINATED   
-            else:
-                print('free')
-                if cell['status'] == FungusCellData.Status.RESTING:
-                    cell['status'] = FungusCellData.Status.SWOLLEN
+                        cell['iteration'] = 0
                 elif cell['status'] == FungusCellData.Status.SWOLLEN:
                     cell['status'] = FungusCellData.Status.GERMINATED
+                    cell['iteration'] = 0   
+            else:
+                if cell['status'] == FungusCellData.Status.RESTING:
+                    cell['status'] = FungusCellData.Status.SWOLLEN
+                    cell['iteration'] = 0
+                elif cell['status'] == FungusCellData.Status.SWOLLEN:
+                    cell['status'] = FungusCellData.Status.GERMINATED
+                    cell['iteration'] = 0
                     #cell['form'] = HYphae?
                 
             # TODO - check ODD protocol
             if cell['status'] == FungusCellData.Status.SWOLLEN:
                 cell['iteration'] = 0
+    
+    for index in cells.alive(
+        cells.cell_data['form'] == FungusCellData.Form.HYPHAE
+    ):
+        cells[index]['iteration'] += 1
 
 
 def iron_uptake(state):
@@ -189,23 +199,77 @@ def iron_uptake(state):
     cells = fungus.cells
     iron = state.molecules.grid['iron']
 
-    hyphae = FungusCellList(grid=grid)
-    mask = (
-        cells.cell_data['form'] == FungusCellData.Form.HYPHAE and
-        cells.cell_data['internalized'] == False and
-        cells.cell_data['iron'] < fungus.iron_max
-    )
-    hyphae.extend(cells[mask])
-
     for vox_index in np.argwhere(iron > fungus.iron_min):
         vox = Voxel(x=vox_index[2],y=vox_index[1],z=vox_index[0])
 
-        cells_here = hyphae.get_cells_in_voxel(vox)
-        iron_split = fungus.iron_absorb * (iron[vox.z, vox.y, vox.x] / len(cells_here))
-        for cell_index in cells_here:
-            cells[cell_index]['iron'] += iron_split
-            if cells[cell_index]['iron'] > fungus.iron_max:
-                cells[cell_index]['iron'] = fungus.iron_max
-        
-        iron[vox.z, vox.y, vox.x] = (1 - fungus.iron_absorb) * iron[vox.z, vox.y, vox.x]
+        cells_here = cells.get_cells_in_voxel(vox)
+        indices = []
+        for index in cells_here:
+            if(cells.cell_data[index]['form'] == FungusCellData.Form.HYPHAE and
+                cells.cell_data[index]['internalized'] == False and
+                cells.cell_data[index]['iron'] < fungus.iron_max):
+                indices.append(index)
 
+        if len(indices) > 0:
+            iron_split = fungus.iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+            for cell_index in indices:
+                cells[cell_index]['iron'] += iron_split
+                if cells[cell_index]['iron'] > fungus.iron_max:
+                    cells[cell_index]['iron'] = fungus.iron_max
+
+            iron[vox.z, vox.y, vox.x] = (1 - fungus.iron_absorb) * iron[vox.z, vox.y, vox.x]
+
+
+def grow_hyphae(state):
+    fungus: FungusState = state.fungus
+    grid: RectangularGrid = state.grid
+    tissue = state.geometry.lung_tissue
+    cells = fungus.cells
+
+    # spawn from hyphae from conidia
+    for index in cells.alive():
+        cell = cells.cell_data[index]
+
+        if(cell['form'] == FungusCellData.Form.CONIDIA and
+            cell['status'] == FungusCellData.Status.GERMINATED and
+            cell['internalized'] == False):
+
+            cell['status'] = FungusCellData.Status.GROWN
+            spawn_hypahael_cell(cells, cell['point'], cell['iron'], fungus.spacing)
+
+    # grow hyphae
+    for index in cells.alive():
+        cell = cells.cell_data[index]
+
+        if(cell['form'] == FungusCellData.Form.HYPHAE and
+            cell['status'] == FungusCellData.Status.GROWABLE and
+            cell['internalized'] == False and 
+            cell['iron'] > fungus.iron_min_grow and 
+            cell['iteration'] > fungus.grow_time):
+
+            num_spawn = 1
+            if fungus.p_branch > random.random():
+                num_spawn = 2
+                iron_f = cell['iron'] / 3
+
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
+            else:
+                iron_f = cell['iron'] / 2
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
+
+
+def spawn_hypahael_cell(cells, point, iron, spacing):
+    new_point = Point(
+        x = point[2] + spacing * random.uniform(-1, 1), 
+        y = point[1] + spacing * random.uniform(-1, 1),
+        z = point[0] + spacing * random.uniform(-1, 1),
+        )
+
+    cells.append(FungusCellData.create_cell(
+        point = new_point, 
+        status = FungusCellData.Status.GROWABLE,
+        form = FungusCellData.Form.HYPHAE,
+        iron = iron,
+        mobile = False        
+        ))
