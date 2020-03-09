@@ -9,7 +9,7 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.state import get_class_path, State
 
-MAX_CELL_LIST_SIZE = 10000
+MAX_CELL_LIST_SIZE = 1000000
 
 # the way numpy types single records is strange...
 CellType = Any

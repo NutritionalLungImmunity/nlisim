@@ -101,22 +101,24 @@ class Fungus(Module):
         fungus.iron_min_grow = self.config.getfloat('iron_min_grow')
         fungus.grow_time = self.config.getfloat('grow_time')
         fungus.p_branch = self.config.getfloat('p_branch')
+        fungus.p_internalize = self.config.getfloat('p_internalize')
 
         fungus.cells = FungusCellList(grid=grid)
         if fungus.init_num > 0:
             # initialize the surfactant layer with some fungus in random locations
-            indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
+            indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+            if(len(indices) > 0):
+                np.random.shuffle(indices)
 
-            for i in range(0, fungus.init_num):
-                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+                for i in range(0, fungus.init_num):
+                    x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                    y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                    z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
-                point = Point(x=x, y=y, z=z)
-                status = FungusCellData.Status.DRIFTING
+                    point = Point(x=x, y=y, z=z)
+                    status = FungusCellData.Status.DRIFTING
 
-                fungus.cells.append(FungusCellData.create_cell(point=point, status=status))
+                    fungus.cells.append(FungusCellData.create_cell(point=point, status=status))
 
         return state
 
@@ -160,6 +162,8 @@ def update(state):
                     cell['mobile'] = False
                     cell['status'] = FungusCellData.Status.RESTING
                     cell['iteration'] += 1
+                    if(fungus.p_internalize < random.random()):
+                        cell['internalized'] = True
         else:
             cell['iteration'] += 1
 
@@ -235,7 +239,7 @@ def grow_hyphae(state):
             cell['internalized'] == False):
 
             cell['status'] = FungusCellData.Status.GROWN
-            spawn_hypahael_cell(cells, cell['point'], cell['iron'], fungus.spacing)
+            spawn_hypahael_cell(cells, cell['point'], cell['iron'], fungus.spacing, grid)
 
     # grow hyphae
     for index in cells.alive():
@@ -252,18 +256,37 @@ def grow_hyphae(state):
                 num_spawn = 2
                 iron_f = cell['iron'] / 3
 
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
             else:
                 iron_f = cell['iron'] / 2
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing)
+                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
 
 
-def spawn_hypahael_cell(cells, point, iron, spacing):
+def spawn_hypahael_cell(cells, point, iron, spacing, grid):
+    new_x = 0
+    new_y = 0
+    new_z = 0
+
+    if(point[2] > grid.x[int(len(grid.x)/2)]):
+        new_x = point[2] + spacing * random.uniform(0, 1)
+    else:
+        new_x = point[2] + spacing * random.uniform(-1, 0)
+
+    if(point[1] > grid.y[int(len(grid.y)/2)]):
+        new_y = point[1] + spacing * random.uniform(0, 1)
+    else:
+        new_y = point[1] + spacing * random.uniform(-1, 0)
+
+    if(point[0] > grid.z[int(len(grid.z)/2)]):
+        new_z = point[0] + spacing * random.uniform(0, 1)
+    else:
+        new_z = point[0] + spacing * random.uniform(-1, 0)
+
     new_point = Point(
-        x = point[2] + spacing * random.uniform(-1, 1), 
-        y = point[1] + spacing * random.uniform(-1, 1),
-        z = point[0] + spacing * random.uniform(-1, 1),
+        x = new_x,
+        y = new_y,
+        z = new_z,
         )
 
     cells.append(FungusCellData.create_cell(

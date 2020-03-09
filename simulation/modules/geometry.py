@@ -48,17 +48,19 @@ class Geometry(Module):
         geometry: GeometryState = state.geometry
         preview_geometry = self.config.getboolean('preview_geometry')
         path = self.config.get('geometry_path')
-        try:
-            with h5py.File(path, 'r') as f:
-                if f['geometry'][:].shape != state.grid.shape:
-                    raise ValidationError("shape doesn\'t match")
-                geometry.lung_tissue[:] = f['geometry'][:]
-        except Exception:
-            print(f'Error loading geometry file at {path}.')
-            raise
+        #try:
+        #    with h5py.File(path, 'r') as f:
+        #        if f['geometry'][:].shape != state.grid.shape:
+        #            raise ValidationError("shape doesn\'t match")
+        #        geometry.lung_tissue[:] = f['geometry'][:]
+        #except Exception:
+        #    print(f'Error loading geometry file at {path}.')
+        #    raise
 
-        if preview_geometry:
-            Geometry.preview(geometry.lung_tissue)
+        #if preview_geometry:
+        #    Geometry.preview(geometry.lung_tissue)
+
+        geometry.lung_tissue[:] = 3
 
         return state
 

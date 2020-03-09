@@ -59,7 +59,7 @@ class Molecules(Module):
                     raise TypeError(f'Cannot find lung tissue type {source}')
 
                 molecules.grid.sources[name][
-                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc[0]].value)
                 ] = incr
 
         return state
