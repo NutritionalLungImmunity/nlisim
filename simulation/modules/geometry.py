@@ -1,7 +1,6 @@
 from enum import Enum
 
 import attr
-import h5py
 import numpy as np
 import vtk
 
@@ -46,18 +45,18 @@ class Geometry(Module):
 
     def initialize(self, state: State):
         geometry: GeometryState = state.geometry
-        preview_geometry = self.config.getboolean('preview_geometry')
-        path = self.config.get('geometry_path')
-        #try:
+        # preview_geometry = self.config.getboolean('preview_geometry')
+        # path = self.config.get('geometry_path')
+        # try:
         #    with h5py.File(path, 'r') as f:
         #        if f['geometry'][:].shape != state.grid.shape:
         #            raise ValidationError("shape doesn\'t match")
         #        geometry.lung_tissue[:] = f['geometry'][:]
-        #except Exception:
+        # except Exception:
         #    print(f'Error loading geometry file at {path}.')
         #    raise
 
-        #if preview_geometry:
+        # if preview_geometry:
         #    Geometry.preview(geometry.lung_tissue)
 
         geometry.lung_tissue[:] = 3
