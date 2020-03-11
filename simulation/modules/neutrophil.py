@@ -97,6 +97,7 @@ def recruit_new(state, time):
     neutrophil: NeutrophilState = state.neutrophil
     n_cells = neutrophil.cells
     tissue = state.geometry.lung_tissue
+    grid = state.grid
     cyto = state.molecules.grid['n_cyto']
 
     num_reps = neutrophil.rec_rate_ph # number of neutrophils recruited per time step
@@ -114,9 +115,9 @@ def recruit_new(state, time):
         if(len(cyto_index) > 0):
             ii = random.randint(0, len(cyto_index) - 1)
             point = Point(
-                x = cyto_index[ii][2], 
-                y = cyto_index[ii][1], 
-                z = cyto_index[ii][0])
+                x = grid.x[cyto_index[ii][2]], 
+                y = grid.x[cyto_index[ii][1]], 
+                z = grid.x[cyto_index[ii][0]])
 
             status = NeutrophilCellData.Status.RESTING
             n_cells.append(NeutrophilCellData.create_cell(point=point, status=status))
@@ -125,10 +126,15 @@ def recruit_new(state, time):
 def absorb_cytokines(state):
     neutrophil: NeutrophilState = state.neutrophil
     n_cells = neutrophil.cells
-    cyto = state.molecules.grid.concentration.n_cyto
+    cyto = state.molecules.grid['n_cyto']
+    grid = state.grid
 
-    for cell in n_cells.alive():
-       cyto = (1 - neutrophil.n_absorb) * cyto
+    for index in n_cells.alive():
+        vox = grid.get_voxel(n_cells[index]['point'])
+        x = vox.x
+        y = vox.y
+        z = vox.z
+        cyto[z,y,x] = (1 - neutrophil.n_absorb) * cyto[z,y,x]
 
     return state
 
