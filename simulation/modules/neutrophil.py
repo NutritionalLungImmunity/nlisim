@@ -1,3 +1,6 @@
+from enum import IntEnum
+import random
+
 import attr
 import numpy as np
 
@@ -11,14 +14,19 @@ from simulation.state import State
 
 class NeutrophilCellData(CellData):
 
+    class Status(IntEnum):
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
+        APOPTOTIC = 5
+        NECROTIC = 6
+        DEAD = 7
+
     NEUTROPHIL_FIELDS = [
-        ('form', 'u1'),
         ('status', 'u1'),
         ('iteration', 'i4'),
-        ('mobile', 'b1'),
-        ('internalized', 'b1'),
-        ('iron', 'f8'),
-        ('health', 'f8'),
     ]
 
     dtype = np.dtype(
@@ -26,8 +34,10 @@ class NeutrophilCellData(CellData):
     )  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs,) -> np.record:
-        return CellData.create_cell_tuple(**kwargs)
+    def create_cell_tuple(cls, status, **kwargs,) -> np.record:
+        status = status
+        iteration = 0
+        return CellData.create_cell_tuple(**kwargs) + (status,iteration,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -94,16 +104,19 @@ def recruit_new(state, time):
         num_reps = (time - 48) / 8
     
     blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+    blood_index = np.transpose(blood_index)
     mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= neutrophil.rec_r
+    blood_index = np.transpose(blood_index)
     cyto_index = blood_index[mask]
     np.random.shuffle(cyto_index)
 
     for i in range(0, num_reps):
         if(len(cyto_index) > 0):
+            ii = random.randint(0, len(cyto_index) - 1)
             point = Point(
-                x = cyto_index[i][2], 
-                y = cyto_index[i][1], 
-                z = cyto_index[i][0])
+                x = cyto_index[ii][2], 
+                y = cyto_index[ii][1], 
+                z = cyto_index[ii][0])
 
             status = NeutrophilCellData.Status.RESTING
             n_cells.append(NeutrophilCellData.create_cell(point=point, status=status))
