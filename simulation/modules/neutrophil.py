@@ -77,6 +77,7 @@ class Neutrophil(Module):
         neutrophil.Nn = self.config.getfloat('Nn')
         neutrophil.n_det = self.config.getfloat('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
+        neutrophil.n_kill = self.config.getfloat('n_kill')
         #NeutrophilCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
@@ -89,7 +90,7 @@ class Neutrophil(Module):
         absorb_cytokines(state)
         produce_cytokines(state)
         move(state)
-        damage_hyphae(state)
+        damage_hyphae(state, previous_time)
 
         return state
 
@@ -199,13 +200,51 @@ def move(state):
     return state
 
 
-def damage_hyphae(state):
+def damage_hyphae(state, time):
     neutrophil: NeutrophilState = state.neutrophil
     n_cells = neutrophil.cells
+    fungus = state.fungus.cells
 
     tissue = state.geometry.lung_tissue
     grid = state.grid
-
     cyto = state.molecules.grid['n_cyto']
+    iron = state.molecules.grid['iron']
+
+    for i in n_cells.alive():
+        cell = n_cells[i]
+        vox = grid.get_voxel(cell['point'])
+
+        n_det = int(neutrophil.n_det / 2)
+        x_r = []
+        y_r = []
+        z_r = []
+
+        for num in range(0, n_det + 1):
+            x_r.append(num)
+            y_r.append(num)
+            z_r.append(num)
+
+        for num in range(-1 * n_det, 0):
+            x_r.append(num)
+            y_r.append(num)
+            z_r.append(num)
+
+        for x in x_r:
+            for y in y_r:
+                for z in z_r:
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
+                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        iron[vox.z, vox.y, vox.x] = 0
+                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                        for index in index_arr:
+                            if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
+                                fungus[index]['health'] -= time / neutrophil.n_kill
+                                cell['granule_count'] -= 1
+                                cell['status'] = NeutrophilCellData.Status.GRANULATING
+                            elif(cell['granule_count'] <= 0):
+                                cell['status'] = NeutrophilCellData.Status.RESTING
+                                break
 
     return state
