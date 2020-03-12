@@ -222,7 +222,9 @@ def move(state):
         if(l == 1):
             i = indices[0][0]
         elif(l >= 1):
-            i = np.argmax(p)
+            inds = np.argwhere(p == p[np.argmax(p)])
+            np.random.shuffle(inds)
+            i = inds[0][0]
         else:
             i = random.randint(0,27)
 
