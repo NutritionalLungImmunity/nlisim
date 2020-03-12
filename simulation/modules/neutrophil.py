@@ -30,11 +30,10 @@ class NeutrophilCellData(CellData):
     )  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, status, **kwargs,) -> np.record:
+    def create_cell_tuple(cls, status, granule_count, **kwargs,) -> np.record:
         status = status
         iteration = 0
-        granule_count = 0
-        return CellData.create_cell_tuple(**kwargs) + (status,iteration,granule_count)
+        return CellData.create_cell_tuple(**kwargs) + (status,iteration,granule_count,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -189,13 +188,51 @@ def produce_cytokines(state):
 
 
 def move(state):
-    neutrophil: NeutrophilState = state.neutrophil
+    neutrophil = state.neutrophil
     n_cells = neutrophil.cells
+    fungus = state.fungus.cells
 
     tissue = state.geometry.lung_tissue
     grid = state.grid
-
     cyto = state.molecules.grid['n_cyto']
+
+    for cell_index in n_cells.alive():
+        cell = n_cells[cell_index]
+        vox = grid.get_voxel(cell['point'])
+
+        p = np.zeros(shape=27)
+        vox_list = []
+        i = -1
+
+        for x in [0, 1, -1]:
+            for y in [0, 1, -1]:
+                for z in [0, 1, -1]:
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
+                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        vox_list.append([x, y, z])
+                        i += 1
+                        if cyto[zk, yj, xi] > neutrophil.rec_r:
+                            p[i] = cyto[zk, yj, xi]
+                            
+
+        indices = np.argwhere(p != 0)
+        l = len(indices)
+        if(l == 1):
+            i = indices[0][0]
+        elif(l >= 1):
+            i = np.argmax(p)
+        else:
+            i = random.randint(0,27)
+
+        cell['point'] = Point(
+            x=grid.x[vox.x + vox_list[i][0]],
+            y=grid.y[vox.y + vox_list[i][1]],
+            z=grid.z[vox.z + vox_list[i][2]]
+            )
+
+        n_cells.update_voxel_index([cell_index])              
 
     return state
 
