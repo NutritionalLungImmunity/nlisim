@@ -198,43 +198,44 @@ def move(state):
 
     for cell_index in n_cells.alive():
         cell = n_cells[cell_index]
-        vox = grid.get_voxel(cell['point'])
+        if (cell['status'] == NeutrophilCellData.Status.RESTING):
+            vox = grid.get_voxel(cell['point'])
 
-        p = np.zeros(shape=27)
-        vox_list = []
-        i = -1
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
 
-        for x in [0, 1, -1]:
-            for y in [0, 1, -1]:
-                for z in [0, 1, -1]:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        vox_list.append([x, y, z])
-                        i += 1
-                        if cyto[zk, yj, xi] > neutrophil.rec_r:
-                            p[i] = cyto[zk, yj, xi]
-                            
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] > neutrophil.rec_r:
+                                p[i] = cyto[zk, yj, xi]
 
-        indices = np.argwhere(p != 0)
-        l = len(indices)
-        if(l == 1):
-            i = indices[0][0]
-        elif(l >= 1):
-            inds = np.argwhere(p == p[np.argmax(p)])
-            np.random.shuffle(inds)
-            i = inds[0][0]
-        else:
-            i = random.randint(0,27)
 
-        cell['point'] = Point(
-            x=grid.x[vox.x + vox_list[i][0]],
-            y=grid.y[vox.y + vox_list[i][1]],
-            z=grid.z[vox.z + vox_list[i][2]]
-            )
+            indices = np.argwhere(p != 0)
+            l = len(indices)
+            if(l == 1):
+                i = indices[0][0]
+            elif(l >= 1):
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0,27)
 
-        n_cells.update_voxel_index([cell_index])              
+            cell['point'] = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]]
+                )
+
+            n_cells.update_voxel_index([cell_index])              
 
     return state
 
