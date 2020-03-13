@@ -103,7 +103,7 @@ class Macrophage(Module):
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
 
-        macrophage.rec_r = self.config.getint('rec_r')
+        macrophage.rec_r = self.config.getfloat('rec_r')
         macrophage.p_rec_r = self.config.getfloat('p_rec_r')
         macrophage.m_abs = self.config.getfloat('m_abs')
         macrophage.Mn = self.config.getfloat('Mn')
@@ -118,7 +118,7 @@ class Macrophage(Module):
 
     def advance(self, state: State, previous_time: float):
 
-        recruit_new(state, previous_time)
+        recruit_new(state)
         absorb_cytokines(state)
         produce_cytokines(state)
         move(state)
@@ -127,7 +127,7 @@ class Macrophage(Module):
         return state
 
 
-def recruit_new(state, time):
+def recruit_new(state):
     macrophage: MacrophageState = state.macrophage
     m_cells = macrophage.cells
     tissue = state.geometry.lung_tissue
@@ -212,7 +212,7 @@ def produce_cytokines(state):
                             if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
                                 hyphae_count +=1
 
-        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + macrophage.Nn * hyphae_count
+        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + macrophage.Mn * hyphae_count
 
     return state
 
@@ -255,7 +255,7 @@ def move(state):
             np.random.shuffle(inds)
             i = inds[0][0]
         else:
-            i = random.randint(0,27)
+            i = random.randint(0,len(vox_list))
 
         cell['point'] = Point(
             x=grid.x[vox.x + vox_list[i][0]],
@@ -282,8 +282,9 @@ def damage_conidia(state, time):
         cell = m_cells[i]
         
         for index in cell['phagosome']:
-            fungus[index]['health'] -= time / macrophage.kill
-            fungus[index]['point'] = cell['point']
-            fungus.update_voxel_index(index)
+            if(index != -1):
+                fungus[index]['health'] -= time / macrophage.kill
+                fungus[index]['point'] = cell['point']
+                fungus.update_voxel_index([index])
 
     return state
