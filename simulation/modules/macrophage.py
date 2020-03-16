@@ -122,6 +122,7 @@ class Macrophage(Module):
         absorb_cytokines(state)
         produce_cytokines(state)
         move(state)
+        internalize_conidia(state)
         damage_conidia(state, previous_time)
 
         return state
@@ -255,7 +256,7 @@ def move(state):
             np.random.shuffle(inds)
             i = inds[0][0]
         else:
-            i = random.randint(0,len(vox_list))
+            i = random.randint(0,len(vox_list) - 1)
 
         cell['point'] = Point(
             x=grid.x[vox.x + vox_list[i][0]],
@@ -267,6 +268,45 @@ def move(state):
 
     return state
 
+def internalize_conidia(state):
+    macrophage: MacrophageState = state.macrophage
+    m_cells = macrophage.cells
+    fungus = state.fungus.cells
+
+    tissue = state.geometry.lung_tissue
+    grid = state.grid
+
+    for i in m_cells.alive():
+        cell = m_cells[i]
+        vox = grid.get_voxel(cell['point'])
+
+        m_det = int(macrophage.m_det / 2)
+        x_r = []
+        y_r = []
+        z_r = []
+
+        for num in range(0, m_det + 1):
+            x_r.append(num)
+            y_r.append(num)
+            z_r.append(num)
+
+        for num in range(-1 * m_det, 0):
+            x_r.append(num)
+            y_r.append(num)
+            z_r.append(num)
+
+        for x in x_r:
+            for y in y_r:
+                for z in z_r:
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
+                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                        for index in index_arr:
+                            if(fungus[index]['form'] == FungusCellData.Form.CONIDIA):
+                                fungus[index]['internalized'] = True
+                                m_cells.append_to_phagosome(i, index, MAX_CONIDIA)
 
 def damage_conidia(state, time):
     macrophage: MacrophageState = state.macrophage

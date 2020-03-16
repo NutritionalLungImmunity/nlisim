@@ -227,7 +227,7 @@ def move(state):
                 np.random.shuffle(inds)
                 i = inds[0][0]
             else:
-                i = random.randint(0,len(vox_list))
+                i = random.randint(0,len(vox_list) - 1)
 
             cell['point'] = Point(
                 x=grid.x[vox.x + vox_list[i][0]],
