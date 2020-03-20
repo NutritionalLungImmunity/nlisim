@@ -67,6 +67,58 @@ class FungusCellData(CellData):
 class FungusCellList(CellList):
     CellDataClass = FungusCellData
 
+    def spawn_hypahael_cell(self, point, iron, spacing):
+        new_x = point[2] + spacing * random.uniform(-1, 1)
+        new_y = point[1] + spacing * random.uniform(-1, 1)
+        new_z = point[0] + spacing * random.uniform(-1, 1)
+
+        new_point = Point(x=new_x, y=new_y, z=new_z,)
+
+        self.append(
+            FungusCellData.create_cell(
+                point=new_point,
+                status=FungusCellData.Status.GROWABLE,
+                form=FungusCellData.Form.HYPHAE,
+                iron=iron,
+                mobile=False,
+            )
+        )
+
+
+    def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
+        ''' Absorb iron from external environment '''
+        
+        # alive cells
+        #cells = self.cells[self.alive()]
+        #vox_index = cells.voxel_index
+
+        # qualified voxel
+        #vox = iron[iron > iron_min]
+        cells = self.cell_data
+        for vox_index in np.argwhere(iron > iron_min):
+            vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
+
+            cells_here = self.get_cells_in_voxel(vox)
+
+            indices = []
+            for index in cells_here:
+                if (
+                    cells[index]['form'] == FungusCellData.Form.HYPHAE.value
+                    and cells[index]['internalized'] == False
+                    and cells[index]['iron'] < iron_max
+                ):
+                    indices.append(index)
+                    print(index)
+
+            if len(indices) > 0:
+                iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+                for cell_index in indices:
+                    cells[cell_index]['iron'] += iron_split
+                    if cells[cell_index]['iron'] > iron_max:
+                        cells[cell_index]['iron'] = iron_max
+
+                iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
+
 
 def cell_list_factory(self: 'FungusState'):
     return FungusCellList(grid=self.global_state.grid)
@@ -75,44 +127,62 @@ def cell_list_factory(self: 'FungusState'):
 @attr.s(kw_only=True)
 class FungusState(ModuleState):
     cells: FungusCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_num: int = 0
-    p_lodge: float = 0.1
-    p_internal_swell: float = 0.05
-    ITER_TO_CHANGE_STATUS: int = 1
-    iron_min: int = 0
-    iron_max: float = 0.0
-    iron_absorb: float = 0.0
-    spacing: float = 0.0
-    iron_min_grow: float = 0.0
-    grow_time: float = 0.0
-    p_branch: float = 0.0
-    p_internalize: float = 0.0
+    # init_num: int = 0
+    # p_lodge: float = 0
+    # p_internal_swell: float = 0.05
+    # ITER_TO_CHANGE_STATUS: int = 1
+    # iron_min: int = 0
+    # iron_max: float = 0.0
+    # iron_absorb: float = 0.0
+    # spacing: float = 0.0
+    # iron_min_grow: float = 0.0
+    # grow_time: float = 0.0
+    # p_branch: float = 0.0
+    # p_internalize: float = 0.0
 
 
 class Fungus(Module):
     name = 'fungus'
     StateClass = FungusState
 
+    # defaults config opt
+    defaults = {
+        'init_num': '10',
+        'p_lodge': '0.1',
+        'p_internal_swell': '0.05',
+        'ITER_TO_CHANGE_STATUS': '1',
+        'iron_min': '10',
+        'iron_absorb': '1',
+        'spacing': '0.1',
+        'iron_min_grow': '5',
+        'grow_time': '2',
+        'p_branch': '0.2',
+        'p_internalize': '0.1'
+        # ...
+    }
+
     def initialize(self, state: State):
         fungus: FungusState = state.fungus
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
 
-        fungus.init_num = self.config.getint('init_num')
-        fungus.p_lodge = self.config.getfloat('p_lodge')
-        fungus.p_internal_swell = self.config.getfloat('p_internal_swell')
-        fungus.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
-        fungus.iron_min = self.config.getint('iron_min')
-        fungus.iron_max = self.config.getfloat('iron_max')
-        fungus.iron_absorb = self.config.getfloat('iron_absorb')
-        fungus.spacing = self.config.getfloat('spacing')
-        fungus.iron_min_grow = self.config.getfloat('iron_min_grow')
-        fungus.grow_time = self.config.getfloat('grow_time')
-        fungus.p_branch = self.config.getfloat('p_branch')
-        fungus.p_internalize = self.config.getfloat('p_internalize')
+        
+        self.init_num = self.config.getint('init_num')
+        self.p_lodge = self.config.getfloat('p_lodge')
+        self.p_internal_swell = self.config.getfloat('p_internal_swell')
+        self.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
+        self.iron_min = self.config.getint('iron_min')
+        self.iron_max = self.config.getfloat('iron_max')
+        self.iron_absorb = self.config.getfloat('iron_absorb')
+        self.spacing = self.config.getfloat('spacing')
+        self.iron_min_grow = self.config.getfloat('iron_min_grow')
+        self.grow_time = self.config.getfloat('grow_time')
+        self.p_branch = self.config.getfloat('p_branch')
+        self.p_internalize = self.config.getfloat('p_internalize')
+        
 
         fungus.cells = FungusCellList(grid=grid)
-        if fungus.init_num > 0:
+        if self.init_num > 0:
             # initialize the surfactant layer with some fungus in random locations
             indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
             if len(indices) > 0:

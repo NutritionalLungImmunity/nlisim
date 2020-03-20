@@ -45,3 +45,11 @@ def hdf5_file():
 @fixture
 def hdf5_group(hdf5_file):
     yield hdf5_file.create_group('test-group')
+
+
+@fixture
+def geometry():
+    # a 10 x 10 x 10 grid with epithelium
+    tissue = np.empty((10, 10, 10))
+    tissue.fill(4)
+    yield tissue
