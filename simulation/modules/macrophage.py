@@ -96,6 +96,14 @@ class MacrophageCellList(CellList):
                 if(p_rec_r > random.random()):
                     self.append(MacrophageCellData.create_cell(point=point))
 
+    def absorb_cytokines(self, m_abs, cyto, grid):
+        for index in self.alive():
+            vox = grid.get_voxel(self[index]['point'])
+            x = vox.x
+            y = vox.y
+            z = vox.z
+            cyto[z,y,x] = (1 - m_abs) * cyto[z,y,x]        
+
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
 
@@ -153,7 +161,9 @@ class Macrophage(Module):
             grid, 
             cyto)
 
-        absorb_cytokines(state)
+        # absorb cytokines
+        m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
+
         produce_cytokines(state)
         move(state)
         internalize_conidia(state)
@@ -185,20 +195,20 @@ class Macrophage(Module):
 #                m_cells.append(MacrophageCellData.create_cell(point=point))
 
             
-def absorb_cytokines(state):
-    macrophage: MacrophageState = state.macrophage
-    m_cells = macrophage.cells
-    cyto = state.molecules.grid['m_cyto']
-    grid = state.grid
-
-    for index in m_cells.alive():
-        vox = grid.get_voxel(m_cells[index]['point'])
-        x = vox.x
-        y = vox.y
-        z = vox.z
-        cyto[z,y,x] = (1 - macrophage.m_abs) * cyto[z,y,x]
-
-    return state
+# def absorb_cytokines(state):
+#     macrophage: MacrophageState = state.macrophage
+#     m_cells = macrophage.cells
+#     cyto = state.molecules.grid['m_cyto']
+#     grid = state.grid
+# 
+#     for index in m_cells.alive():
+#         vox = grid.get_voxel(m_cells[index]['point'])
+#         x = vox.x
+#         y = vox.y
+#         z = vox.z
+#         cyto[z,y,x] = (1 - macrophage.m_abs) * cyto[z,y,x]
+# 
+#     return state
 
 
 def produce_cytokines(state):

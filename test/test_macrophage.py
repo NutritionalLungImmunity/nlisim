@@ -148,6 +148,39 @@ def test_recruit_new_multiple_locations(
         vox = grid.get_voxel(cell['point'])
         assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
 
+def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: RectangularGrid):
+    rec_r = 2
+    p_rec_r = 1.0
+    rec_rate_ph = 1
+
+    cyto[5,5,5] = 64
+
+    macrophage_list.append(
+	        MacrophageCellData.create_cell(
+	            point=Point(x=55, y=55, z=55),
+	        )
+	    )
+    
+    assert len(macrophage_list) == 1
+    vox = grid.get_voxel(macrophage_list[0]['point'])
+    assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
+    assert cyto[5,5,5] == 64
+
+    m_abs = 0.5
+    macrophage_list.absorb_cytokines(m_abs, cyto, grid)
+    assert cyto[5,5,5] == 32
+
+    macrophage_list.absorb_cytokines(m_abs, cyto, grid)
+    assert cyto[5,5,5] == 16
+
+    macrophage_list.append(
+	        MacrophageCellData.create_cell(
+	            point=Point(x=55, y=55, z=55),
+	        )
+	    )
+    
+    macrophage_list.absorb_cytokines(m_abs, cyto, grid)
+    assert cyto[5,5,5] == 4
 
 
 
