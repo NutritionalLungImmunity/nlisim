@@ -120,6 +120,69 @@ class FungusCellList(CellList):
                 iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
 
 
+    def grow_hyphae(self, min_grow, grow_time, p_branch, spacing):
+
+        # spawn from hyphae from conidia
+        for index in self.alive():
+            cell = self.cell_data[index]
+
+            # spawn from hyphae from conidia
+            if (
+                cell['form'] == FungusCellData.Form.CONIDIA
+                and cell['status'] == FungusCellData.Status.GERMINATED
+                and cell['internalized'] is False
+            ):
+
+                cell['status'] = FungusCellData.Status.GROWN
+                spawn_hypahael_cell(cells, cell['point'], cell['iron'], spacing)
+
+            # grow hyphae
+            elif (
+                cell['form'] == FungusCellData.Form.HYPHAE
+                and cell['status'] == FungusCellData.Status.GROWABLE
+                and cell['internalized'] is False
+                and cell['iron'] > iron_min_grow
+                and cell['iteration'] > grow_time
+            ):
+
+                if p_branch > random.random():
+                    iron_f = cell['iron'] / 3
+                    spawn_hypahael_cell(cell['point'], iron_f, spacing)
+                    spawn_hypahael_cell(cell['point'], iron_f, spacing)
+                else:
+                    iron_f = cell['iron'] / 2
+                    spawn_hypahael_cell(cell['point'], iron_f, spacing)
+
+    def age(self):
+        '''Add one iteration to all alive cells.'''
+        np.add.at(self.cell_data['iteration'], self.alive(), 1)
+
+    def kill(self):
+        '''If a cell have 0 health point or out of range, kill the cell.'''
+        cells = self.cell_data
+        mask = cells.point_mask(cells['point'], self.grid)
+        indices = self.alive(np.logical_or(cells['health'] <= 0, mask != True))
+        
+        cells['status'][indices] = FungusCellData.Status.DEAD
+        cells['dead'][indices] = True
+
+    def change_status(self, iter_to_change_status):
+        cells = self.cell_data
+
+        indices = self.alive(np.logical_and(
+            cells['iteration'] >= iter_to_change_status,
+            cells['form'] != FungusCellData.Form.HYPHAE
+        ))
+
+        rest_indices = (cells['status'][indices] == FungusCellData.Status.RESTING).nonzero()[0]
+        swollen_indices = (cells['status'][indices] == FungusCellData.Status.SWOLLEN).nonzero()[0]
+
+        cells['status'][rest_indices] = FungusCellData.Status.SWOLLEN
+        cells['iteration'][rest_indices] = 0
+        cells['status'][swollen_indices] = FungusCellData.Status.GERMINATED
+        cells['iteration'][swollen_indices] = 0
+
+
 def cell_list_factory(self: 'FungusState'):
     return FungusCellList(grid=self.global_state.grid)
 

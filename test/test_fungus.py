@@ -60,7 +60,42 @@ def test_fungus_spawn(populated_fungus, point):
 
 	loc = populated_fungus.cell_data[-1]['point']
 	iron = populated_fungus.cell_data[-1]['iron']
-	
+
 	assert abs(loc[0] - point[0]) < 1 and abs(loc[1] - point[1]) and abs(loc[2] - point[2])
 	assert len(populated_fungus) == 6
 	assert iron == 10
+
+def test_age(populated_fungus):
+	cells = populated_fungus.cell_data
+	cells['dead'][0] = True
+	for _ in range(10):
+		populated_fungus.age()
+
+	# print(cells['iteration'])
+
+	assert cells['iteration'][0] == 0
+	assert (cells['iteration'][1:] == 10).all()
+
+def test_kill(populated_fungus):
+	cells = populated_fungus.cell_data
+	cells['health'][0] = 0
+	cells['point'][1][0] = -1
+	populated_fungus.kill()
+	# print(cells)
+	assert (cells['dead'][0:1] == True).all() and (cells['dead'][2:]== False).all()
+	assert (cells['status'][0:1] == FungusCellData.Status.DEAD).all()
+	assert (cells['status'][2:] != FungusCellData.Status.DEAD).all()
+
+def test_change_state(populated_fungus):
+	iter_to_change_status = 10
+	cells = populated_fungus.cell_data
+	for _ in range(10):
+		populated_fungus.age()
+	cells['form'][0:2] = FungusCellData.Form.CONIDIA
+	cells['status'][0] = FungusCellData.Status.RESTING
+	cells['status'][1] = FungusCellData.Status.SWOLLEN
+	populated_fungus.change_status(iter_to_change_status)
+	assert (cells['iteration'][0:2] == 0).all()
+	assert cells['status'][0] == FungusCellData.Status.SWOLLEN
+	assert cells['status'][1] == FungusCellData.Status.GERMINATED
+
