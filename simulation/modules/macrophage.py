@@ -110,32 +110,38 @@ class MacrophageCellList(CellList):
 
             hyphae_count = 0
 
-            m_det = int(m_det / 2)
             x_r = []
             y_r = []
             z_r = []
 
-            for num in range(0, m_det + 1):
-                x_r.append(num)
-                y_r.append(num)
-                z_r.append(num)
+            if(m_det == 0):
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
+                        hyphae_count +=1
 
-            for num in range(-1 * m_det, 0):
-                x_r.append(num)
-                y_r.append(num)
-                z_r.append(num)
+            else:
+                for num in range(0, m_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
 
-            for x in x_r:
-                for y in y_r:
-                    for z in z_r:
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                            for index in index_arr:
-                                if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
-                                    hyphae_count +=1
+                for num in range(-1 * m_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
+                                        hyphae_count +=1
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count    
 
@@ -172,7 +178,7 @@ class Macrophage(Module):
         macrophage.m_abs = self.config.getfloat('m_abs')
         macrophage.Mn = self.config.getfloat('Mn')
         macrophage.kill = self.config.getfloat('kill')
-        macrophage.m_det = self.config.getfloat('m_det') # diameter
+        macrophage.m_det = self.config.getint('m_det') # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
 
 
