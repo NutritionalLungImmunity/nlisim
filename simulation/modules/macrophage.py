@@ -145,7 +145,7 @@ class MacrophageCellList(CellList):
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count    
 
-    def move(self, rec_r, grid, cyto):
+    def move(self, rec_r, grid, cyto, tissue):
         for cell_index in self.alive():
             cell = self[cell_index]
             vox = grid.get_voxel(cell['point'])
@@ -160,7 +160,8 @@ class MacrophageCellList(CellList):
                         zk = vox.z + z
                         yj = vox.y + y
                         xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        if(grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)) and 
+                            tissue[zk, yj, xi] != TissueTypes.AIR.value):
                             vox_list.append([x, y, z])
                             i += 1
                             if cyto[zk, yj, xi] >= rec_r:
@@ -250,7 +251,9 @@ class Macrophage(Module):
         # produce cytokines
         m_cells.produce_cytokines(macrophage.m_det, macrophage.Mn, grid, fungus, cyto)
 
-        move(state)
+        # move
+        m_cells.move(macrophage.rec_r, grid, cyto, tissue)
+
         internalize_conidia(state)
         damage_conidia(state, previous_time)
 

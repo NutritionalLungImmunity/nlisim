@@ -211,7 +211,8 @@ def move(state):
                         zk = vox.z + z
                         yj = vox.y + y
                         xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        if(grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)) and 
+                            tissue[zk, yj, xi] != TissueTypes.AIR.value):
                             vox_list.append([x, y, z])
                             i += 1
                             if cyto[zk, yj, xi] >= neutrophil.rec_r:
