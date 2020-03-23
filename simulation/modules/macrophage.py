@@ -145,6 +145,47 @@ class MacrophageCellList(CellList):
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count    
 
+    def move(self, rec_r, grid, cyto):
+        for cell_index in self.alive():
+            cell = self[cell_index]
+            vox = grid.get_voxel(cell['point'])
+
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
+
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] >= rec_r:
+                                p[i] = cyto[zk, yj, xi]
+
+
+            indices = np.argwhere(p != 0)
+            l = len(indices)
+            if(l == 1):
+                i = indices[0][0]
+            elif(l > 1):
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0,len(vox_list) - 1)
+
+            cell['point'] = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]]
+                )
+
+            self.update_voxel_index([cell_index])              
+
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
 
@@ -301,55 +342,55 @@ class Macrophage(Module):
 #     return state
 
 
-def move(state):
-    macrophage = state.macrophage
-    m_cells = macrophage.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['m_cyto']
-
-    for cell_index in m_cells.alive():
-        cell = m_cells[cell_index]
-        vox = grid.get_voxel(cell['point'])
-
-        p = np.zeros(shape=27)
-        vox_list = []
-        i = -1
-
-        for x in [0, 1, -1]:
-            for y in [0, 1, -1]:
-                for z in [0, 1, -1]:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        vox_list.append([x, y, z])
-                        i += 1
-                        if cyto[zk, yj, xi] > macrophage.rec_r:
-                            p[i] = cyto[zk, yj, xi]
-                            
-
-        indices = np.argwhere(p != 0)
-        l = len(indices)
-        if(l == 1):
-            i = indices[0][0]
-        elif(l >= 1):
-            inds = np.argwhere(p == p[np.argmax(p)])
-            np.random.shuffle(inds)
-            i = inds[0][0]
-        else:
-            i = random.randint(0,len(vox_list) - 1)
-
-        cell['point'] = Point(
-            x=grid.x[vox.x + vox_list[i][0]],
-            y=grid.y[vox.y + vox_list[i][1]],
-            z=grid.z[vox.z + vox_list[i][2]]
-            )
-
-        m_cells.update_voxel_index([cell_index])              
-
-    return state
+# def move(state):
+#     macrophage = state.macrophage
+#     m_cells = macrophage.cells
+# 
+#     tissue = state.geometry.lung_tissue
+#     grid = state.grid
+#     cyto = state.molecules.grid['m_cyto']
+# 
+#     for cell_index in m_cells.alive():
+#         cell = m_cells[cell_index]
+#         vox = grid.get_voxel(cell['point'])
+# 
+#         p = np.zeros(shape=27)
+#         vox_list = []
+#         i = -1
+# 
+#         for x in [0, 1, -1]:
+#             for y in [0, 1, -1]:
+#                 for z in [0, 1, -1]:
+#                     zk = vox.z + z
+#                     yj = vox.y + y
+#                     xi = vox.x + x
+#                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+#                         vox_list.append([x, y, z])
+#                         i += 1
+#                         if cyto[zk, yj, xi] > macrophage.rec_r:
+#                             p[i] = cyto[zk, yj, xi]
+#                             
+# 
+#         indices = np.argwhere(p != 0)
+#         l = len(indices)
+#         if(l == 1):
+#             i = indices[0][0]
+#         elif(l >= 1):
+#             inds = np.argwhere(p == p[np.argmax(p)])
+#             np.random.shuffle(inds)
+#             i = inds[0][0]
+#         else:
+#             i = random.randint(0,len(vox_list) - 1)
+# 
+#         cell['point'] = Point(
+#             x=grid.x[vox.x + vox_list[i][0]],
+#             y=grid.y[vox.y + vox_list[i][1]],
+#             z=grid.z[vox.z + vox_list[i][2]]
+#             )
+# 
+#         m_cells.update_voxel_index([cell_index])              
+# 
+#     return state
 
 def internalize_conidia(state):
     macrophage: MacrophageState = state.macrophage
