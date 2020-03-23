@@ -67,9 +67,9 @@ def fungus_list(grid: RectangularGrid):
     yield fungus
 
 @fixture
-def populated_fungus(fungus_list: FungusCellList):
+def populated_fungus(fungus_list: FungusCellList, grid: RectangularGrid):
 	points = []
-	for i in range(10, 60, 10):
+	for i in range(int(grid.xv[1]), int(grid.xv[6]), 10):
 		points.append(Point(x=i, y=i, z=i))
 	
 	for point in points:
@@ -157,7 +157,7 @@ def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: Recta
 
     macrophage_list.append(
 	        MacrophageCellData.create_cell(
-	            point=Point(x=35, y=25, z=15),
+	            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
 	        )
 	    )
     
@@ -173,7 +173,7 @@ def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: Recta
 
     macrophage_list.append(
 	        MacrophageCellData.create_cell(
-	            point=Point(x=35, y=25, z=15),
+	            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
 	        )
 	    )
     
@@ -182,8 +182,49 @@ def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: Recta
 
 
 
-#absorb_cytokines(state)
-#produce_cytokines(state)
+def test_produce_cytokines_1(macrophage_list: MacrophageCellList, grid: RectangularGrid, populated_fungus: FungusCellList, cyto):
+    m_det = 1
+    Mn = 10
+
+    assert cyto[3,3,3] == 0
+
+    macrophage_list.append(
+	        MacrophageCellData.create_cell(
+	            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+	        )
+	    )
+
+    vox = grid.get_voxel(macrophage_list[0]['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    macrophage_list.produce_cytokines(m_det, Mn, grid, populated_fungus, cyto)
+
+    assert cyto[3,3,3] == 10
+
+def test_produce_cytokines_N(macrophage_list: MacrophageCellList, grid: RectangularGrid, populated_fungus: FungusCellList, cyto):
+    m_det = 3
+    Mn = 10
+
+    assert cyto[3,3,3] == 0
+    macrophage_list.append(
+	        MacrophageCellData.create_cell(
+	            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+	        )
+	    )
+    vox = grid.get_voxel(macrophage_list[0]['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    # 3
+    macrophage_list.produce_cytokines(m_det, Mn, grid, populated_fungus, cyto)
+    assert cyto[3,3,3] == 30
+
+    # 6
+    m_det = 6
+    cyto[3,3,3] = 0
+
+    macrophage_list.produce_cytokines(m_det, Mn, grid, populated_fungus, cyto)
+    assert cyto[3,3,3] == 50      
+
 #move(state)
 #internalize_conidia(state)
 #damage_conidia(state, previous_time)

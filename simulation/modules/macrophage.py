@@ -102,7 +102,42 @@ class MacrophageCellList(CellList):
             x = vox.x
             y = vox.y
             z = vox.z
-            cyto[z,y,x] = (1 - m_abs) * cyto[z,y,x]        
+            cyto[z,y,x] = (1 - m_abs) * cyto[z,y,x]
+
+    def produce_cytokines(self, m_det, Mn, grid, fungus, cyto):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i]['point'])
+
+            hyphae_count = 0
+
+            m_det = int(m_det / 2)
+            x_r = []
+            y_r = []
+            z_r = []
+
+            for num in range(0, m_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * m_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            for index in index_arr:
+                                if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
+                                    hyphae_count +=1
+
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count    
 
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
@@ -111,19 +146,19 @@ def cell_list_factory(self: 'MacrophageState'):
 @attr.s(kw_only=True)
 class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    rec_r: float = 1.0
-    p_rec_r: float = 1.0
-    m_abs: float = 0.1 
-    Mn: float =10.0 
-    kill: float = 10.0
-    m_det: float = 15
-    rec_rate_ph:int = 2
 
 
 class Macrophage(Module):
     name = 'macrophage'
     defaults = {
         'cells': '',
+        'rec_r': '1.0',
+        'p_rec_r': '1.0',
+        'm_abs': '0.1 ',
+        'Mn': '10.0 ',
+        'kill': '10.0',
+        'm_det': '15',
+        'rec_rate_ph': '2',
     }
     StateClass = MacrophageState
 
@@ -137,7 +172,7 @@ class Macrophage(Module):
         macrophage.m_abs = self.config.getfloat('m_abs')
         macrophage.Mn = self.config.getfloat('Mn')
         macrophage.kill = self.config.getfloat('kill')
-        macrophage.m_det = self.config.getfloat('m_det')
+        macrophage.m_det = self.config.getfloat('m_det') # diameter
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
 
 
@@ -151,6 +186,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         grid = state.grid
         cyto = state.molecules.grid['m_cyto']
+        fungus = state.fungus.cells
 
         # recruit new
         m_cells.recruit_new(
@@ -164,7 +200,9 @@ class Macrophage(Module):
         # absorb cytokines
         m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
 
-        produce_cytokines(state)
+        # produce cytokines
+        m_cells.produce_cytokines(macrophage.m_det, macrophage.Mn, grid, fungus, cyto)
+
         move(state)
         internalize_conidia(state)
         damage_conidia(state, previous_time)
@@ -211,50 +249,50 @@ class Macrophage(Module):
 #     return state
 
 
-def produce_cytokines(state):
-    macrophage: MacrophageState = state.macrophage
-    m_cells = macrophage.cells
-    fungus = state.fungus.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['n_cyto']
-
-    for i in m_cells.alive():
-        vox = grid.get_voxel(m_cells[i]['point'])
-
-        hyphae_count = 0
-
-        m_det = int(macrophage.m_det / 2)
-        x_r = []
-        y_r = []
-        z_r = []
-
-        for num in range(0, m_det + 1):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for num in range(-1 * m_det, 0):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for x in x_r:
-            for y in y_r:
-                for z in z_r:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                        for index in index_arr:
-                            if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
-                                hyphae_count +=1
-
-        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + macrophage.Mn * hyphae_count
-
-    return state
+# def produce_cytokines(state):
+#     macrophage: MacrophageState = state.macrophage
+#     m_cells = macrophage.cells
+#     fungus = state.fungus.cells
+# 
+#     tissue = state.geometry.lung_tissue
+#     grid = state.grid
+#     cyto = state.molecules.grid['n_cyto']
+# 
+#     for i in m_cells.alive():
+#         vox = grid.get_voxel(m_cells[i]['point'])
+# 
+#         hyphae_count = 0
+# 
+#         m_det = int(macrophage.m_det / 2)
+#         x_r = []
+#         y_r = []
+#         z_r = []
+# 
+#         for num in range(0, m_det + 1):
+#             x_r.append(num)
+#             y_r.append(num)
+#             z_r.append(num)
+# 
+#         for num in range(-1 * m_det, 0):
+#             x_r.append(num)
+#             y_r.append(num)
+#             z_r.append(num)
+# 
+#         for x in x_r:
+#             for y in y_r:
+#                 for z in z_r:
+#                     zk = vox.z + z
+#                     yj = vox.y + y
+#                     xi = vox.x + x
+#                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+#                         index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+#                         for index in index_arr:
+#                             if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
+#                                 hyphae_count +=1
+# 
+#         cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + macrophage.Mn * hyphae_count
+# 
+#     return state
 
 
 def move(state):
