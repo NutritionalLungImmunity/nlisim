@@ -75,6 +75,27 @@ class MacrophageCellList(CellList):
     def clear_all_phagosome(self, index):
         self[index]['phagosome'].fill(-1)
 
+    def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
+        num_reps = rec_rate_ph # number of macrophages recruited per time step
+
+        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+        blood_index = np.transpose(blood_index)
+        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+        blood_index = np.transpose(blood_index)
+        cyto_index = blood_index[mask]
+        np.random.shuffle(cyto_index)
+
+        for i in range(0, num_reps):
+            if(len(cyto_index) > 0):
+                ii = random.randint(0, len(cyto_index) - 1)
+                point = Point(
+                    x = grid.x[cyto_index[ii][2]], 
+                    y = grid.y[cyto_index[ii][1]], 
+                    z = grid.z[cyto_index[ii][0]])
+
+                if(p_rec_r > random.random()):
+                    self.append(MacrophageCellData.create_cell(point=point))
+
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
 
@@ -117,8 +138,21 @@ class Macrophage(Module):
         return state
 
     def advance(self, state: State, previous_time: float):
+        macrophage: MacrophageState = state.macrophage
+        m_cells: MacrophageCellList = macrophage.cells
+        tissue = state.geometry.lung_tissue
+        grid = state.grid
+        cyto = state.molecules.grid['m_cyto']
 
-        recruit_new(state)
+        # recruit new
+        m_cells.recruit_new(
+            macrophage.rec_rate_ph, 
+            macrophage.rec_r, 
+            macrophage.p_rec_r, 
+            tissue, 
+            grid, 
+            cyto)
+
         absorb_cytokines(state)
         produce_cytokines(state)
         move(state)
@@ -128,32 +162,27 @@ class Macrophage(Module):
         return state
 
 
-def recruit_new(state):
-    macrophage: MacrophageState = state.macrophage
-    m_cells = macrophage.cells
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['m_cyto']
-
-    num_reps = macrophage.rec_rate_ph # number of macrophages recruited per time step
-
-    blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-    blood_index = np.transpose(blood_index)
-    mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= macrophage.rec_r
-    blood_index = np.transpose(blood_index)
-    cyto_index = blood_index[mask]
-    np.random.shuffle(cyto_index)
-
-    for i in range(0, num_reps):
-        if(len(cyto_index) > 0):
-            ii = random.randint(0, len(cyto_index) - 1)
-            point = Point(
-                x = grid.x[cyto_index[ii][2]], 
-                y = grid.y[cyto_index[ii][1]], 
-                z = grid.z[cyto_index[ii][0]])
-
-            if(macrophage.p_rec_r > random.random()):
-                m_cells.append(MacrophageCellData.create_cell(point=point))
+#def recruit_new(macrophage, tissue, grid, cyto, m_cells):
+#
+#    num_reps = macrophage.rec_rate_ph # number of macrophages recruited per time step
+#
+#    blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+#    blood_index = np.transpose(blood_index)
+#    mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= macrophage.rec_r
+#    blood_index = np.transpose(blood_index)
+#    cyto_index = blood_index[mask]
+#    np.random.shuffle(cyto_index)
+#
+#    for i in range(0, num_reps):
+#        if(len(cyto_index) > 0):
+#            ii = random.randint(0, len(cyto_index) - 1)
+#            point = Point(
+#                x = grid.x[cyto_index[ii][2]], 
+#                y = grid.y[cyto_index[ii][1]], 
+#                z = grid.z[cyto_index[ii][0]])
+#
+#            if(macrophage.p_rec_r > random.random()):
+#                m_cells.append(MacrophageCellData.create_cell(point=point))
 
             
 def absorb_cytokines(state):
