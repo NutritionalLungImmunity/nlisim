@@ -211,10 +211,11 @@ def move(state):
                         zk = vox.z + z
                         yj = vox.y + y
                         xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        if(grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)) and 
+                            tissue[zk, yj, xi] != TissueTypes.AIR.value):
                             vox_list.append([x, y, z])
                             i += 1
-                            if cyto[zk, yj, xi] > neutrophil.rec_r:
+                            if cyto[zk, yj, xi] >= neutrophil.rec_r:
                                 p[i] = cyto[zk, yj, xi]
 
 
@@ -222,7 +223,7 @@ def move(state):
             l = len(indices)
             if(l == 1):
                 i = indices[0][0]
-            elif(l >= 1):
+            elif(l > 1):
                 inds = np.argwhere(p == p[np.argmax(p)])
                 np.random.shuffle(inds)
                 i = inds[0][0]

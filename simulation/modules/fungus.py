@@ -87,6 +87,7 @@ class FungusState(ModuleState):
     grow_time: float = 0.0
     p_branch: float = 0.0
     p_internalize: float = 0.0
+    heath: float
 
 
 class Fungus(Module):
@@ -99,6 +100,7 @@ class Fungus(Module):
         tissue = state.geometry.lung_tissue
 
         fungus.init_num = self.config.getint('init_num')
+        fungus.health = self.config.getfloat('init_health')
         fungus.p_lodge = self.config.getfloat('p_lodge')
         fungus.p_internal_swell = self.config.getfloat('p_internal_swell')
         fungus.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
@@ -126,7 +128,9 @@ class Fungus(Module):
                     point = Point(x=x, y=y, z=z)
                     status = FungusCellData.Status.DRIFTING
 
-                    fungus.cells.append(FungusCellData.create_cell(point=point, status=status))
+                    fungus.cells.append(
+                        FungusCellData.create_cell(point=point, status=status, health=fungus.health)
+                    )
 
         return state
 
