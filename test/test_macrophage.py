@@ -372,3 +372,21 @@ def test_internalize_and_move(macrophage_list: MacrophageCellList, grid: Rectang
         assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
 #damage_conidia(state, previous_time)
+def test_damage_conidia(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList, cyto, tissue):
+    kill = 2
+    t = 1
+    health = 100
+
+    point = Point(x=35,y=35,z=35)
+    macrophage_list.append(MacrophageCellData.create_cell(point=point))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+
+    macrophage_list.internalize_conidia(1, grid, fungus_list)
+
+    macrophage_list.damage_conidia(kill, t, health, fungus_list)
+
+    assert fungus_list.cell_data['health'][0] == 50
+
+    macrophage_list.damage_conidia(kill, t, health, fungus_list)
+
+    assert fungus_list.cell_data['health'][0] == 0

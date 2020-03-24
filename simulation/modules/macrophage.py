@@ -186,14 +186,12 @@ class MacrophageCellList(CellList):
                 )
 
             cell['point'] = point
-
             self.update_voxel_index([cell_index])
 
             for i in range(0, self.len_phagosome(cell_index)):
                 f_index = cell['phagosome'][i]
                 fungus[f_index]['point'] = point
                 fungus.update_voxel_index([f_index])
-
 
     def internalize_conidia(self, m_det, grid, fungus: FungusCellList):
         for i in self.alive():
@@ -234,6 +232,13 @@ class MacrophageCellList(CellList):
                                         fungus[index]['internalized'] = True
                                         self.append_to_phagosome(i, index, MAX_CONIDIA)
 
+    def damage_conidia(self, kill, t, health, fungus):
+        for i in self.alive():
+            cell = self[i]
+            for ii in range(0, self.len_phagosome(i)):
+                index = cell['phagosome'][ii]
+                fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
 
@@ -254,6 +259,7 @@ class Macrophage(Module):
         'kill': '10.0',
         'm_det': '15',
         'rec_rate_ph': '2',
+        'time_m': '1',
     }
     StateClass = MacrophageState
 
@@ -269,7 +275,7 @@ class Macrophage(Module):
         macrophage.kill = self.config.getfloat('kill')
         macrophage.m_det = self.config.getint('m_det') # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
-
+        macrophage.time_m = self.config.getint('time_m')
 
         macrophage.cells = MacrophageCellList(grid=grid)
 
@@ -282,6 +288,7 @@ class Macrophage(Module):
         grid = state.grid
         cyto = state.molecules.grid['m_cyto']
         fungus: FungusCellList = state.fungus.cells
+        health = state.fungus.health
 
         # recruit new
         m_cells.recruit_new(
@@ -304,7 +311,8 @@ class Macrophage(Module):
         # internalize
         m_cells.internalize_conidia(macrophage.m_det, grid, fungus)
 
-        damage_conidia(state, previous_time)
+        # damage conidia
+        m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
 
         return state
 
@@ -444,63 +452,63 @@ class Macrophage(Module):
 # 
 #     return state
 
-def internalize_conidia(state):
-    macrophage: MacrophageState = state.macrophage
-    m_cells = macrophage.cells
-    fungus = state.fungus.cells
+# def internalize_conidia(state):
+#     macrophage: MacrophageState = state.macrophage
+#     m_cells = macrophage.cells
+#     fungus = state.fungus.cells
+# 
+#     tissue = state.geometry.lung_tissue
+#     grid = state.grid
+# 
+#     for i in m_cells.alive():
+#         cell = m_cells[i]
+#         vox = grid.get_voxel(cell['point'])
+# 
+#         m_det = int(macrophage.m_det / 2)
+#         x_r = []
+#         y_r = []
+#         z_r = []
+# 
+#         for num in range(0, m_det + 1):
+#             x_r.append(num)
+#             y_r.append(num)
+#             z_r.append(num)
+# 
+#         for num in range(-1 * m_det, 0):
+#             x_r.append(num)
+#             y_r.append(num)
+#             z_r.append(num)
+# 
+#         for x in x_r:
+#             for y in y_r:
+#                 for z in z_r:
+#                     zk = vox.z + z
+#                     yj = vox.y + y
+#                     xi = vox.x + x
+#                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+#                         index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+#                         for index in index_arr:
+#                             if(fungus[index]['form'] == FungusCellData.Form.CONIDIA):
+#                                 fungus[index]['internalized'] = True
+#                                 m_cells.append_to_phagosome(i, index, MAX_CONIDIA)
 
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-
-    for i in m_cells.alive():
-        cell = m_cells[i]
-        vox = grid.get_voxel(cell['point'])
-
-        m_det = int(macrophage.m_det / 2)
-        x_r = []
-        y_r = []
-        z_r = []
-
-        for num in range(0, m_det + 1):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for num in range(-1 * m_det, 0):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for x in x_r:
-            for y in y_r:
-                for z in z_r:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                        for index in index_arr:
-                            if(fungus[index]['form'] == FungusCellData.Form.CONIDIA):
-                                fungus[index]['internalized'] = True
-                                m_cells.append_to_phagosome(i, index, MAX_CONIDIA)
-
-def damage_conidia(state, time):
-    macrophage: MacrophageState = state.macrophage
-    m_cells = macrophage.cells
-    fungus = state.fungus.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['m_cyto']
-    iron = state.molecules.grid['iron']
-
-    for i in m_cells.alive():
-        cell = m_cells[i]
-        
-        for index in cell['phagosome']:
-            if(index != -1):
-                fungus[index]['health'] -= time / macrophage.kill
-                fungus[index]['point'] = cell['point']
-                fungus.update_voxel_index([index])
-
-    return state
+# def damage_conidia(state, time):
+#     macrophage: MacrophageState = state.macrophage
+#     m_cells = macrophage.cells
+#     fungus = state.fungus.cells
+# 
+#     tissue = state.geometry.lung_tissue
+#     grid = state.grid
+#     cyto = state.molecules.grid['m_cyto']
+#     iron = state.molecules.grid['iron']
+# 
+#     for i in m_cells.alive():
+#         cell = m_cells[i]
+#         
+#         for index in cell['phagosome']:
+#             if(index != -1):
+#                 fungus[index]['health'] -= time / macrophage.kill
+#                 fungus[index]['point'] = cell['point']
+#                 fungus.update_voxel_index([index])
+# 
+#     return state
