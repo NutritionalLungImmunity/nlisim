@@ -249,7 +249,14 @@ def cell_list_factory(self: 'MacrophageState'):
 @attr.s(kw_only=True)
 class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-
+    rec_r: float
+    p_rec_r: float
+    m_abs: float
+    Mn: float
+    kill: float
+    m_det: int
+    rec_rate_ph: int
+    time_m: int
 
 class Macrophage(Module):
     name = 'macrophage'
