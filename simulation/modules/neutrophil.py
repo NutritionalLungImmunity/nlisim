@@ -40,6 +40,29 @@ class NeutrophilCellData(CellData):
 class NeutrophilCellList(CellList):
     CellDataClass = NeutrophilCellData
 
+    def recruit_new(self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto):
+        num_reps = rec_rate_ph # number of neutrophils recruited per time step
+        if (neutropenic and time >= 48 and time <= 96):
+            num_reps = int((time - 48) / 8)
+
+        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+        blood_index = np.transpose(blood_index)
+        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+        blood_index = np.transpose(blood_index)
+        cyto_index = blood_index[mask]
+        np.random.shuffle(cyto_index)
+
+        for i in range(0, num_reps):
+            if(len(cyto_index) > 0):
+                ii = random.randint(0, len(cyto_index) - 1)
+                point = Point(
+                    x = grid.x[cyto_index[ii][2]], 
+                    y = grid.y[cyto_index[ii][1]], 
+                    z = grid.z[cyto_index[ii][0]])
+
+                status = NeutrophilCellData.Status.RESTING
+                gc = granule_count
+                self.append(NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc))
 
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
@@ -84,46 +107,31 @@ class Neutrophil(Module):
         return state
 
     def advance(self, state: State, previous_time: float):
+        neutrophil: NeutrophilState = state.neutrophil
+        n_cells = neutrophil.cells
+        fungus = state.fungus.cells
 
-        recruit_new(state, previous_time)
+        tissue = state.geometry.lung_tissue
+        grid = state.grid
+        cyto = state.molecules.grid['n_cyto']
+
+        # recruit new
+        n_cells.recruit_new(
+            neutrophil.rec_rate_ph, 
+            neutrophil.rec_r, 
+            neutrophil.granule_count, 
+            neutrophil.neutropenic, 
+            previous_time, 
+            grid, 
+            tissue, 
+            cyto)
+        
         absorb_cytokines(state)
         produce_cytokines(state)
         move(state)
         damage_hyphae(state, previous_time)
 
-        return state
-
-
-def recruit_new(state, time):
-    neutrophil: NeutrophilState = state.neutrophil
-    n_cells = neutrophil.cells
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['n_cyto']
-
-    num_reps = neutrophil.rec_rate_ph # number of neutrophils recruited per time step
-    if (neutrophil.neutropenic and time >= 48 and time <= 96):
-        num_reps = (time - 48) / 8
-    
-    blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-    blood_index = np.transpose(blood_index)
-    mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= neutrophil.rec_r
-    blood_index = np.transpose(blood_index)
-    cyto_index = blood_index[mask]
-    np.random.shuffle(cyto_index)
-
-    for i in range(0, num_reps):
-        if(len(cyto_index) > 0):
-            ii = random.randint(0, len(cyto_index) - 1)
-            point = Point(
-                x = grid.x[cyto_index[ii][2]], 
-                y = grid.y[cyto_index[ii][1]], 
-                z = grid.z[cyto_index[ii][0]])
-
-            status = NeutrophilCellData.Status.RESTING
-            gc = neutrophil.granule_count
-            n_cells.append(NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc))
-            
+        return state            
 
 def absorb_cytokines(state):
     neutrophil: NeutrophilState = state.neutrophil
