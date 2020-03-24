@@ -1,28 +1,29 @@
 [simulation]
 # maximum time step duration
-time_step = 0.5
+time_step = 1
 
 # number of grid points in each direction
-nx = 80
-ny = 150
-nz = 80
+nx = 20
+ny = 40
+nz = 20
 
 # size of each grid cell
-dx = 0.1
-dy = 0.1
-dz = 0.1
+dx = 10
+dy = 10
+dz = 10
 
 # run validation state on every iteration
 validate = True
 
 # a list of modules to run with the simulation
 modules = simulation.modules.geometry.Geometry
-          simulation.modules.afumigatus.Afumigatus
-          simulation.modules.save.FileOutput
+          simulation.modules.fungus.Fungus
+          simulation.modules.epithelium.Epithelium
+          #simulation.modules.save.FileOutput
           simulation.modules.visualization.Visualization
           simulation.modules.molecules.Molecules
           simulation.modules.macrophage.Macrophage
-          simulation.modules.neutrophil.Neutrophil
+          simulation.modules.neutrophil.Neutrophil         
 
 
 [file_output]
@@ -33,20 +34,73 @@ save_file_name = output/simulation-<time>.hdf5
 [geometry]
 # path of the imported geoemtry file
 geometry_path = geometry.hdf5
-preview_geometry = False
+preview_geometry = false
+
+[macrophage]
+rec_r = 2.5
+p_rec_r = 1.0
+m_abs = 2.0
+Mn = 2.0
+kill = 2.0
+m_det = 15
+rec_rate_ph = 2
+time_m = 1
+
+[neutrophil]
+neutropenic = False
+rec_rate_ph = 2
+rec_r = 3
+n_absorb = 0.2
+Nn = 100
+n_det = 15
+granule_count = 10
+n_kill = 0.05
+
+[fungus]
+init_num = 5
+init_health = 100
+ITER_TO_CHANGE_STATUS = 2
+p_lodge = 1
+p_internal_swell = 1
+iron_min = 2
+iron_max = 20
+iron_absorb = 0.8
+spacing = 2
+iron_min_grow = 10
+grow_time = 1
+p_branch = 0.75
+p_internalize = 0.0
+
+[epithelium]
+init_health = 100
+e_kill = 10
+cyto_rate = 1.5
+s_det = 1
+h_det = 1
+
 
 [molecules]
+# name: name of the molecule
+# init_val: inital concentration value at init_loc
 # init_loc: AIR, BLOOD, EPITHELIUM, SURFACTANT
 molecules = [
                 {
                     "name":"iron",
                     "init_val":10,
-                    "init_loc":["BLOOD","SURFACTANT"]
+                    "init_loc":["EPITHELIUM"],
+                    "diffusivity":1,
+                    "source":"EPITHELIUM",
+                    "incr":0
                 },
                 {
-                    "name":"tafc",
-                    "init_val":5,
-                    "init_loc":["SURFACTANT"]
+                    "name":"m_cyto",
+                    "init_val":0,
+                    "init_loc":["EPITHELIUM"]
+                },
+                {
+                    "name":"n_cyto",
+                    "init_val":0,
+                    "init_loc":["EPITHELIUM"]
                 }
             ]
 
@@ -54,16 +108,28 @@ molecules = [
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
-                            "module":"afumigatus",
-                            "variable":"tree",
-                            "vtk_type":"POLY_DATA",
-                            "attributes":["iron_pool", "iteration"]
+                           "module":"neutrophil",
+                           "variable":"cells",
+                           "vtk_type":"POLY_DATA",
+                           "attributes":["iteration", "point"]
                         },
                         {
-                            "module":"geometry",
-                            "variable":"lung_tissue",
+                           "module":"macrophage",
+                           "variable":"cells",
+                           "vtk_type":"POLY_DATA",
+                           "attributes":["iteration", "point"]
+                        },
+                        {
+                            "module":"molecules",
+                            "variable":"grid",
                             "vtk_type":"STRUCTURED_POINTS",
-                            "attributes":[]
+                            "attributes":["concentrations"]
+                        },
+                        {
+                           "module":"fungus",
+                           "variable":"cells",
+                           "vtk_type":"POLY_DATA",
+                           "attributes":["iron", "form", "status", "point"]
                         }
                     ]
 visualize_interval = 1
