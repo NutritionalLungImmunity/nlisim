@@ -64,6 +64,14 @@ class NeutrophilCellList(CellList):
                 gc = granule_count
                 self.append(NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc))
 
+    def absorb_cytokines(self, n_absorb, cyto, grid):
+        for index in self.alive():
+            vox = grid.get_voxel(self[index]['point'])
+            x = vox.x
+            y = vox.y
+            z = vox.z
+            cyto[z,y,x] = (1 - n_absorb) * cyto[z,y,x]
+
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
 
@@ -126,28 +134,14 @@ class Neutrophil(Module):
             tissue, 
             cyto)
         
-        absorb_cytokines(state)
+        # absorb cytokines
+        n_cells.absorb_cytokines(neutrophil.n_absorb, cyto, grid)
+
         produce_cytokines(state)
         move(state)
         damage_hyphae(state, previous_time)
 
         return state            
-
-def absorb_cytokines(state):
-    neutrophil: NeutrophilState = state.neutrophil
-    n_cells = neutrophil.cells
-    cyto = state.molecules.grid['n_cyto']
-    grid = state.grid
-
-    for index in n_cells.alive():
-        vox = grid.get_voxel(n_cells[index]['point'])
-        x = vox.x
-        y = vox.y
-        z = vox.z
-        cyto[z,y,x] = (1 - neutrophil.n_absorb) * cyto[z,y,x]
-
-    return state
-
 
 def produce_cytokines(state):
     neutrophil: NeutrophilState = state.neutrophil

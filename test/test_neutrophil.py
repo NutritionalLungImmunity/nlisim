@@ -270,4 +270,32 @@ def test_recruit_new_multiple_locations(
          vox = grid.get_voxel(cell['point'])
          assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
 
+def test_absorb_cytokines(neutrophil_list:NeutrophilCellList, cyto, grid: RectangularGrid):
+    cyto[1, 2, 3] = 64
 
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+           status=NeutrophilCellData.Status.RESTING,
+           granule_count=5)
+    )
+
+    assert len(neutrophil_list) == 1
+    assert cyto[1, 2, 3] == 64
+
+    n_abs = 0.5
+    neutrophil_list.absorb_cytokines(n_abs, cyto, grid)
+    assert cyto[1, 2, 3] == 32
+
+    neutrophil_list.absorb_cytokines(n_abs, cyto, grid)
+    assert cyto[1, 2, 3] == 16
+
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+           status=NeutrophilCellData.Status.RESTING,
+           granule_count=5)
+    )
+
+    neutrophil_list.absorb_cytokines(n_abs, cyto, grid)
+    assert cyto[1, 2, 3] == 4
