@@ -127,7 +127,9 @@ class Fungus(Module):
                     point = Point(x=x, y=y, z=z)
                     status = FungusCellData.Status.DRIFTING
 
-                    fungus.cells.append(FungusCellData.create_cell(point=point, status=status, health=fungus.health))
+                    fungus.cells.append(
+                        FungusCellData.create_cell(point=point, status=status, health=fungus.health)
+                    )
 
         return state
 
