@@ -223,7 +223,7 @@ def test_produce_cytokines_N(macrophage_list: MacrophageCellList, grid: Rectangu
     macrophage_list.produce_cytokines(m_det, Mn, grid, populated_fungus, cyto)
     assert cyto[3,3,3] == 50      
 
-def test_move_1(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue):
+def test_move_1(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue, fungus_list):
     rec_r = 10
 
     cell = populated_macrophage[0]
@@ -233,12 +233,12 @@ def test_move_1(populated_macrophage: MacrophageCellList, grid: RectangularGrid,
     assert cyto.all() == 0 
     cyto[4,3,3] = 10
     
-    populated_macrophage.move(rec_r, grid, cyto, tissue)
+    populated_macrophage.move(rec_r, grid, cyto, tissue, fungus_list)
 
     vox = grid.get_voxel(cell['point'])
     assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
-def test_move_N(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue):
+def test_move_N(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue, fungus_list):
     rec_r = 10
 
     cell = populated_macrophage[0]
@@ -250,13 +250,13 @@ def test_move_N(populated_macrophage: MacrophageCellList, grid: RectangularGrid,
     cyto[3,4,3] = 10
     cyto[4,4,3] = 10
     
-    populated_macrophage.move(rec_r, grid, cyto, tissue)
+    populated_macrophage.move(rec_r, grid, cyto, tissue, fungus_list)
 
     vox = grid.get_voxel(cell['point'])
     assert vox.z in [3, 4] and vox.y in [3, 4] and vox.x == 3
 
 
-def test_move_air(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue):
+def test_move_air(populated_macrophage: MacrophageCellList, grid: RectangularGrid, cyto, tissue, fungus_list):
     rec_r = 10
 
     cell = populated_macrophage[0]
@@ -268,11 +268,107 @@ def test_move_air(populated_macrophage: MacrophageCellList, grid: RectangularGri
     cyto[3,4,3] = 15
     tissue[3,4,3] = 0 # air
     
-    populated_macrophage.move(rec_r, grid, cyto, tissue)
+    populated_macrophage.move(rec_r, grid, cyto, tissue, fungus_list)
 
     vox = grid.get_voxel(cell['point'])
     assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
 
-#internalize_conidia(state)
+#internalize_conidia
+def test_internalize_conidia_none(populated_macrophage: MacrophageCellList, grid: RectangularGrid, populated_fungus: FungusCellList):
+    m_det = 0
+
+    cell = populated_macrophage[0]
+    vox = grid.get_voxel(cell['point'])
+    assert len(populated_fungus.get_cells_in_voxel(vox)) == 1
+
+    populated_macrophage.internalize_conidia(m_det, grid, populated_fungus)
+
+    assert populated_macrophage.len_phagosome(0) == 0
+    for v in cell['phagosome']:
+        assert v == -1
+
+def test_internalize_conidia_0(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList):
+    m_det = 0
+
+    point = Point(x=35,y=35,z=35)
+    macrophage_list.append(MacrophageCellData.create_cell(point=point))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    
+    vox = grid.get_voxel(macrophage_list[0]['point'])
+
+    assert len(fungus_list.get_cells_in_voxel(vox)) == 1
+    
+    f_index = fungus_list.get_cells_in_voxel(vox) # 0
+    assert f_index == 0
+
+    fungus_list[f_index]['form'] = FungusCellData.Form.CONIDIA
+    fungus_list[f_index]['status'] = FungusCellData.Status.RESTING
+
+    macrophage_list.internalize_conidia(m_det, grid, fungus_list)
+
+    assert grid.get_voxel(fungus_list[f_index]['point']) == vox
+    assert fungus_list.cell_data['internalized'][f_index]
+    assert macrophage_list.len_phagosome(0) == 1
+
+def test_internalize_conidia_N(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList):
+
+    point = Point(x=35,y=35,z=35)
+    macrophage_list.append(MacrophageCellData.create_cell(point=point))
+
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+
+    point = Point(x=45,y=35,z=35)
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+
+    point = Point(x=55,y=35,z=35)
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    
+    # internalize some not all
+    macrophage_list.internalize_conidia(1, grid, fungus_list)
+
+    assert fungus_list.cell_data['internalized'][0]
+    assert fungus_list.cell_data['internalized'][2]
+    assert macrophage_list.len_phagosome(0) == 4
+
+    # internalize all
+    macrophage_list.internalize_conidia(2, grid, fungus_list)
+
+    assert fungus_list.cell_data['internalized'][5]
+    assert macrophage_list.len_phagosome(0) == 6
+
+def test_internalize_and_move(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList, cyto, tissue):
+    point = Point(x=35,y=35,z=35)
+    macrophage_list.append(MacrophageCellData.create_cell(point=point))
+
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+
+    macrophage_list.internalize_conidia(1, grid, fungus_list)
+
+    assert fungus_list.cell_data['internalized'][0]
+    assert fungus_list.cell_data['internalized'][1]
+    assert macrophage_list.len_phagosome(0) == 2
+
+    rec_r = 10
+
+    cell = macrophage_list[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    assert cyto.all() == 0 
+    cyto[4,3,3] = 10
+    
+    macrophage_list.move(rec_r, grid, cyto, tissue, fungus_list)
+
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 4 and vox.y == 3 and vox.x == 3
+
+    for f in fungus_list:
+        vox = grid.get_voxel(f['point'])
+        assert vox.z == 4 and vox.y == 3 and vox.x == 3
+
 #damage_conidia(state, previous_time)

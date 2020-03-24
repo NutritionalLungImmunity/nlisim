@@ -9,7 +9,7 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
-from simulation.modules.fungus import FungusCellData
+from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.state import State
 
 MAX_CONIDIA = 50
@@ -104,7 +104,7 @@ class MacrophageCellList(CellList):
             z = vox.z
             cyto[z,y,x] = (1 - m_abs) * cyto[z,y,x]
 
-    def produce_cytokines(self, m_det, Mn, grid, fungus, cyto):
+    def produce_cytokines(self, m_det, Mn, grid, fungus: FungusCellList, cyto):
         for i in self.alive():
             vox = grid.get_voxel(self[i]['point'])
 
@@ -145,7 +145,7 @@ class MacrophageCellList(CellList):
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count    
 
-    def move(self, rec_r, grid, cyto, tissue):
+    def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
         for cell_index in self.alive():
             cell = self[cell_index]
             vox = grid.get_voxel(cell['point'])
@@ -179,13 +179,60 @@ class MacrophageCellList(CellList):
             else:
                 i = random.randint(0,len(vox_list) - 1)
 
-            cell['point'] = Point(
+            point = Point(
                 x=grid.x[vox.x + vox_list[i][0]],
                 y=grid.y[vox.y + vox_list[i][1]],
                 z=grid.z[vox.z + vox_list[i][2]]
                 )
 
-            self.update_voxel_index([cell_index])              
+            cell['point'] = point
+
+            self.update_voxel_index([cell_index])
+
+            for i in range(0, self.len_phagosome(cell_index)):
+                f_index = cell['phagosome'][i]
+                fungus[f_index]['point'] = point
+                fungus.update_voxel_index([f_index])
+
+
+    def internalize_conidia(self, m_det, grid, fungus: FungusCellList):
+        for i in self.alive():
+            cell = self[i]
+            vox = grid.get_voxel(cell['point'])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if(m_det == 0):
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if(fungus[index]['form'] == FungusCellData.Form.CONIDIA):
+                        fungus[index]['internalized'] = True
+                        self.append_to_phagosome(i, index, MAX_CONIDIA)
+            else:
+                for num in range(0, m_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * m_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if(fungus[index]['form'] == FungusCellData.Form.CONIDIA):
+                                        fungus[index]['internalized'] = True
+                                        self.append_to_phagosome(i, index, MAX_CONIDIA)
 
 def cell_list_factory(self: 'MacrophageState'):
     return MacrophageCellList(grid=self.global_state.grid)
@@ -234,7 +281,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         grid = state.grid
         cyto = state.molecules.grid['m_cyto']
-        fungus = state.fungus.cells
+        fungus: FungusCellList = state.fungus.cells
 
         # recruit new
         m_cells.recruit_new(
@@ -252,9 +299,11 @@ class Macrophage(Module):
         m_cells.produce_cytokines(macrophage.m_det, macrophage.Mn, grid, fungus, cyto)
 
         # move
-        m_cells.move(macrophage.rec_r, grid, cyto, tissue)
+        m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
 
-        internalize_conidia(state)
+        # internalize
+        m_cells.internalize_conidia(macrophage.m_det, grid, fungus)
+
         damage_conidia(state, previous_time)
 
         return state
