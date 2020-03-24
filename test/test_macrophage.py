@@ -372,7 +372,7 @@ def test_internalize_and_move(macrophage_list: MacrophageCellList, grid: Rectang
         assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
 #damage_conidia(state, previous_time)
-def test_damage_conidia(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList, cyto, tissue):
+def test_damage_conidia(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList):
     kill = 2
     t = 1
     health = 100
@@ -390,3 +390,19 @@ def test_damage_conidia(macrophage_list: MacrophageCellList, grid: RectangularGr
     macrophage_list.damage_conidia(kill, t, health, fungus_list)
 
     assert fungus_list.cell_data['health'][0] == 0
+
+def test_kill_macrophage(macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList):
+    # should release all conidia
+
+    point = Point(x=35,y=35,z=35)
+    macrophage_list.append(MacrophageCellData.create_cell(point=point))
+    fungus_list.append(FungusCellData.create_cell(point=point,status=FungusCellData.Status.RESTING))
+
+    macrophage_list.internalize_conidia(1, grid, fungus_list)
+    assert fungus_list.cell_data['internalized'][0]
+
+    # simulate death
+    macrophage_list.clear_all_phagosome(0, fungus_list)
+
+    assert not fungus_list.cell_data['internalized'][0]
+    assert macrophage_list.len_phagosome(0) == 0

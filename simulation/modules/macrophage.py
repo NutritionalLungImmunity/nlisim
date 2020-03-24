@@ -72,7 +72,10 @@ class MacrophageCellList(CellList):
         else:
             return False
 
-    def clear_all_phagosome(self, index):
+    def clear_all_phagosome(self, index, fungus: FungusCellList):
+        for i in range(0, self.len_phagosome(index)):
+            index = self[index]['phagosome'][i]
+            fungus[index]['internalized'] = False
         self[index]['phagosome'].fill(-1)
 
     def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
