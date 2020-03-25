@@ -103,6 +103,15 @@ class EpitheliumCellList(CellList):
                     else:
                         spores[index]['internalized'] = False
 
+    def remove_dead_fungus(self, spores, grid):
+        for epi_index in self.alive():
+            vox = grid.get_voxel(self[epi_index]['point'])
+            spore_indices = spores.get_cells_in_voxel(vox)
+
+            for index in spore_indices:
+                if spores[index]['dead']:
+                    self.remove_from_phagosome(epi_index, index)
+
 def cell_list_factory(self: 'EpitheliumState'):
     return EpitheliumCellList(grid=self.global_state.grid)
 
@@ -168,29 +177,14 @@ class Epithelium(Module):
         # add internalized == true spores to phagosome
         cells.internalize(epi.max_conidia, spores, grid)
         
-        remove_dead_fungus(state)
+        # remove killed spores from phagosome
+        cells.remove_dead_fungus(spores, grid)
+
         cytokine_update(state)
         damage(state, previous_time)
         die_by_germination(state)
 
         return state
-
-
-def remove_dead_fungus(state):
-    epithelium: EpitheliumState = state.epithelium
-    tissue = state.geometry.lung_tissue
-    cells = epithelium.cells
-    spores = state.fungus.cells
-
-    for vox_index in np.argwhere(tissue == TissueTypes.EPITHELIUM.value):
-        vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
-
-        epi_index = cells.get_cells_in_voxel(vox)[0]
-        spore_index = spores.get_cells_in_voxel(vox)
-
-        for index in spore_index:
-            if spores[index]['dead']:
-                cells.remove_from_phagosome(epi_index, index)
 
 
 def cytokine_update(state):

@@ -178,45 +178,21 @@ def test_internalize_conidia_max(
     assert 0 not in epithelium_list[0]['phagosome']
     assert not fungus_list[0]['internalized']
 
-# def test_internalize_conidia_n(
-#     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
-# ):
-# 
-#     point = Point(x=35, y=35, z=35)
-#     epithelium_list.append(EpitheliumCellData.create_cell(point=point))
-# 
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-# 
-#     point = Point(x=45, y=35, z=35)
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-# 
-#     point = Point(x=55, y=35, z=35)
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-#     fungus_list.append(
-#         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
-#     )
-# 
-#     # internalize some not all
-#     epithelium_list.internalize_conidia(1, grid, fungus_list)
-# 
-#     assert fungus_list.cell_data['internalized'][0]
-#     assert fungus_list.cell_data['internalized'][2]
-#     assert epithelium_list.len_phagosome(0) == 4
-# 
-#     # internalize all
-#     epithelium_list.internalize_conidia(2, grid, fungus_list)
-# 
-#     assert fungus_list.cell_data['internalized'][5]
-#     assert epithelium_list.len_phagosome(0) == 6
+def test_dead_conidia_1(
+    epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
+):
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+    fungus_list.append(
+        FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+    )
+
+    vox = grid.get_voxel(epithelium_list[0]['point'])
+    fungus_list[0]['internalized'] = True
+    epithelium_list.internalize(10, fungus_list, grid)
+    fungus_list[0]['dead'] = True # simulate killing
+
+    epithelium_list.remove_dead_fungus(fungus_list, grid)
+
+    assert epithelium_list.len_phagosome(0) == 0
+    assert 0 not in epithelium_list[0]['phagosome']
