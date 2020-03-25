@@ -8,8 +8,8 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
-from simulation.modules.fungus import FungusCellData
 from simulation.state import State
 
 
@@ -72,6 +72,47 @@ class NeutrophilCellList(CellList):
             z = vox.z
             cyto[z,y,x] = (1 - n_absorb) * cyto[z,y,x]
 
+    def produce_cytokines(self, n_det, Nn, grid, fungus: FungusCellList, cyto):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i]['point'])
+
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + (Nn * hyphae_count)
+
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
 
@@ -79,19 +120,27 @@ def cell_list_factory(self: 'NeutrophilState'):
 @attr.s(kw_only=True)
 class NeutrophilState(ModuleState):
     cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    neutropenic: bool = False
-    rec_rate_ph: int = 6
-    n_absorb: float = 0.9
-    Nn: float = 100
-    n_det: float = 15
-
-
+    neutropenic: bool
+    rec_rate_ph: int
+    rec_r: float
+    n_absorb: float
+    Nn: float
+    n_det: float
+    granule_count: int
+    n_kill: float
+       
 class Neutrophil(Module):
     name = 'neutrophil'
     defaults = {
         'cells': '',
         'neutropenic': 'False',
-        'rec_rate_ph': '10',
+        'rec_rate_ph': '6',
+        'rec_r': '2',
+        'n_absorb': '0.2',
+        'Nn': '100',
+        'n_det': '15',
+        'granule_count': '10',
+        'n_kill': '0.05',
     }
     StateClass = NeutrophilState
 
@@ -108,7 +157,6 @@ class Neutrophil(Module):
         neutrophil.n_det = self.config.getfloat('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
-        #NeutrophilCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
@@ -137,56 +185,13 @@ class Neutrophil(Module):
         # absorb cytokines
         n_cells.absorb_cytokines(neutrophil.n_absorb, cyto, grid)
 
-        produce_cytokines(state)
+        # produce cytokines
+        n_cells.produce_cytokines(neutrophil.n_det, neutrophil.Nn, grid, fungus, cyto)
+        
         move(state)
         damage_hyphae(state, previous_time)
 
         return state            
-
-def produce_cytokines(state):
-    neutrophil: NeutrophilState = state.neutrophil
-    n_cells = neutrophil.cells
-    fungus = state.fungus.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['n_cyto']
-
-    for i in n_cells.alive():
-        vox = grid.get_voxel(n_cells[i]['point'])
-
-        hyphae_count = 0
-
-        n_det = int(neutrophil.n_det / 2)
-        x_r = []
-        y_r = []
-        z_r = []
-
-        for num in range(0, n_det + 1):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for num in range(-1 * n_det, 0):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for x in x_r:
-            for y in y_r:
-                for z in z_r:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                        for index in index_arr:
-                            if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
-                                hyphae_count +=1
-
-        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + neutrophil.Nn * hyphae_count
-
-    return state
 
 
 def move(state):
