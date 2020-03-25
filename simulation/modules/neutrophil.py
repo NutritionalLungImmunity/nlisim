@@ -16,7 +16,7 @@ from simulation.state import State
 class NeutrophilCellData(CellData):
 
     class Status(IntEnum):
-        RESTING = 0
+        NONGRANULATING = 0
         GRANULATING = 1
 
     NEUTROPHIL_FIELDS = [
@@ -60,7 +60,7 @@ class NeutrophilCellList(CellList):
                     y = grid.y[cyto_index[ii][1]], 
                     z = grid.z[cyto_index[ii][0]])
 
-                status = NeutrophilCellData.Status.RESTING
+                status = NeutrophilCellData.Status.NONGRANULATING
                 gc = granule_count
                 self.append(NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc))
 
@@ -112,6 +112,50 @@ class NeutrophilCellList(CellList):
                                         hyphae_count += 1
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + (Nn * hyphae_count)
+
+    def move(self, rec_r, grid, cyto, tissue):
+        for cell_index in self.alive(self.cell_data['status']==NeutrophilCellData.Status.NONGRANULATING):
+            cell = self[cell_index]
+            vox = grid.get_voxel(cell['point'])
+
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
+
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if (
+                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                        ):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] >= rec_r:
+                                p[i] = cyto[zk, yj, xi]
+
+            indices = np.argwhere(p != 0)
+            num_vox_possible = len(indices)
+            if num_vox_possible == 1:
+                i = indices[0][0]
+            elif num_vox_possible > 1:
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0, len(vox_list) - 1)
+
+            cell['point'] = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]],
+            )
+
+            self.update_voxel_index([cell_index])
+
 
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
@@ -188,111 +232,12 @@ class Neutrophil(Module):
         # produce cytokines
         n_cells.produce_cytokines(neutrophil.n_det, neutrophil.Nn, grid, fungus, cyto)
         
-        move(state)
+        # move
+        n_cells.move(neutrophil.rec_r, grid, cyto, tissue)
+
         damage_hyphae(state, previous_time)
 
-        return state            
+        # update granule == 0 status
+        update(state)
 
-
-def move(state):
-    neutrophil = state.neutrophil
-    n_cells = neutrophil.cells
-    fungus = state.fungus.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['n_cyto']
-
-    for cell_index in n_cells.alive():
-        cell = n_cells[cell_index]
-        if (cell['status'] == NeutrophilCellData.Status.RESTING):
-            vox = grid.get_voxel(cell['point'])
-
-            p = np.zeros(shape=27)
-            vox_list = []
-            i = -1
-
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if(grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)) and 
-                            tissue[zk, yj, xi] != TissueTypes.AIR.value):
-                            vox_list.append([x, y, z])
-                            i += 1
-                            if cyto[zk, yj, xi] >= neutrophil.rec_r:
-                                p[i] = cyto[zk, yj, xi]
-
-
-            indices = np.argwhere(p != 0)
-            l = len(indices)
-            if(l == 1):
-                i = indices[0][0]
-            elif(l > 1):
-                inds = np.argwhere(p == p[np.argmax(p)])
-                np.random.shuffle(inds)
-                i = inds[0][0]
-            else:
-                i = random.randint(0,len(vox_list) - 1)
-
-            cell['point'] = Point(
-                x=grid.x[vox.x + vox_list[i][0]],
-                y=grid.y[vox.y + vox_list[i][1]],
-                z=grid.z[vox.z + vox_list[i][2]]
-                )
-
-            n_cells.update_voxel_index([cell_index])              
-
-    return state
-
-
-def damage_hyphae(state, time):
-    neutrophil: NeutrophilState = state.neutrophil
-    n_cells = neutrophil.cells
-    fungus = state.fungus.cells
-
-    tissue = state.geometry.lung_tissue
-    grid = state.grid
-    cyto = state.molecules.grid['n_cyto']
-    iron = state.molecules.grid['iron']
-
-    for i in n_cells.alive():
-        cell = n_cells[i]
-        vox = grid.get_voxel(cell['point'])
-
-        n_det = int(neutrophil.n_det / 2)
-        x_r = []
-        y_r = []
-        z_r = []
-
-        for num in range(0, n_det + 1):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for num in range(-1 * n_det, 0):
-            x_r.append(num)
-            y_r.append(num)
-            z_r.append(num)
-
-        for x in x_r:
-            for y in y_r:
-                for z in z_r:
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        iron[vox.z, vox.y, vox.x] = 0
-                        index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                        for index in index_arr:
-                            if(fungus[index]['form'] == FungusCellData.Form.HYPHAE):
-                                fungus[index]['health'] -= time / neutrophil.n_kill
-                                cell['granule_count'] -= 1
-                                cell['status'] = NeutrophilCellData.Status.GRANULATING
-                            elif(cell['granule_count'] <= 0):
-                                cell['status'] = NeutrophilCellData.Status.RESTING
-                                break
-
-    return state
+        return state

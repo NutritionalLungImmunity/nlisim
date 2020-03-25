@@ -47,7 +47,10 @@ def neutrophil_list(grid: RectangularGrid):
 @fixture
 def populated_neutrophil(neutrophil_list: NeutrophilCellList, grid: RectangularGrid):
     neutrophil_list.append(
-        NeutrophilCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),)
+       NeutrophilCellData.create_cell(
+           point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=5)
     )
 
     yield neutrophil_list
@@ -276,7 +279,7 @@ def test_absorb_cytokines(neutrophil_list:NeutrophilCellList, cyto, grid: Rectan
     neutrophil_list.append(
        NeutrophilCellData.create_cell(
            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
-           status=NeutrophilCellData.Status.RESTING,
+           status=NeutrophilCellData.Status.NONGRANULATING,
            granule_count=5)
     )
 
@@ -293,7 +296,7 @@ def test_absorb_cytokines(neutrophil_list:NeutrophilCellList, cyto, grid: Rectan
     neutrophil_list.append(
        NeutrophilCellData.create_cell(
            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
-           status=NeutrophilCellData.Status.RESTING,
+           status=NeutrophilCellData.Status.NONGRANULATING,
            granule_count=5)
     )
 
@@ -314,7 +317,7 @@ def test_produce_cytokines_0(
     neutrophil_list.append(
        NeutrophilCellData.create_cell(
            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
-           status=NeutrophilCellData.Status.RESTING,
+           status=NeutrophilCellData.Status.NONGRANULATING,
            granule_count=5)
     )
 
@@ -336,10 +339,10 @@ def test_produce_cytokines_n(
     neutrophil_list.append(
        NeutrophilCellData.create_cell(
            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
-           status=NeutrophilCellData.Status.RESTING,
+           status=NeutrophilCellData.Status.NONGRANULATING,
            granule_count=5)
     )
-    
+
     vox = grid.get_voxel(neutrophil_list[0]['point'])
     assert vox.z == 3 and vox.y == 3 and vox.x == 3
 
@@ -360,3 +363,64 @@ def test_produce_cytokines_n(
 
     neutrophil_list.produce_cytokines(n_det, n_n, grid, populated_fungus, cyto)
     assert cyto[3, 3, 3] == 50
+
+
+def test_move_1(
+    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
+):
+    rec_r = 10
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    assert cyto.all() == 0
+    cyto[4, 3, 3] = 10
+
+    populated_neutrophil.move(rec_r, grid, cyto, tissue)
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 4 and vox.y == 3 and vox.x == 3
+
+
+def test_move_n(
+    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
+):
+    rec_r = 10
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    assert cyto.all() == 0
+    cyto[4, 3, 3] = 10
+    cyto[3, 4, 3] = 10
+    cyto[4, 4, 3] = 10
+
+    populated_neutrophil.move(rec_r, grid, cyto, tissue)
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z in [3, 4] and vox.y in [3, 4] and vox.x == 3
+
+
+def test_move_air(
+    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
+):
+    rec_r = 10
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 3 and vox.y == 3 and vox.x == 3
+
+    assert cyto.all() == 0
+    cyto[4, 3, 3] = 10
+    cyto[3, 4, 3] = 15
+    tissue[3, 4, 3] = 0  # air
+
+    populated_neutrophil.move(rec_r, grid, cyto, tissue)
+
+    cell = populated_neutrophil[0]
+    vox = grid.get_voxel(cell['point'])
+    assert vox.z == 4 and vox.y == 3 and vox.x == 3
