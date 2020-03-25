@@ -1,7 +1,6 @@
 from collections.abc import MutableMapping
 from enum import IntEnum
 from typing import Iterable, List, Optional, Union
-import random
 
 import attr
 from h5py import Group
@@ -10,8 +9,7 @@ from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation
 
 from simulation.cell import CellData, CellList, CellType
-from simulation.coordinates import Point, Voxel
-from simulation.modules.geometry import TissueTypes
+from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.state import get_class_path, State
@@ -412,6 +410,7 @@ class AfumigatusState(ModuleState):
     p_lodge: float = 0.5
     ITER_TO_CHANGE_STATUS: int = 2
 
+
 class Afumigatus(Module):
     name = 'afumigatus'
     StateClass = AfumigatusState
@@ -430,33 +429,31 @@ class Afumigatus(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        afumigatus: AfumigatusState = state.afumigatus
-        grid = state.grid
-        tissue = state.geometry.lung_tissue
-
-        for index in afumigatus.tree.cells.alive():
-            cell = afumigatus.tree.cells[index]
-            vox = grid.get_voxel(cell['point'])
-            
-            if cell['mobile']:
-                if (vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0])):
-                    cell['status'] = AfumigatusCellData.Status.DEAD
-                    cell['dead'] = True
-                if (tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM):
-                    if(afumigatus.p_lodge > random.random):
-                        cell['mobile'] = False
-            if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
-                if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
-                    cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
-                elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
-                    cell['status'] = AfumigatusCellData.Status.GERMTUBE
-                elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
-                    if (afumigatus.p_internal_swell > random.random()):
-                        cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
-            
-                if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
-                    cell['iteration'] = 0
-        
-            
+        # afumigatus: AfumigatusState = state.afumigatus
+        # grid = state.grid
+        # tissue = state.geometry.lung_tissue
+        #
+        # for index in afumigatus.tree.cells.alive():
+        #    cell = afumigatus.tree.cells[index]
+        #    vox = grid.get_voxel(cell['point'])
+        #
+        #    if cell['mobile']:
+        #        if vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]):
+        #            cell['status'] = AfumigatusCellData.Status.DEAD
+        #            cell['dead'] = True
+        #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
+        #            if afumigatus.p_lodge > random.random:
+        #                cell['mobile'] = False
+        #    if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
+        #        if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #        elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.GERMTUBE
+        #        elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
+        #            if afumigatus.p_internal_swell > random.random():
+        #                cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #
+        #        if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['iteration'] = 0
 
         return state
