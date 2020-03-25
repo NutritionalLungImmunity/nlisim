@@ -256,7 +256,7 @@ class MacrophageState(ModuleState):
     kill: float
     m_det: int
     rec_rate_ph: int
-    time_m: int
+    time_m: float
 
 class Macrophage(Module):
     name = 'macrophage'
@@ -285,7 +285,7 @@ class Macrophage(Module):
         macrophage.kill = self.config.getfloat('kill')
         macrophage.m_det = self.config.getint('m_det')  # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
-        macrophage.time_m = self.config.getint('time_m')
+        macrophage.time_m = self.config.getfloat('simulation', 'time_step')
 
         macrophage.cells = MacrophageCellList(grid=grid)
 

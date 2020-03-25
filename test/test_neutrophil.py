@@ -28,6 +28,12 @@ def cyto():
     i.fill(0)
     yield i
 
+@fixture
+def iron():
+    # a 10 x 10 x 10 grid with 10 iron
+    i = np.empty((10, 10, 10))
+    i.fill(5)
+    yield i
 
 @fixture
 def tissue():
@@ -424,3 +430,176 @@ def test_move_air(
     cell = populated_neutrophil[0]
     vox = grid.get_voxel(cell['point'])
     assert vox.z == 4 and vox.y == 3 and vox.x == 3
+
+def test_damage_hyphae_conidia(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    n_det = 1
+    n_kill = 2
+    t = 1 
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=point,
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=5)
+    )
+
+    # conidia
+    fungus_list.append(
+        FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+    )
+
+    neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
+
+    assert fungus_list[0]['health'] == 100
+    assert neutrophil_list[0]['granule_count'] == 5
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
+
+def test_damage_hyphae_0(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    n_det = 0
+    n_kill = 2
+    t = 1 
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=point,
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=5)
+    )
+
+    # hyphae
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point, 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+
+    neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
+
+    assert fungus_list[0]['health'] == 50
+    assert neutrophil_list[0]['granule_count'] == 4
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.GRANULATING
+
+def test_damage_hyphae_n_det_1(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    n_det = 1
+    n_kill = 2
+    t = 1 
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=point,
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=5)
+    )
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point, 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=45, y=35, z=35), 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=25, y=35, z=35), 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+
+    neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
+
+    assert fungus_list[0]['health'] == 50
+    assert fungus_list[1]['health'] == 50
+    assert fungus_list[2]['health'] == 50
+    assert neutrophil_list[0]['granule_count'] == 2
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.GRANULATING
+
+def test_damage_hyphae_granuleless(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    n_det = 1
+    n_kill = 2
+    t = 1 
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=point,
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=2)
+    )
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point, 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=45, y=35, z=35), 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=25, y=35, z=35), 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+
+    neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
+
+    assert fungus_list[0]['health'] == 50
+    assert fungus_list[1]['health'] == 50
+    assert fungus_list[2]['health'] == 100
+    assert neutrophil_list[0]['granule_count'] == 0
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
+
+def test_update(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    n_det = 1
+    n_kill = 2
+    t = 1 
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+       NeutrophilCellData.create_cell(
+           point=point,
+           status=NeutrophilCellData.Status.NONGRANULATING,
+           granule_count=2)
+    )
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point, 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=45, y=35, z=35), 
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE)
+    )
+
+    neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
+
+    assert fungus_list[0]['health'] == 50
+    assert fungus_list[1]['health'] == 50
+    assert neutrophil_list[0]['granule_count'] == 0
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.GRANULATING
+
+    neutrophil_list.update()
+
+    assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING

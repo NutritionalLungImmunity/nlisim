@@ -156,6 +156,59 @@ class NeutrophilCellList(CellList):
 
             self.update_voxel_index([cell_index])
 
+    def damage_hyphae(self, n_det, n_kill, time, health, grid, fungus: FungusCellList, iron):
+        for i in self.alive():
+            cell = self[i]
+            vox = grid.get_voxel(cell['point'])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if(fungus[index]['form'] == FungusCellData.Form.HYPHAE and
+                        cell['granule_count'] > 0):
+                        fungus[index]['health'] -= health * (time / n_kill)
+                        cell['granule_count'] -= 1
+                        cell['status'] = NeutrophilCellData.Status.GRANULATING
+                    elif(cell['granule_count'] == 0):
+                        cell['status'] = NeutrophilCellData.Status.NONGRANULATING
+                        break
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                iron[vox.z, vox.y, vox.x] = 0
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if(fungus[index]['form'] == FungusCellData.Form.HYPHAE and
+                                        cell['granule_count'] > 0):
+                                        fungus[index]['health'] -= health * (time / n_kill)
+                                        cell['granule_count'] -= 1
+                                        cell['status'] = NeutrophilCellData.Status.GRANULATING
+                                    elif(cell['granule_count'] == 0):
+                                        cell['status'] = NeutrophilCellData.Status.NONGRANULATING
+                                        break
+
+    def update(self):
+        for i in self.alive(self.cell_data['granule_count'] == 0):
+            self[i]['status'] = NeutrophilCellData.Status.NONGRANULATING
 
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
@@ -172,6 +225,7 @@ class NeutrophilState(ModuleState):
     n_det: float
     granule_count: int
     n_kill: float
+    time_n: float
        
 class Neutrophil(Module):
     name = 'neutrophil'
@@ -185,6 +239,7 @@ class Neutrophil(Module):
         'n_det': '15',
         'granule_count': '10',
         'n_kill': '0.05',
+        'time_n': '1',
     }
     StateClass = NeutrophilState
 
@@ -201,6 +256,7 @@ class Neutrophil(Module):
         neutrophil.n_det = self.config.getfloat('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
+        neutrophil.time_n = self.config.getfloat('simulation', 'time_step')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
@@ -210,10 +266,12 @@ class Neutrophil(Module):
         neutrophil: NeutrophilState = state.neutrophil
         n_cells = neutrophil.cells
         fungus = state.fungus.cells
+        health = state.fungus.health
 
         tissue = state.geometry.lung_tissue
         grid = state.grid
         cyto = state.molecules.grid['n_cyto']
+        iron = state.molecules.grid['iron']
 
         # recruit new
         n_cells.recruit_new(
@@ -235,9 +293,16 @@ class Neutrophil(Module):
         # move
         n_cells.move(neutrophil.rec_r, grid, cyto, tissue)
 
-        damage_hyphae(state, previous_time)
+        n_cells.damage_hyphae(
+            neutrophil.n_det, 
+            neutrophil.n_kill, 
+            neutrophil.time_n,
+            health, 
+            grid, 
+            fungus, 
+            iron)
 
         # update granule == 0 status
-        update(state)
+        n_cells.update()
 
         return state
