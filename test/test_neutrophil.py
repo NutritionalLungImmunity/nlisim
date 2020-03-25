@@ -28,12 +28,6 @@ def cyto():
     i.fill(0)
     yield i
 
-@fixture
-def iron():
-    # a 10 x 10 x 10 grid with 10 iron
-    i = np.empty((10, 10, 10))
-    i.fill(5)
-    yield i
 
 @fixture
 def tissue():
@@ -53,10 +47,11 @@ def neutrophil_list(grid: RectangularGrid):
 @fixture
 def populated_neutrophil(neutrophil_list: NeutrophilCellList, grid: RectangularGrid):
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+            status=NeutrophilCellData.Status.NONGRANULATING,
+            granule_count=5,
+        )
     )
 
     yield neutrophil_list
@@ -97,7 +92,6 @@ def test_recruit_new(neutrophil_list, tissue, grid: RectangularGrid, cyto):
     neutropenic = False
     previous_time = 1
 
-
     # no cytokines
     assert cyto[5, 5, 5] == 0
 
@@ -105,14 +99,8 @@ def test_recruit_new(neutrophil_list, tissue, grid: RectangularGrid, cyto):
 
     # test correct location recruitment
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
 
@@ -121,20 +109,14 @@ def test_recruit_new(neutrophil_list, tissue, grid: RectangularGrid, cyto):
 
     # test recruit none due to below threshold
     rec_r = 20
-    p_rec_r = 1.0
     rec_rate_ph = 2
 
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     assert len(neutrophil_list) == 2
+
 
 def test_recruit_new_not_blood(neutrophil_list, tissue, grid: RectangularGrid, cyto):
     rec_r = 2
@@ -142,7 +124,6 @@ def test_recruit_new_not_blood(neutrophil_list, tissue, grid: RectangularGrid, c
     granule_count = 5
     neutropenic = False
     previous_time = 1
-
 
     # no cytokines
     assert cyto[5, 5, 5] == 0
@@ -152,24 +133,18 @@ def test_recruit_new_not_blood(neutrophil_list, tissue, grid: RectangularGrid, c
 
     # test correct location recruitment
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     assert len(neutrophil_list) == 0
+
 
 def test_recruit_new_neutopenic_day_2(neutrophil_list, tissue, grid: RectangularGrid, cyto):
     rec_r = 2
     rec_rate_ph = 6
     granule_count = 5
     neutropenic = True
-    previous_time = 50 # between days 2 -4
-
+    previous_time = 50  # between days 2 -4
 
     # no cytokines
     assert cyto[5, 5, 5] == 0
@@ -178,14 +153,8 @@ def test_recruit_new_neutopenic_day_2(neutrophil_list, tissue, grid: Rectangular
 
     # test recruit less due to neutropenic
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     assert len(neutrophil_list) == 0
 
@@ -193,26 +162,20 @@ def test_recruit_new_neutopenic_day_2(neutrophil_list, tissue, grid: Rectangular
     neutropenic = False
 
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
     assert vox.x == 5 and vox.y == 5 and vox.z == 5
     assert len(neutrophil_list) == 6
+
 
 def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: RectangularGrid, cyto):
     rec_r = 2
     rec_rate_ph = 6
     granule_count = 5
     neutropenic = True
-    previous_time = 72 # between days 2 -4
-
+    previous_time = 72  # between days 2 -4
 
     # no cytokines
     assert cyto[5, 5, 5] == 0
@@ -221,16 +184,8 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
 
     # test recruit less due to neutropenic
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
-
-    
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     assert len(neutrophil_list) == 3
 
@@ -238,18 +193,13 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
     neutropenic = False
 
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
     assert vox.x == 5 and vox.y == 5 and vox.z == 5
-    assert len(neutrophil_list) == 9# 6 + 3
+    assert len(neutrophil_list) == 9  # 6 + 3
+
 
 def test_recruit_new_multiple_locations(
     neutrophil_list: NeutrophilCellList, tissue, grid: RectangularGrid, cyto
@@ -264,29 +214,25 @@ def test_recruit_new_multiple_locations(
     cyto[4, 5, 5] = 2
 
     neutrophil_list.recruit_new(
-            rec_rate_ph, 
-            rec_r, 
-            granule_count, 
-            neutropenic, 
-            previous_time, 
-            grid, 
-            tissue, 
-            cyto)
+        rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
+    )
 
     assert len(neutrophil_list) == 50
 
     for cell in neutrophil_list.cell_data:
-         vox = grid.get_voxel(cell['point'])
-         assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
+        vox = grid.get_voxel(cell['point'])
+        assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
 
-def test_absorb_cytokines(neutrophil_list:NeutrophilCellList, cyto, grid: RectangularGrid):
+
+def test_absorb_cytokines(neutrophil_list: NeutrophilCellList, cyto, grid: RectangularGrid):
     cyto[1, 2, 3] = 64
 
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+            status=NeutrophilCellData.Status.NONGRANULATING,
+            granule_count=5,
+        )
     )
 
     assert len(neutrophil_list) == 1
@@ -300,14 +246,16 @@ def test_absorb_cytokines(neutrophil_list:NeutrophilCellList, cyto, grid: Rectan
     assert cyto[1, 2, 3] == 16
 
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+            status=NeutrophilCellData.Status.NONGRANULATING,
+            granule_count=5,
+        )
     )
 
     neutrophil_list.absorb_cytokines(n_abs, cyto, grid)
     assert cyto[1, 2, 3] == 4
+
 
 def test_produce_cytokines_0(
     neutrophil_list: NeutrophilCellList,
@@ -321,10 +269,11 @@ def test_produce_cytokines_0(
     assert cyto[3, 3, 3] == 0
 
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+            status=NeutrophilCellData.Status.NONGRANULATING,
+            granule_count=5,
+        )
     )
 
     vox = grid.get_voxel(neutrophil_list[0]['point'])
@@ -343,10 +292,11 @@ def test_produce_cytokines_n(
 ):
     n_n = 10
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+            status=NeutrophilCellData.Status.NONGRANULATING,
+            granule_count=5,
+        )
     )
 
     vox = grid.get_voxel(neutrophil_list[0]['point'])
@@ -371,9 +321,7 @@ def test_produce_cytokines_n(
     assert cyto[3, 3, 3] == 50
 
 
-def test_move_1(
-    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
-):
+def test_move_1(populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue):
     rec_r = 10
 
     cell = populated_neutrophil[0]
@@ -390,9 +338,7 @@ def test_move_1(
     assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
 
-def test_move_n(
-    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
-):
+def test_move_n(populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue):
     rec_r = 10
 
     cell = populated_neutrophil[0]
@@ -411,9 +357,7 @@ def test_move_n(
     assert vox.z in [3, 4] and vox.y in [3, 4] and vox.x == 3
 
 
-def test_move_air(
-    populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue
-):
+def test_move_air(populated_neutrophil: NeutrophilCellList, grid: RectangularGrid, cyto, tissue):
     rec_r = 10
 
     cell = populated_neutrophil[0]
@@ -431,18 +375,20 @@ def test_move_air(
     vox = grid.get_voxel(cell['point'])
     assert vox.z == 4 and vox.y == 3 and vox.x == 3
 
-def test_damage_hyphae_conidia(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+
+def test_damage_hyphae_conidia(
+    neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron
+):
     n_det = 1
     n_kill = 2
-    t = 1 
+    t = 1
     health = 100
 
     point = Point(x=35, y=35, z=35)
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=point,
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=5
+        )
     )
 
     # conidia
@@ -456,26 +402,27 @@ def test_damage_hyphae_conidia(neutrophil_list: NeutrophilCellList, grid: Rectan
     assert neutrophil_list[0]['granule_count'] == 5
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
 
-def test_damage_hyphae_0(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+
+def test_damage_hyphae_0(
+    neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron
+):
     n_det = 0
     n_kill = 2
-    t = 1 
+    t = 1
     health = 100
 
     point = Point(x=35, y=35, z=35)
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=point,
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=5
+        )
     )
 
     # hyphae
     fungus_list.append(
         FungusCellData.create_cell(
-            point=point, 
-            status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            point=point, status=FungusCellData.Status.RESTING, form=FungusCellData.Form.HYPHAE
+        )
     )
 
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
@@ -484,37 +431,57 @@ def test_damage_hyphae_0(neutrophil_list: NeutrophilCellList, grid: RectangularG
     assert neutrophil_list[0]['granule_count'] == 4
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.GRANULATING
 
-def test_damage_hyphae_n_det_1(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    vox = grid.get_voxel(neutrophil_list[0]['point'])
+    assert iron[vox.z, vox.y, vox.x] == 0
+
+
+def test_damage_hyphae_n_det_1(
+    neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron
+):
     n_det = 1
     n_kill = 2
-    t = 1 
+    t = 1
     health = 100
 
     point = Point(x=35, y=35, z=35)
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=point,
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=5)
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=5
+        )
     )
 
     fungus_list.append(
         FungusCellData.create_cell(
-            point=point, 
-            status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            point=point, status=FungusCellData.Status.RESTING, form=FungusCellData.Form.HYPHAE
+        )
     )
     fungus_list.append(
         FungusCellData.create_cell(
-            point=Point(x=45, y=35, z=35), 
+            point=Point(x=45, y=35, z=35),
             status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            form=FungusCellData.Form.HYPHAE,
+        )
     )
     fungus_list.append(
         FungusCellData.create_cell(
-            point=Point(x=25, y=35, z=35), 
+            point=Point(x=25, y=35, z=35),
             status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            form=FungusCellData.Form.HYPHAE,
+        )
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=45, y=45, z=35),
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE,
+        )
+    )
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=Point(x=25, y=25, z=35),
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.HYPHAE,
+        )
     )
 
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
@@ -522,40 +489,53 @@ def test_damage_hyphae_n_det_1(neutrophil_list: NeutrophilCellList, grid: Rectan
     assert fungus_list[0]['health'] == 50
     assert fungus_list[1]['health'] == 50
     assert fungus_list[2]['health'] == 50
-    assert neutrophil_list[0]['granule_count'] == 2
+    assert neutrophil_list[0]['granule_count'] == 0
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.GRANULATING
 
-def test_damage_hyphae_granuleless(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+    vox = grid.get_voxel(neutrophil_list[0]['point'])
+    assert iron[vox.z + 0, vox.y + 0, vox.x + 0] == 0
+    assert iron[vox.z + 0, vox.y + 0, vox.x + 1] == 0
+    assert iron[vox.z + 0, vox.y + 0, vox.x - 1] == 0
+
+    assert iron[vox.z + 0, vox.y + 1, vox.x + 1] == 0
+    assert iron[vox.z + 0, vox.y - 1, vox.x - 1] == 0
+    assert iron[vox.z + 1, vox.y + 0, vox.x + 1] == 10
+    assert iron[vox.z + 1, vox.y + 1, vox.x + 1] == 10
+
+
+def test_damage_hyphae_granuleless(
+    neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron
+):
     n_det = 1
     n_kill = 2
-    t = 1 
+    t = 1
     health = 100
 
     point = Point(x=35, y=35, z=35)
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=point,
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=2)
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=2
+        )
     )
 
     fungus_list.append(
         FungusCellData.create_cell(
-            point=point, 
-            status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            point=point, status=FungusCellData.Status.RESTING, form=FungusCellData.Form.HYPHAE
+        )
     )
     fungus_list.append(
         FungusCellData.create_cell(
-            point=Point(x=45, y=35, z=35), 
+            point=Point(x=45, y=35, z=35),
             status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            form=FungusCellData.Form.HYPHAE,
+        )
     )
     fungus_list.append(
         FungusCellData.create_cell(
-            point=Point(x=25, y=35, z=35), 
+            point=Point(x=25, y=35, z=35),
             status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            form=FungusCellData.Form.HYPHAE,
+        )
     )
 
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
@@ -566,31 +546,33 @@ def test_damage_hyphae_granuleless(neutrophil_list: NeutrophilCellList, grid: Re
     assert neutrophil_list[0]['granule_count'] == 0
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
 
-def test_update(neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron):
+
+def test_update(
+    neutrophil_list: NeutrophilCellList, grid: RectangularGrid, fungus_list: FungusCellList, iron
+):
     n_det = 1
     n_kill = 2
-    t = 1 
+    t = 1
     health = 100
 
     point = Point(x=35, y=35, z=35)
     neutrophil_list.append(
-       NeutrophilCellData.create_cell(
-           point=point,
-           status=NeutrophilCellData.Status.NONGRANULATING,
-           granule_count=2)
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=2
+        )
     )
 
     fungus_list.append(
         FungusCellData.create_cell(
-            point=point, 
-            status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            point=point, status=FungusCellData.Status.RESTING, form=FungusCellData.Form.HYPHAE
+        )
     )
     fungus_list.append(
         FungusCellData.create_cell(
-            point=Point(x=45, y=35, z=35), 
+            point=Point(x=45, y=35, z=35),
             status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            form=FungusCellData.Form.HYPHAE,
+        )
     )
 
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)

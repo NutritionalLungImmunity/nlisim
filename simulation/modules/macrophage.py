@@ -105,7 +105,7 @@ class MacrophageCellList(CellList):
             z = vox.z
             cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]
 
-    def produce_cytokines(self, m_det, Mn, grid, fungus: FungusCellList, cyto):
+    def produce_cytokines(self, m_det, m_n, grid, fungus: FungusCellList, cyto):
         for i in self.alive():
             vox = grid.get_voxel(self[i]['point'])
 
@@ -144,7 +144,7 @@ class MacrophageCellList(CellList):
                                     if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
                                         hyphae_count += 1
 
-            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + Mn * hyphae_count
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
 
     def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
         for cell_index in self.alive():
@@ -252,11 +252,12 @@ class MacrophageState(ModuleState):
     rec_r: float
     p_rec_r: float
     m_abs: float
-    Mn: float
+    m_n: float
     kill: float
     m_det: int
     rec_rate_ph: int
     time_m: float
+
 
 class Macrophage(Module):
     name = 'macrophage'
@@ -265,7 +266,7 @@ class Macrophage(Module):
         'rec_r': '1.0',
         'p_rec_r': '1.0',
         'm_abs': '0.1 ',
-        'Mn': '10.0 ',
+        'm_n': '10.0 ',
         'kill': '10.0',
         'm_det': '15',
         'rec_rate_ph': '2',
@@ -276,16 +277,15 @@ class Macrophage(Module):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue = state.geometry.lung_tissue
 
         macrophage.rec_r = self.config.getfloat('rec_r')
         macrophage.p_rec_r = self.config.getfloat('p_rec_r')
         macrophage.m_abs = self.config.getfloat('m_abs')
-        macrophage.Mn = self.config.getfloat('Mn')
+        macrophage.m_n = self.config.getfloat('Mn')
         macrophage.kill = self.config.getfloat('kill')
         macrophage.m_det = self.config.getint('m_det')  # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
-        macrophage.time_m = self.config.getfloat('simulation', 'time_step')
+        macrophage.time_m = self.config.getfloat('time_step')
 
         macrophage.cells = MacrophageCellList(grid=grid)
 
@@ -309,7 +309,7 @@ class Macrophage(Module):
         m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
 
         # produce cytokines
-        m_cells.produce_cytokines(macrophage.m_det, macrophage.Mn, grid, fungus, cyto)
+        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, cyto)
 
         # move
         m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
