@@ -12,7 +12,7 @@ from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 
-MAX_PHAGOSOME_LENGTH = 10
+MAX_PHAGOSOME_LENGTH = 100
 
 
 class EpitheliumCellData(CellData):
@@ -88,6 +88,20 @@ class EpitheliumCellList(CellList):
     def clear_all_phagosome(self, index):
         self[index]['phagosome'].fill(-1)
 
+    def internalize(self, max_conidia, spores, grid):
+        # for every index where tissue type = 3 get the spores.
+        # If the spores are internalized == True then add to epithelium at that voxel
+        for epi_index in self.alive():
+            vox = grid.get_voxel(self[epi_index]['point'])
+            spore_indices = spores.get_cells_in_voxel(vox)
+
+            for index in spore_indices:
+                if spores[index]['internalized']:
+                    val = self.append_to_phagosome(epi_index, index, max_conidia)
+                    if val:
+                        spores[index]['mobile'] = False
+                    else:
+                        spores[index]['internalized'] = False
 
 def cell_list_factory(self: 'EpitheliumState'):
     return EpitheliumCellList(grid=self.global_state.grid)
@@ -96,15 +110,25 @@ def cell_list_factory(self: 'EpitheliumState'):
 @attr.s(kw_only=True)
 class EpitheliumState(ModuleState):
     cells: EpitheliumCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_health: float = 0.0
-    e_kill: float = 0.0
-    cyto_rate: float = 0.0
-    s_det: float = 0.0
-    h_det: float = 0.0
+    init_health: float
+    e_kill: float
+    cyto_rate: float
+    s_det: float
+    h_det: float
+    max_conidia_in_phag: int
 
 
 class Epithelium(Module):
     name = 'epithelium'
+
+    defaults = {
+        'init_health': '100',
+        'e_kill': '10',
+        'cyto_rate': '1.5',
+        's_det': '1',
+        'h_det': '1',
+        'max_conidia_in_phag': '50',
+    }
     StateClass = EpitheliumState
 
     def initialize(self, state: State):
@@ -117,6 +141,7 @@ class Epithelium(Module):
         epithelium.cyto_rate = self.config.getfloat('cyto_rate')
         epithelium.s_det = self.config.getfloat('s_det')
         epithelium.h_det = self.config.getfloat('h_det')
+        epithelium.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         epithelium.cells = EpitheliumCellList(grid=grid)
 
         indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
@@ -133,33 +158,22 @@ class Epithelium(Module):
         return state
 
     def advance(self, state: State, previous_time: float):
+        epi: EpitheliumState = state.epithelium
+        cells = epi.cells
+        grid: RectangularGrid = state.grid
+        tissue = state.geometry.lung_tissue
+        spores = state.fungus.cells
 
-        internalize(state)  # add internalized == true spores to phagosome
+        # internalize spores. The logic for internalization flag is in fungus
+        # add internalized == true spores to phagosome
+        cells.internalize(epi.max_conidia, spores, grid)
+        
         remove_dead_fungus(state)
         cytokine_update(state)
         damage(state, previous_time)
         die_by_germination(state)
 
         return state
-
-
-def internalize(state):
-    epithelium: EpitheliumState = state.epithelium
-    tissue = state.geometry.lung_tissue
-    cells = epithelium.cells
-    spores = state.fungus.cells
-
-    # for every index where tissue type = 3 get the spores.
-    # If the spores are internalized == True then add to epithelium at that voxel
-    for vox_index in np.argwhere(tissue == TissueTypes.EPITHELIUM.value):
-        vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
-
-        epi_index = cells.get_cells_in_voxel(vox)[0]
-        spore_index = spores.get_cells_in_voxel(vox)
-
-        for index in spore_index:
-            if spores[index]['internalized']:
-                cells.append_to_phagosome(epi_index, index, MAX_PHAGOSOME_LENGTH)
 
 
 def remove_dead_fungus(state):
