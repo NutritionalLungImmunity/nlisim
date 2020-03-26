@@ -3,6 +3,8 @@ import json
 import attr
 import numpy as np
 
+from simulation.coordinates import Voxel
+from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
 from simulation.molecule import MoleculeGrid, MoleculeTypes
@@ -74,17 +76,40 @@ class Molecules(Module):
         #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
 
         for molecule in molecules.grid.types:
-            self.diffuse(molecules.grid[molecule])
             self.degrade(molecules.grid[molecule])
+            self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
+
         molecules.grid.incr()
 
         return state
 
     @classmethod
-    def diffuse(cls, molecule: np.ndarray):
+    def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
         # TODO These 2 functions should be implemented for all moleculess
         # the rest of the behavior (uptake, secretion, etc.) should be
         # handled in the cell specific module.
+        temp = np.zeros(molecule.shape)
+
+        x_r = [-1, 0, 1]
+        y_r = [-1, 0, 1]
+        z_r = [-1, 0, 1]
+
+        for index in np.argwhere(temp == 0):
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = index[0] + z
+                        yj = index[1] + y
+                        xi = index[2] + x
+
+                        if grid.is_valid_voxel(Voxel(x=xi,y=yj,z=zk)):
+                            temp[index[2], index[1], index[0]] += molecule[zk, yj, xi] / 26
+            
+            if tissue[index[2], index[1], index[0]] == TissueTypes.AIR.value:
+                temp[index[2], index[1], index[0]] = 0
+        
+        molecule[:] = temp[:]
+        
         return
 
     @classmethod
