@@ -240,6 +240,8 @@ class MacrophageCellList(CellList):
             for ii in range(0, self.len_phagosome(i)):
                 index = cell['phagosome'][ii]
                 fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+                if fungus[index]['dead']:
+                    self.remove_from_phagosome(i, index)
 
 
 def cell_list_factory(self: 'MacrophageState'):
