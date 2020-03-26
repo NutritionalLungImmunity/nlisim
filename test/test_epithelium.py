@@ -178,7 +178,7 @@ def test_internalize_conidia_max(
     fungus_list[0]['internalized'] = True
     epithelium_list[0]['phagosome'][:max_spores] = 99 # artificially fill
 
-    epithelium_list.internalize(10, fungus_list, grid)
+    epithelium_list.internalize(max_spores, fungus_list, grid)
 
     assert epithelium_list.len_phagosome(0) == max_spores
     assert 0 not in epithelium_list[0]['phagosome']
@@ -379,3 +379,27 @@ def test_produce_cytokines_2(
 
     assert m_cyto[3, 3, 3] == 0
     assert n_cyto[3, 3, 3] == 10
+
+def test_damage_conidia(
+    epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
+):
+    kill = 2
+    t = 1
+    health = 100
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+    fungus_list.append(
+        FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+    )
+    fungus_list[0]['internalized'] = True
+
+    epithelium_list.internalize(10, fungus_list, grid)
+
+    epithelium_list.damage(kill, t, health, fungus_list)
+
+    assert fungus_list.cell_data['health'][0] == 50
+
+    epithelium_list.damage(kill, t, health, fungus_list)
+
+    assert fungus_list.cell_data['health'][0] == 0

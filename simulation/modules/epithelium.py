@@ -105,10 +105,8 @@ class EpitheliumCellList(CellList):
 
     def remove_dead_fungus(self, spores, grid):
         for epi_index in self.alive():
-            vox = grid.get_voxel(self[epi_index]['point'])
-            spore_indices = spores.get_cells_in_voxel(vox)
-
-            for index in spore_indices:
+            for ii in range(0, self.len_phagosome(epi_index)):
+                index = self[epi_index]['phagosome'][ii]
                 if spores[index]['dead']:
                     self.remove_from_phagosome(epi_index, index)
 
@@ -199,6 +197,14 @@ class EpitheliumCellList(CellList):
             m_cyto[vox.z, vox.y, vox.x] += cyto_rate * spore_count
             n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)
 
+    def damage(self, kill, t, health, fungus):
+        for i in self.alive():
+            cell = self[i]
+            for ii in range(0, self.len_phagosome(i)):
+                index = cell['phagosome'][ii]
+                fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+        
+
 def cell_list_factory(self: 'EpitheliumState'):
     return EpitheliumCellList(grid=self.global_state.grid)
 
@@ -211,6 +217,7 @@ class EpitheliumState(ModuleState):
     cyto_rate: float
     s_det: int
     h_det: int
+    time_e: float
     max_conidia_in_phag: int
 
 
@@ -223,6 +230,7 @@ class Epithelium(Module):
         'cyto_rate': '5',
         's_det': '1',
         'h_det': '1',
+        'time_e': '1',
         'max_conidia_in_phag': '50',
     }
     StateClass = EpitheliumState
@@ -237,6 +245,7 @@ class Epithelium(Module):
         epithelium.cyto_rate = self.config.getfloat('cyto_rate')
         epithelium.s_det = self.config.getint('s_det')
         epithelium.h_det = self.config.getint('h_det')
+        epithelium.time_e = self.config.getfloat('time_step')
         epithelium.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         epithelium.cells = EpitheliumCellList(grid=grid)
 
@@ -261,6 +270,7 @@ class Epithelium(Module):
         tissue = state.geometry.lung_tissue
 
         spores = state.fungus.cells
+        health = state.fungus.health
 
         m_cyto = state.molecules.grid['m_cyto']
         n_cyto = state.molecules.grid['n_cyto']
@@ -276,22 +286,12 @@ class Epithelium(Module):
         # produce cytokines
         cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
         
-        damage(state, previous_time)
+        # damage internalized spores
+        cells.damage(epi.e_kill, epi.time_e, health, spores)
+
         die_by_germination(state)
 
         return state
-
-
-def damage(state, time_step):
-    epi: EpitheliumState = state.epithelium
-    cells = epi.cells
-    spores = state.fungus.cells
-
-    for index in cells.alive():
-        e_cell = cells[index]
-        for spore_index in e_cell['phagosome']:
-            spore = spores[spore_index]
-            spore['health'] = spore['health'] - (epi.init_health * time_step / epi.e_kill)
 
 
 def die_by_germination(state):
