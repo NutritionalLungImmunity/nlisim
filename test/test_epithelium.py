@@ -403,3 +403,56 @@ def test_damage_conidia(
     epithelium_list.damage(kill, t, health, fungus_list)
 
     assert fungus_list.cell_data['health'][0] == 0
+
+def test_kill_epithelium(
+    epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
+):
+    # should release all conidia
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+    fungus_list.append(
+        FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+    )
+
+    fungus_list.cell_data['internalized'][0] = True
+    epithelium_list[0]['phagosome'][0] = 0 # internalized
+
+    epithelium_list.die_by_germination(fungus_list)
+    assert fungus_list.cell_data['internalized'][0]
+    assert epithelium_list.len_phagosome(0) == 1
+
+    fungus_list.cell_data['status'][0] = FungusCellData.Status.GERMINATED 
+
+    epithelium_list.die_by_germination(fungus_list)
+
+    assert not fungus_list.cell_data['internalized'][0]
+    assert epithelium_list.len_phagosome(0) == 0
+
+def test_kill_epithelium_n(
+    epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
+):
+    # should release all conidia
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+    for _ in range(0,10):
+        fungus_list.append(
+            FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+        )
+
+    fungus_list.cell_data['internalized'] = True
+    epithelium_list.internalize(10, fungus_list, grid)
+
+    epithelium_list.die_by_germination(fungus_list)
+    for i in range(0,10):
+        assert fungus_list.cell_data['internalized'][i]
+    assert epithelium_list.len_phagosome(0) == 10
+
+    fungus_list.cell_data['status'][6] = FungusCellData.Status.GERMINATED 
+
+    epithelium_list.die_by_germination(fungus_list)
+
+    for i in range(0,10):
+        assert not fungus_list.cell_data['internalized'][i]
+    assert epithelium_list.len_phagosome(0) == 0

@@ -7,7 +7,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
-from simulation.modules.fungus import FungusCellData
+from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
@@ -85,7 +85,10 @@ class EpitheliumCellList(CellList):
         else:
             return False
 
-    def clear_all_phagosome(self, index):
+    def clear_all_phagosome(self, index, fungus: FungusCellList):
+        for i in range(0, self.len_phagosome(index)):
+            f_index = self[index]['phagosome'][i]
+            fungus[f_index]['internalized'] = False
         self[index]['phagosome'].fill(-1)
 
     def internalize(self, max_conidia, spores, grid):
@@ -203,7 +206,16 @@ class EpitheliumCellList(CellList):
             for ii in range(0, self.len_phagosome(i)):
                 index = cell['phagosome'][ii]
                 fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
-        
+
+    def die_by_germination(self, spores):
+        for index in self.alive():
+            e_cell = self[index]
+            for ii in range(0, self.len_phagosome(index)):
+                spore_index = e_cell['phagosome'][ii]
+                if spores[spore_index]['status'] == FungusCellData.Status.GERMINATED:
+                    e_cell['dead'] = True
+                    self.clear_all_phagosome(index, spores)
+                    break
 
 def cell_list_factory(self: 'EpitheliumState'):
     return EpitheliumCellList(grid=self.global_state.grid)
@@ -289,23 +301,7 @@ class Epithelium(Module):
         # damage internalized spores
         cells.damage(epi.e_kill, epi.time_e, health, spores)
 
-        die_by_germination(state)
+        # kill epithelium with germinated spore in its phagosome
+        cells.die_by_germination(spores)
 
         return state
-
-
-def die_by_germination(state):
-    epithelium: EpitheliumState = state.epithelium
-    cells = epithelium.cells
-    spores = state.fungus.cells
-
-    for index in cells.alive():
-        e_cell = cells[index]
-        if cells.len_phagosome(index) > 0:
-            for spore_index in e_cell['phagosome']:
-                if spores[spore_index]['status'] == FungusCellData.Status.GERMINATED:
-                    e_cell['dead'] = True
-                    cells.clear_all_phagosome(index)
-                    for spore_index_i in e_cell['phagosome']:
-                        spores[spore_index_i]['internalized'] = False
-                    break
