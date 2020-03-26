@@ -112,6 +112,93 @@ class EpitheliumCellList(CellList):
                 if spores[index]['dead']:
                     self.remove_from_phagosome(epi_index, index)
 
+    def cytokine_update(self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i]['point'])
+
+            # spores 
+            spore_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if s_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if(
+                        fungus[index]['form'] == FungusCellData.Form.CONIDIA and
+                        fungus[index]['status'] 
+                        in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]
+                    ):
+                        spore_count += 1
+
+            else:
+                for num in range(0, s_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * s_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if(
+                                        fungus[index]['form'] == FungusCellData.Form.CONIDIA and
+                                        fungus[index]['status'] in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]
+                                    ):
+                                        spore_count += 1
+
+            # hyphae_count
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if h_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, h_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * h_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            
+            m_cyto[vox.z, vox.y, vox.x] += cyto_rate * spore_count
+            n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)
+
 def cell_list_factory(self: 'EpitheliumState'):
     return EpitheliumCellList(grid=self.global_state.grid)
 
@@ -122,8 +209,8 @@ class EpitheliumState(ModuleState):
     init_health: float
     e_kill: float
     cyto_rate: float
-    s_det: float
-    h_det: float
+    s_det: int
+    h_det: int
     max_conidia_in_phag: int
 
 
@@ -133,7 +220,7 @@ class Epithelium(Module):
     defaults = {
         'init_health': '100',
         'e_kill': '10',
-        'cyto_rate': '1.5',
+        'cyto_rate': '5',
         's_det': '1',
         'h_det': '1',
         'max_conidia_in_phag': '50',
@@ -148,8 +235,8 @@ class Epithelium(Module):
         epithelium.init_health = self.config.getfloat('init_health')
         epithelium.e_kill = self.config.getfloat('e_kill')
         epithelium.cyto_rate = self.config.getfloat('cyto_rate')
-        epithelium.s_det = self.config.getfloat('s_det')
-        epithelium.h_det = self.config.getfloat('h_det')
+        epithelium.s_det = self.config.getint('s_det')
+        epithelium.h_det = self.config.getint('h_det')
         epithelium.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         epithelium.cells = EpitheliumCellList(grid=grid)
 
@@ -169,60 +256,30 @@ class Epithelium(Module):
     def advance(self, state: State, previous_time: float):
         epi: EpitheliumState = state.epithelium
         cells = epi.cells
+
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
+
         spores = state.fungus.cells
+
+        m_cyto = state.molecules.grid['m_cyto']
+        n_cyto = state.molecules.grid['n_cyto']
+
 
         # internalize spores. The logic for internalization flag is in fungus
         # add internalized == true spores to phagosome
-        cells.internalize(epi.max_conidia, spores, grid)
+        cells.internalize(epi.max_conidia_in_phag, spores, grid)
         
         # remove killed spores from phagosome
         cells.remove_dead_fungus(spores, grid)
 
-        cytokine_update(state)
+        # produce cytokines
+        cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
+        
         damage(state, previous_time)
         die_by_germination(state)
 
         return state
-
-
-def cytokine_update(state):
-    epithelium: EpitheliumState = state.epithelium
-    tissue = state.geometry.lung_tissue
-    cells = epithelium.cells
-    fungus = state.fungus.cells
-    m_cyto = state.molecules.grid['m_cyto']
-    n_cyto = state.molecules.grid['n_cyto']
-
-    for vox_index in np.argwhere(tissue == TissueTypes.EPITHELIUM.value):
-        vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
-
-        spore_count = 0
-        hyphae_count = 0
-
-        # TODO get neighboring voxels within detection distance
-        # eg. for vox in (vox.x + det_d, vox.y, vox.z, )
-        epi_index = cells.get_cells_in_voxel(vox)[0]
-        fungus_index = fungus.get_cells_in_voxel(vox)
-
-        if not cells.cell_data[epi_index]['dead']:
-            for index in fungus_index:
-                f_cell = fungus[index]
-                if f_cell['form'] == FungusCellData.Form.CONIDIA and (
-                    f_cell['status']
-                    in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]
-                ):
-                    spore_count += 1
-                elif f_cell['form'] == FungusCellData.Form.HYPHAE:
-                    hyphae_count += 1
-
-            m_cyto[vox.z, vox.y, vox.x] = (
-                m_cyto[vox.z, vox.y, vox.x] + epithelium.cyto_rate * spore_count
-            )
-            n_cyto[vox.z, vox.y, vox.x] = n_cyto[vox.z, vox.y, vox.x] + epithelium.cyto_rate * (
-                spore_count + hyphae_count
-            )
 
 
 def damage(state, time_step):

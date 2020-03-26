@@ -22,12 +22,18 @@ def iron():
 
 
 @fixture
-def cyto():
+def n_cyto():
     # a 10 x 10 x 10 grid with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
 
+@fixture
+def m_cyto():
+    # a 10 x 10 x 10 grid with 10 iron
+    i = np.empty((10, 10, 10))
+    i.fill(0)
+    yield i
 
 @fixture
 def tissue():
@@ -196,3 +202,180 @@ def test_dead_conidia_1(
 
     assert epithelium_list.len_phagosome(0) == 0
     assert 0 not in epithelium_list[0]['phagosome']
+
+def test_produce_cytokines_0(
+    epithelium_list: EpitheliumCellList,
+    grid: RectangularGrid,
+    fungus_list: FungusCellList,
+    m_cyto,
+    n_cyto,
+):
+    s_det = 0
+    h_det = 0
+    cyto_rate = 10
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 0
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point,
+            status=FungusCellData.Status.RESTING,
+            form=FungusCellData.Form.CONIDIA,
+            iron=0,
+            mobile=False,
+        )
+    )
+
+    # fungus is not swollen or germinated
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 0
+
+    fungus_list[0]['status'] = FungusCellData.Status.SWOLLEN
+
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 10
+    assert n_cyto[3, 3, 3] == 10
+
+def test_produce_cytokines_0b(
+    epithelium_list: EpitheliumCellList,
+    grid: RectangularGrid,
+    fungus_list: FungusCellList,
+    m_cyto,
+    n_cyto,
+):
+    s_det = 0
+    h_det = 0
+    cyto_rate = 10
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 0
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point,
+            status=FungusCellData.Status.SWOLLEN,
+            form=FungusCellData.Form.CONIDIA,
+            iron=0,
+            mobile=False,
+        )
+    )
+
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 10
+    assert n_cyto[3, 3, 3] == 10
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=point,
+            status=FungusCellData.Status.GROWABLE,
+            form=FungusCellData.Form.HYPHAE,
+            iron=0,
+            mobile=False,
+        )
+    )
+
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 20
+    assert n_cyto[3, 3, 3] == 30
+
+def test_produce_cytokines_2(
+    epithelium_list: EpitheliumCellList,
+    grid: RectangularGrid,
+    fungus_list: FungusCellList,
+    m_cyto,
+    n_cyto,
+):
+    s_det = 1
+    h_det = 2
+    cyto_rate = 10
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 0
+
+    point = Point(x=35, y=35, z=35)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+
+    spoint = Point(x=15, y=35, z=35)
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=spoint,
+            status=FungusCellData.Status.SWOLLEN,
+            form=FungusCellData.Form.CONIDIA,
+            iron=0,
+            mobile=False,
+        )
+    )
+
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 0
+
+    fungus_list.append(
+        FungusCellData.create_cell(
+            point=spoint,
+            status=FungusCellData.Status.GROWABLE,
+            form=FungusCellData.Form.HYPHAE,
+            iron=0,
+            mobile=False,
+        )
+    )
+
+    epithelium_list.cytokine_update(
+        s_det, 
+        h_det, 
+        cyto_rate, 
+        m_cyto, 
+        n_cyto, 
+        fungus_list, 
+        grid)
+
+    assert m_cyto[3, 3, 3] == 0
+    assert n_cyto[3, 3, 3] == 10
