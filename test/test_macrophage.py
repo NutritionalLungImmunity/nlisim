@@ -277,7 +277,7 @@ def test_internalize_conidia_none(
     vox = grid.get_voxel(cell['point'])
     assert len(populated_fungus.get_cells_in_voxel(vox)) == 1
 
-    populated_macrophage.internalize_conidia(m_det, grid, populated_fungus)
+    populated_macrophage.internalize_conidia(m_det, 50, grid, populated_fungus)
 
     assert populated_macrophage.len_phagosome(0) == 0
     for v in cell['phagosome']:
@@ -305,7 +305,7 @@ def test_internalize_conidia_0(
     fungus_list[f_index]['form'] = FungusCellData.Form.CONIDIA
     fungus_list[f_index]['status'] = FungusCellData.Status.RESTING
 
-    macrophage_list.internalize_conidia(m_det, grid, fungus_list)
+    macrophage_list.internalize_conidia(m_det, 50, grid, fungus_list)
 
     assert grid.get_voxel(fungus_list[f_index]['point']) == vox
     assert fungus_list.cell_data['internalized'][f_index]
@@ -343,14 +343,14 @@ def test_internalize_conidia_n(
     )
 
     # internalize some not all
-    macrophage_list.internalize_conidia(1, grid, fungus_list)
+    macrophage_list.internalize_conidia(1, 50, grid, fungus_list)
 
     assert fungus_list.cell_data['internalized'][0]
     assert fungus_list.cell_data['internalized'][2]
     assert macrophage_list.len_phagosome(0) == 4
 
     # internalize all
-    macrophage_list.internalize_conidia(2, grid, fungus_list)
+    macrophage_list.internalize_conidia(2, 50, grid, fungus_list)
 
     assert fungus_list.cell_data['internalized'][5]
     assert macrophage_list.len_phagosome(0) == 6
@@ -373,7 +373,7 @@ def test_internalize_and_move(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    macrophage_list.internalize_conidia(1, grid, fungus_list)
+    macrophage_list.internalize_conidia(1, 50, grid, fungus_list)
 
     assert fungus_list.cell_data['internalized'][0]
     assert fungus_list.cell_data['internalized'][1]
@@ -412,7 +412,7 @@ def test_damage_conidia(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    macrophage_list.internalize_conidia(1, grid, fungus_list)
+    macrophage_list.internalize_conidia(1, 50, grid, fungus_list)
 
     macrophage_list.damage_conidia(kill, t, health, fungus_list)
 
@@ -434,7 +434,7 @@ def test_kill_macrophage(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    macrophage_list.internalize_conidia(1, grid, fungus_list)
+    macrophage_list.internalize_conidia(1, 50, grid, fungus_list)
     assert fungus_list.cell_data['internalized'][0]
 
     # simulate death
