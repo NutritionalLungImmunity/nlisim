@@ -67,22 +67,22 @@ class FungusCellData(CellData):
 class FungusCellList(CellList):
     CellDataClass = FungusCellData
 
-    def spawn_hypahael_cell(self, point, iron, spacing):
-        new_x = point[2] + spacing * random.uniform(-1, 1)
-        new_y = point[1] + spacing * random.uniform(-1, 1)
-        new_z = point[0] + spacing * random.uniform(-1, 1)
+    # def spawn_hypahael_cell(self, point, iron, spacing):
+    #     new_x = point[2] + spacing * random.uniform(-1, 1)
+    #     new_y = point[1] + spacing * random.uniform(-1, 1)
+    #     new_z = point[0] + spacing * random.uniform(-1, 1)
 
-        new_point = Point(x=new_x, y=new_y, z=new_z,)
+    #     new_point = Point(x=new_x, y=new_y, z=new_z,)
 
-        self.append(
-            FungusCellData.create_cell(
-                point=new_point,
-                status=FungusCellData.Status.GROWABLE,
-                form=FungusCellData.Form.HYPHAE,
-                iron=iron,
-                mobile=False,
-            )
-        )
+    #     self.append(
+    #         FungusCellData.create_cell(
+    #             point=new_point,
+    #             status=FungusCellData.Status.GROWABLE,
+    #             form=FungusCellData.Form.HYPHAE,
+    #             iron=iron,
+    #             mobile=False,
+    #         )
+    #     )
 
 
     def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
@@ -108,7 +108,7 @@ class FungusCellList(CellList):
                     and cells[index]['iron'] < iron_max
                 ):
                     indices.append(index)
-                    print(index)
+                    
 
             if len(indices) > 0:
                 iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
@@ -119,14 +119,92 @@ class FungusCellList(CellList):
 
                 iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
 
+    def spawn_hypahael_cell(self, cells):
+        cells = self.cell_data
+        children = FungusCellData(len(indices), initialize=True)
+        children['iron'] = cells['iron'][indices]
+        children['status'] = FungusCellData.Status.GROWABLE
+        children['form'] = FungusCellData.Form.HYPHAE
+        children['mobile'] = False
+        children['point'] = cells['point'][indices] + \
+        spacing * np.random.rand(len(indices), 3)
+        for cell in children:
+            self.append(cell)
 
-    def grow_hyphae(self, min_grow, grow_time, p_branch, spacing):
 
-        # spawn from hyphae from conidia
+    def grow_hyphae(self, iron_min_grow, grow_time, p_branch, spacing):
+
+        # spawn hyphae from conidia
+        cells = self.cell_data
+
+        conidia_indices = self.alive(
+            (cells['form'] == FungusCellData.Form.CONIDIA) &
+            (cells['status'] == FungusCellData.Status.GERMINATED) &
+            (cells['internalized'] == False)
+        )
+
+        hyphae_indices = self.alive(
+            (cells['form'] == FungusCellData.Form.HYPHAE) &
+            (cells['status'] == FungusCellData.Status.GROWABLE) &
+            (cells['internalized'] == False) &
+            (cells['iron'] > iron_min_grow) &
+            (cells['iteration'] > grow_time)
+        )
+
+        # grow conidia
+        if (len(conidia_indices) != 0):
+            cells['status'][conidia_indices] = FungusCellData.Status.GROWN
+            children = FungusCellData(len(conidia_indices), initialize=True)
+            children['iron'] = cells['iron'][conidia_indices]
+            children['status'] = FungusCellData.Status.GROWABLE
+            children['form'] = FungusCellData.Form.HYPHAE
+            children['mobile'] = False
+            children['point'] = cells['point'][conidia_indices] + \
+            spacing * np.random.rand(len(conidia_indices), 3)
+            for cell in children:
+                self.append(cell)
+
+        if (len(hyphae_indices) != 0):
+            cells['status'][hyphae_indices] = FungusCellData.Status.GROWN
+            branch_mask = (np.random.rand(len(hyphae_indices)) < p_branch)
+            branch_indices = branch_mask.nonzero()[0]
+
+            elongate_children = FungusCellData(len(hyphae_indices), initialize=True)
+            branch_children = FungusCellData(len(branch_indices), initialize=True)
+
+            elongate_children['iron'] = cells['iron'][hyphae_indices] / 2
+            elongate_children['point'] = cells['point'][hyphae_indices] + spacing * np.random.rand(len(hyphae_indices), 3)
+
+            if (len(branch_indices) != 0):
+                elongate_children['iron'][branch_indices] = cells['iron'][hyphae_indices[branch_indices]] / 3
+                branch_children['iron'] = cells['iron'][hyphae_indices[branch_indices]] / 3
+                branch_children['point'] = cells['point'][hyphae_indices[branch_indices]] + spacing * np.random.rand(len(hyphae_indices), 3)
+            
+            for cell in elongate_children:
+                self.append(cell)
+        # # grow hyphae
+        # if (len(hyphae_indices) != 0):
+        #     children = FungusCellData(len(hyphae_indices), initialize=True)
+        #     children['point'] = cells['point'][conidia_indices] + spacing * np.random.rand(len(hyphae_indices), 3)
+        #     for cell in children:
+        #         self.append(cell)
+
+        # # branch hyphae
+        # branch_indices = (np.random.rand(len(hyphae_indices)) < p_branch).nonzero()[0]
+        # if (len(branch_indices) != 0):
+        #     children = FungusCellData(len(branch_indices), initialize=True)
+        #     children['point'] = cells['point'][conidia_indices[branch_indices]] + spacing * np.random.rand(len(branch_indices))
+        #     for cell in children:
+        #         self.append(cell)
+                
+
+        '''
         for index in self.alive():
             cell = self.cell_data[index]
 
+
             # spawn from hyphae from conidia
+            
             if (
                 cell['form'] == FungusCellData.Form.CONIDIA
                 and cell['status'] == FungusCellData.Status.GERMINATED
@@ -152,6 +230,7 @@ class FungusCellList(CellList):
                 else:
                     iron_f = cell['iron'] / 2
                     spawn_hypahael_cell(cell['point'], iron_f, spacing)
+            '''
 
     def age(self):
         '''Add one iteration to all alive cells.'''
@@ -272,162 +351,162 @@ class Fungus(Module):
         return state
 
 
-def update(state):
-    fungus: FungusState = state.fungus
-    grid: RectangularGrid = state.grid
-    tissue = state.geometry.lung_tissue
-    cells = fungus.cells
+# def update(state):
+#     fungus: FungusState = state.fungus
+#     grid: RectangularGrid = state.grid
+#     tissue = state.geometry.lung_tissue
+#     cells = fungus.cells
 
-    for index in cells.alive(cells.cell_data['form'] != FungusCellData.Form.HYPHAE):
-        cell = cells[index]
-        vox = grid.get_voxel(cell['point'])
+#     for index in cells.alive(cells.cell_data['form'] != FungusCellData.Form.HYPHAE):
+#         cell = cells[index]
+#         vox = grid.get_voxel(cell['point'])
 
-        if cell['health'] <= 0:
-            cell['status'] = FungusCellData.Status.DEAD
-            cell['dead'] = True
+#         if cell['health'] <= 0:
+#             cell['status'] = FungusCellData.Status.DEAD
+#             cell['dead'] = True
 
-        if cell['mobile']:
-            # check if at the edge of space
-            if vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]).x:
-                cell['status'] = FungusCellData.Status.DEAD
-                cell['dead'] = True
-            else:
-                # move
-                print('cells move')
+#         if cell['mobile']:
+#             # check if at the edge of space
+#             if vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]).x:
+#                 cell['status'] = FungusCellData.Status.DEAD
+#                 cell['dead'] = True
+#             else:
+#                 # move
+#                 print('cells move')
 
-            # check contact and lodging with epithelium
-            if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM.value:
-                if fungus.p_lodge > random.random():
-                    cell['mobile'] = False
-                    cell['status'] = FungusCellData.Status.RESTING
-                    cell['iteration'] += 1
-                    if fungus.p_internalize < random.random():
-                        cell['internalized'] = True
-        else:
-            cell['iteration'] += 1
+#             # check contact and lodging with epithelium
+#             if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM.value:
+#                 if fungus.p_lodge > random.random():
+#                     cell['mobile'] = False
+#                     cell['status'] = FungusCellData.Status.RESTING
+#                     cell['iteration'] += 1
+#                     if fungus.p_internalize < random.random():
+#                         cell['internalized'] = True
+#         else:
+#             cell['iteration'] += 1
 
-        # change status
-        if cell['iteration'] >= fungus.ITER_TO_CHANGE_STATUS:
-            if cell['internalized']:
-                if cell['status'] == FungusCellData.Status.RESTING:
-                    if fungus.p_internal_swell > random.random():
-                        cell['status'] = FungusCellData.Status.SWOLLEN
-                        cell['iteration'] = 0
-                elif cell['status'] == FungusCellData.Status.SWOLLEN:
-                    cell['status'] = FungusCellData.Status.GERMINATED
-                    cell['iteration'] = 0
-            else:
-                if cell['status'] == FungusCellData.Status.RESTING:
-                    cell['status'] = FungusCellData.Status.SWOLLEN
-                    cell['iteration'] = 0
-                elif cell['status'] == FungusCellData.Status.SWOLLEN:
-                    cell['status'] = FungusCellData.Status.GERMINATED
-                    cell['iteration'] = 0
-                    # cell['form'] = HYphae?
+#         # change status
+#         if cell['iteration'] >= fungus.ITER_TO_CHANGE_STATUS:
+#             if cell['internalized']:
+#                 if cell['status'] == FungusCellData.Status.RESTING:
+#                     if fungus.p_internal_swell > random.random():
+#                         cell['status'] = FungusCellData.Status.SWOLLEN
+#                         cell['iteration'] = 0
+#                 elif cell['status'] == FungusCellData.Status.SWOLLEN:
+#                     cell['status'] = FungusCellData.Status.GERMINATED
+#                     cell['iteration'] = 0
+#             else:
+#                 if cell['status'] == FungusCellData.Status.RESTING:
+#                     cell['status'] = FungusCellData.Status.SWOLLEN
+#                     cell['iteration'] = 0
+#                 elif cell['status'] == FungusCellData.Status.SWOLLEN:
+#                     cell['status'] = FungusCellData.Status.GERMINATED
+#                     cell['iteration'] = 0
+#                     # cell['form'] = HYphae?
 
-            # TODO - check ODD protocol
-            if cell['status'] == FungusCellData.Status.SWOLLEN:
-                cell['iteration'] = 0
+#             # TODO - check ODD protocol
+#             if cell['status'] == FungusCellData.Status.SWOLLEN:
+#                 cell['iteration'] = 0
 
-    for index in cells.alive(cells.cell_data['form'] == FungusCellData.Form.HYPHAE):
-        cells[index]['iteration'] += 1
-
-
-def iron_uptake(state):
-    fungus: FungusState = state.fungus
-    cells = fungus.cells
-    iron = state.molecules.grid['iron']
-
-    for vox_index in np.argwhere(iron > fungus.iron_min):
-        vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
-
-        cells_here = cells.get_cells_in_voxel(vox)
-        indices = []
-        for index in cells_here:
-            if (
-                cells.cell_data[index]['form'] == FungusCellData.Form.HYPHAE
-                and cells.cell_data[index]['internalized'] is False
-                and cells.cell_data[index]['iron'] < fungus.iron_max
-            ):
-                indices.append(index)
-
-        if len(indices) > 0:
-            iron_split = fungus.iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
-            for cell_index in indices:
-                cells[cell_index]['iron'] += iron_split
-                if cells[cell_index]['iron'] > fungus.iron_max:
-                    cells[cell_index]['iron'] = fungus.iron_max
-
-            iron[vox.z, vox.y, vox.x] = (1 - fungus.iron_absorb) * iron[vox.z, vox.y, vox.x]
+#     for index in cells.alive(cells.cell_data['form'] == FungusCellData.Form.HYPHAE):
+#         cells[index]['iteration'] += 1
 
 
-def grow_hyphae(state):
-    fungus: FungusState = state.fungus
-    grid: RectangularGrid = state.grid
-    cells = fungus.cells
+# def iron_uptake(state):
+#     fungus: FungusState = state.fungus
+#     cells = fungus.cells
+#     iron = state.molecules.grid['iron']
 
-    # spawn from hyphae from conidia
-    for index in cells.alive():
-        cell = cells.cell_data[index]
+#     for vox_index in np.argwhere(iron > fungus.iron_min):
+#         vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
 
-        if (
-            cell['form'] == FungusCellData.Form.CONIDIA
-            and cell['status'] == FungusCellData.Status.GERMINATED
-            and cell['internalized'] is False
-        ):
+#         cells_here = cells.get_cells_in_voxel(vox)
+#         indices = []
+#         for index in cells_here:
+#             if (
+#                 cells.cell_data[index]['form'] == FungusCellData.Form.HYPHAE
+#                 and cells.cell_data[index]['internalized'] is False
+#                 and cells.cell_data[index]['iron'] < fungus.iron_max
+#             ):
+#                 indices.append(index)
 
-            cell['status'] = FungusCellData.Status.GROWN
-            spawn_hypahael_cell(cells, cell['point'], cell['iron'], fungus.spacing, grid)
+#         if len(indices) > 0:
+#             iron_split = fungus.iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+#             for cell_index in indices:
+#                 cells[cell_index]['iron'] += iron_split
+#                 if cells[cell_index]['iron'] > fungus.iron_max:
+#                     cells[cell_index]['iron'] = fungus.iron_max
 
-    # grow hyphae
-    for index in cells.alive():
-        cell = cells.cell_data[index]
-
-        if (
-            cell['form'] == FungusCellData.Form.HYPHAE
-            and cell['status'] == FungusCellData.Status.GROWABLE
-            and cell['internalized'] is False
-            and cell['iron'] > fungus.iron_min_grow
-            and cell['iteration'] > fungus.grow_time
-        ):
-
-            if fungus.p_branch > random.random():
-                iron_f = cell['iron'] / 3
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
-            else:
-                iron_f = cell['iron'] / 2
-                spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
+#             iron[vox.z, vox.y, vox.x] = (1 - fungus.iron_absorb) * iron[vox.z, vox.y, vox.x]
 
 
-def spawn_hypahael_cell(cells, point, iron, spacing, grid):
-    new_x = 0
-    new_y = 0
-    new_z = 0
+# def grow_hyphae(state):
+#     fungus: FungusState = state.fungus
+#     grid: RectangularGrid = state.grid
+#     cells = fungus.cells
 
-    if point[2] > grid.x[int(len(grid.x) / 2)]:
-        new_x = point[2] + spacing * random.uniform(0, 1)
-    else:
-        new_x = point[2] + spacing * random.uniform(-1, 0)
+#     # spawn from hyphae from conidia
+#     for index in cells.alive():
+#         cell = cells.cell_data[index]
 
-    if point[1] > grid.y[int(len(grid.y) / 2)]:
-        new_y = point[1] + spacing * random.uniform(0, 1)
-    else:
-        new_y = point[1] + spacing * random.uniform(-1, 0)
+#         if (
+#             cell['form'] == FungusCellData.Form.CONIDIA
+#             and cell['status'] == FungusCellData.Status.GERMINATED
+#             and cell['internalized'] is False
+#         ):
 
-    if point[0] > grid.z[int(len(grid.z) / 2)]:
-        new_z = point[0] + spacing * random.uniform(0, 1)
-    else:
-        new_z = point[0] + spacing * random.uniform(-1, 0)
+#             cell['status'] = FungusCellData.Status.GROWN
+#             spawn_hypahael_cell(cells, cell['point'], cell['iron'], fungus.spacing, grid)
 
-    new_point = Point(x=new_x, y=new_y, z=new_z,)
+#     # grow hyphae
+#     for index in cells.alive():
+#         cell = cells.cell_data[index]
 
-    cells.append(
-        FungusCellData.create_cell(
-            point=new_point,
-            status=FungusCellData.Status.GROWABLE,
-            form=FungusCellData.Form.HYPHAE,
-            iron=iron,
-            mobile=False,
-        )
-    )
+#         if (
+#             cell['form'] == FungusCellData.Form.HYPHAE
+#             and cell['status'] == FungusCellData.Status.GROWABLE
+#             and cell['internalized'] is False
+#             and cell['iron'] > fungus.iron_min_grow
+#             and cell['iteration'] > fungus.grow_time
+#         ):
+
+#             if fungus.p_branch > random.random():
+#                 iron_f = cell['iron'] / 3
+#                 spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
+#                 spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
+#             else:
+#                 iron_f = cell['iron'] / 2
+#                 spawn_hypahael_cell(cells, cell['point'], iron_f, fungus.spacing, grid)
+
+
+# def spawn_hypahael_cell(cells, point, iron, spacing, grid):
+#     new_x = 0
+#     new_y = 0
+#     new_z = 0
+
+#     if point[2] > grid.x[int(len(grid.x) / 2)]:
+#         new_x = point[2] + spacing * random.uniform(0, 1)
+#     else:
+#         new_x = point[2] + spacing * random.uniform(-1, 0)
+
+#     if point[1] > grid.y[int(len(grid.y) / 2)]:
+#         new_y = point[1] + spacing * random.uniform(0, 1)
+#     else:
+#         new_y = point[1] + spacing * random.uniform(-1, 0)
+
+#     if point[0] > grid.z[int(len(grid.z) / 2)]:
+#         new_z = point[0] + spacing * random.uniform(0, 1)
+#     else:
+#         new_z = point[0] + spacing * random.uniform(-1, 0)
+
+#     new_point = Point(x=new_x, y=new_y, z=new_z,)
+
+#     cells.append(
+#         FungusCellData.create_cell(
+#             point=new_point,
+#             status=FungusCellData.Status.GROWABLE,
+#             form=FungusCellData.Form.HYPHAE,
+#             iron=iron,
+#             mobile=False,
+#         )
+#     )
