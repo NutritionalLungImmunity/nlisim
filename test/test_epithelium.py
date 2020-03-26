@@ -3,13 +3,13 @@ from pytest import fixture
 
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
-from simulation.modules.fungus import (
-    FungusCellData,
-    FungusCellList,
-)
 from simulation.modules.epithelium import (
     EpitheliumCellData,
     EpitheliumCellList,
+)
+from simulation.modules.fungus import (
+    FungusCellData,
+    FungusCellList,
 )
 
 
@@ -28,12 +28,14 @@ def n_cyto():
     i.fill(0)
     yield i
 
+
 @fixture
 def m_cyto():
     # a 10 x 10 x 10 grid with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
+
 
 @fixture
 def tissue():
@@ -120,6 +122,7 @@ def test_internalize_conidia_1(
     assert epithelium_list.len_phagosome(0) == 1
     assert 0 in epithelium_list[0]['phagosome']
 
+
 def test_internalize_conidia_2(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
 ):
@@ -141,6 +144,7 @@ def test_internalize_conidia_2(
     assert epithelium_list.len_phagosome(0) == 2
     assert 0 in epithelium_list[0]['phagosome']
     assert 1 in epithelium_list[0]['phagosome']
+
 
 def test_internalize_conidia_2b(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -164,6 +168,7 @@ def test_internalize_conidia_2b(
     assert 0 not in epithelium_list[0]['phagosome']
     assert 1 in epithelium_list[0]['phagosome']
 
+
 def test_internalize_conidia_max(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
 ):
@@ -174,15 +179,15 @@ def test_internalize_conidia_max(
     )
 
     max_spores = 10
-    vox = grid.get_voxel(epithelium_list[0]['point'])
     fungus_list[0]['internalized'] = True
-    epithelium_list[0]['phagosome'][:max_spores] = 99 # artificially fill
+    epithelium_list[0]['phagosome'][:max_spores] = 99  # artificially fill
 
     epithelium_list.internalize(max_spores, fungus_list, grid)
 
     assert epithelium_list.len_phagosome(0) == max_spores
     assert 0 not in epithelium_list[0]['phagosome']
     assert not fungus_list[0]['internalized']
+
 
 def test_dead_conidia_1(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -193,15 +198,15 @@ def test_dead_conidia_1(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    vox = grid.get_voxel(epithelium_list[0]['point'])
     fungus_list[0]['internalized'] = True
     epithelium_list.internalize(10, fungus_list, grid)
-    fungus_list[0]['dead'] = True # simulate killing
+    fungus_list[0]['dead'] = True  # simulate killing
 
     epithelium_list.remove_dead_fungus(fungus_list, grid)
 
     assert epithelium_list.len_phagosome(0) == 0
     assert 0 not in epithelium_list[0]['phagosome']
+
 
 def test_produce_cytokines_0(
     epithelium_list: EpitheliumCellList,
@@ -231,31 +236,18 @@ def test_produce_cytokines_0(
     )
 
     # fungus is not swollen or germinated
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 0
     assert n_cyto[3, 3, 3] == 0
 
     fungus_list[0]['status'] = FungusCellData.Status.SWOLLEN
 
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 10
     assert n_cyto[3, 3, 3] == 10
+
 
 def test_produce_cytokines_0b(
     epithelium_list: EpitheliumCellList,
@@ -284,14 +276,7 @@ def test_produce_cytokines_0b(
         )
     )
 
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 10
     assert n_cyto[3, 3, 3] == 10
@@ -306,17 +291,11 @@ def test_produce_cytokines_0b(
         )
     )
 
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 20
     assert n_cyto[3, 3, 3] == 30
+
 
 def test_produce_cytokines_2(
     epithelium_list: EpitheliumCellList,
@@ -346,14 +325,7 @@ def test_produce_cytokines_2(
         )
     )
 
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 0
     assert n_cyto[3, 3, 3] == 0
@@ -368,17 +340,11 @@ def test_produce_cytokines_2(
         )
     )
 
-    epithelium_list.cytokine_update(
-        s_det, 
-        h_det, 
-        cyto_rate, 
-        m_cyto, 
-        n_cyto, 
-        fungus_list, 
-        grid)
+    epithelium_list.cytokine_update(s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus_list, grid)
 
     assert m_cyto[3, 3, 3] == 0
     assert n_cyto[3, 3, 3] == 10
+
 
 def test_damage_conidia(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -404,6 +370,7 @@ def test_damage_conidia(
 
     assert fungus_list.cell_data['health'][0] == 0
 
+
 def test_kill_epithelium(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
 ):
@@ -416,18 +383,19 @@ def test_kill_epithelium(
     )
 
     fungus_list.cell_data['internalized'][0] = True
-    epithelium_list[0]['phagosome'][0] = 0 # internalized
+    epithelium_list[0]['phagosome'][0] = 0  # internalized
 
     epithelium_list.die_by_germination(fungus_list)
     assert fungus_list.cell_data['internalized'][0]
     assert epithelium_list.len_phagosome(0) == 1
 
-    fungus_list.cell_data['status'][0] = FungusCellData.Status.GERMINATED 
+    fungus_list.cell_data['status'][0] = FungusCellData.Status.GERMINATED
 
     epithelium_list.die_by_germination(fungus_list)
 
     assert not fungus_list.cell_data['internalized'][0]
     assert epithelium_list.len_phagosome(0) == 0
+
 
 def test_kill_epithelium_n(
     epithelium_list: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -436,7 +404,7 @@ def test_kill_epithelium_n(
 
     point = Point(x=35, y=35, z=35)
     epithelium_list.append(EpitheliumCellData.create_cell(point=point))
-    for _ in range(0,10):
+    for _ in range(0, 10):
         fungus_list.append(
             FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
         )
@@ -445,14 +413,14 @@ def test_kill_epithelium_n(
     epithelium_list.internalize(10, fungus_list, grid)
 
     epithelium_list.die_by_germination(fungus_list)
-    for i in range(0,10):
+    for i in range(0, 10):
         assert fungus_list.cell_data['internalized'][i]
     assert epithelium_list.len_phagosome(0) == 10
 
-    fungus_list.cell_data['status'][6] = FungusCellData.Status.GERMINATED 
+    fungus_list.cell_data['status'][6] = FungusCellData.Status.GERMINATED
 
     epithelium_list.die_by_germination(fungus_list)
 
-    for i in range(0,10):
+    for i in range(0, 10):
         assert not fungus_list.cell_data['internalized'][i]
     assert epithelium_list.len_phagosome(0) == 0
