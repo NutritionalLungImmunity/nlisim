@@ -103,10 +103,10 @@ class Molecules(Module):
                         xi = index[2] + x
 
                         if grid.is_valid_voxel(Voxel(x=xi,y=yj,z=zk)):
-                            temp[index[2], index[1], index[0]] += molecule[zk, yj, xi] / 26
+                            temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
             
-            if tissue[index[2], index[1], index[0]] == TissueTypes.AIR.value:
-                temp[index[2], index[1], index[0]] = 0
+            if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+                temp[index[0], index[1], index[2]] = 0
         
         molecule[:] = temp[:]
         
