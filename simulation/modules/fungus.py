@@ -43,10 +43,10 @@ class FungusCellData(CellData):
         cls,
         *,
         iron: float = 0,
-        status: Status = Status.DRIFTING,
+        status: Status = Status.RESTING,
         form: Form = Form.CONIDIA,
         iteration=0,
-        mobile=True,
+        mobile=False,
         internalized=False,
         health=100,
         **kwargs,
@@ -109,7 +109,6 @@ class FungusCellList(CellList):
                 ):
                     indices.append(index)
                     
-
             if len(indices) > 0:
                 iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
                 for cell_index in indices:
@@ -119,22 +118,26 @@ class FungusCellList(CellList):
 
                 iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
 
-    def spawn_hypahael_cell(self, cells):
-        cells = self.cell_data
-        children = FungusCellData(len(indices), initialize=True)
-        children['iron'] = cells['iron'][indices]
+    def spawn_hypahael_cell(self, children):
         children['status'] = FungusCellData.Status.GROWABLE
         children['form'] = FungusCellData.Form.HYPHAE
         children['mobile'] = False
-        children['point'] = cells['point'][indices] + \
-        spacing * np.random.rand(len(indices), 3)
-        for cell in children:
-            self.append(cell)
+        self.extend(children)
 
+    def spawn_spores(self, points):
+        N, M = points.shape
+
+        if M != 3:
+            raise ValueError('Invalid shape for a point object')
+
+        spores = FungusCellData(N, initialize=True)
+        spores['point'] = points
+        spores['status'] = FungusCellData.Status.RESTING
+
+        self.extend(spores)
 
     def grow_hyphae(self, iron_min_grow, grow_time, p_branch, spacing):
-
-        # spawn hyphae from conidia
+        '''Grow fungal hyphae.'''
         cells = self.cell_data
 
         conidia_indices = self.alive(
@@ -156,17 +159,15 @@ class FungusCellList(CellList):
             cells['status'][conidia_indices] = FungusCellData.Status.GROWN
             children = FungusCellData(len(conidia_indices), initialize=True)
             children['iron'] = cells['iron'][conidia_indices]
-            children['status'] = FungusCellData.Status.GROWABLE
-            children['form'] = FungusCellData.Form.HYPHAE
-            children['mobile'] = False
             children['point'] = cells['point'][conidia_indices] + \
             spacing * np.random.rand(len(conidia_indices), 3)
-            for cell in children:
-                self.append(cell)
+            self.spawn_hypahael_cell(children)
 
+        # grow hyphae
         if (len(hyphae_indices) != 0):
             cells['status'][hyphae_indices] = FungusCellData.Status.GROWN
             branch_mask = (np.random.rand(len(hyphae_indices)) < p_branch)
+            not_branch_indices = (branch_mask == False).nonzero()[0]
             branch_indices = branch_mask.nonzero()[0]
 
             elongate_children = FungusCellData(len(hyphae_indices), initialize=True)
@@ -178,10 +179,16 @@ class FungusCellList(CellList):
             if (len(branch_indices) != 0):
                 elongate_children['iron'][branch_indices] = cells['iron'][hyphae_indices[branch_indices]] / 3
                 branch_children['iron'] = cells['iron'][hyphae_indices[branch_indices]] / 3
-                branch_children['point'] = cells['point'][hyphae_indices[branch_indices]] + spacing * np.random.rand(len(hyphae_indices), 3)
+                branch_children['point'] = cells['point'][hyphae_indices[branch_indices]] \
+                    + spacing * np.random.rand(len(hyphae_indices), 3)
+
+            # update iron in orignal cells
+            cells['iron'][hyphae_indices[not_branch_indices]] /= 2
+            cells['iron'][hyphae_indices[branch_indices]] /= 3
             
-            for cell in elongate_children:
-                self.append(cell)
+            self.spawn_hypahael_cell(elongate_children)
+            self.spawn_hypahael_cell(branch_children)
+
         # # grow hyphae
         # if (len(hyphae_indices) != 0):
         #     children = FungusCellData(len(hyphae_indices), initialize=True)
@@ -245,19 +252,39 @@ class FungusCellList(CellList):
         cells['status'][indices] = FungusCellData.Status.DEAD
         cells['dead'][indices] = True
 
-    def change_status(self, iter_to_change_status):
+    def change_status(self, iter_to_change_status: int, p_internal_swall: float):
         cells = self.cell_data
-
+        print(cells)
         indices = self.alive(np.logical_and(
             cells['iteration'] >= iter_to_change_status,
             cells['form'] != FungusCellData.Form.HYPHAE
         ))
 
-        rest_indices = (cells['status'][indices] == FungusCellData.Status.RESTING).nonzero()[0]
-        swollen_indices = (cells['status'][indices] == FungusCellData.Status.SWOLLEN).nonzero()[0]
+        internalized_indices = (cells['internalized'][indices] == True).nonzero()[0]
+        not_internalized_indices = (cells['internalized'][indices] == False).nonzero()[0]
+   
+        internalized_rest_indices = (cells['status'][internalized_indices] == FungusCellData.Status.RESTING).nonzero()[0]
+        internalized_swollen_indices = (cells['status'][internalized_indices] == FungusCellData.Status.SWOLLEN).nonzero()[0]
+        
+        # internal fungus with REST status
+        swall_mask = (np.random.rand(len(internalized_rest_indices)) < p_internal_swall)
+        internalized_rest_indices = swall_mask.nonzero()[0]
 
+        cells['status'][internalized_rest_indices] = FungusCellData.Status.SWOLLEN
+        cells['iteration'][internalized_rest_indices] = 0
+
+        # internal fungus with SWOLLEN status
+        cells['status'][internalized_swollen_indices] = FungusCellData.Status.GERMINATED
+        cells['iteration'][internalized_swollen_indices] = 0
+       
+        rest_indices = (cells['status'][not_internalized_indices] == FungusCellData.Status.RESTING).nonzero()[0]
+        swollen_indices = (cells['status'][not_internalized_indices] == FungusCellData.Status.SWOLLEN).nonzero()[0]
+        
+        # free fungus with REST status
         cells['status'][rest_indices] = FungusCellData.Status.SWOLLEN
         cells['iteration'][rest_indices] = 0
+
+        # free fungus with SWOLLEN status
         cells['status'][swollen_indices] = FungusCellData.Status.GERMINATED
         cells['iteration'][swollen_indices] = 0
 
@@ -308,7 +335,6 @@ class Fungus(Module):
         grid: RectangularGrid = state.grid
         tissue = state.geometry.lung_tissue
 
-        
         self.init_num = self.config.getint('init_num')
         self.p_lodge = self.config.getfloat('p_lodge')
         self.p_internal_swell = self.config.getfloat('p_internal_swell')

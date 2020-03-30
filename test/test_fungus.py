@@ -94,9 +94,40 @@ def test_change_state(populated_fungus):
 	cells['form'][0:2] = FungusCellData.Form.CONIDIA
 	cells['status'][0] = FungusCellData.Status.RESTING
 	cells['status'][1] = FungusCellData.Status.SWOLLEN
-	populated_fungus.change_status(iter_to_change_status)
+	cells['internalized'] = False
+	populated_fungus.change_status(iter_to_change_status, 0)
 	assert (cells['iteration'][0:2] == 0).all()
 	assert cells['status'][0] == FungusCellData.Status.SWOLLEN
+	assert cells['status'][1] == FungusCellData.Status.GERMINATED
+	assert (cells['status'][2:] == FungusCellData.Status.GROWABLE).all()
+
+def test_internal_change_state(populated_fungus):
+	iter_to_change_status = 10
+	cells = populated_fungus.cell_data
+	for _ in range(10):
+		populated_fungus.age()
+	cells['form'][0:2] = FungusCellData.Form.CONIDIA
+	cells['status'][0] = FungusCellData.Status.RESTING
+	cells['status'][1] = FungusCellData.Status.SWOLLEN
+	cells['internalized'] = True
+	populated_fungus.change_status(iter_to_change_status, 1)
+	assert (cells['iteration'][0:2] == 0).all()
+	assert cells['status'][0] == FungusCellData.Status.SWOLLEN
+	assert cells['status'][1] == FungusCellData.Status.GERMINATED
+
+def test_internal_change_state_zero_swallow(populated_fungus):
+	iter_to_change_status = 10
+	cells = populated_fungus.cell_data
+	for _ in range(10):
+		populated_fungus.age()
+	cells['form'][0:2] = FungusCellData.Form.CONIDIA
+	cells['status'][0] = FungusCellData.Status.RESTING
+	cells['status'][1] = FungusCellData.Status.SWOLLEN
+	cells['internalized'] = True
+	populated_fungus.change_status(iter_to_change_status, 0)
+	assert cells['iteration'][0] != 0
+	assert cells['iteration'][1] == 0
+	assert cells['status'][0] == FungusCellData.Status.RESTING
 	assert cells['status'][1] == FungusCellData.Status.GERMINATED
 
 def test_grow_conidia(populated_fungus):
@@ -106,8 +137,11 @@ def test_grow_conidia(populated_fungus):
 	cells['iteration'] = 10
 	populated_fungus.grow_hyphae(iron_min_grow=1, grow_time=5, p_branch=1, spacing=1)
 	cells = populated_fungus.cell_data
+	assert len(cells) == 10
+	assert (cells['status'][:5] == FungusCellData.Status.GROWN).all()
+	assert (cells['status'][5:] == FungusCellData.Status.GROWABLE).all()
 
-def test_grow_hyphae(populated_fungus):
+def test_grow_hyphae_not_branch(populated_fungus):
 	cells = populated_fungus.cell_data
 	cells['form'] = FungusCellData.Form.HYPHAE
 	cells['status'] = FungusCellData.Status.GROWABLE
@@ -116,4 +150,32 @@ def test_grow_hyphae(populated_fungus):
 	populated_fungus.grow_hyphae(iron_min_grow=1, grow_time=5, p_branch=0, spacing=1)
 	cells = populated_fungus.cell_data
 
+	assert len(cells) == 10
+	assert (cells['iron'] == 15).all()
+	assert (cells['status'][:5] == FungusCellData.Status.GROWN).all()
+	assert (cells['status'][5:] == FungusCellData.Status.GROWABLE).all()
 
+def test_grow_hyphae_branch(populated_fungus):
+	cells = populated_fungus.cell_data
+	cells['form'] = FungusCellData.Form.HYPHAE
+	cells['status'] = FungusCellData.Status.GROWABLE
+	cells['iteration'] = 10
+	cells['iron'] = 30
+	populated_fungus.grow_hyphae(iron_min_grow=1, grow_time=5, p_branch=1, spacing=1)
+	cells = populated_fungus.cell_data
+
+	assert len(cells) == 15
+	assert (cells['iron'] == 10).all()
+	assert (cells['status'][:5] == FungusCellData.Status.GROWN).all()
+	assert (cells['status'][5:] == FungusCellData.Status.GROWABLE).all()
+
+def test_spawn_spores(populated_fungus):
+	points = np.zeros((2, 3))
+	points[0] = Point(x=5, y=5, z=5)
+	points[1] = Point(x=3, y=3, z=3)
+	populated_fungus.spawn_spores(points)
+	cells = populated_fungus.cell_data
+
+	assert len(cells) == 7
+	assert (cells['status'][5:] == FungusCellData.Status.RESTING).all()
+	assert (cells['form'][5:] == FungusCellData.Form.CONIDIA).all()
