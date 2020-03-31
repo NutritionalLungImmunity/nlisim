@@ -67,24 +67,6 @@ class FungusCellData(CellData):
 class FungusCellList(CellList):
     CellDataClass = FungusCellData
 
-    # def spawn_hypahael_cell(self, point, iron, spacing):
-    #     new_x = point[2] + spacing * random.uniform(-1, 1)
-    #     new_y = point[1] + spacing * random.uniform(-1, 1)
-    #     new_z = point[0] + spacing * random.uniform(-1, 1)
-
-    #     new_point = Point(x=new_x, y=new_y, z=new_z,)
-
-    #     self.append(
-    #         FungusCellData.create_cell(
-    #             point=new_point,
-    #             status=FungusCellData.Status.GROWABLE,
-    #             form=FungusCellData.Form.HYPHAE,
-    #             iron=iron,
-    #             mobile=False,
-    #         )
-    #     )
-
-
     def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
         ''' Absorb iron from external environment '''
         
@@ -157,6 +139,7 @@ class FungusCellList(CellList):
         # grow conidia
         if (len(conidia_indices) != 0):
             cells['status'][conidia_indices] = FungusCellData.Status.GROWN
+            cells['form'][conidia_indices] = FungusCellData.Form.HYPHAE
             children = FungusCellData(len(conidia_indices), initialize=True)
             children['iron'] = cells['iron'][conidia_indices]
             children['point'] = cells['point'][conidia_indices] + \
