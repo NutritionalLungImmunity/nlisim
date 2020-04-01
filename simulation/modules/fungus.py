@@ -252,6 +252,7 @@ class FungusState(ModuleState):
     # grow_time: float = 0.0
     # p_branch: float = 0.0
     # p_internalize: float = 0.0
+    # health: float = 100.0
 
 
 class Fungus(Module):

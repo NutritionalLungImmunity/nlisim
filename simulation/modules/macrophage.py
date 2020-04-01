@@ -3,83 +3,245 @@ import random
 import attr
 import numpy as np
 
-from simulation.cell import CellData
-from simulation.coordinates import Point
+from simulation.cell import CellData, CellList
+from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
-from simulation.modules.afumigatus import AfumigatusCellData, AfumigatusCellList
+from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
-from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
 from simulation.state import State
 
+MAX_CONIDIA = 100
 
-class MacrophageCellData(PhagocyteCellData):
-    BOOLEAN_NETWORK_LENGTH = 3  # place holder for now
+
+class MacrophageCellData(CellData):
+
     MACROPHAGE_FIELDS = [
-        ('boolean_network', 'b1', BOOLEAN_NETWORK_LENGTH),
-        ('release_phagosome', 'b1'),
+        ('iteration', 'i4'),
+        ('phagosome', (np.int32, (MAX_CONIDIA))),
     ]
 
-    dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
-    )  # type: ignore
+    dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs,) -> np.record:
-        network = cls.initial_boolean_network()
-        release_phagosome = False
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + (network, release_phagosome)
 
-    @classmethod
-    def initial_boolean_network(cls) -> np.ndarray:
-        return np.asarray([True, False, True])
+        iteration = 0
+        phagosome = np.empty(MAX_CONIDIA)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (iteration, phagosome,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
-class MacrophageCellList(PhagocyteCellList):
+class MacrophageCellList(CellList):
     CellDataClass = MacrophageCellData
 
-    def update(self, iter_to_change_status):
-        # TODO - add boolena network update
-        # for index in self.alive:
-        #   self[index].update_boolean network
-        #
-        # if cell['status'] == PhagocyteCellData.Status.DEAD:
-        #    do nothing
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell['phagosome'] != -1))
 
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = MacrophageCellList.len_phagosome(self, index)
+        if (
+            index_to_append < MAX_CONIDIA
+            and index_to_append < max_size
+            and pathogen_index not in cell['phagosome']
+        ):
+            cell['phagosome'][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index]['phagosome']
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = MacrophageCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index, fungus: FungusCellList):
+        for i in range(0, self.len_phagosome(index)):
+            index = self[index]['phagosome'][i]
+            fungus[index]['internalized'] = False
+        self[index]['phagosome'].fill(-1)
+
+    def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
+        num_reps = rec_rate_ph  # number of macrophages recruited per time step
+
+        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+        blood_index = np.transpose(blood_index)
+        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+        blood_index = np.transpose(blood_index)
+        cyto_index = blood_index[mask]
+        np.random.shuffle(cyto_index)
+
+        for _ in range(0, num_reps):
+            if len(cyto_index) > 0:
+                ii = random.randint(0, len(cyto_index) - 1)
+                point = Point(
+                    x=grid.x[cyto_index[ii][2]],
+                    y=grid.y[cyto_index[ii][1]],
+                    z=grid.z[cyto_index[ii][0]],
+                )
+
+                if p_rec_r > random.random():
+                    self.append(MacrophageCellData.create_cell(point=point))
+
+    def absorb_cytokines(self, m_abs, cyto, grid):
         for index in self.alive():
-            cell = self[index]
-            if cell['status'] == PhagocyteCellData.Status.NECROTIC:
-                cell['status'] = PhagocyteCellData.Status.DEAD
-                cell['release_phagosome'] = True
-            elif self.len_phagosome(index) > MacrophageCellData.MAX_INTERNAL_CONIDIA:
-                cell['status'] = PhagocyteCellData.Status.NECROTIC
-            elif cell['status'] == PhagocyteCellData.Status.ACTIVE:
-                if cell['iteration'] >= iter_to_change_status:
-                    cell['iteration'] = 0
-                    cell['status'] = PhagocyteCellData.Status.RESTING
-                    cell['state'] = PhagocyteCellData.State.FREE
-                else:
-                    cell['iteration'] += 1
-            elif cell['status'] == PhagocyteCellData.Status.INACTIVE:
-                if cell['iteration'] >= iter_to_change_status:
-                    cell['iteration'] = 0
-                    cell['status'] = PhagocyteCellData.Status.RESTING
-                else:
-                    cell['iteration'] += 1
-            elif cell['status'] == PhagocyteCellData.Status.ACTIVATING:
-                if cell['iteration'] >= iter_to_change_status:
-                    cell['iteration'] = 0
-                    cell['status'] = PhagocyteCellData.Status.ACTIVE
-                else:
-                    cell['iteration'] += 1
-            elif cell['status'] == PhagocyteCellData.Status.INACTIVATING:
-                if cell['iteration'] >= iter_to_change_status:
-                    cell['iteration'] = 0
-                    cell['status'] = PhagocyteCellData.Status.INACTIVE
-                else:
-                    cell['iteration'] += 1
-        return
+            vox = grid.get_voxel(self[index]['point'])
+            x = vox.x
+            y = vox.y
+            z = vox.z
+            cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]
+
+    def produce_cytokines(self, m_det, m_n, grid, fungus: FungusCellList, cyto):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i]['point'])
+
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if m_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, m_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * m_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
+
+    def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
+        for cell_index in self.alive():
+            cell = self[cell_index]
+            vox = grid.get_voxel(cell['point'])
+
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
+
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if (
+                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                        ):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] >= rec_r:
+                                p[i] = cyto[zk, yj, xi]
+
+            indices = np.argwhere(p != 0)
+            num_vox_possible = len(indices)
+            if num_vox_possible == 1:
+                i = indices[0][0]
+            elif num_vox_possible > 1:
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0, len(vox_list) - 1)
+
+            point = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]],
+            )
+
+            cell['point'] = point
+            self.update_voxel_index([cell_index])
+
+            for i in range(0, self.len_phagosome(cell_index)):
+                f_index = cell['phagosome'][i]
+                fungus[f_index]['point'] = point
+                fungus.update_voxel_index([f_index])
+
+    def internalize_conidia(self, m_det, max_spores, grid, fungus: FungusCellList):
+        for i in self.alive():
+            cell = self[i]
+            vox = grid.get_voxel(cell['point'])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if m_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                        fungus[index]['internalized'] = True
+                        self.append_to_phagosome(i, index, max_spores)
+            else:
+                for num in range(0, m_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * m_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                                        fungus[index]['internalized'] = True
+                                        self.append_to_phagosome(i, index, max_spores)
+
+    def damage_conidia(self, kill, t, health, fungus):
+        for i in self.alive():
+            cell = self[i]
+            for ii in range(0, self.len_phagosome(i)):
+                index = cell['phagosome'][ii]
+                fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+                if fungus[index]['dead']:
+                    self.remove_from_phagosome(i, index)
 
 
 def cell_list_factory(self: 'MacrophageState'):
@@ -89,140 +251,78 @@ def cell_list_factory(self: 'MacrophageState'):
 @attr.s(kw_only=True)
 class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_num: int = 0
-    MPH_UPTAKE_QTTY: float = 0.1
-    TF_ENHANCE: float = 1
-    DRIFT_LAMBDA: float = 10
-    DRIFT_BIAS: float = 0.9
-    ITER_TO_CHANGE_STATUS: int = 0
-    MAX_INTERNAL_CONIDIA: int = 50
+    rec_r: float
+    p_rec_r: float
+    m_abs: float
+    m_n: float
+    kill: float
+    m_det: int
+    rec_rate_ph: int
+    time_m: float
+    max_conidia_in_phag: int
 
 
 class Macrophage(Module):
     name = 'macrophage'
     defaults = {
         'cells': '',
-        'init_num': '0',
-        'MPH_UPTAKE_QTTY': '0.1',
-        'TF_ENHANCE': '1',
-        'DRIFT_LAMBDA': '10',
-        'DRIFT_BIAS': '0.9',
-        'ITER_TO_CHANGE_STATUS': '0',
-        'MAX_INTERNAL_CONIDIA': '50',
+        'rec_r': '1.0',
+        'p_rec_r': '1.0',
+        'm_abs': '0.1 ',
+        'm_n': '10.0 ',
+        'kill': '10.0',
+        'm_det': '15',
+        'rec_rate_ph': '2',
+        'time_m': '1',
+        'max_conidia_in_phag': '50',
     }
     StateClass = MacrophageState
 
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        tissue = state.geometry.lung_tissue
 
-        macrophage.init_num = self.config.getint('init_num')
-        macrophage.MPH_UPTAKE_QTTY = self.config.getfloat('MPH_UPTAKE_QTTY')
-        macrophage.TF_ENHANCE = self.config.getfloat('TF_ENHANCE')
-        macrophage.DRIFT_LAMBDA = self.config.getfloat('DRIFT_LAMBDA')
-        macrophage.DRIFT_BIAS = self.config.getfloat('DRIFT_BIAS')
-        MacrophageCellData.LEAVE_RATE = self.config.getfloat('LEAVE_RATE')
-        MacrophageCellData.RECRUIT_RATE = self.config.getfloat('RECRUIT_RATE')
-        MacrophageCellData.ITER_TO_CHANGE_STATUS = self.config.getfloat('ITER_TO_CHANGE_STATUS')
-        MacrophageCellData.MAX_INTERNAL_CONIDIA = self.config.getint('MAX_INTERNAL_CONIDIA')
+        macrophage.rec_r = self.config.getfloat('rec_r')
+        macrophage.p_rec_r = self.config.getfloat('p_rec_r')
+        macrophage.m_abs = self.config.getfloat('m_abs')
+        macrophage.m_n = self.config.getfloat('Mn')
+        macrophage.kill = self.config.getfloat('kill')
+        macrophage.m_det = self.config.getint('m_det')  # radius
+        macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
+        macrophage.time_m = self.config.getfloat('time_step')
+        macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
+
         macrophage.cells = MacrophageCellList(grid=grid)
-
-        if macrophage.init_num > 0:
-            # initialize the surfactant layer with some macrophage in random locations
-            indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
-
-            for i in range(0, macrophage.init_num):
-                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
-
-                point = Point(x=x, y=y, z=z)
-                status = MacrophageCellData.Status.RESTING
-
-                macrophage.cells.append(MacrophageCellData.create_cell(point=point, status=status))
 
         return state
 
     def advance(self, state: State, previous_time: float):
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        m_cells: MacrophageCellList = macrophage.cells
         tissue = state.geometry.lung_tissue
-        cells = macrophage.cells
-        iron = state.molecules.grid.concentrations.iron
+        grid = state.grid
+        cyto = state.molecules.grid['m_cyto']
+        fungus: FungusCellList = state.fungus.cells
+        health = state.fungus.health
 
-        interact(state)
-
-        cells.recruit(MacrophageCellData.RECRUIT_RATE, tissue, grid)
-
-        cells.remove(MacrophageCellData.LEAVE_RATE, tissue, grid)
-
-        cells.update(macrophage.ITER_TO_CHANGE_STATUS)
-
-        release_phagosomes(cells, state.afumigatus.tree.cells)
-
-        cells.chemotaxis(
-            iron, macrophage.DRIFT_LAMBDA, macrophage.DRIFT_BIAS, tissue, grid,
+        # recruit new
+        m_cells.recruit_new(
+            macrophage.rec_rate_ph, macrophage.rec_r, macrophage.p_rec_r, tissue, grid, cyto
         )
 
+        # absorb cytokines
+        m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
+
+        # produce cytokines
+        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, cyto)
+
+        # move
+        m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
+
+        # internalize
+        m_cells.internalize_conidia(macrophage.m_det, macrophage.max_conidia_in_phag, grid, fungus)
+
+        # damage conidia
+        m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
+
         return state
-
-
-def hill_probability(substract, km=10):
-    return substract * substract / (substract * substract + km * km)
-
-
-def release_phagosomes(macrophage_cells: MacrophageCellList, afumigatus_cells: AfumigatusCellList):
-    for index in macrophage_cells.alive(macrophage_cells.cell_data['release_phagosome']):
-        for phag_index in range(0, macrophage_cells.len_phagosome(index)):
-            afumigatus_cells.cell_data[macrophage_cells.cell_data[index]['phagosome'][phag_index]][
-                'state'
-            ] = AfumigatusCellData.State.RELEASING
-        macrophage_cells.clear_all_phagosome(index)
-
-
-def interact(state: State):
-    # get molecules in voxel
-    iron = state.molecules.grid.concentrations.iron
-    cells = state.macrophage.cells
-    grid = state.grid
-
-    uptake = state.macrophage.MPH_UPTAKE_QTTY
-    enhance = state.macrophage.TF_ENHANCE
-
-    # 1. Get cells that are alive
-    for index in cells.alive():
-
-        # 2. Get voxel for each cell to get agents in that voxel
-        cell = cells[index]
-        vox = grid.get_voxel(cell['point'])
-
-        # 3. Interact with all molecules
-
-        #  Iron -----------------------------------------------------
-        iron_amount = iron[vox.z, vox.y, vox.x]
-        if hill_probability(iron_amount) > random.random():
-            qtty = uptake * iron_amount
-            iron[vox.z, vox.y, vox.x] -= qtty
-            cell['iron_pool'] += qtty
-            # print(qtty)
-            # print(iron[vox.z, vox.y, vox.x])
-            # print(cell['iron_pool'])
-
-        fpn = 0  # TODO replace with actual boolean network
-        tf = 1  # TODO replace with actual boolean network
-        cell['boolean_network'][fpn] = True
-        cell['boolean_network'][tf] = False
-
-        if cell['boolean_network'][fpn]:
-            enhancer = enhance if cell['boolean_network'][tf] else 1
-            qtty = cell['iron_pool'] * (1 if uptake * enhancer > 1 else uptake * enhancer)
-            iron[vox.z, vox.y, vox.x] += qtty
-            cell['iron_pool'] -= qtty
-            # print(qtty)
-            # print(iron[vox.z, vox.y, vox.x])
-            # print(cell['iron_pool'])
-
-        #  Next_Mol -----------------------------------------------------
-        #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...
