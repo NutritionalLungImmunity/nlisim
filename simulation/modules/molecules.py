@@ -87,6 +87,7 @@ class Molecules(Module):
         #    self.degrade(molecules.grid[molecule])
         #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
 
+        molecules.grid.incr()
         self.diffuse_iron(molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max)
 
         self.degrade(molecules.grid['cyto_m'], molecules.cyto_evap_m)
@@ -94,8 +95,6 @@ class Molecules(Module):
 
         self.degrade(molecules.grid['cyto_n'], molecules.cyto_evap_n)
         self.diffuse(molecules.grid['cyto_n'], state.grid, state.geometry.lung_tissue)
-
-        molecules.grid.incr()
 
         return state
 
@@ -150,7 +149,7 @@ class Molecules(Module):
         # handled in the cell specific module.
         for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
             iron[index[0], index[1], index[2]] = min([
-                iron[index[0], index[1], index[2]] + 1,
+                iron[index[0], index[1], index[2]],
                 iron_max
             ])
 
@@ -174,6 +173,6 @@ class Molecules(Module):
             if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
                 temp[index[0], index[1], index[2]] = 0
         
-        molecule[:] = temp[:]
+        iron[:] = temp[:]
         
         return
