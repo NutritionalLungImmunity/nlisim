@@ -1,14 +1,12 @@
 import numpy as np
 from pytest import fixture
 
-from simulation.config import SimulationConfig
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.modules.fungus import (
     FungusCellData,
     FungusCellList,
 )
-from simulation.state import State
 
 
 @fixture
@@ -90,8 +88,8 @@ def test_kill(populated_fungus):
     cells['point'][1][0] = -1
     populated_fungus.kill()
 
-    assert (cells['dead'][0:2] == True).all()
-    assert (cells['dead'][2:] == False).all()
+    assert (cells['dead'][0:2]).all()
+    assert not (cells['dead'][2:]).any()
     assert (cells['status'][0:2] == FungusCellData.Status.DEAD).all()
     assert (cells['status'][2:] != FungusCellData.Status.DEAD).all()
 
@@ -184,6 +182,20 @@ def test_grow_hyphae_branch(populated_fungus):
     assert (cells['iron'] == 10).all()
     assert (cells['status'][:5] == FungusCellData.Status.GROWN).all()
     assert (cells['status'][5:] == FungusCellData.Status.GROWABLE).all()
+
+
+def test_grow_hyphae_internal(populated_fungus):
+    cells = populated_fungus.cell_data
+    cells['form'] = FungusCellData.Form.HYPHAE
+    cells['status'] = FungusCellData.Status.GROWABLE
+    cells['iteration'] = 10
+    cells['iron'] = 30
+    cells['internalized'] = True
+    populated_fungus.grow_hyphae(iron_min_grow=1, grow_time=5, p_branch=0, spacing=1)
+    cells = populated_fungus.cell_data
+
+    assert len(cells) == 5
+    assert (cells['iron'] == 30).all()
 
 
 def test_spawn_spores(populated_fungus):
