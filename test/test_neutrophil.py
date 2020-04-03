@@ -585,3 +585,49 @@ def test_update(
     neutrophil_list.update()
 
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
+
+
+def test_age(neutrophil_list: NeutrophilCellList,):
+    age_limit = 2
+
+    point = Point(x=35, y=35, z=35)
+    neutrophil_list.append(
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=2
+        )
+    )
+
+    # age = 0
+    neutrophil_list.age()
+    neutrophil_list.kill_by_age(age_limit)
+
+    assert len(neutrophil_list.alive()) == 1
+    assert neutrophil_list[0]['iteration'] == 1
+
+    neutrophil_list.append(
+        NeutrophilCellData.create_cell(
+            point=point, status=NeutrophilCellData.Status.NONGRANULATING, granule_count=2
+        )
+    )
+
+    # age = 1, 0
+    neutrophil_list.age()
+    neutrophil_list.kill_by_age(age_limit)
+
+    assert len(neutrophil_list.alive()) == 2
+    assert neutrophil_list[0]['iteration'] == 2
+
+    # age = 2, 1
+    neutrophil_list.age()
+    neutrophil_list.kill_by_age(age_limit)
+
+    assert len(neutrophil_list.alive()) == 1
+    assert neutrophil_list[0]['dead']
+    assert neutrophil_list[0]['iteration'] == 3
+    assert neutrophil_list[1]['iteration'] == 2
+
+    # age = 2
+    neutrophil_list.age()
+    neutrophil_list.kill_by_age(age_limit)
+
+    assert len(neutrophil_list.alive()) == 0
