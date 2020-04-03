@@ -1,7 +1,6 @@
 import numpy as np
 from pytest import fixture
 
-from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.modules.molecules import Molecules
 
@@ -35,38 +34,34 @@ def tissue():
 
 
 def test_diffuse(tissue, grid: RectangularGrid, cyto):
-    cyto[1,2,3] = 26
+    cyto[1, 2, 3] = 26
 
     Molecules.diffuse(cyto, grid, tissue)
 
-    assert cyto[1,2,3] == 1
-    assert cyto[0,2,3] == 1
-    assert cyto[1,1,3] == 1
-    assert cyto[1,2,2] == 1
-    assert cyto[1,2,4] == 1
-    assert cyto[1,3,3] == 1
-    assert cyto[2,2,3] == 1
+    assert cyto[1, 2, 3] == 1
+    assert cyto[0, 2, 3] == 1
+    assert cyto[1, 1, 3] == 1
+    assert cyto[1, 2, 2] == 1
+    assert cyto[1, 2, 4] == 1
+    assert cyto[1, 3, 3] == 1
+    assert cyto[2, 2, 3] == 1
 
-    assert cyto[3,2,1] == 0
+    assert cyto[3, 2, 1] == 0
+
 
 def test_degrade(cyto):
-    cyto[1,2,3] = 10
+    cyto[1, 2, 3] = 10
 
     Molecules.degrade(cyto, 0.1)
 
-    assert cyto[1,2,3] == 9
+    assert cyto[1, 2, 3] == 9
+
 
 def test_diffuse_iron(iron, grid, tissue):
     iron[:] = 0
-    iron[1,2,3] = 260
-    tissue[1,2,3] = 1
+    iron[1, 2, 3] = 260
+    tissue[1, 2, 3] = 1
 
     Molecules.diffuse_iron(iron, grid, tissue, 26)
 
-    assert iron[1,2,3] == 1
-    
-
-
-    
-    
-
+    assert iron[1, 2, 3] == 1

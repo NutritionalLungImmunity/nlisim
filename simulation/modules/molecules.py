@@ -23,6 +23,7 @@ class MoleculesState(ModuleState):
     cyto_evap_n: float
     iron_max: float
 
+
 class Molecules(Module):
     name = 'molecules'
     StateClass = MoleculesState
@@ -83,12 +84,14 @@ class Molecules(Module):
         #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
 
-        #for molecule in molecules.grid.types:
+        # for molecule in molecules.grid.types:
         #    self.degrade(molecules.grid[molecule])
         #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
 
         molecules.grid.incr()
-        self.diffuse_iron(molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max)
+        self.diffuse_iron(
+            molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        )
 
         self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
         self.diffuse(molecules.grid['m_cyto'], state.grid, state.geometry.lung_tissue)
@@ -117,14 +120,14 @@ class Molecules(Module):
                         yj = index[1] + y
                         xi = index[2] + x
 
-                        if grid.is_valid_voxel(Voxel(x=xi,y=yj,z=zk)):
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                             temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
-            
+
             if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
                 temp[index[0], index[1], index[2]] = 0
-        
+
         molecule[:] = temp[:]
-        
+
         return
 
     @classmethod
@@ -132,13 +135,13 @@ class Molecules(Module):
         # TODO These 2 functions should be implemented for all moleculess
         # the rest of the behavior (uptake, secretion, etc.) should be
         # handled in the cell specific module.
-        
+
         for index in np.argwhere(molecule > 0):
             z = index[0]
             y = index[1]
             x = index[2]
 
-            molecule[z, y, x] = molecule[z, y, x] * (1 - evap)   
+            molecule[z, y, x] = molecule[z, y, x] * (1 - evap)
 
         return
 
@@ -148,10 +151,7 @@ class Molecules(Module):
         # the rest of the behavior (uptake, secretion, etc.) should be
         # handled in the cell specific module.
         for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
-            iron[index[0], index[1], index[2]] = min([
-                iron[index[0], index[1], index[2]],
-                iron_max
-            ])
+            iron[index[0], index[1], index[2]] = min([iron[index[0], index[1], index[2]], iron_max])
 
         temp = np.zeros(iron.shape)
 
@@ -167,12 +167,12 @@ class Molecules(Module):
                         yj = index[1] + y
                         xi = index[2] + x
 
-                        if grid.is_valid_voxel(Voxel(x=xi,y=yj,z=zk)):
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                             temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
-            
+
             if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
                 temp[index[0], index[1], index[2]] = 0
-        
+
         iron[:] = temp[:]
-        
+
         return
