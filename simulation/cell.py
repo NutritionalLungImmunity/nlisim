@@ -187,6 +187,10 @@ class CellList(object):
         """Return the portion of the underlying data array containing valid data."""
         return self._cell_data[: self._ncells]
 
+    @property
+    def voxel_index(self):
+        return self._reverse_voxel_index
+
     @classmethod
     def create_from_seed(cls, grid: RectangularGrid, **kwargs) -> 'CellList':
         """Create a new cell list initialized with a single cell.
