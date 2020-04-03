@@ -216,6 +216,13 @@ class NeutrophilCellList(CellList):
         for i in self.alive(self.cell_data['granule_count'] == 0):
             self[i]['status'] = NeutrophilCellData.Status.NONGRANULATING
 
+    def age(self):
+        self.cell_data['iteration'] += 1
+
+    def kill_by_age(self, age_limit):
+        for i in self.alive(self.cell_data['iteration'] > age_limit):
+            self[i]['dead'] = True
+
 
 def cell_list_factory(self: 'NeutrophilState'):
     return NeutrophilCellList(grid=self.global_state.grid)
@@ -233,6 +240,7 @@ class NeutrophilState(ModuleState):
     granule_count: int
     n_kill: float
     time_n: float
+    age_limit: int
 
 
 class Neutrophil(Module):
@@ -248,6 +256,7 @@ class Neutrophil(Module):
         'granule_count': '10',
         'n_kill': '0.05',
         'time_n': '1',
+        'age_limit': '36',
     }
     StateClass = NeutrophilState
 
@@ -264,6 +273,7 @@ class Neutrophil(Module):
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
         neutrophil.time_n = self.config.getfloat('time_step')
+        neutrophil.age_limit = self.config.getint('age_limit')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
@@ -307,5 +317,9 @@ class Neutrophil(Module):
 
         # update granule == 0 status
         n_cells.update()
+
+        n_cells.age()
+
+        n_cells.kill_by_age(neutrophil.age_limit)
 
         return state
