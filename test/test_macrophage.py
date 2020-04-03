@@ -87,16 +87,16 @@ def test_recruit_new(macrophage_list, tissue, grid: RectangularGrid, cyto):
     rec_rate_ph = 2
 
     # no cytokines
-    assert cyto[5, 5, 5] == 0
+    assert cyto[1, 2, 3] == 0
 
-    cyto[5, 5, 5] = 2
+    cyto[1, 2, 3] = 2
 
     # test correct location recruitment
     macrophage_list.recruit_new(rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto)
     vox = grid.get_voxel(macrophage_list[-1]['point'])
 
     assert len(macrophage_list) == 2
-    assert vox.x == 5 and vox.y == 5 and vox.z == 5
+    assert vox.x == 1 and vox.y == 2 and vox.z == 3
 
     # test recruit none due to below threshold
     rec_r = 20
@@ -115,8 +115,8 @@ def test_recruit_new_multiple_locations(
     p_rec_r = 1.0
     rec_rate_ph = 50
 
-    cyto[5, 5, 5] = 2
-    cyto[4, 5, 5] = 2
+    cyto[1, 2, 3] = 2
+    cyto[4, 5, 6] = 2
 
     macrophage_list.recruit_new(rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto)
 
@@ -124,7 +124,7 @@ def test_recruit_new_multiple_locations(
 
     for cell in macrophage_list.cell_data:
         vox = grid.get_voxel(cell['point'])
-        assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
+        assert vox.z in [3,6] and vox.y in [2, 5] and vox.x in [1, 4]
 
 
 def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: RectangularGrid):
