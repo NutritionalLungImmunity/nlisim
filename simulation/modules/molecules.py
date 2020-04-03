@@ -90,11 +90,11 @@ class Molecules(Module):
         molecules.grid.incr()
         self.diffuse_iron(molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max)
 
-        self.degrade(molecules.grid['cyto_m'], molecules.cyto_evap_m)
-        self.diffuse(molecules.grid['cyto_m'], state.grid, state.geometry.lung_tissue)
+        self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
+        self.diffuse(molecules.grid['m_cyto'], state.grid, state.geometry.lung_tissue)
 
-        self.degrade(molecules.grid['cyto_n'], molecules.cyto_evap_n)
-        self.diffuse(molecules.grid['cyto_n'], state.grid, state.geometry.lung_tissue)
+        self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
+        self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
 
         return state
 
