@@ -1,6 +1,7 @@
 from io import BytesIO
 
 from h5py import File
+import numpy as np
 from pytest import fixture
 
 from simulation.config import SimulationConfig
@@ -45,3 +46,19 @@ def hdf5_file():
 @fixture
 def hdf5_group(hdf5_file):
     yield hdf5_file.create_group('test-group')
+
+
+@fixture
+def epi_geometry():
+    # a 10 x 10 x 10 grid with epithelium
+    tissue = np.empty((10, 10, 10))
+    tissue.fill(3)
+    yield tissue
+
+
+@fixture
+def air_geometry():
+    # a 10 x 10 x 10 grid with air
+    tissue = np.empty((10, 10, 10))
+    tissue.fill(0)
+    yield tissue
