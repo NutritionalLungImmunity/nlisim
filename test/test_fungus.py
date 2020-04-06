@@ -95,7 +95,9 @@ def test_kill(populated_fungus):
 
 
 def test_change_state(populated_fungus):
-    iter_to_change_status = 10
+    p_internal_swell = 0
+    rest_time = 10
+    swell_time = 10
     cells = populated_fungus.cell_data
     for _ in range(10):
         populated_fungus.age()
@@ -103,7 +105,7 @@ def test_change_state(populated_fungus):
     cells['status'][0] = FungusCellData.Status.RESTING
     cells['status'][1] = FungusCellData.Status.SWOLLEN
     cells['internalized'] = False
-    populated_fungus.change_status(iter_to_change_status, 0)
+    populated_fungus.change_status(p_internal_swell, rest_time, swell_time)
     assert (cells['iteration'][0:2] == 0).all()
     assert cells['status'][0] == FungusCellData.Status.SWOLLEN
     assert cells['status'][1] == FungusCellData.Status.GERMINATED
@@ -111,7 +113,8 @@ def test_change_state(populated_fungus):
 
 
 def test_internal_change_state(populated_fungus):
-    iter_to_change_status = 10
+    rest_time = 10
+    swell_time = 11
     cells = populated_fungus.cell_data
     for _ in range(10):
         populated_fungus.age()
@@ -119,14 +122,19 @@ def test_internal_change_state(populated_fungus):
     cells['status'][0] = FungusCellData.Status.RESTING
     cells['status'][1] = FungusCellData.Status.SWOLLEN
     cells['internalized'] = True
-    populated_fungus.change_status(iter_to_change_status, 1)
-    assert (cells['iteration'][0:2] == 0).all()
+    populated_fungus.change_status(1, rest_time, swell_time)
+    assert cells['iteration'][0] == 0
+    assert cells['iteration'][1] == 10
     assert cells['status'][0] == FungusCellData.Status.SWOLLEN
+    assert cells['status'][1] == FungusCellData.Status.SWOLLEN
+    populated_fungus.age()
+    populated_fungus.change_status(1, rest_time, swell_time)
     assert cells['status'][1] == FungusCellData.Status.GERMINATED
 
 
 def test_internal_change_state_zero_swallow(populated_fungus):
-    iter_to_change_status = 10
+    rest_time = 10
+    swell_time = 10
     cells = populated_fungus.cell_data
     for _ in range(10):
         populated_fungus.age()
@@ -134,7 +142,7 @@ def test_internal_change_state_zero_swallow(populated_fungus):
     cells['status'][0] = FungusCellData.Status.RESTING
     cells['status'][1] = FungusCellData.Status.SWOLLEN
     cells['internalized'] = True
-    populated_fungus.change_status(iter_to_change_status, 0)
+    populated_fungus.change_status(0, rest_time, swell_time)
     assert cells['iteration'][0] != 0
     assert cells['iteration'][1] == 0
     assert cells['status'][0] == FungusCellData.Status.RESTING

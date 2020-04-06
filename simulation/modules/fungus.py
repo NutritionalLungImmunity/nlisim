@@ -199,25 +199,24 @@ class FungusCellList(CellList):
         cells['status'][indices] = FungusCellData.Status.DEAD
         cells['dead'][indices] = True
 
-    def change_status(self, iter_to_change_status: int, p_internal_swell: float):
+    def change_status(self, p_internal_swell: float, rest_time: int, swell_time: int):
         cells = self.cell_data
 
         indices = self.alive(
-            np.logical_and(
-                cells['iteration'] >= iter_to_change_status,
                 cells['form'] != FungusCellData.Form.HYPHAE,
-            )
         )
 
         internalized_indices = (cells['internalized'][indices]).nonzero()[0]
         not_internalized_indices = (np.invert(cells['internalized'][indices])).nonzero()[0]
 
-        internalized_rest_indices = (
-            cells['status'][internalized_indices] == FungusCellData.Status.RESTING
+        internalized_rest_indices = np.logical_and(
+            cells['status'][internalized_indices] == FungusCellData.Status.RESTING,
+            cells['iteration'][internalized_indices] >= rest_time,
         ).nonzero()[0]
 
-        internalized_swollen_indices = (
-            cells['status'][internalized_indices] == FungusCellData.Status.SWOLLEN
+        internalized_swollen_indices = np.logical_and(
+            cells['status'][internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells['iteration'][internalized_indices] >= swell_time,
         ).nonzero()[0]
 
         # internal fungus with REST status
@@ -231,11 +230,13 @@ class FungusCellList(CellList):
         cells['status'][internalized_swollen_indices] = FungusCellData.Status.GERMINATED
         cells['iteration'][internalized_swollen_indices] = 0
 
-        rest_indices = (
-            cells['status'][not_internalized_indices] == FungusCellData.Status.RESTING
+        rest_indices = np.logical_and(
+            cells['status'][not_internalized_indices] == FungusCellData.Status.RESTING,
+            cells['iteration'][not_internalized_indices] >= rest_time,
         ).nonzero()[0]
-        swollen_indices = (
-            cells['status'][not_internalized_indices] == FungusCellData.Status.SWOLLEN
+        swollen_indices = np.logical_and(
+            cells['status'][not_internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells['iteration'][not_internalized_indices] >= swell_time,
         ).nonzero()[0]
 
         # free fungus with REST status
@@ -257,7 +258,6 @@ class FungusState(ModuleState):
     # init_num: int = 0
     # p_lodge: float = 0
     # p_internal_swell: float = 0.05
-    # ITER_TO_CHANGE_STATUS: int = 1
     # iron_min: int = 0
     # iron_max: float = 0.0
     # iron_absorb: float = 0.0
@@ -278,16 +278,17 @@ class Fungus(Module):
         'init_num': '10',
         'p_lodge': '0.1',
         'p_internal_swell': '0.05',
-        'ITER_TO_CHANGE_STATUS': '1',
         'iron_min': '10',
         'iron_max': '20',
         'iron_absorb': '1',
         'spacing': '0.1',
         'iron_min_grow': '5',
-        'grow_time': '2',
         'p_branch': '0.2',
         'p_internalize': '0.1',
-        'health': '100.0'
+        'health': '100.0',
+        'rest_time': '1',
+        'swell_time': '1',
+        'grow_time': '1',
         # ...
     }
 
@@ -299,15 +300,16 @@ class Fungus(Module):
         self.init_num = self.config.getint('init_num')
         self.p_lodge = self.config.getfloat('p_lodge')
         self.p_internal_swell = self.config.getfloat('p_internal_swell')
-        self.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
         self.iron_min = self.config.getint('iron_min')
         self.iron_max = self.config.getfloat('iron_max')
         self.iron_absorb = self.config.getfloat('iron_absorb')
         self.spacing = self.config.getfloat('spacing')
         self.iron_min_grow = self.config.getfloat('iron_min_grow')
-        self.grow_time = self.config.getfloat('grow_time')
         self.p_branch = self.config.getfloat('p_branch')
         self.p_internalize = self.config.getfloat('p_internalize')
+        self.rest_time = self.config.getint('rest_time')
+        self.swell_time = self.config.getint('swell_time')
+        self.grow_time = self.config.getint('grow_time')
 
         fungus.health = self.config.getfloat('health')
 
@@ -321,7 +323,7 @@ class Fungus(Module):
 
         cells.kill()  # clear dead cell
         cells.age()
-        cells.change_status(self.ITER_TO_CHANGE_STATUS, self.p_internal_swell)
+        cells.change_status(self.p_internal_swell, self.rest_time, self.swell_time)
         if hasattr(state, 'molecules'):
             iron = state.molecules.grid['iron']
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
