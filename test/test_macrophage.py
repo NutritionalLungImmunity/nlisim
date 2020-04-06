@@ -124,7 +124,7 @@ def test_recruit_new_multiple_locations(
 
     for cell in macrophage_list.cell_data:
         vox = grid.get_voxel(cell['point'])
-        assert vox.z in [3,6] and vox.y in [2, 5] and vox.x in [1, 4]
+        assert vox.z in [3, 6] and vox.y in [2, 5] and vox.x in [1, 4]
 
 
 def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: RectangularGrid):

@@ -236,7 +236,7 @@ class NeutrophilState(ModuleState):
     rec_r: float
     n_absorb: float
     n_n: float
-    n_det: float
+    n_det: int
     granule_count: int
     n_kill: float
     time_n: float
@@ -269,7 +269,7 @@ class Neutrophil(Module):
         neutrophil.rec_r = self.config.getfloat('rec_r')
         neutrophil.n_absorb = self.config.getfloat('n_absorb')
         neutrophil.n_n = self.config.getfloat('Nn')
-        neutrophil.n_det = self.config.getfloat('n_det')
+        neutrophil.n_det = self.config.getint('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
         neutrophil.time_n = self.config.getfloat('time_step')
