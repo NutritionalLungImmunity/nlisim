@@ -17,13 +17,14 @@ validate = True
 
 # a list of modules to run with the simulation
 modules = simulation.modules.geometry.Geometry
-          simulation.modules.fungus.Fungus
-          simulation.modules.epithelium.Epithelium
-          #simulation.modules.save.FileOutput
           simulation.modules.visualization.Visualization
           simulation.modules.molecules.Molecules
+          simulation.modules.fungus.Fungus
+          simulation.modules.epithelium.Epithelium
+          #simulation.modules.save.FileOutput     
           simulation.modules.macrophage.Macrophage
-          simulation.modules.neutrophil.Neutrophil         
+          simulation.modules.neutrophil.Neutrophil
+                   
 
 
 [file_output]
@@ -37,49 +38,58 @@ geometry_path = geometry.hdf5
 preview_geometry = false
 
 [macrophage]
-rec_r = 2.5
+rec_r = 5
 p_rec_r = 1.0
-m_abs = 2.0
+m_abs = 0.05
 Mn = 2.0
-kill = 2.0
-m_det = 15
+kill = 2
+m_det = 1
 rec_rate_ph = 2
-time_m = 1
+time_step = 1
+max_conidia_in_phag = 50
 
 [neutrophil]
 neutropenic = False
-rec_rate_ph = 2
+rec_rate_ph = 6
 rec_r = 3
 n_absorb = 0.2
-Nn = 100
-n_det = 15
+Nn = 2
+n_det = 1
 granule_count = 10
-n_kill = 0.05
+n_kill = 2
+time_step = 1
 
 [fungus]
-init_num = 5
+init_num = 50
 init_health = 100
 ITER_TO_CHANGE_STATUS = 2
 p_lodge = 1
-p_internal_swell = 1
-iron_min = 2
-iron_max = 20
-iron_absorb = 0.8
-spacing = 2
-iron_min_grow = 10
-grow_time = 1
+p_internal_swell = 0.01
+iron_min = 0
+iron_max = 2.5
+iron_absorb = 1
+spacing = 1.67
+iron_min_grow = 0.25
 p_branch = 0.75
-p_internalize = 0.0
+p_internalize = 0.3
+grow_time = 2
+rest_time = 2
+swell_time = 5
 
 [epithelium]
-init_health = 100
-e_kill = 10
-cyto_rate = 1.5
+e_kill = 30
+cyto_rate = 100
 s_det = 1
 h_det = 1
+max_conidia_in_phag = 10
+time_step = 1
 
 
 [molecules]
+diffusion_rate = 0.8
+cyto_evap_m = 0.2
+cyto_evap_n = 0.2
+iron_max = 100
 # name: name of the molecule
 # init_val: inital concentration value at init_loc
 # init_loc: AIR, BLOOD, EPITHELIUM, SURFACTANT
@@ -87,10 +97,10 @@ molecules = [
                 {
                     "name":"iron",
                     "init_val":10,
-                    "init_loc":["EPITHELIUM"],
+                    "init_loc":["BLOOD"],
                     "diffusivity":1,
-                    "source":"EPITHELIUM",
-                    "incr":0
+                    "source":"BLOOD",
+                    "incr":1
                 },
                 {
                     "name":"m_cyto",
