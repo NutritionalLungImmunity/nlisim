@@ -91,7 +91,7 @@ class EpitheliumCellList(CellList):
             f_index = self[index]['phagosome'][i]
             fungus[f_index]['internalized'] = False
         self[index]['phagosome'].fill(-1)
-    
+
     def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
         for i in self.alive():
             cell = self[i]
@@ -104,9 +104,11 @@ class EpitheliumCellList(CellList):
             if e_det == 0:
                 index_arr = spores.get_cells_in_voxel(vox)
                 for index in index_arr:
-                    if (spores[index]['form'] == FungusCellData.Form.CONIDIA and 
-                        not spores[index]['internalized'] and
-                        p_in > random.random()):
+                    if (
+                        spores[index]['form'] == FungusCellData.Form.CONIDIA
+                        and not spores[index]['internalized']
+                        and p_in > random.random()
+                    ):
                         spores[index]['internalized'] = True
                         val = self.append_to_phagosome(i, index, max_spores)
                         if val:
@@ -133,9 +135,11 @@ class EpitheliumCellList(CellList):
                             if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                                 index_arr = spores.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
                                 for index in index_arr:
-                                    if (spores[index]['form'] == FungusCellData.Form.CONIDIA and 
-                                        not spores[index]['internalized'] and
-                                        p_in > random.random()):
+                                    if (
+                                        spores[index]['form'] == FungusCellData.Form.CONIDIA
+                                        and not spores[index]['internalized']
+                                        and p_in > random.random()
+                                    ):
                                         spores[index]['internalized'] = True
                                         val = self.append_to_phagosome(i, index, max_spores)
                                         if val:
@@ -329,7 +333,9 @@ class Epithelium(Module):
         n_cyto = state.molecules.grid['n_cyto']
 
         # internalize
-        cells.internalize_conidia(epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores)
+        cells.internalize_conidia(
+            epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores
+        )
 
         # remove killed spores from phagosome
         cells.remove_dead_fungus(spores, grid)

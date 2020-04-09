@@ -89,9 +89,7 @@ def populated_fungus(fungus_list: FungusCellList, grid: RectangularGrid):
 
 # internalize_conidia
 def test_internalize_conidia_none(
-    populated_epithelium: EpitheliumCellList,
-    grid: RectangularGrid,
-    fungus_list: FungusCellList,
+    populated_epithelium: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList,
 ):
     cell = populated_epithelium[0]
     vox = grid.get_voxel(cell['point'])
@@ -157,7 +155,7 @@ def test_internalize_conidia_2b(
     )
 
     vox = grid.get_voxel(epithelium_list[0]['point'])
-    fungus_list[0]['internalized'] = True #say by macrophage
+    fungus_list[0]['internalized'] = True  # say by macrophage
 
     epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 

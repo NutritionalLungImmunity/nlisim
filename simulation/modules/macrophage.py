@@ -207,9 +207,11 @@ class MacrophageCellList(CellList):
             if m_det == 0:
                 index_arr = fungus.get_cells_in_voxel(vox)
                 for index in index_arr:
-                    if (fungus[index]['form'] == FungusCellData.Form.CONIDIA and 
-                        not fungus[index]['internalized'] and
-                        p_in > random.random()):
+                    if (
+                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                        and not fungus[index]['internalized']
+                        and p_in > random.random()
+                    ):
                         fungus[index]['internalized'] = True
                         self.append_to_phagosome(i, index, max_spores)
             else:
@@ -232,9 +234,11 @@ class MacrophageCellList(CellList):
                             if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                                 index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
                                 for index in index_arr:
-                                    if (fungus[index]['form'] == FungusCellData.Form.CONIDIA and 
-                                        not fungus[index]['internalized'] and
-                                        p_in > random.random()):
+                                    if (
+                                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                                        and not fungus[index]['internalized']
+                                        and p_in > random.random()
+                                    ):
                                         fungus[index]['internalized'] = True
                                         self.append_to_phagosome(i, index, max_spores)
 
@@ -327,7 +331,13 @@ class Macrophage(Module):
         m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
 
         # internalize
-        m_cells.internalize_conidia(macrophage.m_det, macrophage.max_conidia_in_phag, macrophage.p_internalization, grid, fungus)
+        m_cells.internalize_conidia(
+            macrophage.m_det,
+            macrophage.max_conidia_in_phag,
+            macrophage.p_internalization,
+            grid,
+            fungus,
+        )
 
         # damage conidia
         m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
