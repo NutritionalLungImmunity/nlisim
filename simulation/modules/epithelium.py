@@ -1,4 +1,5 @@
 from enum import IntEnum
+import random
 
 import attr
 import numpy as np
@@ -91,7 +92,7 @@ class EpitheliumCellList(CellList):
             fungus[f_index]['internalized'] = False
         self[index]['phagosome'].fill(-1)
     
-    def internalize_conidia(self, e_det, max_spores, grid, spores: FungusCellList):
+    def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
         for i in self.alive():
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
@@ -104,7 +105,8 @@ class EpitheliumCellList(CellList):
                 index_arr = spores.get_cells_in_voxel(vox)
                 for index in index_arr:
                     if (spores[index]['form'] == FungusCellData.Form.CONIDIA and 
-                        not spores[index]['internalized']):
+                        not spores[index]['internalized'] and
+                        p_in > random.random()):
                         spores[index]['internalized'] = True
                         val = self.append_to_phagosome(i, index, max_spores)
                         if val:
@@ -132,7 +134,8 @@ class EpitheliumCellList(CellList):
                                 index_arr = spores.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
                                 for index in index_arr:
                                     if (spores[index]['form'] == FungusCellData.Form.CONIDIA and 
-                                        not spores[index]['internalized']):
+                                        not spores[index]['internalized'] and
+                                        p_in > random.random()):
                                         spores[index]['internalized'] = True
                                         val = self.append_to_phagosome(i, index, max_spores)
                                         if val:
@@ -267,6 +270,7 @@ class EpitheliumState(ModuleState):
     h_det: int
     time_e: float
     max_conidia_in_phag: int
+    p_internalization: float
 
 
 class Epithelium(Module):
@@ -280,6 +284,7 @@ class Epithelium(Module):
         'h_det': '1',
         'time_e': '1',
         'max_conidia_in_phag': '50',
+        'p_internalization': '0.3',
     }
     StateClass = EpitheliumState
 
@@ -296,6 +301,7 @@ class Epithelium(Module):
         epithelium.time_e = self.config.getfloat('time_step')
         epithelium.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         epithelium.cells = EpitheliumCellList(grid=grid)
+        epithelium.p_internalization = self.config.getfloat('p_internalization')
 
         indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
 
@@ -323,7 +329,7 @@ class Epithelium(Module):
         n_cyto = state.molecules.grid['n_cyto']
 
         # internalize
-        cells.internalize_conidia(epi.s_det, epi.max_conidia_in_phag, grid, spores)
+        cells.internalize_conidia(epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores)
 
         # remove killed spores from phagosome
         cells.remove_dead_fungus(spores, grid)

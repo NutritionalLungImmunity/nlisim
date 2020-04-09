@@ -97,7 +97,7 @@ def test_internalize_conidia_none(
     vox = grid.get_voxel(cell['point'])
     assert len(fungus_list.get_cells_in_voxel(vox)) == 0
 
-    populated_epithelium.internalize_conidia(0, 10, grid, fungus_list)
+    populated_epithelium.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     assert populated_epithelium.len_phagosome(0) == 0
     for v in cell['phagosome']:
@@ -115,7 +115,7 @@ def test_internalize_conidia_1(
 
     vox = grid.get_voxel(epithelium_list[0]['point'])
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     assert grid.get_voxel(fungus_list[0]['point']) == vox
     assert epithelium_list.len_phagosome(0) == 1
@@ -136,7 +136,7 @@ def test_internalize_conidia_2(
 
     vox = grid.get_voxel(epithelium_list[0]['point'])
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     assert grid.get_voxel(fungus_list[0]['point']) == vox
     assert epithelium_list.len_phagosome(0) == 2
@@ -159,7 +159,7 @@ def test_internalize_conidia_2b(
     vox = grid.get_voxel(epithelium_list[0]['point'])
     fungus_list[0]['internalized'] = True #say by macrophage
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     assert grid.get_voxel(fungus_list[0]['point']) == vox
     assert epithelium_list.len_phagosome(0) == 1
@@ -179,7 +179,7 @@ def test_internalize_conidia_max(
     max_spores = 10
     epithelium_list[0]['phagosome'][:max_spores] = 99  # artificially fill
 
-    epithelium_list.internalize_conidia(0, max_spores, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, max_spores, 1, grid, fungus_list)
 
     assert epithelium_list.len_phagosome(0) == max_spores
     assert 0 not in epithelium_list[0]['phagosome']
@@ -195,7 +195,7 @@ def test_dead_conidia_1(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
     fungus_list[0]['dead'] = True  # simulate killing
 
     epithelium_list.remove_dead_fungus(fungus_list, grid)
@@ -355,7 +355,7 @@ def test_damage_conidia(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     epithelium_list.damage(kill, t, health, fungus_list)
 
@@ -404,7 +404,7 @@ def test_kill_epithelium_n(
             FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
         )
 
-    epithelium_list.internalize_conidia(0, 10, grid, fungus_list)
+    epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
 
     epithelium_list.die_by_germination(fungus_list)
     for i in range(0, 10):
