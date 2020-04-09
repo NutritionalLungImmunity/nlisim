@@ -207,7 +207,8 @@ class MacrophageCellList(CellList):
             if m_det == 0:
                 index_arr = fungus.get_cells_in_voxel(vox)
                 for index in index_arr:
-                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                    if (fungus[index]['form'] == FungusCellData.Form.CONIDIA and 
+                        not fungus[index]['internalized']):
                         fungus[index]['internalized'] = True
                         self.append_to_phagosome(i, index, max_spores)
             else:
@@ -230,7 +231,8 @@ class MacrophageCellList(CellList):
                             if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                                 index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
                                 for index in index_arr:
-                                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                                    if (fungus[index]['form'] == FungusCellData.Form.CONIDIA and 
+                                        not fungus[index]['internalized']):
                                         fungus[index]['internalized'] = True
                                         self.append_to_phagosome(i, index, max_spores)
 
