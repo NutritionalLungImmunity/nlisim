@@ -195,7 +195,7 @@ class MacrophageCellList(CellList):
                 fungus[f_index]['point'] = point
                 fungus.update_voxel_index([f_index])
 
-    def internalize_conidia(self, m_det, max_spores, grid, fungus: FungusCellList):
+    def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
         for i in self.alive():
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
@@ -207,7 +207,11 @@ class MacrophageCellList(CellList):
             if m_det == 0:
                 index_arr = fungus.get_cells_in_voxel(vox)
                 for index in index_arr:
-                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                    if (
+                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                        and not fungus[index]['internalized']
+                        and p_in > random.random()
+                    ):
                         fungus[index]['internalized'] = True
                         self.append_to_phagosome(i, index, max_spores)
             else:
@@ -230,7 +234,11 @@ class MacrophageCellList(CellList):
                             if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                                 index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
                                 for index in index_arr:
-                                    if fungus[index]['form'] == FungusCellData.Form.CONIDIA:
+                                    if (
+                                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                                        and not fungus[index]['internalized']
+                                        and p_in > random.random()
+                                    ):
                                         fungus[index]['internalized'] = True
                                         self.append_to_phagosome(i, index, max_spores)
 
@@ -260,6 +268,7 @@ class MacrophageState(ModuleState):
     rec_rate_ph: int
     time_m: float
     max_conidia_in_phag: int
+    p_internalization: float
 
 
 class Macrophage(Module):
@@ -275,6 +284,7 @@ class Macrophage(Module):
         'rec_rate_ph': '2',
         'time_m': '1',
         'max_conidia_in_phag': '50',
+        'p_internalization': '0.3',
     }
     StateClass = MacrophageState
 
@@ -291,6 +301,7 @@ class Macrophage(Module):
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
         macrophage.time_m = self.config.getfloat('time_step')
         macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
+        macrophage.p_internalization = self.config.getfloat('p_internalization')
 
         macrophage.cells = MacrophageCellList(grid=grid)
 
@@ -320,7 +331,13 @@ class Macrophage(Module):
         m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
 
         # internalize
-        m_cells.internalize_conidia(macrophage.m_det, macrophage.max_conidia_in_phag, grid, fungus)
+        m_cells.internalize_conidia(
+            macrophage.m_det,
+            macrophage.max_conidia_in_phag,
+            macrophage.p_internalization,
+            grid,
+            fungus,
+        )
 
         # damage conidia
         m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
