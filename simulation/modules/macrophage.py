@@ -313,6 +313,7 @@ class Macrophage(Module):
         tissue = state.geometry.lung_tissue
         grid = state.grid
         cyto = state.molecules.grid['m_cyto']
+        n_cyto = state.molecules.grid['n_cyto']
         fungus: FungusCellList = state.fungus.cells
         health = state.fungus.health
 
@@ -325,7 +326,7 @@ class Macrophage(Module):
         m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
 
         # produce cytokines
-        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, cyto)
+        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, n_cyto)
 
         # move
         m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
