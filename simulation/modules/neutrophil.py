@@ -10,6 +10,7 @@ from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
+from simulation.plot import plot_cells_num
 from simulation.state import State
 
 
@@ -277,6 +278,9 @@ class Neutrophil(Module):
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
+        self.time_step = [0.0]
+        self.n_num = [len(neutrophil.cells.alive())]
+
         return state
 
     def advance(self, state: State, previous_time: float):
@@ -322,4 +326,13 @@ class Neutrophil(Module):
 
         n_cells.kill_by_age(neutrophil.age_limit)
 
+        self.time_step.append(state.time)
+        self.n_num.append(len(n_cells.alive()))
+
+        return state
+
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        n_num = np.asarray(self.n_num)
+        plot_cells_num(time_step, n_num, 'Neutrophil', f'./results/Neutrophil.png')
         return state

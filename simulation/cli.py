@@ -4,7 +4,7 @@ import attr
 import click
 
 from simulation.config import SimulationConfig
-from simulation.solver import advance, initialize
+from simulation.solver import advance, finalize, initialize
 from simulation.state import State
 
 
@@ -43,6 +43,8 @@ def run(target_time, config):
     ) as bar:
         for _state in bar:
             pass
+
+    state = finalize(state)
 
     state.save('simulation-final.pkl')
 

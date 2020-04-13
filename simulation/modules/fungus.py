@@ -8,6 +8,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
+from simulation.plot import plot_cells_num
 from simulation.state import State
 
 
@@ -314,6 +315,9 @@ class Fungus(Module):
         cells = fungus.cells
         cells.initialize_spores(tissue, self.init_num)
 
+        self.time_step = [0.0]
+        self.fungus_num = [len(cells.alive())]
+
         return state
 
     def advance(self, state: State, previous_time: float):
@@ -327,4 +331,13 @@ class Fungus(Module):
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 
+        self.time_step.append(state.time)
+        self.fungus_num.append(len(cells.alive()))
+
+        return state
+
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        fungus_num = np.asarray(self.fungus_num)
+        plot_cells_num(time_step, fungus_num, 'Aspergillus', f'./results/Aspergillus.png')
         return state
