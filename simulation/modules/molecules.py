@@ -2,6 +2,7 @@ import json
 
 import attr
 import numpy as np
+from scipy.ndimage import convolve
 
 from simulation.coordinates import Voxel
 from simulation.grid import RectangularGrid
@@ -88,91 +89,118 @@ class Molecules(Module):
         #    self.degrade(molecules.grid[molecule])
         #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
 
+        # self.diffuse_iron(
+        #     molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        # )
+
+        # self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
+        # self.diffuse(molecules.grid['m_cyto'], state.grid, state.geometry.lung_tissue)
+
+        # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
+        # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
+        
         molecules.grid.incr()
-        self.diffuse_iron(
-            molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        
+        self.convolution_diffusion(
+            molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
         )
 
         self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
-        self.diffuse(molecules.grid['m_cyto'], state.grid, state.geometry.lung_tissue)
+        self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
 
         self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
-        self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
+        self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
-    def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        temp = np.zeros(molecule.shape)
+    def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
+        if len(molecule.shape) != 3:
+            raise ValueError(f'Expecting a 3d array. Get dim = {len(molecule.shape)}')
+        weights = np.full((3, 3, 3), 1 / 27)
+        molecule[:] = convolve(molecule, weights, mode='constant')
 
-        x_r = [-1, 0, 1]
-        y_r = [-1, 0, 1]
-        z_r = [-1, 0, 1]
+        molecule[(tissue == TissueTypes.AIR.value)] = 0
 
-        for index in np.argwhere(temp == 0):
-            for x in x_r:
-                for y in y_r:
-                    for z in z_r:
-                        zk = index[0] + z
-                        yj = index[1] + y
-                        xi = index[2] + x
-
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
-
-            if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
-                temp[index[0], index[1], index[2]] = 0
-
-        molecule[:] = temp[:]
-
-        return
+        if threshold:
+            molecule[molecule > threshold] = threshold
 
     @classmethod
     def degrade(cls, molecule: np.ndarray, evap: float):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
+        molecule *= 1 - evap
 
-        for index in np.argwhere(molecule > 0):
-            z = index[0]
-            y = index[1]
-            x = index[2]
+    # @classmethod
+    # def degrade(cls, molecule: np.ndarray, evap: float):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
 
-            molecule[z, y, x] = molecule[z, y, x] * (1 - evap)
+    #     for index in np.argwhere(molecule > 0):
+    #         z = index[0]
+    #         y = index[1]
+    #         x = index[2]
 
-        return
+    #         molecule[z, y, x] = molecule[z, y, x] * (1 - evap)
 
-    @classmethod
-    def diffuse_iron(cls, iron: np.ndarray, grid: RectangularGrid, tissue, iron_max):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
-            iron[index[0], index[1], index[2]] = min([iron[index[0], index[1], index[2]], iron_max])
+    #     return
 
-        temp = np.zeros(iron.shape)
+    # @classmethod
+    # def diffuse_iron(cls, iron: np.ndarray, grid: RectangularGrid, tissue, iron_max):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
+    #         iron[index[0], index[1], index[2]] = min([iron[index[0], index[1], index[2]], iron_max])
 
-        x_r = [-1, 0, 1]
-        y_r = [-1, 0, 1]
-        z_r = [-1, 0, 1]
+    #     temp = np.zeros(iron.shape)
 
-        for index in np.argwhere(temp == 0):
-            for x in x_r:
-                for y in y_r:
-                    for z in z_r:
-                        zk = index[0] + z
-                        yj = index[1] + y
-                        xi = index[2] + x
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
 
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
 
-            if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
-                temp[index[0], index[1], index[2]] = 0
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
 
-        iron[:] = temp[:]
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
 
-        return
+    #     iron[:] = temp[:]
+
+    #     return
+
+    # @classmethod
+    # def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     temp = np.zeros(molecule.shape)
+
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
+
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
+
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
+
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
+
+    #     molecule[:] = temp[:]
+
+    #     return
