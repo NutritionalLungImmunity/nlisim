@@ -4,8 +4,8 @@ import attr
 import numpy as np
 from scipy.ndimage import convolve
 
-from simulation.coordinates import Voxel
-from simulation.grid import RectangularGrid
+# from simulation.coordinates import Voxel
+# from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
 from simulation.molecule import MoleculeGrid, MoleculeTypes
@@ -98,9 +98,8 @@ class Molecules(Module):
 
         # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
-        
+
         molecules.grid.incr()
-        
         self.convolution_diffusion(
             molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
         )
@@ -150,7 +149,8 @@ class Molecules(Module):
     #     # the rest of the behavior (uptake, secretion, etc.) should be
     #     # handled in the cell specific module.
     #     for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
-    #         iron[index[0], index[1], index[2]] = min([iron[index[0], index[1], index[2]], iron_max])
+    #         iron[index[0], index[1], index[2]]
+    #      = min([iron[index[0], index[1], index[2]], iron_max])
 
     #     temp = np.zeros(iron.shape)
 
