@@ -58,14 +58,28 @@ class EpitheliumCellList(CellList):
         return len(np.argwhere(cell['phagosome'] != -1))
 
     def append_to_phagosome(self, index, pathogen_index, max_size):
+        # cell = self[index]
+        # index_to_append = EpitheliumCellList.len_phagosome(self, index)
+        # if (
+        #     index_to_append < MAX_PHAGOSOME_LENGTH
+        #     and index_to_append < max_size
+        #     and pathogen_index not in cell['phagosome']
+        # ):
+        #     cell['phagosome'][index_to_append] = pathogen_index
+        #     return True
+        # else:
+        #     return False
+
         cell = self[index]
-        index_to_append = EpitheliumCellList.len_phagosome(self, index)
+        current_size = EpitheliumCellList.len_phagosome(self, index)
+        free_slot = np.where(cell['phagosome'] == -1)[0]
         if (
-            index_to_append < MAX_PHAGOSOME_LENGTH
-            and index_to_append < max_size
+            current_size < MAX_PHAGOSOME_LENGTH
+            and current_size < max_size
             and pathogen_index not in cell['phagosome']
+            and len(free_slot) > 0
         ):
-            cell['phagosome'][index_to_append] = pathogen_index
+            cell['phagosome'][free_slot[0]] = pathogen_index
             return True
         else:
             return False
@@ -73,24 +87,20 @@ class EpitheliumCellList(CellList):
     def remove_from_phagosome(self, index, pathogen_index):
         phagosome = self[index]['phagosome']
         if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = EpitheliumCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
+            # itemindex = np.where(phagosome == pathogen_index)[0]
+            # size = EpitheliumCellList.len_phagosome(self, index)
+            # if itemindex == size - 1:
+            #     # full phagosome
+            #     phagosome[itemindex] = -1
+            #     return True
+            # else:
+            #     phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+            #     phagosome[-1] = -1
+            #     return True
+            phagosome[phagosome == pathogen_index] = -1
+            return True
         else:
             return False
-
-    def clear_all_phagosome(self, index, fungus: FungusCellList):
-        for i in range(0, self.len_phagosome(index)):
-            f_index = self[index]['phagosome'][i]
-            fungus[f_index]['internalized'] = False
-        self[index]['phagosome'].fill(-1)
 
     def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
         for i in self.alive():
@@ -146,13 +156,6 @@ class EpitheliumCellList(CellList):
                                             spores[index]['mobile'] = False
                                         else:
                                             spores[index]['internalized'] = False
-
-    def remove_dead_fungus(self, spores, grid):
-        for epi_index in self.alive():
-            for ii in range(0, self.len_phagosome(epi_index)):
-                index = self[epi_index]['phagosome'][ii]
-                if spores[index]['dead']:
-                    self.remove_from_phagosome(epi_index, index)
 
     def cytokine_update(self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid):
         for i in self.alive():
@@ -243,21 +246,74 @@ class EpitheliumCellList(CellList):
             n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)
 
     def damage(self, kill, t, health, fungus):
-        for i in self.alive():
-            cell = self[i]
-            for ii in range(0, self.len_phagosome(i)):
-                index = cell['phagosome'][ii]
-                fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+        # for i in self.alive():
+        #     cell = self[i]
+        #     for ii in range(0, self.len_phagosome(i)):
+        #         index = cell['phagosome'][ii]
+        #         fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
+        cells = self.cell_data
+        alive_indices = self.alive()
+
+        # get all indices of internalized fungus
+        fungus_indices = cells['phagosome'][alive_indices].flatten()
+        fungus_indices = fungus_indices[fungus_indices != -1]
+        fungus = fungus.cell_data
+        fungus['health'][fungus_indices] = fungus['health'][fungus_indices] - (health * (t / kill))
 
     def die_by_germination(self, spores):
-        for index in self.alive():
-            e_cell = self[index]
-            for ii in range(0, self.len_phagosome(index)):
-                spore_index = e_cell['phagosome'][ii]
-                if spores[spore_index]['status'] == FungusCellData.Status.GERMINATED:
-                    e_cell['dead'] = True
-                    self.clear_all_phagosome(index, spores)
-                    break
+        # for index in self.alive():
+        #     e_cell = self[index]
+        #     for ii in range(0, self.len_phagosome(index)):
+        #         spore_index = e_cell['phagosome'][ii]
+        #         if spores[spore_index]['status'] == FungusCellData.Status.GERMINATED:
+        #             e_cell['dead'] = True
+        #             self.clear_all_phagosome(index, spores)
+        #             break
+
+        cells = self.cell_data
+        spores = spores.cell_data
+
+        # to match the dim, include dead epis
+        fungus_indices = cells['phagosome']
+
+        # get all dead epithelium
+        dead_mask = (
+            (spores['status'][fungus_indices] == FungusCellData.Status.GERMINATED)
+            & (fungus_indices != -1)
+        ).sum(axis=1)
+
+        # clear_all_phagosome
+        cells['dead'][dead_mask > 0] = True
+        release_fungus_indices = cells['phagosome'][dead_mask > 0].flatten()
+        release_fungus_indices = release_fungus_indices[release_fungus_indices != -1]
+        spores['internalized'][release_fungus_indices] = False
+        cells['phagosome'][dead_mask > 0] = -1
+
+    def remove_dead_fungus(self, spores, grid):
+        # for epi_index in self.alive():
+        #     for ii in range(0, self.len_phagosome(epi_index)):
+        #         index = self[epi_index]['phagosome'][ii]
+        #         if spores[index]['dead']:
+        #             self.remove_from_phagosome(epi_index, index)
+        spores = spores.cell_data
+
+        cells = self.cell_data
+        dead_spores_indices = np.where(spores['dead'])[0]
+
+        # find all dead spores in epi
+        dead_mask = np.isin(cells['phagosome'], dead_spores_indices)
+        cells['phagosome'][dead_mask] = -1
+
+    # def clear_all_phagosome(self, index, fungus: FungusCellList):
+    #     # for i in range(0, self.len_phagosome(index)):
+    #     #     f_index = self[index]['phagosome'][i]
+    #     #     fungus[f_index]['internalized'] = False
+    #     # self[index]['phagosome'].fill(-1)
+    #     phagosome_num = self.len_phagosome(index)
+
+    #     f_index = self[index]['phagosome'][:phagosome_num]
+    #     fungus.cell_data['internalized'][f_index] = False
+    #     self[index]['phagosome'].fill(-1)
 
 
 def cell_list_factory(self: 'EpitheliumState'):

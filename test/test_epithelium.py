@@ -397,9 +397,15 @@ def test_kill_epithelium_n(
 
     point = Point(x=35, y=35, z=35)
     epithelium_list.append(EpitheliumCellData.create_cell(point=point))
+    point2 = Point(x=10, y=10, z=10)
+    epithelium_list.append(EpitheliumCellData.create_cell(point=point2))
     for _ in range(0, 10):
         fungus_list.append(
             FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
+        )
+    for _ in range(0, 10):
+        fungus_list.append(
+            FungusCellData.create_cell(point=point2, status=FungusCellData.Status.RESTING)
         )
 
     epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
@@ -415,4 +421,6 @@ def test_kill_epithelium_n(
 
     for i in range(0, 10):
         assert not fungus_list.cell_data['internalized'][i]
+    for i in range(10, 20):
+        assert fungus_list.cell_data['internalized'][i]
     assert epithelium_list.len_phagosome(0) == 0
