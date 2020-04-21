@@ -36,31 +36,34 @@ class NeutrophilCellList(CellList):
     CellDataClass = NeutrophilCellData
 
     def recruit_new(self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto):
-        num_reps = rec_rate_ph  # number of neutrophils recruited per time step
-        if neutropenic and time >= 48 and time <= 96:
+        num_reps = 0
+        if not neutropenic:
+            num_reps = rec_rate_ph  # number of neutrophils recruited per time step
+        elif neutropenic and time >= 48 and time <= 96:
             num_reps = int((time - 48) / 8)
 
-        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-        blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
-        blood_index = np.transpose(blood_index)
-        cyto_index = blood_index[mask]
-        np.random.shuffle(cyto_index)
+        if num_reps > 0:
+            blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+            blood_index = np.transpose(blood_index)
+            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+            blood_index = np.transpose(blood_index)
+            cyto_index = blood_index[mask]
+            np.random.shuffle(cyto_index)
 
-        for _ in range(0, num_reps):
-            if len(cyto_index) > 0:
-                ii = random.randint(0, len(cyto_index) - 1)
-                point = Point(
-                    x=grid.x[cyto_index[ii][2]],
-                    y=grid.y[cyto_index[ii][1]],
-                    z=grid.z[cyto_index[ii][0]],
-                )
+            for _ in range(0, num_reps):
+                if len(cyto_index) > 0:
+                    ii = random.randint(0, len(cyto_index) - 1)
+                    point = Point(
+                        x=grid.x[cyto_index[ii][2]],
+                        y=grid.y[cyto_index[ii][1]],
+                        z=grid.z[cyto_index[ii][0]],
+                    )
 
-                status = NeutrophilCellData.Status.NONGRANULATING
-                gc = granule_count
-                self.append(
-                    NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
-                )
+                    status = NeutrophilCellData.Status.NONGRANULATING
+                    gc = granule_count
+                    self.append(
+                        NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
+                    )
 
     def absorb_cytokines(self, n_absorb, cyto, grid):
         for index in self.alive():

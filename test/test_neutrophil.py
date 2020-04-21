@@ -144,7 +144,7 @@ def test_recruit_new_neutopenic_day_2(neutrophil_list, tissue, grid: Rectangular
     rec_rate_ph = 6
     granule_count = 5
     neutropenic = True
-    previous_time = 50  # between days 2 -4
+    previous_time = 15  # between days 1 - 3
 
     # no cytokines
     assert cyto[5, 5, 5] == 0
@@ -175,7 +175,7 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
     rec_rate_ph = 6
     granule_count = 5
     neutropenic = True
-    previous_time = 72  # between days 2 -4
+    previous_time = 64  # between days 2 -4
 
     # no cytokines
     assert cyto[5, 5, 5] == 0
@@ -187,7 +187,7 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
         rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
     )
 
-    assert len(neutrophil_list) == 3
+    assert len(neutrophil_list) == 2
 
     # test correct location recruitment
     neutropenic = False
@@ -198,7 +198,7 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
 
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
     assert vox.x == 5 and vox.y == 5 and vox.z == 5
-    assert len(neutrophil_list) == 9  # 6 + 3
+    assert len(neutrophil_list) == 8  
 
 
 def test_recruit_new_multiple_locations(
