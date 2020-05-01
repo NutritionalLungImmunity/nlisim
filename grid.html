@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.4" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>simulation.grid API documentation</title>
 <meta name="description" content="Domain discretization interface …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
 </head>
@@ -48,7 +48,7 @@ geometry of these voxels is arbitrary and unstructured, but currently only
 implemented.
 For these grids, all voxels are hyper-rectangles and are aligned
 along the domains axes.
-See the <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid"><code>RectangularGrid</code></a> implementation
+See the <code><a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></code> implementation
 for details.</p>
 <details class="source">
 <summary>
@@ -403,10 +403,10 @@ class RectangularGrid(object):
 <dl>
 <dt id="simulation.grid.RectangularGrid"><code class="flex name class">
 <span>class <span class="ident">RectangularGrid</span></span>
-<span>(</span><span>x, y, z, xv, yv, zv)</span>
+<span>(</span><span>x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, xv: numpy.ndarray, yv: numpy.ndarray, zv: numpy.ndarray)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A class representation of a rectangular grid.</p>
+<div class="desc"><p>A class representation of a rectangular grid.</p>
 <p>This class breaks the simulation domain into a <span><span class="MathJax_Preview">n_x \times n_y \times
 n_z</span><script type="math/tex">n_x \times n_y \times
 n_z</script></span> array of hyper-rectangles.
@@ -467,7 +467,7 @@ right edge of the previous element.</p>
 <dd>The <code>y</code>-coordinates of the edges of each grid cell.</dd>
 <dt><strong><code>zv</code></strong> :&ensp;<code>np.ndarray</code></dt>
 <dd>The <code>z</code>-coordinates of the edges of each grid cell.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -771,10 +771,10 @@ right edge of the previous element.</p>
 <h3>Static methods</h3>
 <dl>
 <dt id="simulation.grid.RectangularGrid.construct_uniform"><code class="name flex">
-<span>def <span class="ident">construct_uniform</span></span>(<span>shape, spacing)</span>
+<span>def <span class="ident">construct_uniform</span></span>(<span>shape: Tuple[int, int, int], spacing: Tuple[float, float, float]) -> <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create a rectangular grid with uniform spacing in each axis.</p></section>
+<div class="desc"><p>Create a rectangular grid with uniform spacing in each axis.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -791,10 +791,10 @@ def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -&gt; &#39;Re
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>file)</span>
+<span>def <span class="ident">load</span></span>(<span>file: h5py._hl.files.File) -> <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Generate a grid object from an existing HDF5 file.</p></section>
+<div class="desc"><p>Generate a grid object from an existing HDF5 file.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -811,18 +811,18 @@ def load(cls, file: H5File) -&gt; &#39;RectangularGrid&#39;:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.grid.RectangularGrid.meshgrid"><code class="name">var <span class="ident">meshgrid</span></code></dt>
+<dt id="simulation.grid.RectangularGrid.meshgrid"><code class="name">var <span class="ident">meshgrid</span> : List[numpy.ndarray]</code></dt>
 <dd>
-<section class="desc"><p>Return the coordinate grid representation.</p>
+<div class="desc"><p>Return the coordinate grid representation.</p>
 <p>This returns three 3D arrays containing the z, y, x coordinates
 respectively.
 For example,</p>
-<pre><code>&gt;&gt;&gt; Z, Y, X = grid.meshgrid()
+<pre><code class="python">&gt;&gt;&gt; Z, Y, X = grid.meshgrid()
 </code></pre>
 <p><code>X[zi, yi, xi]</code> is is the x-coordinate of the point at indices <code>(xi, yi,
 zi)</code>.
 The data returned is a read-only view into the coordinate arrays
-and is efficient to compute on demand.</p></section>
+and is efficient to compute on demand.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -843,9 +843,9 @@ def meshgrid(self) -&gt; List[np.ndarray]:
     return np.meshgrid(self.z, self.y, self.x, indexing=&#39;ij&#39;, copy=False)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.shape"><code class="name">var <span class="ident">shape</span></code></dt>
+<dt id="simulation.grid.RectangularGrid.shape"><code class="name">var <span class="ident">shape</span> : Tuple[int, int, int]</code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -859,10 +859,10 @@ def shape(self) -&gt; ShapeType:
 <h3>Methods</h3>
 <dl>
 <dt id="simulation.grid.RectangularGrid.allocate_variable"><code class="name flex">
-<span>def <span class="ident">allocate_variable</span></span>(<span>self, dtype=dtype('float64'))</span>
+<span>def <span class="ident">allocate_variable</span></span>(<span>self, dtype: numpy.dtype = dtype('float64')) -> numpy.ndarray</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Allocate a numpy array defined over this grid.</p></section>
+<div class="desc"><p>Allocate a numpy array defined over this grid.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -873,10 +873,10 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.delta"><code class="name flex">
-<span>def <span class="ident">delta</span></span>(<span>self, axis)</span>
+<span>def <span class="ident">delta</span></span>(<span>self, axis: int) -> numpy.ndarray</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return grid spacing along the given axis.</p></section>
+<div class="desc"><p>Return grid spacing along the given axis.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -896,17 +896,17 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_adjecent_voxels"><code class="name flex">
-<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel, corners=False)</span>
+<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>, corners: bool = False) -> Iterator[<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>]</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return an iterator over all neighbors of a given voxel.</p>
+<div class="desc"><p>Return an iterator over all neighbors of a given voxel.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>voxel</code></strong> :&ensp;<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel"><code>Voxel</code></a></dt>
+<dt><strong><code>voxel</code></strong> :&ensp;<code><a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></code></dt>
 <dd>The target voxel</dd>
 <dt><strong><code>corners</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Include voxels sharing corners and edges in addition to those sharing sides.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -939,11 +939,11 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_flattened_index"><code class="name flex">
-<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel)</span>
+<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) -> int</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return the flattened index of a voxel inside the grid.</p>
-<p>This is a convenience method that wraps numpy.ravel_multi_index.</p></section>
+<div class="desc"><p>Return the flattened index of a voxel inside the grid.</p>
+<p>This is a convenience method that wraps numpy.ravel_multi_index.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -957,15 +957,15 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_nearest_voxel"><code class="name flex">
-<span>def <span class="ident">get_nearest_voxel</span></span>(<span>self, point)</span>
+<span>def <span class="ident">get_nearest_voxel</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) -> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return the nearest voxel to a given point.</p>
+<div class="desc"><p>Return the nearest voxel to a given point.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>point</code></strong> :&ensp;<a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point"><code>Point</code></a></dt>
+<dt><strong><code>point</code></strong> :&ensp;<code><a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></code></dt>
 <dd>The target point</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -987,16 +987,16 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_voxel"><code class="name flex">
-<span>def <span class="ident">get_voxel</span></span>(<span>self, point)</span>
+<span>def <span class="ident">get_voxel</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) -> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return the voxel containing the given point.</p>
+<div class="desc"><p>Return the voxel containing the given point.</p>
 <p>For points outside of the grid, this method will return invalid
 indices.
 For example, given vertex coordinates <code>[1.5, 2.7, 6.5]</code> and point
 <code>-1.5</code> or <code>7.1</code>, this method will return <code>-1</code> and <code>3</code>, respectively.
 Call the
-the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></section>
+the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1022,10 +1022,10 @@ the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_voxel_center"><code class="name flex">
-<span>def <span class="ident">get_voxel_center</span></span>(<span>self, voxel)</span>
+<span>def <span class="ident">get_voxel_center</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) -> <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Get the coordinates of the center point of a voxel.</p></section>
+<div class="desc"><p>Get the coordinates of the center point of a voxel.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1036,10 +1036,10 @@ the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.get_voxels_in_range"><code class="name flex">
-<span>def <span class="ident">get_voxels_in_range</span></span>(<span>self, point, distance)</span>
+<span>def <span class="ident">get_voxels_in_range</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>, distance: float) -> Iterator[Tuple[<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>, float]]</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return an iterator of voxels within a given distance of a point.</p>
+<div class="desc"><p>Return an iterator of voxels within a given distance of a point.</p>
 <p>The values returned by the iterator are tuples of <code>(Voxel, distance)</code>
 pairs.
 For example,</p>
@@ -1050,11 +1050,11 @@ For example,</p>
 iterated.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>point</code></strong> :&ensp;<a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point"><code>Point</code></a></dt>
+<dt><strong><code>point</code></strong> :&ensp;<code><a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></code></dt>
 <dd>The center point</dd>
 <dt><strong><code>distance</code></strong> :&ensp;<code>float</code></dt>
 <dd>Return all voxels with centers less than the distance from the center point</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1116,10 +1116,10 @@ iterated.</p>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.is_point_in_domain"><code class="name flex">
-<span>def <span class="ident">is_point_in_domain</span></span>(<span>self, point)</span>
+<span>def <span class="ident">is_point_in_domain</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) -> bool</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return whether or not a point in inside the domain.</p></section>
+<div class="desc"><p>Return whether or not a point in inside the domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1134,10 +1134,10 @@ iterated.</p>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.is_valid_voxel"><code class="name flex">
-<span>def <span class="ident">is_valid_voxel</span></span>(<span>self, voxel)</span>
+<span>def <span class="ident">is_valid_voxel</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) -> bool</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return whether or not a voxel index is valid.</p></section>
+<div class="desc"><p>Return whether or not a voxel index is valid.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1149,10 +1149,10 @@ iterated.</p>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.save"><code class="name flex">
-<span>def <span class="ident">save</span></span>(<span>self, file)</span>
+<span>def <span class="ident">save</span></span>(<span>self, file: h5py._hl.files.File) -> NoneType</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Save the grid state into an HDF5 file.</p></section>
+<div class="desc"><p>Save the grid state into an HDF5 file.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1165,11 +1165,11 @@ iterated.</p>
 </details>
 </dd>
 <dt id="simulation.grid.RectangularGrid.voxel_from_flattened_index"><code class="name flex">
-<span>def <span class="ident">voxel_from_flattened_index</span></span>(<span>self, index)</span>
+<span>def <span class="ident">voxel_from_flattened_index</span></span>(<span>self, index: int) -> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create a Voxel from flattened index of the grid.</p>
-<p>This is a convenience method that wraps numpy.unravel_index.</p></section>
+<div class="desc"><p>Create a Voxel from flattened index of the grid.</p>
+<p>This is a convenience method that wraps numpy.unravel_index.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1228,7 +1228,7 @@ iterated.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

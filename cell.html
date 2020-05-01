@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.4" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>simulation.cell API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
 </head>
@@ -377,10 +377,10 @@ class CellList(object):
 <dl>
 <dt id="simulation.cell.CellData"><code class="flex name class">
 <span>class <span class="ident">CellData</span></span>
-<span>(</span><span>arg, initialize=False, **kwargs)</span>
+<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A low-level data contain for an array cells.</p>
+<div class="desc"><p>A low-level data contain for an array cells.</p>
 <p>This class is a subtype of
 <a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
 containing the lowest level representation of a list of "cells" in a
@@ -407,7 +407,7 @@ associated with each cell.</p>
     @classmethod
     def create_cell_tuple(cls, iron_content=0, **kwargs):
         return CellData.create_cell_tuple(**kwargs) + (iron_content,)
-</code></pre></section>
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -527,26 +527,26 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span></code></dt>
+<dt id="simulation.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span> : List[Any]</code></dt>
 <dd>
-<section class="desc"><p>This variable contains the base fields that all subclasses should include
-in their derived data type.</p></section>
+<div class="desc"><p>This variable contains the base fields that all subclasses should include
+in their derived data type.</p></div>
 </dd>
 <dt id="simulation.cell.CellData.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
 <dd>
-<section class="desc"><p>Subclasses <strong>must</strong> override this value to append custom fields into each
-cell record.</p></section>
+<div class="desc"><p>Subclasses <strong>must</strong> override this value to append custom fields into each
+cell record.</p></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
 <dt id="simulation.cell.CellData.create_cell"><code class="name flex">
-<span>def <span class="ident">create_cell</span></span>(<span>**kwargs)</span>
+<span>def <span class="ident">create_cell</span></span>(<span>**kwargs) -> numpy.record</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create a single record with type <code>cls.dtype</code>.</p>
+<div class="desc"><p>Create a single record with type <code>cls.dtype</code>.</p>
 <p>Subclasses appending fields must override this with custom default
-values.</p></section>
+values.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -562,17 +562,17 @@ def create_cell(cls, **kwargs) -&gt; np.record:
 </details>
 </dd>
 <dt id="simulation.cell.CellData.create_cell_tuple"><code class="name flex">
-<span>def <span class="ident">create_cell_tuple</span></span>(<span>*, point=None, dead=False)</span>
+<span>def <span class="ident">create_cell_tuple</span></span>(<span>*, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a> = None, dead: bool = False)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create a tuple of fields attached to a single cell.</p>
+<div class="desc"><p>Create a tuple of fields attached to a single cell.</p>
 <p>The base class version of this method returns the fields associated with
 just the bare cell.
 Subclasses that append additional attributes onto
 the cell must override this method to append their own fields to this
 tuple.
 Care must be taken to ensure that the order of the tuple is
-identical to the order of the fields listed in <code>cls.dtype</code>.</p></section>
+identical to the order of the fields listed in <code>cls.dtype</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -594,12 +594,12 @@ def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
 </details>
 </dd>
 <dt id="simulation.cell.CellData.point_mask"><code class="name flex">
-<span>def <span class="ident">point_mask</span></span>(<span>points, grid)</span>
+<span>def <span class="ident">point_mask</span></span>(<span>points: numpy.ndarray, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Generate a mask array from a set of points.</p>
+<div class="desc"><p>Generate a mask array from a set of points.</p>
 <p>The output is a boolean array indicating if the point at that index
-is a valid location for a cell.</p></section>
+is a valid location for a cell.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -629,10 +629,10 @@ def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
 </dd>
 <dt id="simulation.cell.CellList"><code class="flex name class">
 <span>class <span class="ident">CellList</span></span>
-<span>(</span><span>*, grid, max_cells=10000, cell_data=NOTHING)</span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 10000, cell_data: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A python view on top of a CellData array.</p>
+<div class="desc"><p>A python view on top of a CellData array.</p>
 <p>This class represents a pythonic interface to the data contained in a
 CellData array.
 Because the CellData class is a low-level object, it does
@@ -643,18 +643,18 @@ transparently available.
 User-facing properties are sliced to make it
 appear as if the extra data is not there.</p>
 <p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
-a subclass of <a title="simulation.cell.CellData" href="#simulation.cell.CellData"><code>CellData</code></a>.
+a subclass of <code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code>.
 This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code>, optional</dt>
 <dd>&nbsp;</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -883,129 +883,21 @@ low-level array.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.cell.CellList.CellDataClass"><code class="name">var <span class="ident">CellDataClass</span></code></dt>
+<dt id="simulation.cell.CellList.CellDataClass"><code class="name">var <span class="ident">CellDataClass</span> : Type[<a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>]</code></dt>
 <dd>
-<section class="desc"><p>A class that overrides <a title="simulation.cell.CellData" href="#simulation.cell.CellData"><code>CellData</code></a> that represents the format of the data
-contained in the list.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class CellData(np.ndarray):
-    &#34;&#34;&#34;A low-level data contain for an array cells.
-
-    This class is a subtype of
-    [numpy.recarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html)
-    containing the lowest level representation of a list of &#34;cells&#34; in a
-    simulation.  The underlying data format of this type are identical to a
-    simple array of C structures with the fields given in the static &#34;dtype&#34;
-    variable.
-
-    The base class contains only a single coordinate representing the location
-    of the center of the cell.  Most implementations will want to override this
-    class to append more fields.  Subclasses must also override the base
-    implementation of `create_cell` to construct a single record containing
-    the additional fields.
-
-    For example, the following derived class adds an addition floating point value
-    associated with each cell.
-
-    ```python
-    class DerivedCell(CellData):
-        FIELDS = CellData.FIELDS + [
-            (&#39;iron_content&#39;, &#39;f8&#39;)
-        ]
-
-        dtype = np.dtype(CellData.FIELDS, align=True)
-
-        @classmethod
-        def create_cell_tuple(cls, iron_content=0, **kwargs):
-            return CellData.create_cell_tuple(**kwargs) + (iron_content,)
-    ```
-    &#34;&#34;&#34;
-
-    FIELDS: List[Any] = [
-        (&#39;point&#39;, Point.dtype),
-        (&#39;dead&#39;, &#39;b1&#39;),
-    ]
-    &#34;&#34;&#34;
-    This variable contains the base fields that all subclasses should include
-    in their derived data type.
-    &#34;&#34;&#34;
-
-    # typing for dtype doesn&#39;t work correctly with this argument
-    dtype = np.dtype(FIELDS, align=True)  # type: ignore
-    &#34;&#34;&#34;
-    Subclasses **must** override this value to append custom fields into each
-    cell record.
-    &#34;&#34;&#34;
-
-    def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
-        if isinstance(arg, (int, np.int64, np.int32)):
-            arg = cast(int, arg)
-            array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
-            if initialize:
-                for index in range(arg):
-                    array[index] = cls.create_cell(**kwargs)
-            return array
-
-        return np.asarray(arg, dtype=cls.dtype).view(cls)
-
-    @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
-        &#34;&#34;&#34;Create a tuple of fields attached to a single cell.
-
-        The base class version of this method returns the fields associated with
-        just the bare cell.  Subclasses that append additional attributes onto
-        the cell must override this method to append their own fields to this
-        tuple.  Care must be taken to ensure that the order of the tuple is
-        identical to the order of the fields listed in `cls.dtype`.
-        &#34;&#34;&#34;
-        if point is None:
-            point = Point()
-
-        return (point, dead)
-
-    @classmethod
-    def create_cell(cls, **kwargs) -&gt; np.record:
-        &#34;&#34;&#34;Create a single record with type `cls.dtype`.
-
-        Subclasses appending fields must override this with custom default
-        values.
-        &#34;&#34;&#34;
-        return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
-
-    @classmethod
-    def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
-        &#34;&#34;&#34;Generate a mask array from a set of points.
-
-        The output is a boolean array indicating if the point at that index
-        is a valid location for a cell.
-        &#34;&#34;&#34;
-        assert points.shape[1] == 3, &#39;Invalid point array shape&#39;
-        point = points.T.view(Point)
-
-        # TODO: add geometry restriction
-        return (
-            (grid.xv[0] &lt;= point.x)
-            &amp; (point.x &lt;= grid.xv[-1])
-            &amp; (grid.yv[0] &lt;= point.y)
-            &amp; (point.y &lt;= grid.yv[-1])
-            &amp; (grid.zv[0] &lt;= point.z)
-            &amp; (point.z &lt;= grid.zv[-1])
-        )</code></pre>
-</details>
+<div class="desc"><p>A class that overrides <code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code> that represents the format of the data
+contained in the list.</p></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
 <dt id="simulation.cell.CellList.create_from_seed"><code class="name flex">
-<span>def <span class="ident">create_from_seed</span></span>(<span>grid, **kwargs)</span>
+<span>def <span class="ident">create_from_seed</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, **kwargs) -> <a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create a new cell list initialized with a single cell.</p>
+<div class="desc"><p>Create a new cell list initialized with a single cell.</p>
 <p>The kwargs provided are passed on to the <code>create_cell</code> method of the
-data array class.</p></section>
+data array class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1024,14 +916,14 @@ def create_from_seed(cls, grid: RectangularGrid, **kwargs) -&gt; &#39;CellList&#
 </details>
 </dd>
 <dt id="simulation.cell.CellList.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>global_state, group, name, metadata)</span>
+<span>def <span class="ident">load</span></span>(<span>global_state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) -> <a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Load a cell list object.</p>
-<p>Load a <a title="simulation.cell.CellList" href="#simulation.cell.CellList"><code>CellList</code></a> subclass from a composite group inside an HDF5 file.
+<div class="desc"><p>Load a cell list object.</p>
+<p>Load a <code><a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></code> subclass from a composite group inside an HDF5 file.
 As with
-<a title="simulation.cell.CellList.save" href="#simulation.cell.CellList.save"><code>CellList.save()</code></a>, subclasses should not need to override this
-method.</p></section>
+<code><a title="simulation.cell.CellList.save" href="#simulation.cell.CellList.save">CellList.save()</a></code>, subclasses should not need to override this
+method.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1056,9 +948,9 @@ def load(cls, global_state: State, group: Group, name: str, metadata: dict) -&gt
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.cell.CellList.cell_data"><code class="name">var <span class="ident">cell_data</span></code></dt>
+<dt id="simulation.cell.CellList.cell_data"><code class="name">var <span class="ident">cell_data</span> : <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code></dt>
 <dd>
-<section class="desc"><p>Return the portion of the underlying data array containing valid data.</p></section>
+<div class="desc"><p>Return the portion of the underlying data array containing valid data.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1073,10 +965,10 @@ def cell_data(self) -&gt; CellData:
 <h3>Methods</h3>
 <dl>
 <dt id="simulation.cell.CellList.alive"><code class="name flex">
-<span>def <span class="ident">alive</span></span>(<span>self, sample=None)</span>
+<span>def <span class="ident">alive</span></span>(<span>self, sample: Iterable = None) -> numpy.ndarray</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Get a list of indices containing cells that are alive.</p>
+<div class="desc"><p>Get a list of indices containing cells that are alive.</p>
 <p>This method will filter out cells that are dead according to the
 value of the <code>dead</code> field.
 Optionally, you can also pass in a boolean
@@ -1099,7 +991,7 @@ for index in cells.alive(sample):
 for index in cells.alive(sample):
     cell = cells[index]
     # do something...
-</code></pre></section>
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1150,10 +1042,10 @@ for index in cells.alive(sample):
 </details>
 </dd>
 <dt id="simulation.cell.CellList.append"><code class="name flex">
-<span>def <span class="ident">append</span></span>(<span>self, cell)</span>
+<span>def <span class="ident">append</span></span>(<span>self, cell: Any) -> NoneType</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Append a new cell the the list.</p></section>
+<div class="desc"><p>Append a new cell the the list.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1172,10 +1064,10 @@ for index in cells.alive(sample):
 </details>
 </dd>
 <dt id="simulation.cell.CellList.extend"><code class="name flex">
-<span>def <span class="ident">extend</span></span>(<span>self, cells)</span>
+<span>def <span class="ident">extend</span></span>(<span>self, cells: Iterable[<a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>]) -> NoneType</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Extend the cell list by multiple cells.</p></section>
+<div class="desc"><p>Extend the cell list by multiple cells.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1187,10 +1079,10 @@ for index in cells.alive(sample):
 </details>
 </dd>
 <dt id="simulation.cell.CellList.get_cells_in_voxel"><code class="name flex">
-<span>def <span class="ident">get_cells_in_voxel</span></span>(<span>self, voxel)</span>
+<span>def <span class="ident">get_cells_in_voxel</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) -> numpy.ndarray</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return a list of cell indices contained in a given voxel.</p></section>
+<div class="desc"><p>Return a list of cell indices contained in a given voxel.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1201,10 +1093,10 @@ for index in cells.alive(sample):
 </details>
 </dd>
 <dt id="simulation.cell.CellList.get_neighboring_cells"><code class="name flex">
-<span>def <span class="ident">get_neighboring_cells</span></span>(<span>self, cell)</span>
+<span>def <span class="ident">get_neighboring_cells</span></span>(<span>self, cell: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>) -> numpy.ndarray</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return a list of cells indices in the same voxel.</p></section>
+<div class="desc"><p>Return a list of cells indices in the same voxel.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1215,17 +1107,17 @@ for index in cells.alive(sample):
 </details>
 </dd>
 <dt id="simulation.cell.CellList.save"><code class="name flex">
-<span>def <span class="ident">save</span></span>(<span>self, group, name, metadata)</span>
+<span>def <span class="ident">save</span></span>(<span>self, group: h5py._hl.group.Group, name: str, metadata: dict) -> h5py._hl.group.Group</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Save the cell list.</p>
+<div class="desc"><p>Save the cell list.</p>
 <p>Save the list of cells as a new composite data structure inside
 an HDF5 group.
 Subclasses should not need to over-ride this method.
 It will automatically create a new variable in the file with the
 correct data-type.
 It will also create a reference to the original
-class so that it can be deserialized into the correct type.</p></section>
+class so that it can be deserialized into the correct type.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1250,16 +1142,16 @@ class so that it can be deserialized into the correct type.</p></section>
 </details>
 </dd>
 <dt id="simulation.cell.CellList.update_voxel_index"><code class="name flex">
-<span>def <span class="ident">update_voxel_index</span></span>(<span>self, indices=None)</span>
+<span>def <span class="ident">update_voxel_index</span></span>(<span>self, indices: Iterable = None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Update the embedded voxel index.</p>
+<div class="desc"><p>Update the embedded voxel index.</p>
 <p>This method will update the voxel indices for a given list of cells,
 or if no parameter is provided, for all of the cells.
 Currently,
 calling this method is only required if the <code>point</code> field of a cell
 is changed&hellip; i.e. if the cell is moved to a potentially different
-voxel.</p></section>
+voxel.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1339,7 +1231,7 @@ voxel.</p></section>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>
