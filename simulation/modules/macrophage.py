@@ -254,12 +254,12 @@ class MacrophageCellList(CellList):
 
     def remove_if_sporeless(self, val):
         living = self.alive()
-        l = len(living)
-        num = int(val * l)
-        if num == 0 and l > 0:
+        living_len = len(living)
+        num = int(val * living_len)
+        if num == 0 and living_len > 0:
             num = 1
         for _ in range(num):
-            r = random.randint(0, l - 1)
+            r = random.randint(0, living_len - 1)
             self.cell_data[living[r]]['dead'] = True
 
 
@@ -280,6 +280,7 @@ class MacrophageState(ModuleState):
     time_m: float
     max_conidia_in_phag: int
     p_internalization: float
+    rm: float
 
 
 class Macrophage(Module):
@@ -359,7 +360,7 @@ class Macrophage(Module):
         # damage conidia
         m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
 
-        if (len(fungus.alive(fungus.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0):
+        if len(fungus.alive(fungus.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0:
             m_cells.remove_if_sporeless(macrophage.rm)
 
         self.time_step.append(state.time)

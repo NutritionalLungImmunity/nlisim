@@ -187,7 +187,7 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
         rec_rate_ph, rec_r, granule_count, neutropenic, previous_time, grid, tissue, cyto
     )
 
-    assert len(neutrophil_list) == 2
+    assert len(neutrophil_list) == 6
 
     # test correct location recruitment
     neutropenic = False
@@ -198,7 +198,7 @@ def test_recruit_new_neutopenic_day_3(neutrophil_list, tissue, grid: Rectangular
 
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
     assert vox.x == 5 and vox.y == 5 and vox.z == 5
-    assert len(neutrophil_list) == 8
+    assert len(neutrophil_list) == 12
 
 
 def test_recruit_new_multiple_locations(

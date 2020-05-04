@@ -455,14 +455,15 @@ def test_sporeless1(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    if (len(fungus_list.alive(fungus_list.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0):
+    if len(fungus_list.alive(fungus_list.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0:
         macrophage_list.remove_if_sporeless(0.1)
     assert not macrophage_list.cell_data[0]['dead']
 
     fungus_list.cell_data[0]['form'] == FungusCellData.Form.HYPHAE
 
     macrophage_list.remove_if_sporeless(0.1)
-    assert  macrophage_list.cell_data[0]['dead']
+    assert macrophage_list.cell_data[0]['dead']
+
 
 def test_sporeless0(
     macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -475,17 +476,18 @@ def test_sporeless0(
         FungusCellData.create_cell(point=point, status=FungusCellData.Status.RESTING)
     )
 
-    if (len(fungus_list.alive(fungus_list.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0):
+    if len(fungus_list.alive(fungus_list.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0:
         macrophage_list.remove_if_sporeless(0.1)
     assert not macrophage_list.cell_data[0]['dead']
 
     fungus_list.cell_data[0]['form'] == FungusCellData.Form.HYPHAE
 
     macrophage_list.remove_if_sporeless(0.1)
-    assert  macrophage_list.cell_data[0]['dead']
+    assert macrophage_list.cell_data[0]['dead']
 
     macrophage_list.remove_if_sporeless(0.1)
-    assert  macrophage_list.cell_data[0]['dead']
+    assert macrophage_list.cell_data[0]['dead']
+
 
 def test_sporeless30(
     macrophage_list: MacrophageCellList, grid: RectangularGrid, fungus_list: FungusCellList
@@ -493,15 +495,14 @@ def test_sporeless30(
     # should release all conidia
 
     point = Point(x=35, y=35, z=35)
-    for _ in range(0,30):
+    for _ in range(0, 30):
         macrophage_list.append(MacrophageCellData.create_cell(point=point))
 
     fungus_list.append(
         FungusCellData.create_cell(
-            point=point, 
-            status=FungusCellData.Status.RESTING,
-            form=FungusCellData.Form.HYPHAE)
+            point=point, status=FungusCellData.Status.RESTING, form=FungusCellData.Form.HYPHAE
+        )
     )
 
     macrophage_list.remove_if_sporeless(0.3)
-    assert  len(macrophage_list.alive()) < 30
+    assert len(macrophage_list.alive()) < 30

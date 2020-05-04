@@ -333,7 +333,7 @@ class Epithelium(Module):
         n_cyto = state.molecules.grid['n_cyto']
 
         # internalize
-        if (len(spores.alive(spores.cell_data['form'] == FungusCellData.Form.CONIDIA)) > 0):
+        if len(spores.alive(spores.cell_data['form'] == FungusCellData.Form.CONIDIA)) > 0:
             cells.internalize_conidia(
                 epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores
             )
