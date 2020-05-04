@@ -251,7 +251,7 @@ class MacrophageCellList(CellList):
                 fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
                 if fungus[index]['dead']:
                     self.remove_from_phagosome(i, index)
-    
+
     def remove_if_sporeless(self, val):
         living = self.alive()
         l = len(living)

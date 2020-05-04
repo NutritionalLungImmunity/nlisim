@@ -167,8 +167,8 @@ class Visualization(Module):
         #print(str(len(state.neutrophil.cells.alive())) + "\t" + str(len(state.fungus.cells.alive())) + "\t" + str(len(state.macrophage.cells.alive())))
         #print(str(len(state.neutrophil.cells.alive())) + "\t" + str(len(state.fungus.cells.alive())) + "\t" + str(np.sum(state.molecules.grid['iron'])))
         print(
-            str(len(state.neutrophil.cells.alive())) + "\t" 
-            + str(len(state.fungus.cells.alive())) + "\t" 
+            str(len(state.neutrophil.cells.alive())) + "\t"
+            + str(len(state.fungus.cells.alive())) + "\t"
             + str(len(state.macrophage.cells.alive())) + "\t"
             + str(len(state.fungus.cells.alive(state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA))) + "\t"
             + str(np.sum(state.molecules.grid['iron'])) + "\t"

@@ -104,10 +104,10 @@ class Molecules(Module):
             self.convolution_diffusion(
                 molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
             )
-    
+
             self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
             self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
-    
+
             self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
             self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
 
