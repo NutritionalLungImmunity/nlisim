@@ -40,7 +40,7 @@ class NeutrophilCellList(CellList):
         if not neutropenic:
             num_reps = rec_rate_ph  # number of neutrophils recruited per time step
         elif neutropenic and time >= 48 and time <= 96:
-            num_reps = int((time - 48) / 8)
+            num_reps = int((time - 48) / 8) * 3
 
         if num_reps > 0:
             blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)

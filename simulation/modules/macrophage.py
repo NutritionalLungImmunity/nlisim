@@ -251,6 +251,16 @@ class MacrophageCellList(CellList):
                 fungus[index]['health'] = fungus[index]['health'] - (health * (t / kill))
                 if fungus[index]['dead']:
                     self.remove_from_phagosome(i, index)
+    
+    def remove_if_sporeless(self, val):
+        living = self.alive()
+        l = len(living)
+        num = int(val * l)
+        if num == 0 and l > 0:
+            num = 1
+        for _ in range(num):
+            r = random.randint(0, l - 1)
+            self.cell_data[living[r]]['dead'] = True
 
 
 def cell_list_factory(self: 'MacrophageState'):
@@ -286,6 +296,7 @@ class Macrophage(Module):
         'time_m': '1',
         'max_conidia_in_phag': '50',
         'p_internalization': '0.3',
+        'rm': '0.05',
     }
     StateClass = MacrophageState
 
@@ -302,6 +313,7 @@ class Macrophage(Module):
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
         macrophage.time_m = self.config.getfloat('time_step')
         macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
+        macrophage.rm = self.config.getfloat('rm')
         macrophage.p_internalization = self.config.getfloat('p_internalization')
 
         macrophage.cells = MacrophageCellList(grid=grid)
@@ -346,6 +358,9 @@ class Macrophage(Module):
 
         # damage conidia
         m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
+
+        if (len(fungus.alive(fungus.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0):
+            m_cells.remove_if_sporeless(macrophage.rm)
 
         self.time_step.append(state.time)
         self.m_num.append(len(m_cells.alive()))
