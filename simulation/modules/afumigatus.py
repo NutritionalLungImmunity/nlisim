@@ -22,9 +22,11 @@ class AfumigatusCellData(CellData):
     class Status(IntEnum):
         RESTING_CONIDIA = 0
         SWELLING_CONIDIA = 1
+        GERMTUBE = 5
         HYPHAE = 2
         DYING = 3
         DEAD = 4
+        INTERNALIZED = 6
 
     class State(IntEnum):
         FREE = 0
@@ -42,6 +44,8 @@ class AfumigatusCellData(CellData):
         ('iron_pool', 'f8'),
         ('iron', 'b1'),
         ('iteration', 'i4'),
+        ('health', 'f8'),
+        ('mobile', 'b1'),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -64,6 +68,8 @@ class AfumigatusCellData(CellData):
         branchable = False
         iteration = 0
         iron = False
+        health = 100
+        mobile = True
 
         return CellData.create_cell_tuple(**kwargs) + (
             network,
@@ -76,6 +82,8 @@ class AfumigatusCellData(CellData):
             iron_pool,
             iron,
             iteration,
+            health,
+            mobile,
         )
 
     @classmethod
@@ -399,6 +407,8 @@ def cell_list_factory(self: 'AfumigatusState'):
 @attr.s(kw_only=True)
 class AfumigatusState(ModuleState):
     tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    p_lodge: float = 0.5
+    ITER_TO_CHANGE_STATUS: int = 2
 
 
 class Afumigatus(Module):
@@ -407,6 +417,10 @@ class Afumigatus(Module):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
+
+        afumigatus.p_lodge = self.config.getfloat('p_lodge')
+        afumigatus.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
+
         point = Point(x=4, y=4, z=4)
         afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
@@ -415,12 +429,31 @@ class Afumigatus(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        afumigatus: AfumigatusState = state.afumigatus
-        afumigatus.tree.absorb_iron()
-        afumigatus.tree.age()
-        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.elongate()
-        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.branch(0.1)
+        # afumigatus: AfumigatusState = state.afumigatus
+        # grid = state.grid
+        # tissue = state.geometry.lung_tissue
+        #
+        # for index in afumigatus.tree.cells.alive():
+        #    cell = afumigatus.tree.cells[index]
+        #    vox = grid.get_voxel(cell['point'])
+        #
+        #    if cell['mobile']:
+        #        if vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]):
+        #            cell['status'] = AfumigatusCellData.Status.DEAD
+        #            cell['dead'] = True
+        #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
+        #            if afumigatus.p_lodge > random.random:
+        #                cell['mobile'] = False
+        #    if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
+        #        if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #        elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.GERMTUBE
+        #        elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
+        #            if afumigatus.p_internal_swell > random.random():
+        #                cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #
+        #        if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['iteration'] = 0
 
         return state

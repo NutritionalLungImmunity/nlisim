@@ -30,6 +30,8 @@ class MoleculeTypes(Enum):
     mcp1 = 14
     mip2 = 15
     mip1b = 16
+    m_cyto = 17
+    n_cyto = 18
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)

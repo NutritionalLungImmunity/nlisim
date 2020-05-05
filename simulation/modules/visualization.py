@@ -10,6 +10,8 @@ from vtk.util import numpy_support
 from simulation.cell import CellList
 from simulation.module import Module, ModuleState
 from simulation.modules.afumigatus import AfumigatusCellTreeList
+from simulation.modules.fungus import FungusCellData
+from simulation.modules.geometry import TissueTypes
 from simulation.state import State
 
 # suppress the future warning caused by numpy_to_vtk
@@ -162,9 +164,44 @@ class Visualization(Module):
         json_config = json.loads(variables)
         now = state.time
 
+        print(
+            str(len(state.neutrophil.cells.alive()))
+            + '\t'
+            + str(len(state.fungus.cells.alive()))
+            + '\t'
+            + str(len(state.macrophage.cells.alive()))
+            + '\t'
+            + str(
+                len(
+                    state.fungus.cells.alive(
+                        state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA
+                    )
+                )
+            )
+            + '\t'
+            + str(np.sum(state.molecules.grid['iron']))
+            + '\t'
+            + str(np.std(state.molecules.grid['iron']))
+            + '\t'
+            + str(np.mean(state.molecules.grid['iron'])),
+            end='\t',
+        )
+
+        i_f_tot = 0
+        cells = state.fungus.cells
+        for i in cells.alive():
+            i_f_tot += cells.cell_data[i]['iron']
+
+        mask = np.argwhere(state.geometry.lung_tissue != TissueTypes.BLOOD.value)
+        i_level = 0
+        for [x, y, z] in mask:
+            i_level += state.molecules.grid['iron'][x, y, z]
+
+        print(str(i_level) + '\t' + str(i_f_tot))
+
         if now - state.visualization.last_visualize > visualize_interval - 1e-8:
             for variable in json_config:
-                file_name = visualization_file_name.replace('<time>', ('%010.3f' % now).strip())
+                file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
                 self.visualize(state, variable, file_name)
                 state.visualization.last_visualize = now
 

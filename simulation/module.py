@@ -1,5 +1,5 @@
 from importlib import import_module
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import attr
 from h5py import Dataset, Group
@@ -136,10 +136,19 @@ class Module(object):
         values = dict(self.defaults, **self.config)
         self.config.update(values)
 
+        self._cost: List[float] = []
+
     @property
     def section(self):
         """Return the section in the configuration object used by this module."""
         return self.name
+
+    @property
+    def cost(self):
+        return self._cost
+
+    def add_cost(self, time: float):
+        self._cost.append(time)
 
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
@@ -153,4 +162,8 @@ class Module(object):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Run after advancing the simulation state in time."""
+        return state
+
+    def finalize(self, state: State) -> State:
+        """Run after the last timestep."""
         return state
