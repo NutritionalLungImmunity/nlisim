@@ -29,7 +29,10 @@
 
 import attr
 import numpy as np
+from scipy.ndimage import convolve
 
+# from simulation.coordinates import Voxel
+# from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import GeometryState, TissueTypes
 from simulation.molecule import MoleculeGrid, MoleculeTypes
@@ -43,6 +46,10 @@ def molecule_grid_factory(self: &#39;MoleculesState&#39;):
 @attr.s(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
     grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    diffusion_rate: float
+    cyto_evap_m: float
+    cyto_evap_n: float
+    iron_max: float
 
 
 class Molecules(Module):
@@ -56,6 +63,11 @@ class Molecules(Module):
         # check if the geometry array is empty
         if not np.any(geometry.lung_tissue):
             raise RuntimeError(&#39;geometry molecule has to be initialized first&#39;)
+
+        molecules.diffusion_rate = self.config.getfloat(&#39;diffusion_rate&#39;)
+        molecules.cyto_evap_m = self.config.getfloat(&#39;cyto_evap_m&#39;)
+        molecules.cyto_evap_n = self.config.getfloat(&#39;cyto_evap_n&#39;)
+        molecules.iron_max = self.config.getfloat(&#39;iron_max&#39;)
 
         molecules_config = self.config.get(&#39;molecules&#39;)
         json_config = json.loads(molecules_config)
@@ -86,7 +98,7 @@ class Molecules(Module):
                     raise TypeError(f&#39;Cannot find lung tissue type {source}&#39;)
 
                 molecules.grid.sources[name][
-                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc[0]].value)
                 ] = incr
 
         return state
@@ -100,26 +112,126 @@ class Molecules(Module):
         #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-        for molecule in molecules.grid.types:
-            self.diffuse(molecules.grid[molecule])
-            self.degrade(molecules.grid[molecule])
-        molecules.grid.incr()
+        # for molecule in molecules.grid.types:
+        #    self.degrade(molecules.grid[molecule])
+        #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
+
+        # self.diffuse_iron(
+        #     molecules.grid[&#39;iron&#39;], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        # )
+
+        # self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        # self.diffuse(molecules.grid[&#39;m_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+        # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+        for _ in range(3):
+            molecules.grid.incr()
+            self.convolution_diffusion(
+                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+            )
+
+            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+
+            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
-    def diffuse(cls, molecule: np.ndarray):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        return
+    def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
+        if len(molecule.shape) != 3:
+            raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+        weights = np.full((3, 3, 3), 1 / 27)
+        molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
+
+        molecule[(tissue == TissueTypes.AIR.value)] = 0
+
+        if threshold:
+            molecule[molecule &gt; threshold] = threshold
 
     @classmethod
-    def degrade(cls, molecule: np.ndarray):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        return</code></pre>
+    def degrade(cls, molecule: np.ndarray, evap: float):
+        molecule *= 1 - evap
+
+    # @classmethod
+    # def degrade(cls, molecule: np.ndarray, evap: float):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+
+    #     for index in np.argwhere(molecule &gt; 0):
+    #         z = index[0]
+    #         y = index[1]
+    #         x = index[2]
+
+    #         molecule[z, y, x] = molecule[z, y, x] * (1 - evap)
+
+    #     return
+
+    # @classmethod
+    # def diffuse_iron(cls, iron: np.ndarray, grid: RectangularGrid, tissue, iron_max):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
+    #         iron[index[0], index[1], index[2]]
+    #      = min([iron[index[0], index[1], index[2]], iron_max])
+
+    #     temp = np.zeros(iron.shape)
+
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
+
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
+
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
+
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
+
+    #     iron[:] = temp[:]
+
+    #     return
+
+    # @classmethod
+    # def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     temp = np.zeros(molecule.shape)
+
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
+
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
+
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
+
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
+
+    #     molecule[:] = temp[:]
+
+    #     return</code></pre>
 </details>
 </section>
 <section>
@@ -169,6 +281,11 @@ class Molecules(Module):
         if not np.any(geometry.lung_tissue):
             raise RuntimeError(&#39;geometry molecule has to be initialized first&#39;)
 
+        molecules.diffusion_rate = self.config.getfloat(&#39;diffusion_rate&#39;)
+        molecules.cyto_evap_m = self.config.getfloat(&#39;cyto_evap_m&#39;)
+        molecules.cyto_evap_n = self.config.getfloat(&#39;cyto_evap_n&#39;)
+        molecules.iron_max = self.config.getfloat(&#39;iron_max&#39;)
+
         molecules_config = self.config.get(&#39;molecules&#39;)
         json_config = json.loads(molecules_config)
 
@@ -198,7 +315,7 @@ class Molecules(Module):
                     raise TypeError(f&#39;Cannot find lung tissue type {source}&#39;)
 
                 molecules.grid.sources[name][
-                    np.where(geometry.lung_tissue == TissueTypes[init_loc].value)
+                    np.where(geometry.lung_tissue == TissueTypes[init_loc[0]].value)
                 ] = incr
 
         return state
@@ -212,26 +329,49 @@ class Molecules(Module):
         #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-        for molecule in molecules.grid.types:
-            self.diffuse(molecules.grid[molecule])
-            self.degrade(molecules.grid[molecule])
-        molecules.grid.incr()
+        # for molecule in molecules.grid.types:
+        #    self.degrade(molecules.grid[molecule])
+        #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
+
+        # self.diffuse_iron(
+        #     molecules.grid[&#39;iron&#39;], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        # )
+
+        # self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        # self.diffuse(molecules.grid[&#39;m_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+        # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+        for _ in range(3):
+            molecules.grid.incr()
+            self.convolution_diffusion(
+                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+            )
+
+            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+
+            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
-    def diffuse(cls, molecule: np.ndarray):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        return
+    def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
+        if len(molecule.shape) != 3:
+            raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+        weights = np.full((3, 3, 3), 1 / 27)
+        molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
+
+        molecule[(tissue == TissueTypes.AIR.value)] = 0
+
+        if threshold:
+            molecule[molecule &gt; threshold] = threshold
 
     @classmethod
-    def degrade(cls, molecule: np.ndarray):
-        # TODO These 2 functions should be implemented for all moleculess
-        # the rest of the behavior (uptake, secretion, etc.) should be
-        # handled in the cell specific module.
-        return</code></pre>
+    def degrade(cls, molecule: np.ndarray, evap: float):
+        molecule *= 1 - evap</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -239,8 +379,8 @@ class Molecules(Module):
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.modules.molecules.Molecules.degrade"><code class="name flex">
-<span>def <span class="ident">degrade</span></span>(<span>molecule: numpy.ndarray)</span>
+<dt id="simulation.modules.molecules.Molecules.convolution_diffusion"><code class="name flex">
+<span>def <span class="ident">convolution_diffusion</span></span>(<span>molecule: numpy.ndarray, tissue: numpy.ndarray, threshold=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -249,15 +389,20 @@ class Molecules(Module):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def degrade(cls, molecule: np.ndarray):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return</code></pre>
+def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
+    if len(molecule.shape) != 3:
+        raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+    weights = np.full((3, 3, 3), 1 / 27)
+    molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
+
+    molecule[(tissue == TissueTypes.AIR.value)] = 0
+
+    if threshold:
+        molecule[molecule &gt; threshold] = threshold</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.molecules.Molecules.diffuse"><code class="name flex">
-<span>def <span class="ident">diffuse</span></span>(<span>molecule: numpy.ndarray)</span>
+<dt id="simulation.modules.molecules.Molecules.degrade"><code class="name flex">
+<span>def <span class="ident">degrade</span></span>(<span>molecule: numpy.ndarray, evap: float)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -266,11 +411,8 @@ def degrade(cls, molecule: np.ndarray):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def diffuse(cls, molecule: np.ndarray):
-    # TODO These 2 functions should be implemented for all moleculess
-    # the rest of the behavior (uptake, secretion, etc.) should be
-    # handled in the cell specific module.
-    return</code></pre>
+def degrade(cls, molecule: np.ndarray, evap: float):
+    molecule *= 1 - evap</code></pre>
 </details>
 </dd>
 </dl>
@@ -294,10 +436,31 @@ def diffuse(cls, molecule: np.ndarray):
     #     for data_slice in iron:
     #         np.savetxt(outfile, data_slice, fmt=&#39;%-7.2f&#39;)
 
-    for molecule in molecules.grid.types:
-        self.diffuse(molecules.grid[molecule])
-        self.degrade(molecules.grid[molecule])
-    molecules.grid.incr()
+    # for molecule in molecules.grid.types:
+    #    self.degrade(molecules.grid[molecule])
+    #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
+
+    # self.diffuse_iron(
+    #     molecules.grid[&#39;iron&#39;], state.grid, state.geometry.lung_tissue, molecules.iron_max
+    # )
+
+    # self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+    # self.diffuse(molecules.grid[&#39;m_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+    # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+    # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
+
+    for _ in range(3):
+        molecules.grid.incr()
+        self.convolution_diffusion(
+            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+        )
+
+        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+
+        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
     return state</code></pre>
 </details>
@@ -310,6 +473,7 @@ def diffuse(cls, molecule: np.ndarray):
 <li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
 <li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
 <li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
 <li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
 <li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
@@ -332,7 +496,11 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MoleculesState(ModuleState):
-    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))</code></pre>
+    grid: MoleculeGrid = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    diffusion_rate: float
+    cyto_evap_m: float
+    cyto_evap_n: float
+    iron_max: float</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -375,8 +543,8 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <h4><code><a title="simulation.modules.molecules.Molecules" href="#simulation.modules.molecules.Molecules">Molecules</a></code></h4>
 <ul class="">
 <li><code><a title="simulation.modules.molecules.Molecules.advance" href="#simulation.modules.molecules.Molecules.advance">advance</a></code></li>
+<li><code><a title="simulation.modules.molecules.Molecules.convolution_diffusion" href="#simulation.modules.molecules.Molecules.convolution_diffusion">convolution_diffusion</a></code></li>
 <li><code><a title="simulation.modules.molecules.Molecules.degrade" href="#simulation.modules.molecules.Molecules.degrade">degrade</a></code></li>
-<li><code><a title="simulation.modules.molecules.Molecules.diffuse" href="#simulation.modules.molecules.Molecules.diffuse">diffuse</a></code></li>
 </ul>
 </li>
 <li>

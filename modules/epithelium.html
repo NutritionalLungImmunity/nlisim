@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>simulation.modules.epithelium API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.modules.epithelium</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from enum import IntEnum
+import random
+
+import attr
+import numpy as np
+
+from simulation.cell import CellData, CellList
+from simulation.coordinates import Point, Voxel
+from simulation.grid import RectangularGrid
+from simulation.module import Module, ModuleState
+from simulation.modules.fungus import FungusCellData, FungusCellList
+from simulation.modules.geometry import TissueTypes
+from simulation.state import State
+
+
+MAX_PHAGOSOME_LENGTH = 100
+
+
+class EpitheliumCellData(CellData):
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
+
+    class Status(IntEnum):
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
+        APOPTOTIC = 5
+        NECROTIC = 6
+        DEAD = 7
+
+    PHAGOCYTE_FIELDS = [
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+    ) -&gt; np.record:
+
+        iteration = 0
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration, phagosome,)
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class EpitheliumCellList(CellList):
+    CellDataClass = EpitheliumCellData
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = EpitheliumCellList.len_phagosome(self, index)
+        if (
+            index_to_append &lt; MAX_PHAGOSOME_LENGTH
+            and index_to_append &lt; max_size
+            and pathogen_index not in cell[&#39;phagosome&#39;]
+        ):
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = EpitheliumCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index, fungus: FungusCellList):
+        for i in range(0, self.len_phagosome(index)):
+            f_index = self[index][&#39;phagosome&#39;][i]
+            fungus[f_index][&#39;internalized&#39;] = False
+        self[index][&#39;phagosome&#39;].fill(-1)
+
+    def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
+        for i in self.alive():
+            cell = self[i]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if e_det == 0:
+                index_arr = spores.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if (
+                        spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                        and not spores[index][&#39;internalized&#39;]
+                        and p_in &gt; random.random()
+                    ):
+                        spores[index][&#39;internalized&#39;] = True
+                        val = self.append_to_phagosome(i, index, max_spores)
+                        if val:
+                            spores[index][&#39;mobile&#39;] = False
+                        else:
+                            spores[index][&#39;internalized&#39;] = False
+            else:
+                for num in range(0, e_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * e_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = spores.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if (
+                                        spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                                        and not spores[index][&#39;internalized&#39;]
+                                        and p_in &gt; random.random()
+                                    ):
+                                        spores[index][&#39;internalized&#39;] = True
+                                        val = self.append_to_phagosome(i, index, max_spores)
+                                        if val:
+                                            spores[index][&#39;mobile&#39;] = False
+                                        else:
+                                            spores[index][&#39;internalized&#39;] = False
+
+    def remove_dead_fungus(self, spores, grid):
+        for epi_index in self.alive():
+            for ii in range(0, self.len_phagosome(epi_index)):
+                index = self[epi_index][&#39;phagosome&#39;][ii]
+                if spores[index][&#39;dead&#39;]:
+                    self.remove_from_phagosome(epi_index, index)
+
+    def cytokine_update(self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+            # spores
+            spore_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if s_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA and fungus[index][
+                        &#39;status&#39;
+                    ] in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]:
+                        spore_count += 1
+
+            else:
+                for num in range(0, s_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * s_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][
+                                        &#39;form&#39;
+                                    ] == FungusCellData.Form.CONIDIA and fungus[index][
+                                        &#39;status&#39;
+                                    ] in [
+                                        FungusCellData.Status.SWOLLEN,
+                                        FungusCellData.Status.GERMINATED,
+                                    ]:
+                                        spore_count += 1
+
+            # hyphae_count
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if h_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, h_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * h_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            m_cyto[vox.z, vox.y, vox.x] += cyto_rate * spore_count
+            n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)
+
+    def damage(self, kill, t, health, fungus):
+        for i in self.alive():
+            cell = self[i]
+            for ii in range(0, self.len_phagosome(i)):
+                index = cell[&#39;phagosome&#39;][ii]
+                fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))
+
+    def die_by_germination(self, spores):
+        for index in self.alive():
+            e_cell = self[index]
+            for ii in range(0, self.len_phagosome(index)):
+                spore_index = e_cell[&#39;phagosome&#39;][ii]
+                if spores[spore_index][&#39;status&#39;] == FungusCellData.Status.GERMINATED:
+                    e_cell[&#39;dead&#39;] = True
+                    self.clear_all_phagosome(index, spores)
+                    break
+
+
+def cell_list_factory(self: &#39;EpitheliumState&#39;):
+    return EpitheliumCellList(grid=self.global_state.grid)
+
+
+@attr.s(kw_only=True)
+class EpitheliumState(ModuleState):
+    cells: EpitheliumCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    init_health: float
+    e_kill: float
+    cyto_rate: float
+    s_det: int
+    h_det: int
+    time_e: float
+    max_conidia_in_phag: int
+    p_internalization: float
+
+
+class Epithelium(Module):
+    name = &#39;epithelium&#39;
+
+    defaults = {
+        &#39;init_health&#39;: &#39;100&#39;,
+        &#39;e_kill&#39;: &#39;10&#39;,
+        &#39;cyto_rate&#39;: &#39;5&#39;,
+        &#39;s_det&#39;: &#39;1&#39;,
+        &#39;h_det&#39;: &#39;1&#39;,
+        &#39;time_e&#39;: &#39;1&#39;,
+        &#39;max_conidia_in_phag&#39;: &#39;50&#39;,
+        &#39;p_internalization&#39;: &#39;0.3&#39;,
+    }
+    StateClass = EpitheliumState
+
+    def initialize(self, state: State):
+        epithelium: EpitheliumState = state.epithelium
+        grid: RectangularGrid = state.grid
+        tissue = state.geometry.lung_tissue
+
+        epithelium.init_health = self.config.getfloat(&#39;init_health&#39;)
+        epithelium.e_kill = self.config.getfloat(&#39;e_kill&#39;)
+        epithelium.cyto_rate = self.config.getfloat(&#39;cyto_rate&#39;)
+        epithelium.s_det = self.config.getint(&#39;s_det&#39;)
+        epithelium.h_det = self.config.getint(&#39;h_det&#39;)
+        epithelium.time_e = self.config.getfloat(&#39;time_step&#39;)
+        epithelium.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
+        epithelium.cells = EpitheliumCellList(grid=grid)
+        epithelium.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
+
+        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+
+        for i in range(0, len(indices)):
+            x = grid.x[indices[i][2]]
+            y = grid.y[indices[i][1]]
+            z = grid.z[indices[i][0]]
+
+            point = Point(x=x, y=y, z=z)
+
+            epithelium.cells.append(EpitheliumCellData.create_cell(point=point,))
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        epi: EpitheliumState = state.epithelium
+        cells = epi.cells
+
+        grid: RectangularGrid = state.grid
+
+        spores = state.fungus.cells
+        health = state.fungus.health
+
+        m_cyto = state.molecules.grid[&#39;m_cyto&#39;]
+        n_cyto = state.molecules.grid[&#39;n_cyto&#39;]
+
+        # internalize
+        if len(spores.alive(spores.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) &gt; 0:
+            cells.internalize_conidia(
+                epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores
+            )
+
+        # remove killed spores from phagosome
+        cells.remove_dead_fungus(spores, grid)
+
+        # produce cytokines
+        cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
+
+        # damage internalized spores
+        cells.damage(epi.e_kill, epi.time_e, health, spores)
+
+        # kill epithelium with germinated spore in its phagosome
+        cells.die_by_germination(spores)
+
+        return state</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="simulation.modules.epithelium.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: EpitheliumState)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cell_list_factory(self: &#39;EpitheliumState&#39;):
+    return EpitheliumCellList(grid=self.global_state.grid)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.modules.epithelium.Epithelium"><code class="flex name class">
+<span>class <span class="ident">Epithelium</span></span>
+<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Epithelium(Module):
+    name = &#39;epithelium&#39;
+
+    defaults = {
+        &#39;init_health&#39;: &#39;100&#39;,
+        &#39;e_kill&#39;: &#39;10&#39;,
+        &#39;cyto_rate&#39;: &#39;5&#39;,
+        &#39;s_det&#39;: &#39;1&#39;,
+        &#39;h_det&#39;: &#39;1&#39;,
+        &#39;time_e&#39;: &#39;1&#39;,
+        &#39;max_conidia_in_phag&#39;: &#39;50&#39;,
+        &#39;p_internalization&#39;: &#39;0.3&#39;,
+    }
+    StateClass = EpitheliumState
+
+    def initialize(self, state: State):
+        epithelium: EpitheliumState = state.epithelium
+        grid: RectangularGrid = state.grid
+        tissue = state.geometry.lung_tissue
+
+        epithelium.init_health = self.config.getfloat(&#39;init_health&#39;)
+        epithelium.e_kill = self.config.getfloat(&#39;e_kill&#39;)
+        epithelium.cyto_rate = self.config.getfloat(&#39;cyto_rate&#39;)
+        epithelium.s_det = self.config.getint(&#39;s_det&#39;)
+        epithelium.h_det = self.config.getint(&#39;h_det&#39;)
+        epithelium.time_e = self.config.getfloat(&#39;time_step&#39;)
+        epithelium.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
+        epithelium.cells = EpitheliumCellList(grid=grid)
+        epithelium.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
+
+        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+
+        for i in range(0, len(indices)):
+            x = grid.x[indices[i][2]]
+            y = grid.y[indices[i][1]]
+            z = grid.z[indices[i][0]]
+
+            point = Point(x=x, y=y, z=z)
+
+            epithelium.cells.append(EpitheliumCellData.create_cell(point=point,))
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        epi: EpitheliumState = state.epithelium
+        cells = epi.cells
+
+        grid: RectangularGrid = state.grid
+
+        spores = state.fungus.cells
+        health = state.fungus.health
+
+        m_cyto = state.molecules.grid[&#39;m_cyto&#39;]
+        n_cyto = state.molecules.grid[&#39;n_cyto&#39;]
+
+        # internalize
+        if len(spores.alive(spores.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) &gt; 0:
+            cells.internalize_conidia(
+                epi.s_det, epi.max_conidia_in_phag, epi.p_internalization, grid, spores
+            )
+
+        # remove killed spores from phagosome
+        cells.remove_dead_fungus(spores, grid)
+
+        # produce cytokines
+        cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
+
+        # damage internalized spores
+        cells.damage(epi.e_kill, epi.time_e, health, spores)
+
+        # kill epithelium with germinated spore in its phagosome
+        cells.die_by_germination(spores)
+
+        return state</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
+<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
+<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellData"><code class="flex name class">
+<span>class <span class="ident">EpitheliumCellData</span></span>
+<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs):
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EpitheliumCellData(CellData):
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
+
+    class Status(IntEnum):
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
+        APOPTOTIC = 5
+        NECROTIC = 6
+        DEAD = 7
+
+    PHAGOCYTE_FIELDS = [
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+    ) -&gt; np.record:
+
+        iteration = 0
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration, phagosome,)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li>numpy.ndarray</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.epithelium.EpitheliumCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList"><code class="flex name class">
+<span>class <span class="ident">EpitheliumCellList</span></span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A python view on top of a CellData array.</p>
+<p>This class represents a pythonic interface to the data contained in a
+CellData array.
+Because the CellData class is a low-level object, it does
+not allow dynamically appending new elements.
+Objects of this class get
+around this limitation by pre-allocating a large block of memory that is
+transparently available.
+User-facing properties are sliced to make it
+appear as if the extra data is not there.</p>
+<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
+a subclass of <code>CellData</code>.
+This provides information about the underlying
+low-level array.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EpitheliumCellList(CellList):
+    CellDataClass = EpitheliumCellData
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = EpitheliumCellList.len_phagosome(self, index)
+        if (
+            index_to_append &lt; MAX_PHAGOSOME_LENGTH
+            and index_to_append &lt; max_size
+            and pathogen_index not in cell[&#39;phagosome&#39;]
+        ):
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = EpitheliumCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index, fungus: FungusCellList):
+        for i in range(0, self.len_phagosome(index)):
+            f_index = self[index][&#39;phagosome&#39;][i]
+            fungus[f_index][&#39;internalized&#39;] = False
+        self[index][&#39;phagosome&#39;].fill(-1)
+
+    def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
+        for i in self.alive():
+            cell = self[i]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if e_det == 0:
+                index_arr = spores.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if (
+                        spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                        and not spores[index][&#39;internalized&#39;]
+                        and p_in &gt; random.random()
+                    ):
+                        spores[index][&#39;internalized&#39;] = True
+                        val = self.append_to_phagosome(i, index, max_spores)
+                        if val:
+                            spores[index][&#39;mobile&#39;] = False
+                        else:
+                            spores[index][&#39;internalized&#39;] = False
+            else:
+                for num in range(0, e_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * e_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = spores.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if (
+                                        spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                                        and not spores[index][&#39;internalized&#39;]
+                                        and p_in &gt; random.random()
+                                    ):
+                                        spores[index][&#39;internalized&#39;] = True
+                                        val = self.append_to_phagosome(i, index, max_spores)
+                                        if val:
+                                            spores[index][&#39;mobile&#39;] = False
+                                        else:
+                                            spores[index][&#39;internalized&#39;] = False
+
+    def remove_dead_fungus(self, spores, grid):
+        for epi_index in self.alive():
+            for ii in range(0, self.len_phagosome(epi_index)):
+                index = self[epi_index][&#39;phagosome&#39;][ii]
+                if spores[index][&#39;dead&#39;]:
+                    self.remove_from_phagosome(epi_index, index)
+
+    def cytokine_update(self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+            # spores
+            spore_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if s_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA and fungus[index][
+                        &#39;status&#39;
+                    ] in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]:
+                        spore_count += 1
+
+            else:
+                for num in range(0, s_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * s_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][
+                                        &#39;form&#39;
+                                    ] == FungusCellData.Form.CONIDIA and fungus[index][
+                                        &#39;status&#39;
+                                    ] in [
+                                        FungusCellData.Status.SWOLLEN,
+                                        FungusCellData.Status.GERMINATED,
+                                    ]:
+                                        spore_count += 1
+
+            # hyphae_count
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if h_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, h_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * h_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            m_cyto[vox.z, vox.y, vox.x] += cyto_rate * spore_count
+            n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)
+
+    def damage(self, kill, t, health, fungus):
+        for i in self.alive():
+            cell = self[i]
+            for ii in range(0, self.len_phagosome(i)):
+                index = cell[&#39;phagosome&#39;][ii]
+                fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))
+
+    def die_by_germination(self, spores):
+        for index in self.alive():
+            e_cell = self[index]
+            for ii in range(0, self.len_phagosome(index)):
+                spore_index = e_cell[&#39;phagosome&#39;][ii]
+                if spores[spore_index][&#39;status&#39;] == FungusCellData.Status.GERMINATED:
+                    e_cell[&#39;dead&#39;] = True
+                    self.clear_all_phagosome(index, spores)
+                    break</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.append_to_phagosome"><code class="name flex">
+<span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def append_to_phagosome(self, index, pathogen_index, max_size):
+    cell = self[index]
+    index_to_append = EpitheliumCellList.len_phagosome(self, index)
+    if (
+        index_to_append &lt; MAX_PHAGOSOME_LENGTH
+        and index_to_append &lt; max_size
+        and pathogen_index not in cell[&#39;phagosome&#39;]
+    ):
+        cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+        return True
+    else:
+        return False</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.clear_all_phagosome"><code class="name flex">
+<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_all_phagosome(self, index, fungus: FungusCellList):
+    for i in range(0, self.len_phagosome(index)):
+        f_index = self[index][&#39;phagosome&#39;][i]
+        fungus[f_index][&#39;internalized&#39;] = False
+    self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.cytokine_update"><code class="name flex">
+<span>def <span class="ident">cytokine_update</span></span>(<span>self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cytokine_update(self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid):
+    for i in self.alive():
+        vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+        # spores
+        spore_count = 0
+
+        x_r = []
+        y_r = []
+        z_r = []
+
+        if s_det == 0:
+            index_arr = fungus.get_cells_in_voxel(vox)
+            for index in index_arr:
+                if fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA and fungus[index][
+                    &#39;status&#39;
+                ] in [FungusCellData.Status.SWOLLEN, FungusCellData.Status.GERMINATED]:
+                    spore_count += 1
+
+        else:
+            for num in range(0, s_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * s_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            for index in index_arr:
+                                if fungus[index][
+                                    &#39;form&#39;
+                                ] == FungusCellData.Form.CONIDIA and fungus[index][
+                                    &#39;status&#39;
+                                ] in [
+                                    FungusCellData.Status.SWOLLEN,
+                                    FungusCellData.Status.GERMINATED,
+                                ]:
+                                    spore_count += 1
+
+        # hyphae_count
+        hyphae_count = 0
+
+        x_r = []
+        y_r = []
+        z_r = []
+
+        if h_det == 0:
+            index_arr = fungus.get_cells_in_voxel(vox)
+            for index in index_arr:
+                if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                    hyphae_count += 1
+
+        else:
+            for num in range(0, h_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * h_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            for index in index_arr:
+                                if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                    hyphae_count += 1
+
+        m_cyto[vox.z, vox.y, vox.x] += cyto_rate * spore_count
+        n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.damage"><code class="name flex">
+<span>def <span class="ident">damage</span></span>(<span>self, kill, t, health, fungus)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def damage(self, kill, t, health, fungus):
+    for i in self.alive():
+        cell = self[i]
+        for ii in range(0, self.len_phagosome(i)):
+            index = cell[&#39;phagosome&#39;][ii]
+            fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.die_by_germination"><code class="name flex">
+<span>def <span class="ident">die_by_germination</span></span>(<span>self, spores)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def die_by_germination(self, spores):
+    for index in self.alive():
+        e_cell = self[index]
+        for ii in range(0, self.len_phagosome(index)):
+            spore_index = e_cell[&#39;phagosome&#39;][ii]
+            if spores[spore_index][&#39;status&#39;] == FungusCellData.Status.GERMINATED:
+                e_cell[&#39;dead&#39;] = True
+                self.clear_all_phagosome(index, spores)
+                break</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.internalize_conidia"><code class="name flex">
+<span>def <span class="ident">internalize_conidia</span></span>(<span>self, e_det, max_spores, p_in, grid, spores: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def internalize_conidia(self, e_det, max_spores, p_in, grid, spores: FungusCellList):
+    for i in self.alive():
+        cell = self[i]
+        vox = grid.get_voxel(cell[&#39;point&#39;])
+
+        x_r = []
+        y_r = []
+        z_r = []
+
+        if e_det == 0:
+            index_arr = spores.get_cells_in_voxel(vox)
+            for index in index_arr:
+                if (
+                    spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                    and not spores[index][&#39;internalized&#39;]
+                    and p_in &gt; random.random()
+                ):
+                    spores[index][&#39;internalized&#39;] = True
+                    val = self.append_to_phagosome(i, index, max_spores)
+                    if val:
+                        spores[index][&#39;mobile&#39;] = False
+                    else:
+                        spores[index][&#39;internalized&#39;] = False
+        else:
+            for num in range(0, e_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * e_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = spores.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            for index in index_arr:
+                                if (
+                                    spores[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
+                                    and not spores[index][&#39;internalized&#39;]
+                                    and p_in &gt; random.random()
+                                ):
+                                    spores[index][&#39;internalized&#39;] = True
+                                    val = self.append_to_phagosome(i, index, max_spores)
+                                    if val:
+                                        spores[index][&#39;mobile&#39;] = False
+                                    else:
+                                        spores[index][&#39;internalized&#39;] = False</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.len_phagosome"><code class="name flex">
+<span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def len_phagosome(self, index):
+    cell = self[index]
+    return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.remove_dead_fungus"><code class="name flex">
+<span>def <span class="ident">remove_dead_fungus</span></span>(<span>self, spores, grid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_dead_fungus(self, spores, grid):
+    for epi_index in self.alive():
+        for ii in range(0, self.len_phagosome(epi_index)):
+            index = self[epi_index][&#39;phagosome&#39;][ii]
+            if spores[index][&#39;dead&#39;]:
+                self.remove_from_phagosome(epi_index, index)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumCellList.remove_from_phagosome"><code class="name flex">
+<span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_from_phagosome(self, index, pathogen_index):
+    phagosome = self[index][&#39;phagosome&#39;]
+    if pathogen_index in phagosome:
+        itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+        size = EpitheliumCellList.len_phagosome(self, index)
+        if itemindex == size - 1:
+            # full phagosome
+            phagosome[itemindex] = -1
+            return True
+        else:
+            phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+            phagosome[-1] = -1
+            return True
+    else:
+        return False</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
+<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
+<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
+<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.epithelium.EpitheliumState"><code class="flex name class">
+<span>class <span class="ident">EpitheliumState</span></span>
+<span>(</span><span>*, global_state: State, cells: <a title="simulation.modules.epithelium.EpitheliumCellList" href="#simulation.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EpitheliumState(ModuleState):
+    cells: EpitheliumCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    init_health: float
+    e_kill: float
+    cyto_rate: float
+    s_det: int
+    h_det: int
+    time_e: float
+    max_conidia_in_phag: int
+    p_internalization: float</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="simulation.modules.epithelium.cell_list_factory" href="#simulation.modules.epithelium.cell_list_factory">cell_list_factory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.modules.epithelium.Epithelium" href="#simulation.modules.epithelium.Epithelium">Epithelium</a></code></h4>
+</li>
+<li>
+<h4><code><a title="simulation.modules.epithelium.EpitheliumCellData" href="#simulation.modules.epithelium.EpitheliumCellData">EpitheliumCellData</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellData.MAX_CONIDIA" href="#simulation.modules.epithelium.EpitheliumCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS" href="#simulation.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellData.Status" href="#simulation.modules.epithelium.EpitheliumCellData.Status">Status</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.epithelium.EpitheliumCellList" href="#simulation.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.append_to_phagosome" href="#simulation.modules.epithelium.EpitheliumCellList.append_to_phagosome">append_to_phagosome</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.clear_all_phagosome" href="#simulation.modules.epithelium.EpitheliumCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.cytokine_update" href="#simulation.modules.epithelium.EpitheliumCellList.cytokine_update">cytokine_update</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.damage" href="#simulation.modules.epithelium.EpitheliumCellList.damage">damage</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.die_by_germination" href="#simulation.modules.epithelium.EpitheliumCellList.die_by_germination">die_by_germination</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.internalize_conidia" href="#simulation.modules.epithelium.EpitheliumCellList.internalize_conidia">internalize_conidia</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.len_phagosome" href="#simulation.modules.epithelium.EpitheliumCellList.len_phagosome">len_phagosome</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.remove_dead_fungus" href="#simulation.modules.epithelium.EpitheliumCellList.remove_dead_fungus">remove_dead_fungus</a></code></li>
+<li><code><a title="simulation.modules.epithelium.EpitheliumCellList.remove_from_phagosome" href="#simulation.modules.epithelium.EpitheliumCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.epithelium.EpitheliumState" href="#simulation.modules.epithelium.EpitheliumState">EpitheliumState</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

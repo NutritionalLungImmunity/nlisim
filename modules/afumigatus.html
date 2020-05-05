@@ -49,9 +49,11 @@ class AfumigatusCellData(CellData):
     class Status(IntEnum):
         RESTING_CONIDIA = 0
         SWELLING_CONIDIA = 1
+        GERMTUBE = 5
         HYPHAE = 2
         DYING = 3
         DEAD = 4
+        INTERNALIZED = 6
 
     class State(IntEnum):
         FREE = 0
@@ -69,6 +71,8 @@ class AfumigatusCellData(CellData):
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iron&#39;, &#39;b1&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;health&#39;, &#39;f8&#39;),
+        (&#39;mobile&#39;, &#39;b1&#39;),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -91,6 +95,8 @@ class AfumigatusCellData(CellData):
         branchable = False
         iteration = 0
         iron = False
+        health = 100
+        mobile = True
 
         return CellData.create_cell_tuple(**kwargs) + (
             network,
@@ -103,6 +109,8 @@ class AfumigatusCellData(CellData):
             iron_pool,
             iron,
             iteration,
+            health,
+            mobile,
         )
 
     @classmethod
@@ -426,6 +434,8 @@ def cell_list_factory(self: &#39;AfumigatusState&#39;):
 @attr.s(kw_only=True)
 class AfumigatusState(ModuleState):
     tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    p_lodge: float = 0.5
+    ITER_TO_CHANGE_STATUS: int = 2
 
 
 class Afumigatus(Module):
@@ -434,6 +444,10 @@ class Afumigatus(Module):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
+
+        afumigatus.p_lodge = self.config.getfloat(&#39;p_lodge&#39;)
+        afumigatus.ITER_TO_CHANGE_STATUS = self.config.getint(&#39;ITER_TO_CHANGE_STATUS&#39;)
+
         point = Point(x=4, y=4, z=4)
         afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
@@ -442,13 +456,32 @@ class Afumigatus(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        afumigatus: AfumigatusState = state.afumigatus
-        afumigatus.tree.absorb_iron()
-        afumigatus.tree.age()
-        afumigatus.tree.cell_data[&#39;status&#39;] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.elongate()
-        afumigatus.tree.cell_data[&#39;status&#39;] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.branch(0.1)
+        # afumigatus: AfumigatusState = state.afumigatus
+        # grid = state.grid
+        # tissue = state.geometry.lung_tissue
+        #
+        # for index in afumigatus.tree.cells.alive():
+        #    cell = afumigatus.tree.cells[index]
+        #    vox = grid.get_voxel(cell[&#39;point&#39;])
+        #
+        #    if cell[&#39;mobile&#39;]:
+        #        if vox.x &gt; Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]):
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.DEAD
+        #            cell[&#39;dead&#39;] = True
+        #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
+        #            if afumigatus.p_lodge &gt; random.random:
+        #                cell[&#39;mobile&#39;] = False
+        #    if cell[&#39;iteration&#39;] &gt;= afumigatus.ITER_TO_CHANGE_STATUS:
+        #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.RESTING_CONIDIA:
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.GERMTUBE
+        #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.INTERNALIZED:
+        #            if afumigatus.p_internal_swell &gt; random.random():
+        #                cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #
+        #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell[&#39;iteration&#39;] = 0
 
         return state</code></pre>
 </details>
@@ -495,6 +528,10 @@ class Afumigatus(Module):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
+
+        afumigatus.p_lodge = self.config.getfloat(&#39;p_lodge&#39;)
+        afumigatus.ITER_TO_CHANGE_STATUS = self.config.getint(&#39;ITER_TO_CHANGE_STATUS&#39;)
+
         point = Point(x=4, y=4, z=4)
         afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
@@ -503,13 +540,32 @@ class Afumigatus(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        afumigatus: AfumigatusState = state.afumigatus
-        afumigatus.tree.absorb_iron()
-        afumigatus.tree.age()
-        afumigatus.tree.cell_data[&#39;status&#39;] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.elongate()
-        afumigatus.tree.cell_data[&#39;status&#39;] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.branch(0.1)
+        # afumigatus: AfumigatusState = state.afumigatus
+        # grid = state.grid
+        # tissue = state.geometry.lung_tissue
+        #
+        # for index in afumigatus.tree.cells.alive():
+        #    cell = afumigatus.tree.cells[index]
+        #    vox = grid.get_voxel(cell[&#39;point&#39;])
+        #
+        #    if cell[&#39;mobile&#39;]:
+        #        if vox.x &gt; Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]):
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.DEAD
+        #            cell[&#39;dead&#39;] = True
+        #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
+        #            if afumigatus.p_lodge &gt; random.random:
+        #                cell[&#39;mobile&#39;] = False
+        #    if cell[&#39;iteration&#39;] &gt;= afumigatus.ITER_TO_CHANGE_STATUS:
+        #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.RESTING_CONIDIA:
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell[&#39;status&#39;] = AfumigatusCellData.Status.GERMTUBE
+        #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.INTERNALIZED:
+        #            if afumigatus.p_internal_swell &gt; random.random():
+        #                cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #
+        #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell[&#39;iteration&#39;] = 0
 
         return state</code></pre>
 </details>
@@ -525,6 +581,7 @@ class Afumigatus(Module):
 <li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
 <li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
 <li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
 <li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
 <li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
@@ -744,9 +801,11 @@ associated with each cell.</p>
     class Status(IntEnum):
         RESTING_CONIDIA = 0
         SWELLING_CONIDIA = 1
+        GERMTUBE = 5
         HYPHAE = 2
         DYING = 3
         DEAD = 4
+        INTERNALIZED = 6
 
     class State(IntEnum):
         FREE = 0
@@ -764,6 +823,8 @@ associated with each cell.</p>
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iron&#39;, &#39;b1&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;health&#39;, &#39;f8&#39;),
+        (&#39;mobile&#39;, &#39;b1&#39;),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -786,6 +847,8 @@ associated with each cell.</p>
         branchable = False
         iteration = 0
         iron = False
+        health = 100
+        mobile = True
 
         return CellData.create_cell_tuple(**kwargs) + (
             network,
@@ -798,6 +861,8 @@ associated with each cell.</p>
             iron_pool,
             iron,
             iteration,
+            health,
+            mobile,
         )
 
     @classmethod
@@ -916,7 +981,7 @@ def initial_boolean_network(cls) -&gt; np.ndarray:
 </dd>
 <dt id="simulation.modules.afumigatus.AfumigatusCellList"><code class="flex name class">
 <span>class <span class="ident">AfumigatusCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 10000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -1581,12 +1646,25 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class AfumigatusState(ModuleState):
-    tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))</code></pre>
+    tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    p_lodge: float = 0.5
+    ITER_TO_CHANGE_STATUS: int = 2</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS"><code class="name">var <span class="ident">ITER_TO_CHANGE_STATUS</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.modules.afumigatus.AfumigatusState.p_lodge"><code class="name">var <span class="ident">p_lodge</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
@@ -1673,6 +1751,10 @@ state must override the serialization mechanism with custom behavior.</p></div>
 </li>
 <li>
 <h4><code><a title="simulation.modules.afumigatus.AfumigatusState" href="#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS" href="#simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS">ITER_TO_CHANGE_STATUS</a></code></li>
+<li><code><a title="simulation.modules.afumigatus.AfumigatusState.p_lodge" href="#simulation.modules.afumigatus.AfumigatusState.p_lodge">p_lodge</a></code></li>
+</ul>
 </li>
 </ul>
 </li>

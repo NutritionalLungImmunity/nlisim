@@ -25,31 +25,234 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import attr
+<pre><code class="python">from enum import IntEnum
+import random
+
+import attr
 import numpy as np
 
-from simulation.cell import CellData
-from simulation.coordinates import Point
+from simulation.cell import CellData, CellList
+from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
-from simulation.modules.phagocyte import PhagocyteCellData, PhagocyteCellList
+from simulation.plot import plot_cells_num
 from simulation.state import State
 
 
-class NeutrophilCellData(PhagocyteCellData):
-    dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
-    )  # type: ignore
+class NeutrophilCellData(CellData):
+    class Status(IntEnum):
+        NONGRANULATING = 0
+        GRANULATING = 1
+
+    NEUTROPHIL_FIELDS = [(&#39;status&#39;, &#39;u1&#39;), (&#39;iteration&#39;, &#39;i4&#39;), (&#39;granule_count&#39;, &#39;i4&#39;)]
+
+    dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
-        return PhagocyteCellData.create_cell_tuple(**kwargs)
+    def create_cell_tuple(
+        cls, *, status=Status.NONGRANULATING, granule_count=0, **kwargs,
+    ) -&gt; np.record:
+        iteration = 0
+        return CellData.create_cell_tuple(**kwargs) + (status, iteration, granule_count,)
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
-class NeutrophilCellList(PhagocyteCellList):
+class NeutrophilCellList(CellList):
     CellDataClass = NeutrophilCellData
+
+    def recruit_new(self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto):
+        num_reps = 0
+        if not neutropenic:
+            num_reps = rec_rate_ph  # number of neutrophils recruited per time step
+        elif neutropenic and time &gt;= 48 and time &lt;= 96:
+            num_reps = int((time - 48) / 8) * 3
+
+        if num_reps &gt; 0:
+            blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+            blood_index = np.transpose(blood_index)
+            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+            blood_index = np.transpose(blood_index)
+            cyto_index = blood_index[mask]
+            np.random.shuffle(cyto_index)
+
+            for _ in range(0, num_reps):
+                if len(cyto_index) &gt; 0:
+                    ii = random.randint(0, len(cyto_index) - 1)
+                    point = Point(
+                        x=grid.x[cyto_index[ii][2]],
+                        y=grid.y[cyto_index[ii][1]],
+                        z=grid.z[cyto_index[ii][0]],
+                    )
+
+                    status = NeutrophilCellData.Status.NONGRANULATING
+                    gc = granule_count
+                    self.append(
+                        NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
+                    )
+
+    def absorb_cytokines(self, n_absorb, cyto, grid):
+        for index in self.alive():
+            vox = grid.get_voxel(self[index][&#39;point&#39;])
+            x = vox.x
+            y = vox.y
+            z = vox.z
+            cyto[z, y, x] = (1 - n_absorb) * cyto[z, y, x]
+
+    def produce_cytokines(self, n_det, n_n, grid, fungus: FungusCellList, cyto):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + (n_n * hyphae_count)
+
+    def move(self, rec_r, grid, cyto, tissue):
+        for cell_index in self.alive(
+            self.cell_data[&#39;status&#39;] == NeutrophilCellData.Status.NONGRANULATING
+        ):
+            cell = self[cell_index]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
+
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if (
+                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                        ):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] &gt;= rec_r:
+                                p[i] = cyto[zk, yj, xi]
+
+            indices = np.argwhere(p != 0)
+            num_vox_possible = len(indices)
+            if num_vox_possible == 1:
+                i = indices[0][0]
+            elif num_vox_possible &gt; 1:
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0, len(vox_list) - 1)
+
+            cell[&#39;point&#39;] = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]],
+            )
+
+            self.update_voxel_index([cell_index])
+
+    def damage_hyphae(self, n_det, n_kill, time, health, grid, fungus: FungusCellList, iron):
+        for i in self.alive(self.cell_data[&#39;granule_count&#39;] &gt; 0):
+            cell = self[i]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                if len(index_arr) &gt; 0:
+                    iron[vox.z, vox.y, vox.x] = 0
+                for index in index_arr:
+                    if (
+                        fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                        and cell[&#39;granule_count&#39;] &gt; 0
+                    ):
+                        fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                        cell[&#39;granule_count&#39;] -= 1
+                        cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                    elif cell[&#39;granule_count&#39;] == 0:
+                        cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                        break
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                if len(index_arr) &gt; 0:
+                                    iron[zk, yj, xi] = 0
+                                for index in index_arr:
+                                    if (
+                                        fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                                        and cell[&#39;granule_count&#39;] &gt; 0
+                                    ):
+                                        fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                                        cell[&#39;granule_count&#39;] -= 1
+                                        cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                                    elif cell[&#39;granule_count&#39;] == 0:
+                                        cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                                        break
+
+    def update(self):
+        for i in self.alive(self.cell_data[&#39;granule_count&#39;] == 0):
+            self[i][&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+
+    def age(self):
+        self.cell_data[&#39;iteration&#39;] += 1
+
+    def kill_by_age(self, age_limit):
+        for i in self.alive(self.cell_data[&#39;iteration&#39;] &gt; age_limit):
+            self[i][&#39;dead&#39;] = True
 
 
 def cell_list_factory(self: &#39;NeutrophilState&#39;):
@@ -59,96 +262,110 @@ def cell_list_factory(self: &#39;NeutrophilState&#39;):
 @attr.s(kw_only=True)
 class NeutrophilState(ModuleState):
     cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_num: int = 0
-    DRIFT_LAMBDA: float = 10
-    DRIFT_BIAS: float = 0.9
+    neutropenic: bool
+    rec_rate_ph: int
+    rec_r: float
+    n_absorb: float
+    n_n: float
+    n_det: int
+    granule_count: int
+    n_kill: float
+    time_n: float
+    age_limit: int
 
 
 class Neutrophil(Module):
     name = &#39;neutrophil&#39;
     defaults = {
         &#39;cells&#39;: &#39;&#39;,
-        &#39;init_num&#39;: &#39;0&#39;,
-        &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
-        &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
+        &#39;neutropenic&#39;: &#39;False&#39;,
+        &#39;rec_rate_ph&#39;: &#39;6&#39;,
+        &#39;rec_r&#39;: &#39;2&#39;,
+        &#39;n_absorb&#39;: &#39;0.2&#39;,
+        &#39;n_n&#39;: &#39;100&#39;,
+        &#39;n_det&#39;: &#39;15&#39;,
+        &#39;granule_count&#39;: &#39;10&#39;,
+        &#39;n_kill&#39;: &#39;0.05&#39;,
+        &#39;time_n&#39;: &#39;1&#39;,
+        &#39;age_limit&#39;: &#39;36&#39;,
     }
     StateClass = NeutrophilState
 
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
-        tissue = state.geometry.lung_tissue
 
-        neutrophil.init_num = self.config.getint(&#39;init_num&#39;)
-        neutrophil.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
-        neutrophil.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
-        NeutrophilCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
-        NeutrophilCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
+        neutrophil.neutropenic = self.config.getboolean(&#39;neutropenic&#39;)
+        neutrophil.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
+        neutrophil.rec_r = self.config.getfloat(&#39;rec_r&#39;)
+        neutrophil.n_absorb = self.config.getfloat(&#39;n_absorb&#39;)
+        neutrophil.n_n = self.config.getfloat(&#39;Nn&#39;)
+        neutrophil.n_det = self.config.getint(&#39;n_det&#39;)
+        neutrophil.granule_count = self.config.getint(&#39;granule_count&#39;)
+        neutrophil.n_kill = self.config.getfloat(&#39;n_kill&#39;)
+        neutrophil.time_n = self.config.getfloat(&#39;time_step&#39;)
+        neutrophil.age_limit = self.config.getint(&#39;age_limit&#39;)
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
-        if neutrophil.init_num &gt; 0:
-            # initialize the surfactant layer with some neutrophil in random locations
-            indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
-
-            for i in range(0, neutrophil.init_num):
-                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
-                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
-                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
-
-                point = Point(x=x, y=y, z=z)
-                status = NeutrophilCellData.Status.RESTING
-
-                neutrophil.cells.append(NeutrophilCellData.create_cell(point=point, status=status))
+        self.time_step = [0.0]
+        self.n_num = [len(neutrophil.cells.alive())]
 
         return state
 
     def advance(self, state: State, previous_time: float):
         neutrophil: NeutrophilState = state.neutrophil
-        grid: RectangularGrid = state.grid
+        n_cells = neutrophil.cells
+        fungus = state.fungus.cells
+        health = state.fungus.health
+
         tissue = state.geometry.lung_tissue
+        grid = state.grid
+        cyto = state.molecules.grid[&#39;n_cyto&#39;]
+        iron = state.molecules.grid[&#39;iron&#39;]
 
-        cells = neutrophil.cells
-        iron = state.molecules.grid.concentrations.iron
-        # drift(neutrophil.cells, tissue, grid)
-        interact(state)
-
-        cells.recruit(NeutrophilCellData.RECRUIT_RATE, tissue, grid)
-        cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
-        # cells.update
-        cells.chemotaxis(
-            iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
+        # recruit new
+        n_cells.recruit_new(
+            neutrophil.rec_rate_ph,
+            neutrophil.rec_r,
+            neutrophil.granule_count,
+            neutrophil.neutropenic,
+            previous_time,
+            grid,
+            tissue,
+            cyto,
         )
 
-        # print(neutrophil.cells.cell_data[&#39;point&#39;])
+        # absorb cytokines
+        n_cells.absorb_cytokines(neutrophil.n_absorb, cyto, grid)
+
+        # produce cytokines
+        n_cells.produce_cytokines(neutrophil.n_det, neutrophil.n_n, grid, fungus, cyto)
+
+        # move
+        n_cells.move(neutrophil.rec_r, grid, cyto, tissue)
+
+        n_cells.damage_hyphae(
+            neutrophil.n_det, neutrophil.n_kill, neutrophil.time_n, health, grid, fungus, iron
+        )
+
+        # update granule == 0 status
+        n_cells.update()
+
+        n_cells.age()
+
+        n_cells.kill_by_age(neutrophil.age_limit)
+
+        self.time_step.append(state.time)
+        self.n_num.append(len(n_cells.alive()))
 
         return state
 
-
-def interact(state: State):
-    # get molecules in voxel
-    iron = state.molecules.grid.concentrations.iron  # TODO implement real behavior
-    cells = state.neutrophil.cells
-    grid = state.grid
-
-    # 1. Get cells that are alive
-    for index in cells.alive():
-
-        # 2. Get voxel for each cell to get agents in that voxel
-        cell = cells[index]
-        vox = grid.get_voxel(cell[&#39;point&#39;])
-
-        # 3. Interact with all molecules
-
-        #  Iron -----------------------------------------------------
-        iron_amount = iron[vox.z, vox.y, vox.x]
-        qtty = 0.5 * iron_amount
-        iron[vox.z, vox.y, vox.x] -= qtty
-        cell[&#39;iron_pool&#39;] += qtty
-
-        #  Next_Mol -----------------------------------------------------
-        #    next_mol_amount = iron[vox.z, vox.y, vox.x] ...</code></pre>
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        n_num = np.asarray(self.n_num)
+        plot_cells_num(time_step, n_num, &#39;Neutrophil&#39;, f&#39;./results/Neutrophil.png&#39;)
+        return state</code></pre>
 </details>
 </section>
 <section>
@@ -171,37 +388,6 @@ def interact(state: State):
     return NeutrophilCellList(grid=self.global_state.grid)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.neutrophil.interact"><code class="name flex">
-<span>def <span class="ident">interact</span></span>(<span>state: <a title="simulation.state.State" href="../state.html#simulation.state.State">State</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def interact(state: State):
-    # get molecules in voxel
-    iron = state.molecules.grid.concentrations.iron  # TODO implement real behavior
-    cells = state.neutrophil.cells
-    grid = state.grid
-
-    # 1. Get cells that are alive
-    for index in cells.alive():
-
-        # 2. Get voxel for each cell to get agents in that voxel
-        cell = cells[index]
-        vox = grid.get_voxel(cell[&#39;point&#39;])
-
-        # 3. Interact with all molecules
-
-        #  Iron -----------------------------------------------------
-        iron_amount = iron[vox.z, vox.y, vox.x]
-        qtty = 0.5 * iron_amount
-        iron[vox.z, vox.y, vox.x] -= qtty
-        cell[&#39;iron_pool&#39;] += qtty</code></pre>
-</details>
-</dd>
 </dl>
 </section>
 <section>
@@ -221,61 +407,93 @@ def interact(state: State):
     name = &#39;neutrophil&#39;
     defaults = {
         &#39;cells&#39;: &#39;&#39;,
-        &#39;init_num&#39;: &#39;0&#39;,
-        &#39;DRIFT_LAMBDA&#39;: &#39;10&#39;,
-        &#39;DRIFT_BIAS&#39;: &#39;0.9&#39;,
+        &#39;neutropenic&#39;: &#39;False&#39;,
+        &#39;rec_rate_ph&#39;: &#39;6&#39;,
+        &#39;rec_r&#39;: &#39;2&#39;,
+        &#39;n_absorb&#39;: &#39;0.2&#39;,
+        &#39;n_n&#39;: &#39;100&#39;,
+        &#39;n_det&#39;: &#39;15&#39;,
+        &#39;granule_count&#39;: &#39;10&#39;,
+        &#39;n_kill&#39;: &#39;0.05&#39;,
+        &#39;time_n&#39;: &#39;1&#39;,
+        &#39;age_limit&#39;: &#39;36&#39;,
     }
     StateClass = NeutrophilState
 
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
-        tissue = state.geometry.lung_tissue
 
-        neutrophil.init_num = self.config.getint(&#39;init_num&#39;)
-        neutrophil.DRIFT_LAMBDA = self.config.getfloat(&#39;DRIFT_LAMBDA&#39;)
-        neutrophil.DRIFT_BIAS = self.config.getfloat(&#39;DRIFT_BIAS&#39;)
-        NeutrophilCellData.RECRUIT_RATE = self.config.getfloat(&#39;RECRUIT_RATE&#39;)
-        NeutrophilCellData.LEAVE_RATE = self.config.getfloat(&#39;LEAVE_RATE&#39;)
+        neutrophil.neutropenic = self.config.getboolean(&#39;neutropenic&#39;)
+        neutrophil.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
+        neutrophil.rec_r = self.config.getfloat(&#39;rec_r&#39;)
+        neutrophil.n_absorb = self.config.getfloat(&#39;n_absorb&#39;)
+        neutrophil.n_n = self.config.getfloat(&#39;Nn&#39;)
+        neutrophil.n_det = self.config.getint(&#39;n_det&#39;)
+        neutrophil.granule_count = self.config.getint(&#39;granule_count&#39;)
+        neutrophil.n_kill = self.config.getfloat(&#39;n_kill&#39;)
+        neutrophil.time_n = self.config.getfloat(&#39;time_step&#39;)
+        neutrophil.age_limit = self.config.getint(&#39;age_limit&#39;)
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
 
-        if neutrophil.init_num &gt; 0:
-            # initialize the surfactant layer with some neutrophil in random locations
-            indices = np.argwhere(tissue == TissueTypes.SURFACTANT.value)
-            np.random.shuffle(indices)
-
-            for i in range(0, neutrophil.init_num):
-                x = grid.x[indices[i][2]]  # TODO add some random.uniform(0, 1)
-                y = grid.y[indices[i][1]]  # TODO add some random.uniform(0, 1)
-                z = grid.z[indices[i][0]]  # TODO add some random.uniform(0, 1)
-
-                point = Point(x=x, y=y, z=z)
-                status = NeutrophilCellData.Status.RESTING
-
-                neutrophil.cells.append(NeutrophilCellData.create_cell(point=point, status=status))
+        self.time_step = [0.0]
+        self.n_num = [len(neutrophil.cells.alive())]
 
         return state
 
     def advance(self, state: State, previous_time: float):
         neutrophil: NeutrophilState = state.neutrophil
-        grid: RectangularGrid = state.grid
+        n_cells = neutrophil.cells
+        fungus = state.fungus.cells
+        health = state.fungus.health
+
         tissue = state.geometry.lung_tissue
+        grid = state.grid
+        cyto = state.molecules.grid[&#39;n_cyto&#39;]
+        iron = state.molecules.grid[&#39;iron&#39;]
 
-        cells = neutrophil.cells
-        iron = state.molecules.grid.concentrations.iron
-        # drift(neutrophil.cells, tissue, grid)
-        interact(state)
-
-        cells.recruit(NeutrophilCellData.RECRUIT_RATE, tissue, grid)
-        cells.remove(NeutrophilCellData.LEAVE_RATE, tissue, grid)
-        # cells.update
-        cells.chemotaxis(
-            iron, neutrophil.DRIFT_LAMBDA, neutrophil.DRIFT_BIAS, tissue, grid,
+        # recruit new
+        n_cells.recruit_new(
+            neutrophil.rec_rate_ph,
+            neutrophil.rec_r,
+            neutrophil.granule_count,
+            neutrophil.neutropenic,
+            previous_time,
+            grid,
+            tissue,
+            cyto,
         )
 
-        # print(neutrophil.cells.cell_data[&#39;point&#39;])
+        # absorb cytokines
+        n_cells.absorb_cytokines(neutrophil.n_absorb, cyto, grid)
 
+        # produce cytokines
+        n_cells.produce_cytokines(neutrophil.n_det, neutrophil.n_n, grid, fungus, cyto)
+
+        # move
+        n_cells.move(neutrophil.rec_r, grid, cyto, tissue)
+
+        n_cells.damage_hyphae(
+            neutrophil.n_det, neutrophil.n_kill, neutrophil.time_n, health, grid, fungus, iron
+        )
+
+        # update granule == 0 status
+        n_cells.update()
+
+        n_cells.age()
+
+        n_cells.kill_by_age(neutrophil.age_limit)
+
+        self.time_step.append(state.time)
+        self.n_num.append(len(n_cells.alive()))
+
+        return state
+
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        n_num = np.asarray(self.n_num)
+        plot_cells_num(time_step, n_num, &#39;Neutrophil&#39;, f&#39;./results/Neutrophil.png&#39;)
         return state</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -290,6 +508,7 @@ def interact(state: State):
 <li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
 <li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
 <li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
 <li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
 <li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
@@ -334,43 +553,54 @@ associated with each cell.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class NeutrophilCellData(PhagocyteCellData):
-    dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS, align=True
-    )  # type: ignore
+<pre><code class="python">class NeutrophilCellData(CellData):
+    class Status(IntEnum):
+        NONGRANULATING = 0
+        GRANULATING = 1
+
+    NEUTROPHIL_FIELDS = [(&#39;status&#39;, &#39;u1&#39;), (&#39;iteration&#39;, &#39;i4&#39;), (&#39;granule_count&#39;, &#39;i4&#39;)]
+
+    dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs,) -&gt; np.record:
-        return PhagocyteCellData.create_cell_tuple(**kwargs)</code></pre>
+    def create_cell_tuple(
+        cls, *, status=Status.NONGRANULATING, granule_count=0, **kwargs,
+    ) -&gt; np.record:
+        iteration = 0
+        return CellData.create_cell_tuple(**kwargs) + (status, iteration, granule_count,)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
 <li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.neutrophil.NeutrophilCellData.NEUTROPHIL_FIELDS"><code class="name">var <span class="ident">NEUTROPHIL_FIELDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
-<ul class="hlist">
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.State" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.Status" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
+<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
 <li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
 <dt id="simulation.modules.neutrophil.NeutrophilCellList"><code class="flex name class">
 <span>class <span class="ident">NeutrophilCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 10000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -400,29 +630,495 @@ low-level array.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class NeutrophilCellList(PhagocyteCellList):
-    CellDataClass = NeutrophilCellData</code></pre>
+<pre><code class="python">class NeutrophilCellList(CellList):
+    CellDataClass = NeutrophilCellData
+
+    def recruit_new(self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto):
+        num_reps = 0
+        if not neutropenic:
+            num_reps = rec_rate_ph  # number of neutrophils recruited per time step
+        elif neutropenic and time &gt;= 48 and time &lt;= 96:
+            num_reps = int((time - 48) / 8) * 3
+
+        if num_reps &gt; 0:
+            blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+            blood_index = np.transpose(blood_index)
+            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+            blood_index = np.transpose(blood_index)
+            cyto_index = blood_index[mask]
+            np.random.shuffle(cyto_index)
+
+            for _ in range(0, num_reps):
+                if len(cyto_index) &gt; 0:
+                    ii = random.randint(0, len(cyto_index) - 1)
+                    point = Point(
+                        x=grid.x[cyto_index[ii][2]],
+                        y=grid.y[cyto_index[ii][1]],
+                        z=grid.z[cyto_index[ii][0]],
+                    )
+
+                    status = NeutrophilCellData.Status.NONGRANULATING
+                    gc = granule_count
+                    self.append(
+                        NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
+                    )
+
+    def absorb_cytokines(self, n_absorb, cyto, grid):
+        for index in self.alive():
+            vox = grid.get_voxel(self[index][&#39;point&#39;])
+            x = vox.x
+            y = vox.y
+            z = vox.z
+            cyto[z, y, x] = (1 - n_absorb) * cyto[z, y, x]
+
+    def produce_cytokines(self, n_det, n_n, grid, fungus: FungusCellList, cyto):
+        for i in self.alive():
+            vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+            hyphae_count = 0
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                for index in index_arr:
+                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                        hyphae_count += 1
+
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                for index in index_arr:
+                                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                        hyphae_count += 1
+
+            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + (n_n * hyphae_count)
+
+    def move(self, rec_r, grid, cyto, tissue):
+        for cell_index in self.alive(
+            self.cell_data[&#39;status&#39;] == NeutrophilCellData.Status.NONGRANULATING
+        ):
+            cell = self[cell_index]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            p = np.zeros(shape=27)
+            vox_list = []
+            i = -1
+
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if (
+                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                        ):
+                            vox_list.append([x, y, z])
+                            i += 1
+                            if cyto[zk, yj, xi] &gt;= rec_r:
+                                p[i] = cyto[zk, yj, xi]
+
+            indices = np.argwhere(p != 0)
+            num_vox_possible = len(indices)
+            if num_vox_possible == 1:
+                i = indices[0][0]
+            elif num_vox_possible &gt; 1:
+                inds = np.argwhere(p == p[np.argmax(p)])
+                np.random.shuffle(inds)
+                i = inds[0][0]
+            else:
+                i = random.randint(0, len(vox_list) - 1)
+
+            cell[&#39;point&#39;] = Point(
+                x=grid.x[vox.x + vox_list[i][0]],
+                y=grid.y[vox.y + vox_list[i][1]],
+                z=grid.z[vox.z + vox_list[i][2]],
+            )
+
+            self.update_voxel_index([cell_index])
+
+    def damage_hyphae(self, n_det, n_kill, time, health, grid, fungus: FungusCellList, iron):
+        for i in self.alive(self.cell_data[&#39;granule_count&#39;] &gt; 0):
+            cell = self[i]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            x_r = []
+            y_r = []
+            z_r = []
+
+            if n_det == 0:
+                index_arr = fungus.get_cells_in_voxel(vox)
+                if len(index_arr) &gt; 0:
+                    iron[vox.z, vox.y, vox.x] = 0
+                for index in index_arr:
+                    if (
+                        fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                        and cell[&#39;granule_count&#39;] &gt; 0
+                    ):
+                        fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                        cell[&#39;granule_count&#39;] -= 1
+                        cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                    elif cell[&#39;granule_count&#39;] == 0:
+                        cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                        break
+            else:
+                for num in range(0, n_det + 1):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for num in range(-1 * n_det, 0):
+                    x_r.append(num)
+                    y_r.append(num)
+                    z_r.append(num)
+
+                for x in x_r:
+                    for y in y_r:
+                        for z in z_r:
+                            zk = vox.z + z
+                            yj = vox.y + y
+                            xi = vox.x + x
+                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                                if len(index_arr) &gt; 0:
+                                    iron[zk, yj, xi] = 0
+                                for index in index_arr:
+                                    if (
+                                        fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                                        and cell[&#39;granule_count&#39;] &gt; 0
+                                    ):
+                                        fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                                        cell[&#39;granule_count&#39;] -= 1
+                                        cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                                    elif cell[&#39;granule_count&#39;] == 0:
+                                        cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                                        break
+
+    def update(self):
+        for i in self.alive(self.cell_data[&#39;granule_count&#39;] == 0):
+            self[i][&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+
+    def age(self):
+        self.cell_data[&#39;iteration&#39;] += 1
+
+    def kill_by_age(self, age_limit):
+        for i in self.alive(self.cell_data[&#39;iteration&#39;] &gt; age_limit):
+            self[i][&#39;dead&#39;] = True</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.phagocyte.PhagocyteCellList" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></li>
 <li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
 </ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.absorb_cytokines"><code class="name flex">
+<span>def <span class="ident">absorb_cytokines</span></span>(<span>self, n_absorb, cyto, grid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def absorb_cytokines(self, n_absorb, cyto, grid):
+    for index in self.alive():
+        vox = grid.get_voxel(self[index][&#39;point&#39;])
+        x = vox.x
+        y = vox.y
+        z = vox.z
+        cyto[z, y, x] = (1 - n_absorb) * cyto[z, y, x]</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.age"><code class="name flex">
+<span>def <span class="ident">age</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def age(self):
+    self.cell_data[&#39;iteration&#39;] += 1</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.damage_hyphae"><code class="name flex">
+<span>def <span class="ident">damage_hyphae</span></span>(<span>self, n_det, n_kill, time, health, grid, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>, iron)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def damage_hyphae(self, n_det, n_kill, time, health, grid, fungus: FungusCellList, iron):
+    for i in self.alive(self.cell_data[&#39;granule_count&#39;] &gt; 0):
+        cell = self[i]
+        vox = grid.get_voxel(cell[&#39;point&#39;])
+
+        x_r = []
+        y_r = []
+        z_r = []
+
+        if n_det == 0:
+            index_arr = fungus.get_cells_in_voxel(vox)
+            if len(index_arr) &gt; 0:
+                iron[vox.z, vox.y, vox.x] = 0
+            for index in index_arr:
+                if (
+                    fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                    and cell[&#39;granule_count&#39;] &gt; 0
+                ):
+                    fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                    cell[&#39;granule_count&#39;] -= 1
+                    cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                elif cell[&#39;granule_count&#39;] == 0:
+                    cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                    break
+        else:
+            for num in range(0, n_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * n_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            if len(index_arr) &gt; 0:
+                                iron[zk, yj, xi] = 0
+                            for index in index_arr:
+                                if (
+                                    fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE
+                                    and cell[&#39;granule_count&#39;] &gt; 0
+                                ):
+                                    fungus[index][&#39;health&#39;] -= health * (time / n_kill)
+                                    cell[&#39;granule_count&#39;] -= 1
+                                    cell[&#39;status&#39;] = NeutrophilCellData.Status.GRANULATING
+                                elif cell[&#39;granule_count&#39;] == 0:
+                                    cell[&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING
+                                    break</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.kill_by_age"><code class="name flex">
+<span>def <span class="ident">kill_by_age</span></span>(<span>self, age_limit)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kill_by_age(self, age_limit):
+    for i in self.alive(self.cell_data[&#39;iteration&#39;] &gt; age_limit):
+        self[i][&#39;dead&#39;] = True</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.move"><code class="name flex">
+<span>def <span class="ident">move</span></span>(<span>self, rec_r, grid, cyto, tissue)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def move(self, rec_r, grid, cyto, tissue):
+    for cell_index in self.alive(
+        self.cell_data[&#39;status&#39;] == NeutrophilCellData.Status.NONGRANULATING
+    ):
+        cell = self[cell_index]
+        vox = grid.get_voxel(cell[&#39;point&#39;])
+
+        p = np.zeros(shape=27)
+        vox_list = []
+        i = -1
+
+        for x in [0, 1, -1]:
+            for y in [0, 1, -1]:
+                for z in [0, 1, -1]:
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
+                    if (
+                        grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                        and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                    ):
+                        vox_list.append([x, y, z])
+                        i += 1
+                        if cyto[zk, yj, xi] &gt;= rec_r:
+                            p[i] = cyto[zk, yj, xi]
+
+        indices = np.argwhere(p != 0)
+        num_vox_possible = len(indices)
+        if num_vox_possible == 1:
+            i = indices[0][0]
+        elif num_vox_possible &gt; 1:
+            inds = np.argwhere(p == p[np.argmax(p)])
+            np.random.shuffle(inds)
+            i = inds[0][0]
+        else:
+            i = random.randint(0, len(vox_list) - 1)
+
+        cell[&#39;point&#39;] = Point(
+            x=grid.x[vox.x + vox_list[i][0]],
+            y=grid.y[vox.y + vox_list[i][1]],
+            z=grid.z[vox.z + vox_list[i][2]],
+        )
+
+        self.update_voxel_index([cell_index])</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.produce_cytokines"><code class="name flex">
+<span>def <span class="ident">produce_cytokines</span></span>(<span>self, n_det, n_n, grid, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>, cyto)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def produce_cytokines(self, n_det, n_n, grid, fungus: FungusCellList, cyto):
+    for i in self.alive():
+        vox = grid.get_voxel(self[i][&#39;point&#39;])
+
+        hyphae_count = 0
+
+        x_r = []
+        y_r = []
+        z_r = []
+
+        if n_det == 0:
+            index_arr = fungus.get_cells_in_voxel(vox)
+            for index in index_arr:
+                if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                    hyphae_count += 1
+
+        else:
+            for num in range(0, n_det + 1):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for num in range(-1 * n_det, 0):
+                x_r.append(num)
+                y_r.append(num)
+                z_r.append(num)
+
+            for x in x_r:
+                for y in y_r:
+                    for z in z_r:
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                            for index in index_arr:
+                                if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                                    hyphae_count += 1
+
+        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + (n_n * hyphae_count)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.recruit_new"><code class="name flex">
+<span>def <span class="ident">recruit_new</span></span>(<span>self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def recruit_new(self, rec_rate_ph, rec_r, granule_count, neutropenic, time, grid, tissue, cyto):
+    num_reps = 0
+    if not neutropenic:
+        num_reps = rec_rate_ph  # number of neutrophils recruited per time step
+    elif neutropenic and time &gt;= 48 and time &lt;= 96:
+        num_reps = int((time - 48) / 8) * 3
+
+    if num_reps &gt; 0:
+        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
+        blood_index = np.transpose(blood_index)
+        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+        blood_index = np.transpose(blood_index)
+        cyto_index = blood_index[mask]
+        np.random.shuffle(cyto_index)
+
+        for _ in range(0, num_reps):
+            if len(cyto_index) &gt; 0:
+                ii = random.randint(0, len(cyto_index) - 1)
+                point = Point(
+                    x=grid.x[cyto_index[ii][2]],
+                    y=grid.y[cyto_index[ii][1]],
+                    z=grid.z[cyto_index[ii][0]],
+                )
+
+                status = NeutrophilCellData.Status.NONGRANULATING
+                gc = granule_count
+                self.append(
+                    NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
+                )</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.neutrophil.NeutrophilCellList.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self):
+    for i in self.alive(self.cell_data[&#39;granule_count&#39;] == 0):
+        self[i][&#39;status&#39;] = NeutrophilCellData.Status.NONGRANULATING</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.modules.phagocyte.PhagocyteCellList" href="phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></b></code>:
+<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
+<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
+<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
+<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
 </ul>
 </li>
 </ul>
@@ -443,29 +1139,21 @@ state must override the serialization mechanism with custom behavior.</p></div>
 </summary>
 <pre><code class="python">class NeutrophilState(ModuleState):
     cells: NeutrophilCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    init_num: int = 0
-    DRIFT_LAMBDA: float = 10
-    DRIFT_BIAS: float = 0.9</code></pre>
+    neutropenic: bool
+    rec_rate_ph: int
+    rec_r: float
+    n_absorb: float
+    n_n: float
+    n_det: int
+    granule_count: int
+    n_kill: float
+    time_n: float
+    age_limit: int</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS"><code class="name">var <span class="ident">DRIFT_BIAS</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA"><code class="name">var <span class="ident">DRIFT_LAMBDA</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="simulation.modules.neutrophil.NeutrophilState.init_num"><code class="name">var <span class="ident">init_num</span> : int</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
@@ -495,7 +1183,6 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="simulation.modules.neutrophil.cell_list_factory" href="#simulation.modules.neutrophil.cell_list_factory">cell_list_factory</a></code></li>
-<li><code><a title="simulation.modules.neutrophil.interact" href="#simulation.modules.neutrophil.interact">interact</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -505,17 +1192,26 @@ state must override the serialization mechanism with custom behavior.</p></div>
 </li>
 <li>
 <h4><code><a title="simulation.modules.neutrophil.NeutrophilCellData" href="#simulation.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellData.NEUTROPHIL_FIELDS" href="#simulation.modules.neutrophil.NeutrophilCellData.NEUTROPHIL_FIELDS">NEUTROPHIL_FIELDS</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellData.Status" href="#simulation.modules.neutrophil.NeutrophilCellData.Status">Status</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="simulation.modules.neutrophil.NeutrophilCellList" href="#simulation.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></code></h4>
+<ul class="two-column">
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.absorb_cytokines" href="#simulation.modules.neutrophil.NeutrophilCellList.absorb_cytokines">absorb_cytokines</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.age" href="#simulation.modules.neutrophil.NeutrophilCellList.age">age</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.damage_hyphae" href="#simulation.modules.neutrophil.NeutrophilCellList.damage_hyphae">damage_hyphae</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.kill_by_age" href="#simulation.modules.neutrophil.NeutrophilCellList.kill_by_age">kill_by_age</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.move" href="#simulation.modules.neutrophil.NeutrophilCellList.move">move</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.produce_cytokines" href="#simulation.modules.neutrophil.NeutrophilCellList.produce_cytokines">produce_cytokines</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.recruit_new" href="#simulation.modules.neutrophil.NeutrophilCellList.recruit_new">recruit_new</a></code></li>
+<li><code><a title="simulation.modules.neutrophil.NeutrophilCellList.update" href="#simulation.modules.neutrophil.NeutrophilCellList.update">update</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="simulation.modules.neutrophil.NeutrophilState" href="#simulation.modules.neutrophil.NeutrophilState">NeutrophilState</a></code></h4>
-<ul class="">
-<li><code><a title="simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS" href="#simulation.modules.neutrophil.NeutrophilState.DRIFT_BIAS">DRIFT_BIAS</a></code></li>
-<li><code><a title="simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA" href="#simulation.modules.neutrophil.NeutrophilState.DRIFT_LAMBDA">DRIFT_LAMBDA</a></code></li>
-<li><code><a title="simulation.modules.neutrophil.NeutrophilState.init_num" href="#simulation.modules.neutrophil.NeutrophilState.init_num">init_num</a></code></li>
-</ul>
 </li>
 </ul>
 </li>

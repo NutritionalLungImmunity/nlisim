@@ -36,7 +36,7 @@ from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.state import get_class_path, State
 
-MAX_CELL_LIST_SIZE = 10000
+MAX_CELL_LIST_SIZE = 1000000
 
 # the way numpy types single records is strange...
 CellType = Any
@@ -213,6 +213,10 @@ class CellList(object):
     def cell_data(self) -&gt; CellData:
         &#34;&#34;&#34;Return the portion of the underlying data array containing valid data.&#34;&#34;&#34;
         return self._cell_data[: self._ncells]
+
+    @property
+    def voxel_index(self):
+        return self._reverse_voxel_index
 
     @classmethod
     def create_from_seed(cls, grid: RectangularGrid, **kwargs) -&gt; &#39;CellList&#39;:
@@ -523,6 +527,10 @@ associated with each cell.</p>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="simulation.modules.afumigatus.AfumigatusCellData" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></li>
+<li><a title="simulation.modules.epithelium.EpitheliumCellData" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumCellData">EpitheliumCellData</a></li>
+<li><a title="simulation.modules.fungus.FungusCellData" href="modules/fungus.html#simulation.modules.fungus.FungusCellData">FungusCellData</a></li>
+<li><a title="simulation.modules.macrophage.MacrophageCellData" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageCellData">MacrophageCellData</a></li>
+<li><a title="simulation.modules.neutrophil.NeutrophilCellData" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></li>
 <li><a title="simulation.modules.phagocyte.PhagocyteCellData" href="modules/phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
 </ul>
 <h3>Class variables</h3>
@@ -629,7 +637,7 @@ def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
 </dd>
 <dt id="simulation.cell.CellList"><code class="flex name class">
 <span>class <span class="ident">CellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 10000, cell_data: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -724,6 +732,10 @@ low-level array.</p>
     def cell_data(self) -&gt; CellData:
         &#34;&#34;&#34;Return the portion of the underlying data array containing valid data.&#34;&#34;&#34;
         return self._cell_data[: self._ncells]
+
+    @property
+    def voxel_index(self):
+        return self._reverse_voxel_index
 
     @classmethod
     def create_from_seed(cls, grid: RectangularGrid, **kwargs) -&gt; &#39;CellList&#39;:
@@ -879,6 +891,10 @@ low-level array.</p>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="simulation.modules.afumigatus.AfumigatusCellList" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></li>
+<li><a title="simulation.modules.epithelium.EpitheliumCellList" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></li>
+<li><a title="simulation.modules.fungus.FungusCellList" href="modules/fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a></li>
+<li><a title="simulation.modules.macrophage.MacrophageCellList" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></li>
+<li><a title="simulation.modules.neutrophil.NeutrophilCellList" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></li>
 <li><a title="simulation.modules.phagocyte.PhagocyteCellList" href="modules/phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></li>
 </ul>
 <h3>Class variables</h3>
@@ -959,6 +975,18 @@ def load(cls, global_state: State, group: Group, name: str, metadata: dict) -&gt
 def cell_data(self) -&gt; CellData:
     &#34;&#34;&#34;Return the portion of the underlying data array containing valid data.&#34;&#34;&#34;
     return self._cell_data[: self._ncells]</code></pre>
+</details>
+</dd>
+<dt id="simulation.cell.CellList.voxel_index"><code class="name">var <span class="ident">voxel_index</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def voxel_index(self):
+    return self._reverse_voxel_index</code></pre>
 </details>
 </dd>
 </dl>
@@ -1223,6 +1251,7 @@ voxel.</p></div>
 <li><code><a title="simulation.cell.CellList.load" href="#simulation.cell.CellList.load">load</a></code></li>
 <li><code><a title="simulation.cell.CellList.save" href="#simulation.cell.CellList.save">save</a></code></li>
 <li><code><a title="simulation.cell.CellList.update_voxel_index" href="#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="simulation.cell.CellList.voxel_index" href="#simulation.cell.CellList.voxel_index">voxel_index</a></code></li>
 </ul>
 </li>
 </ul>

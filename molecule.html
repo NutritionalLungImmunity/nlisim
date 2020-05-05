@@ -57,6 +57,8 @@ class MoleculeTypes(Enum):
     mcp1 = 14
     mip2 = 15
     mip1b = 16
+    m_cyto = 17
+    n_cyto = 18
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -475,7 +477,9 @@ an HDF5 group.</p></div>
     tgfb = 13
     mcp1 = 14
     mip2 = 15
-    mip1b = 16</code></pre>
+    mip1b = 16
+    m_cyto = 17
+    n_cyto = 18</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -511,6 +515,10 @@ an HDF5 group.</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="simulation.molecule.MoleculeTypes.m_cyto"><code class="name">var <span class="ident">m_cyto</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="simulation.molecule.MoleculeTypes.mcp1"><code class="name">var <span class="ident">mcp1</span></code></dt>
 <dd>
 <div class="desc"></div>
@@ -520,6 +528,10 @@ an HDF5 group.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="simulation.molecule.MoleculeTypes.mip2"><code class="name">var <span class="ident">mip2</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.molecule.MoleculeTypes.n_cyto"><code class="name">var <span class="ident">n_cyto</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -592,9 +604,11 @@ an HDF5 group.</p></div>
 <li><code><a title="simulation.molecule.MoleculeTypes.iron" href="#simulation.molecule.MoleculeTypes.iron">iron</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.lactoferrin" href="#simulation.molecule.MoleculeTypes.lactoferrin">lactoferrin</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.lactoferrinbi" href="#simulation.molecule.MoleculeTypes.lactoferrinbi">lactoferrinbi</a></code></li>
+<li><code><a title="simulation.molecule.MoleculeTypes.m_cyto" href="#simulation.molecule.MoleculeTypes.m_cyto">m_cyto</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.mcp1" href="#simulation.molecule.MoleculeTypes.mcp1">mcp1</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.mip1b" href="#simulation.molecule.MoleculeTypes.mip1b">mip1b</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.mip2" href="#simulation.molecule.MoleculeTypes.mip2">mip2</a></code></li>
+<li><code><a title="simulation.molecule.MoleculeTypes.n_cyto" href="#simulation.molecule.MoleculeTypes.n_cyto">n_cyto</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.ros" href="#simulation.molecule.MoleculeTypes.ros">ros</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.tafc" href="#simulation.molecule.MoleculeTypes.tafc">tafc</a></code></li>
 <li><code><a title="simulation.molecule.MoleculeTypes.tafcbi" href="#simulation.molecule.MoleculeTypes.tafcbi">tafcbi</a></code></li>

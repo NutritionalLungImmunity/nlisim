@@ -337,11 +337,6 @@ associated with each cell.</p>
 <li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="simulation.modules.macrophage.MacrophageCellData" href="macrophage.html#simulation.modules.macrophage.MacrophageCellData">MacrophageCellData</a></li>
-<li><a title="simulation.modules.neutrophil.NeutrophilCellData" href="neutrophil.html#simulation.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></li>
-</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD"><code class="name">var <span class="ident">CHEMOKINE_THRESHOLD</span></code></dt>
@@ -392,7 +387,7 @@ associated with each cell.</p>
 </dd>
 <dt id="simulation.modules.phagocyte.PhagocyteCellList"><code class="flex name class">
 <span>class <span class="ident">PhagocyteCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 10000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -544,11 +539,6 @@ low-level array.</p>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="simulation.modules.macrophage.MacrophageCellList" href="macrophage.html#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></li>
-<li><a title="simulation.modules.neutrophil.NeutrophilCellList" href="neutrophil.html#simulation.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>

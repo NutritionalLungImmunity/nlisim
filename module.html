@@ -26,7 +26,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from importlib import import_module
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import attr
 from h5py import Dataset, Group
@@ -163,10 +163,19 @@ class Module(object):
         values = dict(self.defaults, **self.config)
         self.config.update(values)
 
+        self._cost: List[float] = []
+
     @property
     def section(self):
         &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
         return self.name
+
+    @property
+    def cost(self):
+        return self._cost
+
+    def add_cost(self, time: float):
+        self._cost.append(time)
 
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
@@ -180,6 +189,10 @@ class Module(object):
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         &#34;&#34;&#34;Run after advancing the simulation state in time.&#34;&#34;&#34;
+        return state
+
+    def finalize(self, state: State) -&gt; State:
+        &#34;&#34;&#34;Run after the last timestep.&#34;&#34;&#34;
         return state</code></pre>
 </details>
 </section>
@@ -220,10 +233,19 @@ class Module(object):
         values = dict(self.defaults, **self.config)
         self.config.update(values)
 
+        self._cost: List[float] = []
+
     @property
     def section(self):
         &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
         return self.name
+
+    @property
+    def cost(self):
+        return self._cost
+
+    def add_cost(self, time: float):
+        self._cost.append(time)
 
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
@@ -237,11 +259,17 @@ class Module(object):
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         &#34;&#34;&#34;Run after advancing the simulation state in time.&#34;&#34;&#34;
+        return state
+
+    def finalize(self, state: State) -&gt; State:
+        &#34;&#34;&#34;Run after the last timestep.&#34;&#34;&#34;
         return state</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="simulation.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#simulation.modules.afumigatus.Afumigatus">Afumigatus</a></li>
+<li><a title="simulation.modules.epithelium.Epithelium" href="modules/epithelium.html#simulation.modules.epithelium.Epithelium">Epithelium</a></li>
+<li><a title="simulation.modules.fungus.Fungus" href="modules/fungus.html#simulation.modules.fungus.Fungus">Fungus</a></li>
 <li><a title="simulation.modules.geometry.Geometry" href="modules/geometry.html#simulation.modules.geometry.Geometry">Geometry</a></li>
 <li><a title="simulation.modules.macrophage.Macrophage" href="modules/macrophage.html#simulation.modules.macrophage.Macrophage">Macrophage</a></li>
 <li><a title="simulation.modules.molecules.Molecules" href="modules/molecules.html#simulation.modules.molecules.Molecules">Molecules</a></li>
@@ -266,6 +294,18 @@ class Module(object):
 </dl>
 <h3>Instance variables</h3>
 <dl>
+<dt id="simulation.module.Module.cost"><code class="name">var <span class="ident">cost</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def cost(self):
+    return self._cost</code></pre>
+</details>
+</dd>
 <dt id="simulation.module.Module.section"><code class="name">var <span class="ident">section</span></code></dt>
 <dd>
 <div class="desc"><p>Return the section in the configuration object used by this module.</p></div>
@@ -282,6 +322,19 @@ def section(self):
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="simulation.module.Module.add_cost"><code class="name flex">
+<span>def <span class="ident">add_cost</span></span>(<span>self, time: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_cost(self, time: float):
+    self._cost.append(time)</code></pre>
+</details>
+</dd>
 <dt id="simulation.module.Module.advance"><code class="name flex">
 <span>def <span class="ident">advance</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, previous_time: float) -> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
 </code></dt>
@@ -307,6 +360,20 @@ def section(self):
 </summary>
 <pre><code class="python">def construct(self, state: State) -&gt; None:
     &#34;&#34;&#34;Run after state construction.&#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="simulation.module.Module.finalize"><code class="name flex">
+<span>def <span class="ident">finalize</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) -> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run after the last timestep.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def finalize(self, state: State) -&gt; State:
+    &#34;&#34;&#34;Run after the last timestep.&#34;&#34;&#34;
+    return state</code></pre>
 </details>
 </dd>
 <dt id="simulation.module.Module.initialize"><code class="name flex">
@@ -447,6 +514,8 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="simulation.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
+<li><a title="simulation.modules.epithelium.EpitheliumState" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumState">EpitheliumState</a></li>
+<li><a title="simulation.modules.fungus.FungusState" href="modules/fungus.html#simulation.modules.fungus.FungusState">FungusState</a></li>
 <li><a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a></li>
 <li><a title="simulation.modules.macrophage.MacrophageState" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageState">MacrophageState</a></li>
 <li><a title="simulation.modules.molecules.MoleculesState" href="modules/molecules.html#simulation.modules.molecules.MoleculesState">MoleculesState</a></li>
@@ -625,9 +694,12 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <h4><code><a title="simulation.module.Module" href="#simulation.module.Module">Module</a></code></h4>
 <ul class="two-column">
 <li><code><a title="simulation.module.Module.StateClass" href="#simulation.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.module.Module.add_cost" href="#simulation.module.Module.add_cost">add_cost</a></code></li>
 <li><code><a title="simulation.module.Module.advance" href="#simulation.module.Module.advance">advance</a></code></li>
 <li><code><a title="simulation.module.Module.construct" href="#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.cost" href="#simulation.module.Module.cost">cost</a></code></li>
 <li><code><a title="simulation.module.Module.defaults" href="#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="#simulation.module.Module.finalize">finalize</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="#simulation.module.Module.initialize">initialize</a></code></li>
 <li><code><a title="simulation.module.Module.name" href="#simulation.module.Module.name">name</a></code></li>
 <li><code><a title="simulation.module.Module.section" href="#simulation.module.Module.section">section</a></code></li>

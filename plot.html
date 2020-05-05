@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>simulation.modules API documentation</title>
+<title>simulation.plot API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -18,64 +18,79 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules</code></h1>
+<h1 class="title">Module <code>simulation.plot</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">pass</code></pre>
+<pre><code class="python">import matplotlib.pyplot as plt
+import numpy as np
+
+
+def plot_cells_num(timestep: np.ndarray, cells_num: np.ndarray, cell_name: str, path: str):
+    plt.figure()
+    plt.plot(timestep, cells_num)
+    plt.xlabel(&#39;time&#39;)
+    plt.ylabel(f&#39;{cell_name} number&#39;)
+    plt.savefig(path)
+
+
+def plot_cost(module_name: str, cost: np.ndarray, path: str):
+    plt.figure()
+    timestep = np.arange(len(cost))
+    plt.plot(timestep, cost)
+    plt.xlabel(&#39;timestep&#39;)
+    plt.ylabel(&#39;second&#39;)
+    plt.title(f&#39;{module_name} cost&#39;)
+    plt.savefig(path)</code></pre>
 </details>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="simulation.modules.afumigatus" href="afumigatus.html">simulation.modules.afumigatus</a></code></dt>
+<dt id="simulation.plot.plot_cells_num"><code class="name flex">
+<span>def <span class="ident">plot_cells_num</span></span>(<span>timestep: numpy.ndarray, cells_num: numpy.ndarray, cell_name: str, path: str)</span>
+</code></dt>
 <dd>
 <div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_cells_num(timestep: np.ndarray, cells_num: np.ndarray, cell_name: str, path: str):
+    plt.figure()
+    plt.plot(timestep, cells_num)
+    plt.xlabel(&#39;time&#39;)
+    plt.ylabel(f&#39;{cell_name} number&#39;)
+    plt.savefig(path)</code></pre>
+</details>
 </dd>
-<dt><code class="name"><a title="simulation.modules.epithelium" href="epithelium.html">simulation.modules.epithelium</a></code></dt>
+<dt id="simulation.plot.plot_cost"><code class="name flex">
+<span>def <span class="ident">plot_cost</span></span>(<span>module_name: str, cost: numpy.ndarray, path: str)</span>
+</code></dt>
 <dd>
 <div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.fungus" href="fungus.html">simulation.modules.fungus</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.geometry" href="geometry.html">simulation.modules.geometry</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.macrophage" href="macrophage.html">simulation.modules.macrophage</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.molecules" href="molecules.html">simulation.modules.molecules</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.neutrophil" href="neutrophil.html">simulation.modules.neutrophil</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.phagocyte" href="phagocyte.html">simulation.modules.phagocyte</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.save" href="save.html">simulation.modules.save</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="simulation.modules.visualization" href="visualization.html">simulation.modules.visualization</a></code></dt>
-<dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_cost(module_name: str, cost: np.ndarray, path: str):
+    plt.figure()
+    timestep = np.arange(len(cost))
+    plt.plot(timestep, cost)
+    plt.xlabel(&#39;timestep&#39;)
+    plt.ylabel(&#39;second&#39;)
+    plt.title(f&#39;{module_name} cost&#39;)
+    plt.savefig(path)</code></pre>
+</details>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -88,21 +103,13 @@
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="../index.html">simulation</a></code></li>
+<li><code><a title="simulation" href="index.html">simulation</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="simulation.modules.afumigatus" href="afumigatus.html">simulation.modules.afumigatus</a></code></li>
-<li><code><a title="simulation.modules.epithelium" href="epithelium.html">simulation.modules.epithelium</a></code></li>
-<li><code><a title="simulation.modules.fungus" href="fungus.html">simulation.modules.fungus</a></code></li>
-<li><code><a title="simulation.modules.geometry" href="geometry.html">simulation.modules.geometry</a></code></li>
-<li><code><a title="simulation.modules.macrophage" href="macrophage.html">simulation.modules.macrophage</a></code></li>
-<li><code><a title="simulation.modules.molecules" href="molecules.html">simulation.modules.molecules</a></code></li>
-<li><code><a title="simulation.modules.neutrophil" href="neutrophil.html">simulation.modules.neutrophil</a></code></li>
-<li><code><a title="simulation.modules.phagocyte" href="phagocyte.html">simulation.modules.phagocyte</a></code></li>
-<li><code><a title="simulation.modules.save" href="save.html">simulation.modules.save</a></code></li>
-<li><code><a title="simulation.modules.visualization" href="visualization.html">simulation.modules.visualization</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="simulation.plot.plot_cells_num" href="#simulation.plot.plot_cells_num">plot_cells_num</a></code></li>
+<li><code><a title="simulation.plot.plot_cost" href="#simulation.plot.plot_cost">plot_cost</a></code></li>
 </ul>
 </li>
 </ul>

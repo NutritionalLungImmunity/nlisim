@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>simulation.modules.fungus API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.modules.fungus</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from enum import IntEnum
+import random
+
+import attr
+import numpy as np
+
+from simulation.cell import CellData, CellList
+from simulation.coordinates import Point, Voxel
+from simulation.module import Module, ModuleState
+from simulation.modules.geometry import TissueTypes
+from simulation.plot import plot_cells_num
+from simulation.state import State
+
+
+class FungusCellData(CellData):
+    class Status(IntEnum):
+        DRIFTING = 99
+        RESTING = 0  # CONIDIA relevant
+        SWOLLEN = 1  # CONIDIA relevant
+        GERMINATED = 2  # CONIDIA relevant
+        GROWABLE = 3  # HYPHAE relevant
+        GROWN = 4  # HYPHAE relevant
+        DEAD = 5
+
+    class Form(IntEnum):
+        CONIDIA = 0
+        HYPHAE = 1
+
+    FUNGUS_FIELDS = [
+        (&#39;form&#39;, &#39;u1&#39;),
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;mobile&#39;, &#39;b1&#39;),
+        (&#39;internalized&#39;, &#39;b1&#39;),
+        (&#39;iron&#39;, &#39;f8&#39;),
+        (&#39;health&#39;, &#39;f8&#39;),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + FUNGUS_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron: float = 0,
+        status: Status = Status.RESTING,
+        form: Form = Form.CONIDIA,
+        iteration=0,
+        mobile=False,
+        internalized=False,
+        health=100,
+        **kwargs,
+    ) -&gt; np.record:
+
+        return CellData.create_cell_tuple(**kwargs) + (
+            form,
+            status,
+            iteration,
+            mobile,
+            internalized,
+            iron,
+            health,
+        )
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class FungusCellList(CellList):
+    CellDataClass = FungusCellData
+
+    def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
+        &#34;&#34;&#34;Absorb iron from external environment.&#34;&#34;&#34;
+        cells = self.cell_data
+        for vox_index in np.argwhere(iron &gt; iron_min):
+            vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
+
+            cells_here = self.get_cells_in_voxel(vox)
+
+            indices = []
+            for index in cells_here:
+                if (
+                    cells[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE.value
+                    and np.invert(cells[index][&#39;internalized&#39;])
+                    and cells[index][&#39;iron&#39;] &lt; iron_max
+                ):
+                    indices.append(index)
+
+            if len(indices) &gt; 0:
+                iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+                for cell_index in indices:
+                    cells[cell_index][&#39;iron&#39;] += iron_split
+                    if cells[cell_index][&#39;iron&#39;] &gt; iron_max:
+                        cells[cell_index][&#39;iron&#39;] = iron_max
+
+                iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
+
+    def spawn_hypahael_cell(self, children):
+        children[&#39;status&#39;] = FungusCellData.Status.GROWABLE
+        children[&#39;form&#39;] = FungusCellData.Form.HYPHAE
+        children[&#39;mobile&#39;] = False
+        self.extend(children)
+
+    def spawn_spores(self, points):
+        n, m = points.shape
+
+        if m != 3:
+            raise ValueError(&#39;Invalid shape for a point object&#39;)
+
+        spores = FungusCellData(n, initialize=True)
+        spores[&#39;point&#39;] = points
+        spores[&#39;status&#39;] = FungusCellData.Status.RESTING
+
+        self.extend(spores)
+
+    def initialize_spores(self, tissue: np.ndarray, init_num: int):
+        &#34;&#34;&#34;Initialize spores on epithelium cells.&#34;&#34;&#34;
+        grid = self.grid
+        if init_num &gt; 0:
+            points = np.zeros((init_num, 3))
+            indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+            if len(indices) &gt; 0:
+                np.random.shuffle(indices)
+                for i in range(init_num):
+                    x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                    y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                    z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+
+                    point = Point(x=x, y=y, z=z)
+                    points[i] = point
+
+                self.spawn_spores(points)
+
+    def grow_hyphae(self, iron_min_grow, grow_time, p_branch, spacing):
+        &#34;&#34;&#34;Grow fungal hyphae.&#34;&#34;&#34;
+        cells = self.cell_data
+
+        conidia_indices = self.alive(
+            (cells[&#39;form&#39;] == FungusCellData.Form.CONIDIA)
+            &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GERMINATED)
+            &amp; (np.invert(cells[&#39;internalized&#39;]))
+        )
+
+        hyphae_indices = self.alive(
+            (cells[&#39;form&#39;] == FungusCellData.Form.HYPHAE)
+            &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GROWABLE)
+            &amp; (np.invert(cells[&#39;internalized&#39;]))
+            &amp; (cells[&#39;iron&#39;] &gt; iron_min_grow)
+            &amp; (cells[&#39;iteration&#39;] &gt; grow_time)
+        )
+
+        # grow conidia
+        if len(conidia_indices) != 0:
+            cells[&#39;status&#39;][conidia_indices] = FungusCellData.Status.GROWN
+            cells[&#39;form&#39;][conidia_indices] = FungusCellData.Form.HYPHAE
+            children = FungusCellData(len(conidia_indices), initialize=True)
+            children[&#39;iron&#39;] = cells[&#39;iron&#39;][conidia_indices]
+            growth = spacing * (np.random.rand(len(conidia_indices), 3) * 2 - 1)
+            children[&#39;point&#39;] = cells[&#39;point&#39;][conidia_indices] + growth
+            self.spawn_hypahael_cell(children)
+
+        # grow hyphae
+        if len(hyphae_indices) != 0:
+            cells[&#39;status&#39;][hyphae_indices] = FungusCellData.Status.GROWN
+            branch_mask = np.random.rand(len(hyphae_indices)) &lt; p_branch
+            not_branch_indices = (np.invert(branch_mask)).nonzero()[0]
+            branch_indices = branch_mask.nonzero()[0]
+
+            elongate_children = FungusCellData(len(hyphae_indices), initialize=True)
+            branch_children = FungusCellData(len(branch_indices), initialize=True)
+
+            elongate_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices] / 2
+            growth = spacing * (np.random.rand(len(hyphae_indices), 3) * 2 - 1)
+            elongate_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices] + growth
+
+            if len(branch_indices) != 0:
+                elongate_children[&#39;iron&#39;][branch_indices] = (
+                    cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+                )
+
+                branch_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+                growth = spacing * (np.random.rand(len(hyphae_indices[branch_indices]), 3) * 2 - 1)
+                branch_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices[branch_indices]] + growth
+
+            # update iron in orignal cells
+            cells[&#39;iron&#39;][hyphae_indices[not_branch_indices]] /= 2
+            cells[&#39;iron&#39;][hyphae_indices[branch_indices]] /= 3
+
+            self.spawn_hypahael_cell(elongate_children)
+            self.spawn_hypahael_cell(branch_children)
+
+    def age(self):
+        &#34;&#34;&#34;Add one iteration to all alive cells.&#34;&#34;&#34;
+        np.add.at(self.cell_data[&#39;iteration&#39;], self.alive(), 1)
+
+    def kill(self):
+        &#34;&#34;&#34;If a cell have 0 health point or out of range, kill the cell.&#34;&#34;&#34;
+        cells = self.cell_data
+        mask = cells.point_mask(cells[&#39;point&#39;], self.grid)
+        indices = self.alive(np.logical_or(cells[&#39;health&#39;] &lt;= 0, np.invert(mask)))
+
+        cells[&#39;status&#39;][indices] = FungusCellData.Status.DEAD
+        cells[&#39;dead&#39;][indices] = True
+
+    def change_status(self, p_internal_swell: float, rest_time: int, swell_time: int):
+        cells = self.cell_data
+
+        indices = self.alive(cells[&#39;form&#39;] != FungusCellData.Form.HYPHAE,)
+
+        internalized_indices = (cells[&#39;internalized&#39;][indices]).nonzero()[0]
+        not_internalized_indices = (np.invert(cells[&#39;internalized&#39;][indices])).nonzero()[0]
+
+        internalized_rest_indices = np.logical_and(
+            cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.RESTING,
+            cells[&#39;iteration&#39;][internalized_indices] &gt;= rest_time,
+        ).nonzero()[0]
+
+        internalized_swollen_indices = np.logical_and(
+            cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells[&#39;iteration&#39;][internalized_indices] &gt;= swell_time,
+        ).nonzero()[0]
+
+        # internal fungus with REST status
+        swall_mask = np.random.rand(len(internalized_rest_indices)) &lt; p_internal_swell
+        internalized_rest_indices = swall_mask.nonzero()[0]
+
+        cells[&#39;status&#39;][internalized_rest_indices] = FungusCellData.Status.SWOLLEN
+        cells[&#39;iteration&#39;][internalized_rest_indices] = 0
+
+        # internal fungus with SWOLLEN status
+        cells[&#39;status&#39;][internalized_swollen_indices] = FungusCellData.Status.GERMINATED
+        cells[&#39;iteration&#39;][internalized_swollen_indices] = 0
+
+        rest_indices = np.logical_and(
+            cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.RESTING,
+            cells[&#39;iteration&#39;][not_internalized_indices] &gt;= rest_time,
+        ).nonzero()[0]
+        swollen_indices = np.logical_and(
+            cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells[&#39;iteration&#39;][not_internalized_indices] &gt;= swell_time,
+        ).nonzero()[0]
+
+        # free fungus with REST status
+        cells[&#39;status&#39;][rest_indices] = FungusCellData.Status.SWOLLEN
+        cells[&#39;iteration&#39;][rest_indices] = 0
+
+        # free fungus with SWOLLEN status
+        cells[&#39;status&#39;][swollen_indices] = FungusCellData.Status.GERMINATED
+        cells[&#39;iteration&#39;][swollen_indices] = 0
+
+
+def cell_list_factory(self: &#39;FungusState&#39;):
+    return FungusCellList(grid=self.global_state.grid)
+
+
+@attr.s(kw_only=True)
+class FungusState(ModuleState):
+    cells: FungusCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    # init_num: int = 0
+    # p_lodge: float = 0
+    # p_internal_swell: float = 0.05
+    # iron_min: int = 0
+    # iron_max: float = 0.0
+    # iron_absorb: float = 0.0
+    # spacing: float = 0.0
+    # iron_min_grow: float = 0.0
+    # grow_time: float = 0.0
+    # p_branch: float = 0.0
+    # p_internalize: float = 0.0
+    health: float = 100.0
+
+
+class Fungus(Module):
+    name = &#39;fungus&#39;
+    StateClass = FungusState
+
+    # defaults config opt
+    defaults = {
+        &#39;init_num&#39;: &#39;10&#39;,
+        &#39;p_lodge&#39;: &#39;0.1&#39;,
+        &#39;p_internal_swell&#39;: &#39;0.05&#39;,
+        &#39;iron_min&#39;: &#39;10&#39;,
+        &#39;iron_max&#39;: &#39;20&#39;,
+        &#39;iron_absorb&#39;: &#39;1&#39;,
+        &#39;spacing&#39;: &#39;0.1&#39;,
+        &#39;iron_min_grow&#39;: &#39;5&#39;,
+        &#39;p_branch&#39;: &#39;0.2&#39;,
+        &#39;p_internalize&#39;: &#39;0.1&#39;,
+        &#39;health&#39;: &#39;100.0&#39;,
+        &#39;rest_time&#39;: &#39;1&#39;,
+        &#39;swell_time&#39;: &#39;1&#39;,
+        &#39;grow_time&#39;: &#39;1&#39;,
+        # ...
+    }
+
+    def initialize(self, state: State):
+        fungus: FungusState = state.fungus
+        # grid: RectangularGrid = state.grid
+        tissue = state.geometry.lung_tissue
+
+        self.init_num = self.config.getint(&#39;init_num&#39;)
+        self.p_lodge = self.config.getfloat(&#39;p_lodge&#39;)
+        self.p_internal_swell = self.config.getfloat(&#39;p_internal_swell&#39;)
+        self.iron_min = self.config.getint(&#39;iron_min&#39;)
+        self.iron_max = self.config.getfloat(&#39;iron_max&#39;)
+        self.iron_absorb = self.config.getfloat(&#39;iron_absorb&#39;)
+        self.spacing = self.config.getfloat(&#39;spacing&#39;)
+        self.iron_min_grow = self.config.getfloat(&#39;iron_min_grow&#39;)
+        self.p_branch = self.config.getfloat(&#39;p_branch&#39;)
+        self.p_internalize = self.config.getfloat(&#39;p_internalize&#39;)
+        self.rest_time = self.config.getint(&#39;rest_time&#39;)
+        self.swell_time = self.config.getint(&#39;swell_time&#39;)
+        self.grow_time = self.config.getint(&#39;grow_time&#39;)
+
+        fungus.health = self.config.getfloat(&#39;health&#39;)
+
+        cells = fungus.cells
+        cells.initialize_spores(tissue, self.init_num)
+
+        self.time_step = [0.0]
+        self.fungus_num = [len(cells.alive())]
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        cells = state.fungus.cells
+
+        cells.kill()  # clear dead cell
+        cells.age()
+        cells.change_status(self.p_internal_swell, self.rest_time, self.swell_time)
+        if hasattr(state, &#39;molecules&#39;):
+            iron = state.molecules.grid[&#39;iron&#39;]
+            cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
+        cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
+
+        self.time_step.append(state.time)
+        self.fungus_num.append(len(cells.alive()))
+
+        return state
+
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        fungus_num = np.asarray(self.fungus_num)
+        plot_cells_num(time_step, fungus_num, &#39;Aspergillus&#39;, f&#39;./results/Aspergillus.png&#39;)
+        return state</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="simulation.modules.fungus.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: FungusState)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cell_list_factory(self: &#39;FungusState&#39;):
+    return FungusCellList(grid=self.global_state.grid)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.modules.fungus.Fungus"><code class="flex name class">
+<span>class <span class="ident">Fungus</span></span>
+<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Fungus(Module):
+    name = &#39;fungus&#39;
+    StateClass = FungusState
+
+    # defaults config opt
+    defaults = {
+        &#39;init_num&#39;: &#39;10&#39;,
+        &#39;p_lodge&#39;: &#39;0.1&#39;,
+        &#39;p_internal_swell&#39;: &#39;0.05&#39;,
+        &#39;iron_min&#39;: &#39;10&#39;,
+        &#39;iron_max&#39;: &#39;20&#39;,
+        &#39;iron_absorb&#39;: &#39;1&#39;,
+        &#39;spacing&#39;: &#39;0.1&#39;,
+        &#39;iron_min_grow&#39;: &#39;5&#39;,
+        &#39;p_branch&#39;: &#39;0.2&#39;,
+        &#39;p_internalize&#39;: &#39;0.1&#39;,
+        &#39;health&#39;: &#39;100.0&#39;,
+        &#39;rest_time&#39;: &#39;1&#39;,
+        &#39;swell_time&#39;: &#39;1&#39;,
+        &#39;grow_time&#39;: &#39;1&#39;,
+        # ...
+    }
+
+    def initialize(self, state: State):
+        fungus: FungusState = state.fungus
+        # grid: RectangularGrid = state.grid
+        tissue = state.geometry.lung_tissue
+
+        self.init_num = self.config.getint(&#39;init_num&#39;)
+        self.p_lodge = self.config.getfloat(&#39;p_lodge&#39;)
+        self.p_internal_swell = self.config.getfloat(&#39;p_internal_swell&#39;)
+        self.iron_min = self.config.getint(&#39;iron_min&#39;)
+        self.iron_max = self.config.getfloat(&#39;iron_max&#39;)
+        self.iron_absorb = self.config.getfloat(&#39;iron_absorb&#39;)
+        self.spacing = self.config.getfloat(&#39;spacing&#39;)
+        self.iron_min_grow = self.config.getfloat(&#39;iron_min_grow&#39;)
+        self.p_branch = self.config.getfloat(&#39;p_branch&#39;)
+        self.p_internalize = self.config.getfloat(&#39;p_internalize&#39;)
+        self.rest_time = self.config.getint(&#39;rest_time&#39;)
+        self.swell_time = self.config.getint(&#39;swell_time&#39;)
+        self.grow_time = self.config.getint(&#39;grow_time&#39;)
+
+        fungus.health = self.config.getfloat(&#39;health&#39;)
+
+        cells = fungus.cells
+        cells.initialize_spores(tissue, self.init_num)
+
+        self.time_step = [0.0]
+        self.fungus_num = [len(cells.alive())]
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        cells = state.fungus.cells
+
+        cells.kill()  # clear dead cell
+        cells.age()
+        cells.change_status(self.p_internal_swell, self.rest_time, self.swell_time)
+        if hasattr(state, &#39;molecules&#39;):
+            iron = state.molecules.grid[&#39;iron&#39;]
+            cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
+        cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
+
+        self.time_step.append(state.time)
+        self.fungus_num.append(len(cells.alive()))
+
+        return state
+
+    def finalize(self, state: State):
+        time_step = np.asarray(self.time_step)
+        fungus_num = np.asarray(self.fungus_num)
+        plot_cells_num(time_step, fungus_num, &#39;Aspergillus&#39;, f&#39;./results/Aspergillus.png&#39;)
+        return state</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
+<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
+<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
+<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellData"><code class="flex name class">
+<span>class <span class="ident">FungusCellData</span></span>
+<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs):
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FungusCellData(CellData):
+    class Status(IntEnum):
+        DRIFTING = 99
+        RESTING = 0  # CONIDIA relevant
+        SWOLLEN = 1  # CONIDIA relevant
+        GERMINATED = 2  # CONIDIA relevant
+        GROWABLE = 3  # HYPHAE relevant
+        GROWN = 4  # HYPHAE relevant
+        DEAD = 5
+
+    class Form(IntEnum):
+        CONIDIA = 0
+        HYPHAE = 1
+
+    FUNGUS_FIELDS = [
+        (&#39;form&#39;, &#39;u1&#39;),
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;mobile&#39;, &#39;b1&#39;),
+        (&#39;internalized&#39;, &#39;b1&#39;),
+        (&#39;iron&#39;, &#39;f8&#39;),
+        (&#39;health&#39;, &#39;f8&#39;),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + FUNGUS_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron: float = 0,
+        status: Status = Status.RESTING,
+        form: Form = Form.CONIDIA,
+        iteration=0,
+        mobile=False,
+        internalized=False,
+        health=100,
+        **kwargs,
+    ) -&gt; np.record:
+
+        return CellData.create_cell_tuple(**kwargs) + (
+            form,
+            status,
+            iteration,
+            mobile,
+            internalized,
+            iron,
+            health,
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li>numpy.ndarray</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS"><code class="name">var <span class="ident">FUNGUS_FIELDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellData.Form"><code class="name">var <span class="ident">Form</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList"><code class="flex name class">
+<span>class <span class="ident">FungusCellList</span></span>
+<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A python view on top of a CellData array.</p>
+<p>This class represents a pythonic interface to the data contained in a
+CellData array.
+Because the CellData class is a low-level object, it does
+not allow dynamically appending new elements.
+Objects of this class get
+around this limitation by pre-allocating a large block of memory that is
+transparently available.
+User-facing properties are sliced to make it
+appear as if the extra data is not there.</p>
+<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
+a subclass of <code>CellData</code>.
+This provides information about the underlying
+low-level array.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FungusCellList(CellList):
+    CellDataClass = FungusCellData
+
+    def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
+        &#34;&#34;&#34;Absorb iron from external environment.&#34;&#34;&#34;
+        cells = self.cell_data
+        for vox_index in np.argwhere(iron &gt; iron_min):
+            vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
+
+            cells_here = self.get_cells_in_voxel(vox)
+
+            indices = []
+            for index in cells_here:
+                if (
+                    cells[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE.value
+                    and np.invert(cells[index][&#39;internalized&#39;])
+                    and cells[index][&#39;iron&#39;] &lt; iron_max
+                ):
+                    indices.append(index)
+
+            if len(indices) &gt; 0:
+                iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+                for cell_index in indices:
+                    cells[cell_index][&#39;iron&#39;] += iron_split
+                    if cells[cell_index][&#39;iron&#39;] &gt; iron_max:
+                        cells[cell_index][&#39;iron&#39;] = iron_max
+
+                iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]
+
+    def spawn_hypahael_cell(self, children):
+        children[&#39;status&#39;] = FungusCellData.Status.GROWABLE
+        children[&#39;form&#39;] = FungusCellData.Form.HYPHAE
+        children[&#39;mobile&#39;] = False
+        self.extend(children)
+
+    def spawn_spores(self, points):
+        n, m = points.shape
+
+        if m != 3:
+            raise ValueError(&#39;Invalid shape for a point object&#39;)
+
+        spores = FungusCellData(n, initialize=True)
+        spores[&#39;point&#39;] = points
+        spores[&#39;status&#39;] = FungusCellData.Status.RESTING
+
+        self.extend(spores)
+
+    def initialize_spores(self, tissue: np.ndarray, init_num: int):
+        &#34;&#34;&#34;Initialize spores on epithelium cells.&#34;&#34;&#34;
+        grid = self.grid
+        if init_num &gt; 0:
+            points = np.zeros((init_num, 3))
+            indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+            if len(indices) &gt; 0:
+                np.random.shuffle(indices)
+                for i in range(init_num):
+                    x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                    y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                    z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+
+                    point = Point(x=x, y=y, z=z)
+                    points[i] = point
+
+                self.spawn_spores(points)
+
+    def grow_hyphae(self, iron_min_grow, grow_time, p_branch, spacing):
+        &#34;&#34;&#34;Grow fungal hyphae.&#34;&#34;&#34;
+        cells = self.cell_data
+
+        conidia_indices = self.alive(
+            (cells[&#39;form&#39;] == FungusCellData.Form.CONIDIA)
+            &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GERMINATED)
+            &amp; (np.invert(cells[&#39;internalized&#39;]))
+        )
+
+        hyphae_indices = self.alive(
+            (cells[&#39;form&#39;] == FungusCellData.Form.HYPHAE)
+            &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GROWABLE)
+            &amp; (np.invert(cells[&#39;internalized&#39;]))
+            &amp; (cells[&#39;iron&#39;] &gt; iron_min_grow)
+            &amp; (cells[&#39;iteration&#39;] &gt; grow_time)
+        )
+
+        # grow conidia
+        if len(conidia_indices) != 0:
+            cells[&#39;status&#39;][conidia_indices] = FungusCellData.Status.GROWN
+            cells[&#39;form&#39;][conidia_indices] = FungusCellData.Form.HYPHAE
+            children = FungusCellData(len(conidia_indices), initialize=True)
+            children[&#39;iron&#39;] = cells[&#39;iron&#39;][conidia_indices]
+            growth = spacing * (np.random.rand(len(conidia_indices), 3) * 2 - 1)
+            children[&#39;point&#39;] = cells[&#39;point&#39;][conidia_indices] + growth
+            self.spawn_hypahael_cell(children)
+
+        # grow hyphae
+        if len(hyphae_indices) != 0:
+            cells[&#39;status&#39;][hyphae_indices] = FungusCellData.Status.GROWN
+            branch_mask = np.random.rand(len(hyphae_indices)) &lt; p_branch
+            not_branch_indices = (np.invert(branch_mask)).nonzero()[0]
+            branch_indices = branch_mask.nonzero()[0]
+
+            elongate_children = FungusCellData(len(hyphae_indices), initialize=True)
+            branch_children = FungusCellData(len(branch_indices), initialize=True)
+
+            elongate_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices] / 2
+            growth = spacing * (np.random.rand(len(hyphae_indices), 3) * 2 - 1)
+            elongate_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices] + growth
+
+            if len(branch_indices) != 0:
+                elongate_children[&#39;iron&#39;][branch_indices] = (
+                    cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+                )
+
+                branch_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+                growth = spacing * (np.random.rand(len(hyphae_indices[branch_indices]), 3) * 2 - 1)
+                branch_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices[branch_indices]] + growth
+
+            # update iron in orignal cells
+            cells[&#39;iron&#39;][hyphae_indices[not_branch_indices]] /= 2
+            cells[&#39;iron&#39;][hyphae_indices[branch_indices]] /= 3
+
+            self.spawn_hypahael_cell(elongate_children)
+            self.spawn_hypahael_cell(branch_children)
+
+    def age(self):
+        &#34;&#34;&#34;Add one iteration to all alive cells.&#34;&#34;&#34;
+        np.add.at(self.cell_data[&#39;iteration&#39;], self.alive(), 1)
+
+    def kill(self):
+        &#34;&#34;&#34;If a cell have 0 health point or out of range, kill the cell.&#34;&#34;&#34;
+        cells = self.cell_data
+        mask = cells.point_mask(cells[&#39;point&#39;], self.grid)
+        indices = self.alive(np.logical_or(cells[&#39;health&#39;] &lt;= 0, np.invert(mask)))
+
+        cells[&#39;status&#39;][indices] = FungusCellData.Status.DEAD
+        cells[&#39;dead&#39;][indices] = True
+
+    def change_status(self, p_internal_swell: float, rest_time: int, swell_time: int):
+        cells = self.cell_data
+
+        indices = self.alive(cells[&#39;form&#39;] != FungusCellData.Form.HYPHAE,)
+
+        internalized_indices = (cells[&#39;internalized&#39;][indices]).nonzero()[0]
+        not_internalized_indices = (np.invert(cells[&#39;internalized&#39;][indices])).nonzero()[0]
+
+        internalized_rest_indices = np.logical_and(
+            cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.RESTING,
+            cells[&#39;iteration&#39;][internalized_indices] &gt;= rest_time,
+        ).nonzero()[0]
+
+        internalized_swollen_indices = np.logical_and(
+            cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells[&#39;iteration&#39;][internalized_indices] &gt;= swell_time,
+        ).nonzero()[0]
+
+        # internal fungus with REST status
+        swall_mask = np.random.rand(len(internalized_rest_indices)) &lt; p_internal_swell
+        internalized_rest_indices = swall_mask.nonzero()[0]
+
+        cells[&#39;status&#39;][internalized_rest_indices] = FungusCellData.Status.SWOLLEN
+        cells[&#39;iteration&#39;][internalized_rest_indices] = 0
+
+        # internal fungus with SWOLLEN status
+        cells[&#39;status&#39;][internalized_swollen_indices] = FungusCellData.Status.GERMINATED
+        cells[&#39;iteration&#39;][internalized_swollen_indices] = 0
+
+        rest_indices = np.logical_and(
+            cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.RESTING,
+            cells[&#39;iteration&#39;][not_internalized_indices] &gt;= rest_time,
+        ).nonzero()[0]
+        swollen_indices = np.logical_and(
+            cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.SWOLLEN,
+            cells[&#39;iteration&#39;][not_internalized_indices] &gt;= swell_time,
+        ).nonzero()[0]
+
+        # free fungus with REST status
+        cells[&#39;status&#39;][rest_indices] = FungusCellData.Status.SWOLLEN
+        cells[&#39;iteration&#39;][rest_indices] = 0
+
+        # free fungus with SWOLLEN status
+        cells[&#39;status&#39;][swollen_indices] = FungusCellData.Status.GERMINATED
+        cells[&#39;iteration&#39;][swollen_indices] = 0</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.modules.fungus.FungusCellList.age"><code class="name flex">
+<span>def <span class="ident">age</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add one iteration to all alive cells.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def age(self):
+    &#34;&#34;&#34;Add one iteration to all alive cells.&#34;&#34;&#34;
+    np.add.at(self.cell_data[&#39;iteration&#39;], self.alive(), 1)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.change_status"><code class="name flex">
+<span>def <span class="ident">change_status</span></span>(<span>self, p_internal_swell: float, rest_time: int, swell_time: int)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def change_status(self, p_internal_swell: float, rest_time: int, swell_time: int):
+    cells = self.cell_data
+
+    indices = self.alive(cells[&#39;form&#39;] != FungusCellData.Form.HYPHAE,)
+
+    internalized_indices = (cells[&#39;internalized&#39;][indices]).nonzero()[0]
+    not_internalized_indices = (np.invert(cells[&#39;internalized&#39;][indices])).nonzero()[0]
+
+    internalized_rest_indices = np.logical_and(
+        cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.RESTING,
+        cells[&#39;iteration&#39;][internalized_indices] &gt;= rest_time,
+    ).nonzero()[0]
+
+    internalized_swollen_indices = np.logical_and(
+        cells[&#39;status&#39;][internalized_indices] == FungusCellData.Status.SWOLLEN,
+        cells[&#39;iteration&#39;][internalized_indices] &gt;= swell_time,
+    ).nonzero()[0]
+
+    # internal fungus with REST status
+    swall_mask = np.random.rand(len(internalized_rest_indices)) &lt; p_internal_swell
+    internalized_rest_indices = swall_mask.nonzero()[0]
+
+    cells[&#39;status&#39;][internalized_rest_indices] = FungusCellData.Status.SWOLLEN
+    cells[&#39;iteration&#39;][internalized_rest_indices] = 0
+
+    # internal fungus with SWOLLEN status
+    cells[&#39;status&#39;][internalized_swollen_indices] = FungusCellData.Status.GERMINATED
+    cells[&#39;iteration&#39;][internalized_swollen_indices] = 0
+
+    rest_indices = np.logical_and(
+        cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.RESTING,
+        cells[&#39;iteration&#39;][not_internalized_indices] &gt;= rest_time,
+    ).nonzero()[0]
+    swollen_indices = np.logical_and(
+        cells[&#39;status&#39;][not_internalized_indices] == FungusCellData.Status.SWOLLEN,
+        cells[&#39;iteration&#39;][not_internalized_indices] &gt;= swell_time,
+    ).nonzero()[0]
+
+    # free fungus with REST status
+    cells[&#39;status&#39;][rest_indices] = FungusCellData.Status.SWOLLEN
+    cells[&#39;iteration&#39;][rest_indices] = 0
+
+    # free fungus with SWOLLEN status
+    cells[&#39;status&#39;][swollen_indices] = FungusCellData.Status.GERMINATED
+    cells[&#39;iteration&#39;][swollen_indices] = 0</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.grow_hyphae"><code class="name flex">
+<span>def <span class="ident">grow_hyphae</span></span>(<span>self, iron_min_grow, grow_time, p_branch, spacing)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Grow fungal hyphae.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def grow_hyphae(self, iron_min_grow, grow_time, p_branch, spacing):
+    &#34;&#34;&#34;Grow fungal hyphae.&#34;&#34;&#34;
+    cells = self.cell_data
+
+    conidia_indices = self.alive(
+        (cells[&#39;form&#39;] == FungusCellData.Form.CONIDIA)
+        &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GERMINATED)
+        &amp; (np.invert(cells[&#39;internalized&#39;]))
+    )
+
+    hyphae_indices = self.alive(
+        (cells[&#39;form&#39;] == FungusCellData.Form.HYPHAE)
+        &amp; (cells[&#39;status&#39;] == FungusCellData.Status.GROWABLE)
+        &amp; (np.invert(cells[&#39;internalized&#39;]))
+        &amp; (cells[&#39;iron&#39;] &gt; iron_min_grow)
+        &amp; (cells[&#39;iteration&#39;] &gt; grow_time)
+    )
+
+    # grow conidia
+    if len(conidia_indices) != 0:
+        cells[&#39;status&#39;][conidia_indices] = FungusCellData.Status.GROWN
+        cells[&#39;form&#39;][conidia_indices] = FungusCellData.Form.HYPHAE
+        children = FungusCellData(len(conidia_indices), initialize=True)
+        children[&#39;iron&#39;] = cells[&#39;iron&#39;][conidia_indices]
+        growth = spacing * (np.random.rand(len(conidia_indices), 3) * 2 - 1)
+        children[&#39;point&#39;] = cells[&#39;point&#39;][conidia_indices] + growth
+        self.spawn_hypahael_cell(children)
+
+    # grow hyphae
+    if len(hyphae_indices) != 0:
+        cells[&#39;status&#39;][hyphae_indices] = FungusCellData.Status.GROWN
+        branch_mask = np.random.rand(len(hyphae_indices)) &lt; p_branch
+        not_branch_indices = (np.invert(branch_mask)).nonzero()[0]
+        branch_indices = branch_mask.nonzero()[0]
+
+        elongate_children = FungusCellData(len(hyphae_indices), initialize=True)
+        branch_children = FungusCellData(len(branch_indices), initialize=True)
+
+        elongate_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices] / 2
+        growth = spacing * (np.random.rand(len(hyphae_indices), 3) * 2 - 1)
+        elongate_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices] + growth
+
+        if len(branch_indices) != 0:
+            elongate_children[&#39;iron&#39;][branch_indices] = (
+                cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+            )
+
+            branch_children[&#39;iron&#39;] = cells[&#39;iron&#39;][hyphae_indices[branch_indices]] / 3
+            growth = spacing * (np.random.rand(len(hyphae_indices[branch_indices]), 3) * 2 - 1)
+            branch_children[&#39;point&#39;] = cells[&#39;point&#39;][hyphae_indices[branch_indices]] + growth
+
+        # update iron in orignal cells
+        cells[&#39;iron&#39;][hyphae_indices[not_branch_indices]] /= 2
+        cells[&#39;iron&#39;][hyphae_indices[branch_indices]] /= 3
+
+        self.spawn_hypahael_cell(elongate_children)
+        self.spawn_hypahael_cell(branch_children)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.initialize_spores"><code class="name flex">
+<span>def <span class="ident">initialize_spores</span></span>(<span>self, tissue: numpy.ndarray, init_num: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize spores on epithelium cells.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def initialize_spores(self, tissue: np.ndarray, init_num: int):
+    &#34;&#34;&#34;Initialize spores on epithelium cells.&#34;&#34;&#34;
+    grid = self.grid
+    if init_num &gt; 0:
+        points = np.zeros((init_num, 3))
+        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+        if len(indices) &gt; 0:
+            np.random.shuffle(indices)
+            for i in range(init_num):
+                x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+
+                point = Point(x=x, y=y, z=z)
+                points[i] = point
+
+            self.spawn_spores(points)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.iron_uptake"><code class="name flex">
+<span>def <span class="ident">iron_uptake</span></span>(<span>self, iron: numpy.ndarray, iron_max: float, iron_min: float, iron_absorb: float)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Absorb iron from external environment.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def iron_uptake(self, iron: np.ndarray, iron_max: float, iron_min: float, iron_absorb: float):
+    &#34;&#34;&#34;Absorb iron from external environment.&#34;&#34;&#34;
+    cells = self.cell_data
+    for vox_index in np.argwhere(iron &gt; iron_min):
+        vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
+
+        cells_here = self.get_cells_in_voxel(vox)
+
+        indices = []
+        for index in cells_here:
+            if (
+                cells[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE.value
+                and np.invert(cells[index][&#39;internalized&#39;])
+                and cells[index][&#39;iron&#39;] &lt; iron_max
+            ):
+                indices.append(index)
+
+        if len(indices) &gt; 0:
+            iron_split = iron_absorb * (iron[vox.z, vox.y, vox.x] / len(indices))
+            for cell_index in indices:
+                cells[cell_index][&#39;iron&#39;] += iron_split
+                if cells[cell_index][&#39;iron&#39;] &gt; iron_max:
+                    cells[cell_index][&#39;iron&#39;] = iron_max
+
+            iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>If a cell have 0 health point or out of range, kill the cell.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kill(self):
+    &#34;&#34;&#34;If a cell have 0 health point or out of range, kill the cell.&#34;&#34;&#34;
+    cells = self.cell_data
+    mask = cells.point_mask(cells[&#39;point&#39;], self.grid)
+    indices = self.alive(np.logical_or(cells[&#39;health&#39;] &lt;= 0, np.invert(mask)))
+
+    cells[&#39;status&#39;][indices] = FungusCellData.Status.DEAD
+    cells[&#39;dead&#39;][indices] = True</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.spawn_hypahael_cell"><code class="name flex">
+<span>def <span class="ident">spawn_hypahael_cell</span></span>(<span>self, children)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def spawn_hypahael_cell(self, children):
+    children[&#39;status&#39;] = FungusCellData.Status.GROWABLE
+    children[&#39;form&#39;] = FungusCellData.Form.HYPHAE
+    children[&#39;mobile&#39;] = False
+    self.extend(children)</code></pre>
+</details>
+</dd>
+<dt id="simulation.modules.fungus.FungusCellList.spawn_spores"><code class="name flex">
+<span>def <span class="ident">spawn_spores</span></span>(<span>self, points)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def spawn_spores(self, points):
+    n, m = points.shape
+
+    if m != 3:
+        raise ValueError(&#39;Invalid shape for a point object&#39;)
+
+    spores = FungusCellData(n, initialize=True)
+    spores[&#39;point&#39;] = points
+    spores[&#39;status&#39;] = FungusCellData.Status.RESTING
+
+    self.extend(spores)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
+<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
+<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
+<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="simulation.modules.fungus.FungusState"><code class="flex name class">
+<span>class <span class="ident">FungusState</span></span>
+<span>(</span><span>*, global_state: State, cells: <a title="simulation.modules.fungus.FungusCellList" href="#simulation.modules.fungus.FungusCellList">FungusCellList</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FungusState(ModuleState):
+    cells: FungusCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    # init_num: int = 0
+    # p_lodge: float = 0
+    # p_internal_swell: float = 0.05
+    # iron_min: int = 0
+    # iron_max: float = 0.0
+    # iron_absorb: float = 0.0
+    # spacing: float = 0.0
+    # iron_min_grow: float = 0.0
+    # grow_time: float = 0.0
+    # p_branch: float = 0.0
+    # p_internalize: float = 0.0
+    health: float = 100.0</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.modules.fungus.FungusState.health"><code class="name">var <span class="ident">health</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="simulation.modules.fungus.cell_list_factory" href="#simulation.modules.fungus.cell_list_factory">cell_list_factory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.modules.fungus.Fungus" href="#simulation.modules.fungus.Fungus">Fungus</a></code></h4>
+</li>
+<li>
+<h4><code><a title="simulation.modules.fungus.FungusCellData" href="#simulation.modules.fungus.FungusCellData">FungusCellData</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS" href="#simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS">FUNGUS_FIELDS</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellData.Form" href="#simulation.modules.fungus.FungusCellData.Form">Form</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellData.Status" href="#simulation.modules.fungus.FungusCellData.Status">Status</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.fungus.FungusCellList" href="#simulation.modules.fungus.FungusCellList">FungusCellList</a></code></h4>
+<ul class="two-column">
+<li><code><a title="simulation.modules.fungus.FungusCellList.age" href="#simulation.modules.fungus.FungusCellList.age">age</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.change_status" href="#simulation.modules.fungus.FungusCellList.change_status">change_status</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.grow_hyphae" href="#simulation.modules.fungus.FungusCellList.grow_hyphae">grow_hyphae</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.initialize_spores" href="#simulation.modules.fungus.FungusCellList.initialize_spores">initialize_spores</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.iron_uptake" href="#simulation.modules.fungus.FungusCellList.iron_uptake">iron_uptake</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.kill" href="#simulation.modules.fungus.FungusCellList.kill">kill</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.spawn_hypahael_cell" href="#simulation.modules.fungus.FungusCellList.spawn_hypahael_cell">spawn_hypahael_cell</a></code></li>
+<li><code><a title="simulation.modules.fungus.FungusCellList.spawn_spores" href="#simulation.modules.fungus.FungusCellList.spawn_spores">spawn_spores</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.modules.fungus.FungusState" href="#simulation.modules.fungus.FungusState">FungusState</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.modules.fungus.FungusState.health" href="#simulation.modules.fungus.FungusState.health">health</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
