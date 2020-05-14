@@ -214,8 +214,8 @@ class PhagocyteCellList(CellList):
                     break
 
 
-def logistic(x, l, b):
-    return 1 - b * math.exp(-((x / l) ** 2))</code></pre>
+def logistic(x, lamb, bias):
+    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
 </details>
 </section>
 <section>
@@ -226,7 +226,7 @@ def logistic(x, l, b):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="simulation.modules.phagocyte.logistic"><code class="name flex">
-<span>def <span class="ident">logistic</span></span>(<span>x, l, b)</span>
+<span>def <span class="ident">logistic</span></span>(<span>x, lamb, bias)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -234,8 +234,8 @@ def logistic(x, l, b):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def logistic(x, l, b):
-    return 1 - b * math.exp(-((x / l) ** 2))</code></pre>
+<pre><code class="python">def logistic(x, lamb, bias):
+    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
 </details>
 </dd>
 </dl>
