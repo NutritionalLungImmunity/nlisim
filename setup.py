@@ -4,6 +4,15 @@ from setuptools import find_packages, setup
 setup(
     name='simulation',
     packages=find_packages(exclude=['test', 'test.*']),
-    install_requires=['attrs', 'click', 'h5py', 'matplotlib', 'numpy', 'scipy', 'vtk'],
+    install_requires=[
+        'attrs',
+        'click',
+        'click-pathlib',
+        'h5py',
+        'matplotlib',
+        'numpy',
+        'scipy',
+        'vtk',
+    ],
     entry_points={'console_scripts': ['simulation = simulation.cli:main']},
 )

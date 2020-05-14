@@ -30,6 +30,13 @@
             ],
             "version": "==7.1.2"
         },
+        "click-pathlib": {
+            "hashes": [
+                "sha256:37faab20677ce754176378cd9be82fd9e7e28b5d5fa4f1cc89613cb6b9fe9d97",
+                "sha256:e74a7a209699107d6aa884b3070e1f81e67dea10acf2244fbd3a4eafad207c1c"
+            ],
+            "version": "==2020.3.13.0"
+        },
         "cycler": {
             "hashes": [
                 "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d",

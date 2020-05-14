@@ -2,10 +2,14 @@ from math import ceil
 
 import attr
 import click
+import click_pathlib
 
 from simulation.config import SimulationConfig
 from simulation.solver import advance, finalize, initialize
 from simulation.state import State
+
+
+FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 
 
 @click.group()
@@ -18,7 +22,7 @@ def main():
 @click.option(
     '--config',
     'config_file',
-    type=click.Path(exists=True),
+    type=FilePath,
     default='config.ini',
     help='Path to a simulation config',
     show_default=True,
