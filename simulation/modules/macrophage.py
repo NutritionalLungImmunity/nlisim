@@ -371,5 +371,5 @@ class Macrophage(Module):
     def finalize(self, state: State):
         time_step = np.asarray(self.time_step)
         m_num = np.asarray(self.m_num)
-        plot_cells_num(time_step, m_num, 'Marophage', f'./results/Marophage.png')
+        plot_cells_num(time_step, m_num, 'Marophage', './results/Marophage.png')
         return state

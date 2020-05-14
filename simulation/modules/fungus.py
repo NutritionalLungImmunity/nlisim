@@ -339,5 +339,5 @@ class Fungus(Module):
     def finalize(self, state: State):
         time_step = np.asarray(self.time_step)
         fungus_num = np.asarray(self.fungus_num)
-        plot_cells_num(time_step, fungus_num, 'Aspergillus', f'./results/Aspergillus.png')
+        plot_cells_num(time_step, fungus_num, 'Aspergillus', './results/Aspergillus.png')
         return state

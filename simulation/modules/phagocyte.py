@@ -187,5 +187,5 @@ class PhagocyteCellList(CellList):
                     break
 
 
-def logistic(x, l, b):
-    return 1 - b * math.exp(-((x / l) ** 2))
+def logistic(x, lamb, bias):
+    return 1 - bias * math.exp(-((x / lamb) ** 2))
