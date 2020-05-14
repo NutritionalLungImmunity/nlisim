@@ -17,14 +17,15 @@ def main():
 @click.argument('target_time', type=click.FLOAT, default=20)
 @click.option(
     '--config',
+    'config_file',
     type=click.Path(exists=True),
     default='config.ini',
     help='Path to a simulation config',
     show_default=True,
 )
-def run(target_time, config):
+def run(target_time, config_file):
     """Run a simulation."""
-    config = SimulationConfig(config)
+    config = SimulationConfig(config_file)
     total = ceil(target_time / config.getfloat('simulation', 'time_step'))
 
     attr.set_run_validators(config.getboolean('simulation', 'validate'))
