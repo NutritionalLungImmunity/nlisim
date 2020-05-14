@@ -337,5 +337,5 @@ class Neutrophil(Module):
     def finalize(self, state: State):
         time_step = np.asarray(self.time_step)
         n_num = np.asarray(self.n_num)
-        plot_cells_num(time_step, n_num, 'Neutrophil', f'./results/Neutrophil.png')
+        plot_cells_num(time_step, n_num, 'Neutrophil', './results/Neutrophil.png')
         return state
