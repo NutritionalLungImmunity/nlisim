@@ -150,7 +150,7 @@ def test_mutate_cell(populated_tree: AfumigatusCellTreeList):
 
 def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
     config = SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
+        {'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
     )
     state = State.create(config)
 
@@ -167,7 +167,7 @@ def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
 
 def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
     config = SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
+        {'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
     )
     state = State.create(config)
 

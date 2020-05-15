@@ -2,10 +2,14 @@ from math import ceil
 
 import attr
 import click
+import click_pathlib
 
 from simulation.config import SimulationConfig
 from simulation.solver import advance, finalize, initialize
 from simulation.state import State
+
+
+FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 
 
 @click.group()
@@ -17,14 +21,16 @@ def main():
 @click.argument('target_time', type=click.FLOAT, default=20)
 @click.option(
     '--config',
-    type=click.Path(exists=True),
-    default='config.ini',
-    help='Path to a simulation config',
+    'config_files',
+    type=FilePath,
+    multiple=True,
+    default=['config.ini'],
+    help='Path to a simulation config. May be specificed multiple times to cascade configurations.',
     show_default=True,
 )
-def run(target_time, config):
+def run(target_time, config_files):
     """Run a simulation."""
-    config = SimulationConfig(config)
+    config = SimulationConfig(*config_files)
     total = ceil(target_time / config.getfloat('simulation', 'time_step'))
 
     attr.set_run_validators(config.getboolean('simulation', 'validate'))

@@ -17,9 +17,7 @@ def base_config():
 
 @fixture
 def config():
-    yield SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
-    )
+    yield SimulationConfig({'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}})
 
 
 @fixture
