@@ -17,7 +17,7 @@ you can run `pipenv shell` to enter the newly created environment.
 For now, running the simulation requires the existence of a pregenerated HDF5
 file containing information about the simulation domain.  This file can be
 downloaded from
-[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5dc778b2ef2e2603553c5a12/download).
+[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5ebd86cec1b2cfe0661e681f/download).
 This file is expected to be found as `geometry.hdf5 ` in the directory you
 are running the simulation from.
 
