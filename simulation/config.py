@@ -34,18 +34,17 @@ class SimulationConfig(ConfigParser):
     This is based on the standard Python ConfigParser class.
     """
 
-    def __init__(self, file: Union[str, PurePath, None] = None, defaults: dict = None) -> None:
+    def __init__(self, *config_sources: Union[str, PurePath, dict]) -> None:
         super().__init__()
 
         # set built-in defaults
         self.read_dict({'simulation': DEFAULTS})
 
-        if defaults is not None:
-            self.read_dict(defaults)
-
-        # if provided, read the config file
-        if file is not None:
-            self.read(file)
+        for config_source in config_sources:
+            if isinstance(config_source, dict):
+                self.read_dict(config_source)
+            else:
+                self.read(config_source)
 
         self._modules: OrderedDict[str, 'Module'] = OrderedDict()
         for module_path in self.getlist('simulation', 'modules'):

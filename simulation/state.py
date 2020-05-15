@@ -49,7 +49,7 @@ class State(object):
                 cf.write(hf.attrs['config'])
                 cf.flush()
                 cf.seek(0)
-                config = SimulationConfig(file=cf.name)
+                config = SimulationConfig(cf.name)
 
             state = cls(time=time, grid=grid, config=config)
 
