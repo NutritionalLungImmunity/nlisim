@@ -5,8 +5,9 @@
 While not required, it is recommended you use
 [pipenv](https://github.com/pypa/pipenv) to create an isolated environment for
 running and developing.  To do so, run
-
+```bash
     pipenv install --dev
+```
 
 See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
 you can run `pipenv shell` to enter the newly created environment.
@@ -28,9 +29,10 @@ more information.  To run a simulation, you will need configure a configuration.
 There are two example configurations in the repository to get you started.
 
 Now run simulation up to 50 seconds using the first example config.
-
+```bash
     cp config.ini.example config.ini
     simulation run 50
+```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
 the simulation state at 1 second intervals through the full simulation.
@@ -39,8 +41,9 @@ the simulation state at 1 second intervals through the full simulation.
 
 There is a basic test suite included in the package using [tox](https://tox.readthedocs.io/en/latest/)
 as a test runner.  Try running the tests now with
-
+```bash
     tox
+```
 
 This will install the simulation code into a new isolated environment and run
 all of the tests.  It will even test against multiple Python versions if you
@@ -147,7 +150,7 @@ At a high level, an extension module contains the following features:
 An extension module is registered with the simulation by providing a subclass
 of `simulation.module.Module`.  Features are added by overriding attributes on
 this class.  The following is small example demonstrating some of the features:
-
+```python
     import attr
 
     from simulation.module import Module, ModuleState
@@ -170,6 +173,7 @@ this class.  The following is small example demonstrating some of the features:
         def advance(self, state, previous_time):
             print(f'Hello {state.hello_world.target}!')
             return state
+```
 
 When enabled, this module will
 
@@ -183,7 +187,7 @@ When enabled, this module will
 # Visualization Config
 
 To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the config file `config.ini` under the `[visualization]` section
-```
+```ini
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
