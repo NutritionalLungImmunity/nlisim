@@ -49,11 +49,13 @@ This will install the simulation code into a new isolated environment and run
 all of the tests.  It will even test against multiple Python versions if you
 have them installed.
 
-If you want, you can even run these tests outside of tox.  For example, try
-running `pytest --cov` to get coverage information for the tests run from your
-current python environment.  Tox also handles running the linting and type
-checking as well.  These can be run standalone with `flake8 simulation` or
-`mypy simulation` respectively.
+You can selectively run test environments, or add additional options to
+test environments. Useful sub-commands include:
+
+* `tox -e lint`: Run only the style checks.
+* `tox -e type`: Run only the type checks.
+* `tox -e py3`: Run only the unit tests.
+* `tox -e py3 -- --cov`: Run the unit tests and output coverage information.
 
 # Code organization
 
