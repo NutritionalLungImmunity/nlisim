@@ -6,7 +6,7 @@ jobs:
       - image: jbeezley/tox:latest
     steps:
       - checkout
-      - run: tox
+      - run: tox -e lint,type,py36,py37,py38
 
   docs-build:
     docker:
