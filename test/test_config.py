@@ -1,7 +1,10 @@
 from io import StringIO
 from tempfile import NamedTemporaryFile
 
+from pytest import raises
+
 from simulation.config import SimulationConfig
+from simulation.module import Module
 
 
 def test_config_defaults():
@@ -49,3 +52,38 @@ def test_config_multiple():
     # Configs should merge, with granular overwrites
     assert config.getint('custom_section', 'custom_val_1') == 15
     assert config.getint('custom_section', 'custom_val_2') == 10
+
+
+def test_config_add_module_string():
+    config = SimulationConfig()
+    config.add_module('simulation.modules.afumigatus.Afumigatus')
+    assert len(config.modules) == 1
+    assert isinstance(config.modules[0], Module)
+
+
+def test_config_add_module_object():
+    class ValidModule(Module):
+        name = 'ValidModule'
+
+    config = SimulationConfig()
+    config.add_module(ValidModule)
+    assert len(config.modules) == 1
+    assert isinstance(config.modules[0], ValidModule)
+
+
+def test_config_add_module_invalid_subclass():
+    class NonModule:
+        name = 'NonModule'
+
+    config = SimulationConfig()
+    with raises(TypeError, match=r'^Invalid module class for'):
+        config.add_module(NonModule)
+
+
+def test_config_add_module_invalid_name():
+    class NoNameModule(Module):
+        pass
+
+    config = SimulationConfig()
+    with raises(ValueError, match=r'^Invalid module name'):
+        config.add_module(NoNameModule)

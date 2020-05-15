@@ -5,7 +5,7 @@ from io import StringIO, TextIOBase
 import logging
 from pathlib import PurePath
 import re
-from typing import List, TextIO, Type, TYPE_CHECKING, Union
+from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
@@ -36,6 +36,7 @@ class SimulationConfig(ConfigParser):
 
     def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
         super().__init__()
+        self._modules: OrderedDict[str, 'Module'] = OrderedDict()
 
         # set built-in defaults
         self.read_dict({'simulation': DEFAULTS})
@@ -48,35 +49,50 @@ class SimulationConfig(ConfigParser):
             else:
                 self.read(config_source)
 
-        self._modules: OrderedDict[str, 'Module'] = OrderedDict()
         for module_path in self.getlist('simulation', 'modules'):
-            module = self.load_module(module_path)(self)
-            if module.name in self._modules:
-                raise ValueError(f'A module named {module.name} already exists')
-            self._modules[module.name] = module
+            self.add_module(module_path)
 
     @property
     def modules(self) -> List['Module']:
         """Return a list of instantiated modules connected to this config."""
         return list(self._modules.values())
 
+    def add_module(self, module_ref: Union[str, Type['Module']]):
+        if isinstance(module_ref, str):
+            module_func = self.load_module(module_ref)
+        else:
+            module_func = module_ref
+            self.validate_module(module_func)
+
+        module = module_func(self)
+
+        if module.name in self._modules:
+            raise ValueError(f'A module named {module.name} already exists')
+        self._modules[module.name] = module
+
     @classmethod
-    def load_module(cls, path: Union[str, Type['Module']]) -> Type['Module']:
-        """Load and validate a module class returning the class constructor."""
+    def load_module(cls, path: str) -> Type['Module']:
+        """Load a module class, returning the class constructor."""
+        module_path, func_name = path.rsplit('.', 1)
+        module = import_module(module_path, 'simulation')
+        func = getattr(module, func_name, None)
+
+        cls.validate_module(func, path)
+
+        return func
+
+    @classmethod
+    def validate_module(cls, func: Type['Module'], path: Optional[str] = None) -> None:
+        """Validate basic aspects of a module class."""
         from simulation.module import Module  # noqa avoid circular imports
 
-        if isinstance(path, str):
-            module_path, func_name = path.rsplit('.', 1)
-            module = import_module(module_path, 'simulation')
-            func = getattr(module, func_name, None)
-        else:
-            func = path
+        if path is None:
+            path = repr(func)
 
         if not issubclass(func, Module):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
-        return func
 
     def getlist(self, section: str, option: str) -> List[str]:
         """
