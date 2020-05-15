@@ -22,7 +22,7 @@ are running the simulation from.
 
 ## Running
 
-With the simulation package installed, you should have a new commandline
+With the simulation package installed, you should have a new command-line
 program called `simulation ` available.  Try running `simulation --help` to get
 more information.  To run a simulation, you will need configure a configuration.
 There are two example configurations in the repository to get you started.
@@ -43,7 +43,7 @@ as a test runner.  Try running the tests now with
     tox
 
 This will install the simulation code into a new isolated environment and run
-all of the tests.  It will even test against multiple python versions if you
+all of the tests.  It will even test against multiple Python versions if you
 have them installed.
 
 If you want, you can even run these tests outside of tox.  For example, try
@@ -81,7 +81,7 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 
 * `config.py `
 
-    This module defines a subclass of a python
+    This module defines a subclass of a Python
     [ConfigParser](https://docs.python.org/3/library/configparser.html?highlight=configparser#configparser.ConfigParser)
     which parses ".ini" style files for runtime configuration of the
     simulation.  While not currently enforced, it is expected that all values
@@ -111,8 +111,8 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 * `cli.py `
 
     This module uses [click](https://click.palletsprojects.com/en/7.x/) to generate
-    a commandline interface for executing the simulation.  Click provides a flexible
-    API for designing high quality CLI's.
+    a command-line interface for executing the simulation.  Click provides a flexible
+    API for designing high quality CLIs.
 
 # Simulation state
 
@@ -182,7 +182,7 @@ When enabled, this module will
 
 # Visualization Config
 
-To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
+To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the config file `config.ini` under the `[visualization]` section
 ```
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
@@ -209,4 +209,3 @@ For example, to visualize the aspergillus and the alveolar geometry, the variabl
 * structured grid: points data are not regularly and not uniformly spaced
 * unstructured grid: consists of arbitrary combinations of any possible cell type
 * polygonal data: consists of a set of discrete points, vertices, lines or polygons
-
