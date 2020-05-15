@@ -28,11 +28,11 @@
 <pre><code class="python">from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
-from io import StringIO
+from io import StringIO, TextIOBase
 import logging
 from pathlib import PurePath
 import re
-from typing import List, Type, TYPE_CHECKING, Union
+from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
@@ -61,48 +61,65 @@ class SimulationConfig(ConfigParser):
     This is based on the standard Python ConfigParser class.
     &#34;&#34;&#34;
 
-    def __init__(self, file: Union[str, PurePath, None] = None, defaults: dict = None) -&gt; None:
+    def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -&gt; None:
         super().__init__()
+        self._modules: OrderedDict[str, &#39;Module&#39;] = OrderedDict()
 
         # set built-in defaults
         self.read_dict({&#39;simulation&#39;: DEFAULTS})
 
-        if defaults is not None:
-            self.read_dict(defaults)
+        for config_source in config_sources:
+            if isinstance(config_source, dict):
+                self.read_dict(config_source)
+            if isinstance(config_source, TextIOBase):
+                self.read_file(config_source)
+            else:
+                self.read(config_source)
 
-        # if provided, read the config file
-        if file is not None:
-            self.read(file)
-
-        self._modules: OrderedDict[str, &#39;Module&#39;] = OrderedDict()
         for module_path in self.getlist(&#39;simulation&#39;, &#39;modules&#39;):
-            module = self.load_module(module_path)(self)
-            if module.name in self._modules:
-                raise ValueError(f&#39;A module named {module.name} already exists&#39;)
-            self._modules[module.name] = module
+            self.add_module(module_path)
 
     @property
     def modules(self) -&gt; List[&#39;Module&#39;]:
         &#34;&#34;&#34;Return a list of instantiated modules connected to this config.&#34;&#34;&#34;
         return list(self._modules.values())
 
+    def add_module(self, module_ref: Union[str, Type[&#39;Module&#39;]]):
+        if isinstance(module_ref, str):
+            module_func = self.load_module(module_ref)
+        else:
+            module_func = module_ref
+            self.validate_module(module_func)
+
+        module = module_func(self)
+
+        if module.name in self._modules:
+            raise ValueError(f&#39;A module named {module.name} already exists&#39;)
+        self._modules[module.name] = module
+
     @classmethod
-    def load_module(cls, path: Union[str, Type[&#39;Module&#39;]]) -&gt; Type[&#39;Module&#39;]:
-        &#34;&#34;&#34;Load and validate a module class returning the class constructor.&#34;&#34;&#34;
+    def load_module(cls, path: str) -&gt; Type[&#39;Module&#39;]:
+        &#34;&#34;&#34;Load a module class, returning the class constructor.&#34;&#34;&#34;
+        module_path, func_name = path.rsplit(&#39;.&#39;, 1)
+        module = import_module(module_path, &#39;simulation&#39;)
+        func = getattr(module, func_name, None)
+
+        cls.validate_module(func, path)
+
+        return func
+
+    @classmethod
+    def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
         from simulation.module import Module  # noqa avoid circular imports
 
-        if isinstance(path, str):
-            module_path, func_name = path.rsplit(&#39;.&#39;, 1)
-            module = import_module(module_path, &#39;simulation&#39;)
-            func = getattr(module, func_name, None)
-        else:
-            func = path
+        if path is None:
+            path = repr(func)
 
         if not issubclass(func, Module):
             raise TypeError(f&#39;Invalid module class for &#34;{path}&#34;&#39;)
         if not func.name.isidentifier() or func.name.startswith(&#39;_&#39;):
             raise ValueError(f&#39;Invalid module name &#34;{func.name}&#34; for &#34;{path}&#39;)
-        return func
 
     def getlist(self, section: str, option: str) -&gt; List[str]:
         &#34;&#34;&#34;
@@ -159,7 +176,7 @@ class SimulationConfig(ConfigParser):
 <dl>
 <dt id="simulation.config.SimulationConfig"><code class="flex name class">
 <span>class <span class="ident">SimulationConfig</span></span>
-<span>(</span><span>file: Union[str, pathlib.PurePath, NoneType] = None, defaults: dict = None)</span>
+<span>(</span><span>*config_sources: Union[str, pathlib.PurePath, TextIO, dict])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Internal representation of a simulation config.</p>
@@ -175,48 +192,65 @@ class SimulationConfig(ConfigParser):
     This is based on the standard Python ConfigParser class.
     &#34;&#34;&#34;
 
-    def __init__(self, file: Union[str, PurePath, None] = None, defaults: dict = None) -&gt; None:
+    def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -&gt; None:
         super().__init__()
+        self._modules: OrderedDict[str, &#39;Module&#39;] = OrderedDict()
 
         # set built-in defaults
         self.read_dict({&#39;simulation&#39;: DEFAULTS})
 
-        if defaults is not None:
-            self.read_dict(defaults)
+        for config_source in config_sources:
+            if isinstance(config_source, dict):
+                self.read_dict(config_source)
+            if isinstance(config_source, TextIOBase):
+                self.read_file(config_source)
+            else:
+                self.read(config_source)
 
-        # if provided, read the config file
-        if file is not None:
-            self.read(file)
-
-        self._modules: OrderedDict[str, &#39;Module&#39;] = OrderedDict()
         for module_path in self.getlist(&#39;simulation&#39;, &#39;modules&#39;):
-            module = self.load_module(module_path)(self)
-            if module.name in self._modules:
-                raise ValueError(f&#39;A module named {module.name} already exists&#39;)
-            self._modules[module.name] = module
+            self.add_module(module_path)
 
     @property
     def modules(self) -&gt; List[&#39;Module&#39;]:
         &#34;&#34;&#34;Return a list of instantiated modules connected to this config.&#34;&#34;&#34;
         return list(self._modules.values())
 
+    def add_module(self, module_ref: Union[str, Type[&#39;Module&#39;]]):
+        if isinstance(module_ref, str):
+            module_func = self.load_module(module_ref)
+        else:
+            module_func = module_ref
+            self.validate_module(module_func)
+
+        module = module_func(self)
+
+        if module.name in self._modules:
+            raise ValueError(f&#39;A module named {module.name} already exists&#39;)
+        self._modules[module.name] = module
+
     @classmethod
-    def load_module(cls, path: Union[str, Type[&#39;Module&#39;]]) -&gt; Type[&#39;Module&#39;]:
-        &#34;&#34;&#34;Load and validate a module class returning the class constructor.&#34;&#34;&#34;
+    def load_module(cls, path: str) -&gt; Type[&#39;Module&#39;]:
+        &#34;&#34;&#34;Load a module class, returning the class constructor.&#34;&#34;&#34;
+        module_path, func_name = path.rsplit(&#39;.&#39;, 1)
+        module = import_module(module_path, &#39;simulation&#39;)
+        func = getattr(module, func_name, None)
+
+        cls.validate_module(func, path)
+
+        return func
+
+    @classmethod
+    def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
         from simulation.module import Module  # noqa avoid circular imports
 
-        if isinstance(path, str):
-            module_path, func_name = path.rsplit(&#39;.&#39;, 1)
-            module = import_module(module_path, &#39;simulation&#39;)
-            func = getattr(module, func_name, None)
-        else:
-            func = path
+        if path is None:
+            path = repr(func)
 
         if not issubclass(func, Module):
             raise TypeError(f&#39;Invalid module class for &#34;{path}&#34;&#39;)
         if not func.name.isidentifier() or func.name.startswith(&#39;_&#39;):
             raise ValueError(f&#39;Invalid module name &#34;{func.name}&#34; for &#34;{path}&#39;)
-        return func
 
     def getlist(self, section: str, option: str) -&gt; List[str]:
         &#34;&#34;&#34;
@@ -275,30 +309,23 @@ class SimulationConfig(ConfigParser):
 <h3>Static methods</h3>
 <dl>
 <dt id="simulation.config.SimulationConfig.load_module"><code class="name flex">
-<span>def <span class="ident">load_module</span></span>(<span>path: Union[str, Type[_ForwardRef('Module')]]) -> Type[_ForwardRef('Module')]</span>
+<span>def <span class="ident">load_module</span></span>(<span>path: str) -> Type[_ForwardRef('Module')]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load and validate a module class returning the class constructor.</p></div>
+<div class="desc"><p>Load a module class, returning the class constructor.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def load_module(cls, path: Union[str, Type[&#39;Module&#39;]]) -&gt; Type[&#39;Module&#39;]:
-    &#34;&#34;&#34;Load and validate a module class returning the class constructor.&#34;&#34;&#34;
-    from simulation.module import Module  # noqa avoid circular imports
+def load_module(cls, path: str) -&gt; Type[&#39;Module&#39;]:
+    &#34;&#34;&#34;Load a module class, returning the class constructor.&#34;&#34;&#34;
+    module_path, func_name = path.rsplit(&#39;.&#39;, 1)
+    module = import_module(module_path, &#39;simulation&#39;)
+    func = getattr(module, func_name, None)
 
-    if isinstance(path, str):
-        module_path, func_name = path.rsplit(&#39;.&#39;, 1)
-        module = import_module(module_path, &#39;simulation&#39;)
-        func = getattr(module, func_name, None)
-    else:
-        func = path
+    cls.validate_module(func, path)
 
-    if not issubclass(func, Module):
-        raise TypeError(f&#39;Invalid module class for &#34;{path}&#34;&#39;)
-    if not func.name.isidentifier() or func.name.startswith(&#39;_&#39;):
-        raise ValueError(f&#39;Invalid module name &#34;{func.name}&#34; for &#34;{path}&#39;)
     return func</code></pre>
 </details>
 </dd>
@@ -327,6 +354,29 @@ def parselist(cls, value: str) -&gt; List[str]:
     return values</code></pre>
 </details>
 </dd>
+<dt id="simulation.config.SimulationConfig.validate_module"><code class="name flex">
+<span>def <span class="ident">validate_module</span></span>(<span>func: Type[_ForwardRef('Module')], path: Union[str, NoneType] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Validate basic aspects of a module class.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
+    from simulation.module import Module  # noqa avoid circular imports
+
+    if path is None:
+        path = repr(func)
+
+    if not issubclass(func, Module):
+        raise TypeError(f&#39;Invalid module class for &#34;{path}&#34;&#39;)
+    if not func.name.isidentifier() or func.name.startswith(&#39;_&#39;):
+        raise ValueError(f&#39;Invalid module name &#34;{func.name}&#34; for &#34;{path}&#39;)</code></pre>
+</details>
+</dd>
 </dl>
 <h3>Instance variables</h3>
 <dl>
@@ -346,6 +396,29 @@ def modules(self) -&gt; List[&#39;Module&#39;]:
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="simulation.config.SimulationConfig.add_module"><code class="name flex">
+<span>def <span class="ident">add_module</span></span>(<span>self, module_ref: Union[str, Type[_ForwardRef('Module')]])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_module(self, module_ref: Union[str, Type[&#39;Module&#39;]]):
+    if isinstance(module_ref, str):
+        module_func = self.load_module(module_ref)
+    else:
+        module_func = module_ref
+        self.validate_module(module_func)
+
+    module = module_func(self)
+
+    if module.name in self._modules:
+        raise ValueError(f&#39;A module named {module.name} already exists&#39;)
+    self._modules[module.name] = module</code></pre>
+</details>
+</dd>
 <dt id="simulation.config.SimulationConfig.getlist"><code class="name flex">
 <span>def <span class="ident">getlist</span></span>(<span>self, section: str, option: str) -> List[str]</span>
 </code></dt>
@@ -417,11 +490,13 @@ value = a b
 <ul>
 <li>
 <h4><code><a title="simulation.config.SimulationConfig" href="#simulation.config.SimulationConfig">SimulationConfig</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="simulation.config.SimulationConfig.add_module" href="#simulation.config.SimulationConfig.add_module">add_module</a></code></li>
 <li><code><a title="simulation.config.SimulationConfig.getlist" href="#simulation.config.SimulationConfig.getlist">getlist</a></code></li>
 <li><code><a title="simulation.config.SimulationConfig.load_module" href="#simulation.config.SimulationConfig.load_module">load_module</a></code></li>
 <li><code><a title="simulation.config.SimulationConfig.modules" href="#simulation.config.SimulationConfig.modules">modules</a></code></li>
 <li><code><a title="simulation.config.SimulationConfig.parselist" href="#simulation.config.SimulationConfig.parselist">parselist</a></code></li>
+<li><code><a title="simulation.config.SimulationConfig.validate_module" href="#simulation.config.SimulationConfig.validate_module">validate_module</a></code></li>
 </ul>
 </li>
 </ul>
