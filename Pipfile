@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 tox = '>=3'
+jupyter = "*"
 
 [packages]
 simulation = {editable = true,path = "."}
