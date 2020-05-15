@@ -1,11 +1,11 @@
 from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
-from io import StringIO
+from io import StringIO, TextIOBase
 import logging
 from pathlib import PurePath
 import re
-from typing import List, Type, TYPE_CHECKING, Union
+from typing import List, TextIO, Type, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ class SimulationConfig(ConfigParser):
     This is based on the standard Python ConfigParser class.
     """
 
-    def __init__(self, *config_sources: Union[str, PurePath, dict]) -> None:
+    def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
         super().__init__()
 
         # set built-in defaults
@@ -43,6 +43,8 @@ class SimulationConfig(ConfigParser):
         for config_source in config_sources:
             if isinstance(config_source, dict):
                 self.read_dict(config_source)
+            if isinstance(config_source, TextIOBase):
+                self.read_file(config_source)
             else:
                 self.read(config_source)
 

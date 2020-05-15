@@ -1,3 +1,4 @@
+from io import StringIO
 from tempfile import NamedTemporaryFile
 
 from simulation.config import SimulationConfig
@@ -22,6 +23,12 @@ def test_config_default_overwrite():
 
 def test_config_dict():
     config = SimulationConfig({'custom_section': {'custom_val': 5}})
+    assert config.getint('custom_section', 'custom_val') == 5
+
+
+def test_config_stream():
+    with StringIO('[custom_section]\ncustom_val = 5\n') as cf:
+        config = SimulationConfig(cf)
     assert config.getint('custom_section', 'custom_val') == 5
 
 

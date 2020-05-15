@@ -1,6 +1,5 @@
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import PurePath
-from tempfile import NamedTemporaryFile
 from typing import Any, cast, Dict, IO, Type, TYPE_CHECKING, Union
 
 import attr
@@ -45,11 +44,8 @@ class State(object):
             time = hf.attrs['time']
             grid = RectangularGrid.load(hf)
 
-            with NamedTemporaryFile('r+') as cf:
-                cf.write(hf.attrs['config'])
-                cf.flush()
-                cf.seek(0)
-                config = SimulationConfig(cf.name)
+            with StringIO(hf.attrs['config']) as cf:
+                config = SimulationConfig(cf)
 
             state = cls(time=time, grid=grid, config=config)
 
