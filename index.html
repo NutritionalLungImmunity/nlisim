@@ -28,7 +28,7 @@
 <a href="https://github.com/pypa/pipenv">pipenv</a> to create an isolated environment for
 running and developing.
 To do so, run</p>
-<pre><code>pipenv install --dev
+<pre><code class="bash">    pipenv install --dev
 </code></pre>
 <p>See <a href="https://pipenv.kennethreitz.org/">pipenv</a> for details.
 Once this is done,
@@ -38,19 +38,18 @@ you can run <code>pipenv shell</code> to enter the newly created environment.</p
 file containing information about the simulation domain.
 This file can be
 downloaded from
-<a href="https://data.nutritionallungimmunity.org/api/v1/file/5dc778b2ef2e2603553c5a12/download">Girder</a>.
+<a href="https://data.nutritionallungimmunity.org/api/v1/file/5ebd86cec1b2cfe0661e681f/download">Girder</a>.
 This file is expected to be found as <code>geometry.hdf5 </code> in the directory you
 are running the simulation from.</p>
 <h2 id="running">Running</h2>
-<p>With the simulation package installed, you should have a new commandline
+<p>With the simulation package installed, you should have a new command-line
 program called <code><a title="simulation" href="#simulation">simulation</a> </code> available.
 Try running <code>simulation --help</code> to get
 more information.
 To run a simulation, you will need configure a configuration.
-There are two example configurations in the repository to get you started.</p>
+There is an example configuration in the repository to get you started.</p>
 <p>Now run simulation up to 50 seconds using the first example config.</p>
-<pre><code>cp config.ini.example config.ini
-simulation run 50
+<pre><code class="bash">    simulation run 50 --config.ini.example
 </code></pre>
 <p>You should now have files like <code>output/simulation-000001.000.hdf5</code> containing
 the simulation state at 1 second intervals through the full simulation.</p>
@@ -58,20 +57,20 @@ the simulation state at 1 second intervals through the full simulation.</p>
 <p>There is a basic test suite included in the package using <a href="https://tox.readthedocs.io/en/latest/">tox</a>
 as a test runner.
 Try running the tests now with</p>
-<pre><code>tox
+<pre><code class="bash">    tox
 </code></pre>
 <p>This will install the simulation code into a new isolated environment and run
 all of the tests.
-It will even test against multiple python versions if you
+It will even test against multiple Python versions if you
 have them installed.</p>
-<p>If you want, you can even run these tests outside of tox.
-For example, try
-running <code>pytest --cov</code> to get coverage information for the tests run from your
-current python environment.
-Tox also handles running the linting and type
-checking as well.
-These can be run standalone with <code>flake8 <a title="simulation" href="#simulation">simulation</a></code> or
-<code>mypy <a title="simulation" href="#simulation">simulation</a></code> respectively.</p>
+<p>You can selectively run test environments, or add additional options to
+test environments. Useful sub-commands include:</p>
+<ul>
+<li><code>tox -e lint</code>: Run only the style checks.</li>
+<li><code>tox -e type</code>: Run only the type checks.</li>
+<li><code>tox -e py3</code>: Run only the unit tests.</li>
+<li><code>tox -e py3 -- --cov</code>: Run the unit tests and output coverage information.</li>
+</ul>
 <h1 id="code-organization">Code organization</h1>
 <ul>
 <li>
@@ -105,7 +104,7 @@ modules to create cells with additional attributes and behavior.</p>
 </li>
 <li>
 <p><code>config.py </code></p>
-<p>This module defines a subclass of a python
+<p>This module defines a subclass of a Python
 <a href="https://docs.python.org/3/library/configparser.html?highlight=configparser#configparser.ConfigParser">ConfigParser</a>
 which parses ".ini" style files for runtime configuration of the
 simulation.
@@ -140,9 +139,9 @@ here are intended to provide extra information about the source of errors
 <li>
 <p><code>cli.py </code></p>
 <p>This module uses <a href="https://click.palletsprojects.com/en/7.x/">click</a> to generate
-a commandline interface for executing the simulation.
+a command-line interface for executing the simulation.
 Click provides a flexible
-API for designing high quality CLI's.</p>
+API for designing high quality CLIs.</p>
 </li>
 </ul>
 <h1 id="simulation-state">Simulation state</h1>
@@ -179,28 +178,28 @@ of <code><a title="simulation.module.Module" href="module.html#simulation.module
 Features are added by overriding attributes on
 this class.
 The following is small example demonstrating some of the features:</p>
-<pre><code>import attr
+<pre><code class="python">    import attr
 
-from simulation.module import Module, ModuleState
+    from simulation.module import Module, ModuleState
 
 
-class HelloWorld(Module):
-    name = 'hello_world'
-    defaults = {
-        'target_string': 'World'
-    }
+    class HelloWorld(Module):
+        name = 'hello_world'
+        defaults = {
+            'target_string': 'World'
+        }
 
-    @attr.s(kw_only=True, auto_attribs=True)
-    class StateClass(ModuleState):
-        target: str = attr.ib(default='')
+        @attr.s(kw_only=True, auto_attribs=True)
+        class StateClass(ModuleState):
+            target: str = attr.ib(default='')
 
-    def initialize(self, state):
-        state.hello_world.target = self.config.get('target_string')
-        return state
+        def initialize(self, state):
+            state.hello_world.target = self.config.get('target_string')
+            return state
 
-    def advance(self, state, previous_time):
-        print(f'Hello {state.hello_world.target}!')
-        return state
+        def advance(self, state, previous_time):
+            print(f'Hello {state.hello_world.target}!')
+            return state
 </code></pre>
 <p>When enabled, this module will</p>
 <ul>
@@ -212,8 +211,8 @@ config file</li>
 <li>print a message on every time step</li>
 </ul>
 <h1 id="visualization-config">Visualization Config</h1>
-<p>To visualize the output of the simulation, please add the variable names to the list <code>visual_variables</code> in the cofig file <code>config.ini</code> under the <code>[visualization]</code> section</p>
-<pre><code>[visualization]
+<p>To visualize the output of the simulation, please add the variable names to the list <code>visual_variables</code> in the config file, under the <code>[visualization]</code> section:</p>
+<pre><code class="ini">[visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
