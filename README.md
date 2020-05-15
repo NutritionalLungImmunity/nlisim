@@ -26,12 +26,11 @@ are running the simulation from.
 With the simulation package installed, you should have a new command-line
 program called `simulation ` available.  Try running `simulation --help` to get
 more information.  To run a simulation, you will need configure a configuration.
-There are two example configurations in the repository to get you started.
+There is an example configuration in the repository to get you started.
 
 Now run simulation up to 50 seconds using the first example config.
 ```bash
-    cp config.ini.example config.ini
-    simulation run 50
+    simulation run 50 --config.ini.example
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
@@ -188,7 +187,7 @@ When enabled, this module will
 
 # Visualization Config
 
-To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the config file `config.ini` under the `[visualization]` section
+To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the config file, under the `[visualization]` section:
 ```ini
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
