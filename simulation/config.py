@@ -44,7 +44,7 @@ class SimulationConfig(ConfigParser):
         for config_source in config_sources:
             if isinstance(config_source, dict):
                 self.read_dict(config_source)
-            if isinstance(config_source, TextIOBase):
+            elif isinstance(config_source, TextIOBase):
                 self.read_file(config_source)
             else:
                 self.read(config_source)
