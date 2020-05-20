@@ -29,6 +29,8 @@ class PlotPoint(Module):
         state.plotpoint.fungal_burdens[step_num] = len(state.fungus.cells.alive())
         state.plotpoint.macrophage_counts[step_num] = len(state.macrophage.cells.alive())
         state.plotpoint.neutrophil_counts[step_num] = len(state.neutrophil.cells.alive())
+        # define additional values to be plotted here
+
         state.plotpoint.step_num += 1
 
         return state
@@ -39,27 +41,32 @@ class PlotPoint(Module):
         fungal_burdens = state.plotpoint.fungal_burdens[:num_steps]
         macrophage_counts = state.plotpoint.macrophage_counts[:num_steps]
         neutrophil_counts = state.plotpoint.neutrophil_counts[:num_steps]
+        # define additional y_val here
 
         plt.figure()
         plt.xlabel('Time')
         plt.grid(True)
 
-        plt.clf()
-        plt.plot(time_steps, fungal_burdens)
-        plt.ylabel('Fungal Burden')
-        plt.title('Fungal Burden vs Time')
-        plt.savefig('fungal_burden_vs_time.png')
-
-        plt.clf()
-        plt.plot(time_steps, macrophage_counts)
-        plt.ylabel('Macrophage Count')
-        plt.title('Macrophage Count vs Time')
-        plt.savefig('macrophage_count_vs_time.png')
-
-        plt.clf()
-        plt.plot(time_steps, neutrophil_counts)
-        plt.ylabel('Neutrophil Count')
-        plt.title('Neutrophil Count vs Time')
-        plt.savefig('neutrophil_count_vs_time.png')
+        for y_val, y_label, title, filename in [
+            (fungal_burdens, 'Fungal Burden', 'Fungal Burden vs Time', 'fungal_burden_vs_time'),
+            (
+                macrophage_counts,
+                'Macrophage Count',
+                'Macrophage Count vs Time',
+                'macrophage_count_vs_time',
+            ),
+            (
+                neutrophil_counts,
+                'Neutrophil Count',
+                'Neutrophil Count vs Time',
+                'neutrophil_count_vs_time',
+            ),
+            # define additional plots here at 4-tuples
+        ]:
+            plt.clf()
+            plt.plot(time_steps, y_val)
+            plt.ylabel(y_label)
+            plt.title(title)
+            plt.savefig(f'{filename }.png')
 
         return state
