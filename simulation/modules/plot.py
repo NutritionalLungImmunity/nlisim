@@ -7,7 +7,7 @@ from simulation.state import State
 
 
 @attr.s(kw_only=True)
-class PlotPointState(ModuleState):
+class PlotState(ModuleState):
     step_num: int = attr.ib(default=0)
     fungal_burdens: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=int))
     macrophage_counts: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=int))
@@ -15,32 +15,32 @@ class PlotPointState(ModuleState):
     time_steps: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=float))
 
 
-class PlotPoint(Module):
-    name = 'plotpoint'
+class Plot(Module):
+    name = 'plot'
     defaults = {
         'interval': '1',
     }
-    StateClass = PlotPointState
+    StateClass = PlotState
 
     def advance(self, state: State, previous_time: float):
-        step_num = state.plotpoint.step_num
+        step_num = state.plot.step_num
 
-        state.plotpoint.time_steps[step_num] = state.time
-        state.plotpoint.fungal_burdens[step_num] = len(state.fungus.cells.alive())
-        state.plotpoint.macrophage_counts[step_num] = len(state.macrophage.cells.alive())
-        state.plotpoint.neutrophil_counts[step_num] = len(state.neutrophil.cells.alive())
+        state.plot.time_steps[step_num] = state.time
+        state.plot.fungal_burdens[step_num] = len(state.fungus.cells.alive())
+        state.plot.macrophage_counts[step_num] = len(state.macrophage.cells.alive())
+        state.plot.neutrophil_counts[step_num] = len(state.neutrophil.cells.alive())
         # define additional values to be plotted here
 
-        state.plotpoint.step_num += 1
+        state.plot.step_num += 1
 
         return state
 
     def finalize(self, state: State):
-        num_steps = state.plotpoint.step_num
-        time_steps = state.plotpoint.time_steps[:num_steps]
-        fungal_burdens = state.plotpoint.fungal_burdens[:num_steps]
-        macrophage_counts = state.plotpoint.macrophage_counts[:num_steps]
-        neutrophil_counts = state.plotpoint.neutrophil_counts[:num_steps]
+        num_steps = state.plot.step_num
+        time_steps = state.plot.time_steps[:num_steps]
+        fungal_burdens = state.plot.fungal_burdens[:num_steps]
+        macrophage_counts = state.plot.macrophage_counts[:num_steps]
+        neutrophil_counts = state.plot.neutrophil_counts[:num_steps]
         # define additional y_val here
 
         plt.figure()
