@@ -19,9 +19,6 @@ class PlotState(ModuleState):
 
 class Plot(Module):
     name = 'plot'
-    defaults = {
-        'interval': '1',
-    }
     StateClass = PlotState
 
     def advance(self, state: State, previous_time: float):
