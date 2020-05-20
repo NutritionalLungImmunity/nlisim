@@ -56,6 +56,9 @@ test environments. Useful sub-commands include:
 * `tox -e py3`: Run only the unit tests.
 * `tox -e py3 -- --cov`: Run the unit tests and output coverage information.
 
+Finally, you can run `tox -e format` to automatically reformat your code to 
+comply with some (but unfortunatly not all) of the style checks.
+
 # Code organization
 
 * `state.py `
