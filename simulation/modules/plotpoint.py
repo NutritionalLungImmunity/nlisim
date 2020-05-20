@@ -35,10 +35,10 @@ class PlotPoint(Module):
 
     def finalize(self, state: State):
         num_steps = state.plotpoint.step_num
-        time_steps = state.plotpoint.time_steps[: num_steps]
-        fungal_burdens = state.plotpoint.fungal_burdens[: num_steps]
-        macrophage_counts = state.plotpoint.macrophage_counts[: num_steps]
-        neutrophil_counts = state.plotpoint.neutrophil_counts[: num_steps]
+        time_steps = state.plotpoint.time_steps[:num_steps]
+        fungal_burdens = state.plotpoint.fungal_burdens[:num_steps]
+        macrophage_counts = state.plotpoint.macrophage_counts[:num_steps]
+        neutrophil_counts = state.plotpoint.neutrophil_counts[:num_steps]
 
         plt.figure()
         plt.xlabel('Time')
