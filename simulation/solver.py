@@ -4,7 +4,6 @@ from typing import Iterator
 
 import attr
 
-from simulation.plot import plot_cost
 from simulation.state import State
 from simulation.validation import context as validation_context
 
@@ -50,6 +49,5 @@ def finalize(state: State) -> State:
     for m in state.config.modules:
         with validation_context(m.name):
             state = m.finalize(state)
-            cost = m.cost
-            plot_cost(m.name, cost, f'./results/{m.name}_cost.png')
+
     return state
