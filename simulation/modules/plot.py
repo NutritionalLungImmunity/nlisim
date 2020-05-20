@@ -5,14 +5,16 @@ import numpy as np
 from simulation.module import Module, ModuleState
 from simulation.state import State
 
+MAX_ARRAY_LENGTH = 1000
+
 
 @attr.s(kw_only=True)
 class PlotState(ModuleState):
     step_num: int = attr.ib(default=0)
-    fungal_burdens: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=int))
-    macrophage_counts: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=int))
-    neutrophil_counts: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=int))
-    time_steps: np.ndarray = attr.ib(factory=lambda: np.zeros(1000, dtype=float))
+    fungal_burdens: np.ndarray = attr.ib(factory=lambda: np.zeros(MAX_ARRAY_LENGTH, dtype=int))
+    macrophage_counts: np.ndarray = attr.ib(factory=lambda: np.zeros(MAX_ARRAY_LENGTH, dtype=int))
+    neutrophil_counts: np.ndarray = attr.ib(factory=lambda: np.zeros(MAX_ARRAY_LENGTH, dtype=int))
+    time_steps: np.ndarray = attr.ib(factory=lambda: np.zeros(MAX_ARRAY_LENGTH, dtype=float))
 
 
 class Plot(Module):
