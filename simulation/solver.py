@@ -1,5 +1,4 @@
 from math import ceil
-import time
 from typing import Iterator
 
 import attr
