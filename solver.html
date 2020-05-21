@@ -26,12 +26,10 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from math import ceil
-import time
 from typing import Iterator
 
 import attr
 
-from simulation.plot import plot_cost
 from simulation.state import State
 from simulation.validation import context as validation_context
 
@@ -40,10 +38,7 @@ def initialize(state: State) -&gt; State:
     &#34;&#34;&#34;Initialize a simulation state.&#34;&#34;&#34;
     for m in state.config.modules:
         with validation_context(f&#39;{m.name} (initialization)&#39;):
-            start = time.clock()
             state = m.initialize(state)
-            end = time.clock()
-            m.add_cost(end - start)
 
     # run validation after all initialization is done otherwise validation
     # could fail on a module&#39;s private state before it can initialize itself
@@ -64,10 +59,7 @@ def advance(state: State, target_time: float) -&gt; Iterator[State]:
 
         for m in state.config.modules:
             with validation_context(m.name):
-                start = time.clock()
                 state = m.advance(state, previous_time)
-                end = time.clock()
-                m.add_cost(end - start)
                 attr.validate(state)
 
         yield state
@@ -77,8 +69,7 @@ def finalize(state: State) -&gt; State:
     for m in state.config.modules:
         with validation_context(m.name):
             state = m.finalize(state)
-            cost = m.cost
-            plot_cost(m.name, cost, f&#39;./results/{m.name}_cost.png&#39;)
+
     return state</code></pre>
 </details>
 </section>
@@ -110,10 +101,7 @@ def finalize(state: State) -&gt; State:
 
         for m in state.config.modules:
             with validation_context(m.name):
-                start = time.clock()
                 state = m.advance(state, previous_time)
-                end = time.clock()
-                m.add_cost(end - start)
                 attr.validate(state)
 
         yield state</code></pre>
@@ -132,8 +120,7 @@ def finalize(state: State) -&gt; State:
     for m in state.config.modules:
         with validation_context(m.name):
             state = m.finalize(state)
-            cost = m.cost
-            plot_cost(m.name, cost, f&#39;./results/{m.name}_cost.png&#39;)
+
     return state</code></pre>
 </details>
 </dd>
@@ -150,10 +137,7 @@ def finalize(state: State) -&gt; State:
     &#34;&#34;&#34;Initialize a simulation state.&#34;&#34;&#34;
     for m in state.config.modules:
         with validation_context(f&#39;{m.name} (initialization)&#39;):
-            start = time.clock()
             state = m.initialize(state)
-            end = time.clock()
-            m.add_cost(end - start)
 
     # run validation after all initialization is done otherwise validation
     # could fail on a module&#39;s private state before it can initialize itself

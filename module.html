@@ -26,7 +26,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from importlib import import_module
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import attr
 from h5py import Dataset, Group
@@ -163,19 +163,10 @@ class Module(object):
         values = dict(self.defaults, **self.config)
         self.config.update(values)
 
-        self._cost: List[float] = []
-
     @property
     def section(self):
         &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
         return self.name
-
-    @property
-    def cost(self):
-        return self._cost
-
-    def add_cost(self, time: float):
-        self._cost.append(time)
 
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
@@ -233,19 +224,10 @@ class Module(object):
         values = dict(self.defaults, **self.config)
         self.config.update(values)
 
-        self._cost: List[float] = []
-
     @property
     def section(self):
         &#34;&#34;&#34;Return the section in the configuration object used by this module.&#34;&#34;&#34;
         return self.name
-
-    @property
-    def cost(self):
-        return self._cost
-
-    def add_cost(self, time: float):
-        self._cost.append(time)
 
     # The following are no-op hooks that a module can define to customize the
     # behavior.  A module can override any of these methods to execute
@@ -274,6 +256,7 @@ class Module(object):
 <li><a title="simulation.modules.macrophage.Macrophage" href="modules/macrophage.html#simulation.modules.macrophage.Macrophage">Macrophage</a></li>
 <li><a title="simulation.modules.molecules.Molecules" href="modules/molecules.html#simulation.modules.molecules.Molecules">Molecules</a></li>
 <li><a title="simulation.modules.neutrophil.Neutrophil" href="modules/neutrophil.html#simulation.modules.neutrophil.Neutrophil">Neutrophil</a></li>
+<li><a title="simulation.modules.plot.Plot" href="modules/plot.html#simulation.modules.plot.Plot">Plot</a></li>
 <li><a title="simulation.modules.save.FileOutput" href="modules/save.html#simulation.modules.save.FileOutput">FileOutput</a></li>
 <li><a title="simulation.modules.visualization.Visualization" href="modules/visualization.html#simulation.modules.visualization.Visualization">Visualization</a></li>
 </ul>
@@ -294,18 +277,6 @@ class Module(object):
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.module.Module.cost"><code class="name">var <span class="ident">cost</span></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def cost(self):
-    return self._cost</code></pre>
-</details>
-</dd>
 <dt id="simulation.module.Module.section"><code class="name">var <span class="ident">section</span></code></dt>
 <dd>
 <div class="desc"><p>Return the section in the configuration object used by this module.</p></div>
@@ -322,19 +293,6 @@ def section(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.module.Module.add_cost"><code class="name flex">
-<span>def <span class="ident">add_cost</span></span>(<span>self, time: float)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def add_cost(self, time: float):
-    self._cost.append(time)</code></pre>
-</details>
-</dd>
 <dt id="simulation.module.Module.advance"><code class="name flex">
 <span>def <span class="ident">advance</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, previous_time: float) -> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
 </code></dt>
@@ -520,6 +478,7 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <li><a title="simulation.modules.macrophage.MacrophageState" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageState">MacrophageState</a></li>
 <li><a title="simulation.modules.molecules.MoleculesState" href="modules/molecules.html#simulation.modules.molecules.MoleculesState">MoleculesState</a></li>
 <li><a title="simulation.modules.neutrophil.NeutrophilState" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilState">NeutrophilState</a></li>
+<li><a title="simulation.modules.plot.PlotState" href="modules/plot.html#simulation.modules.plot.PlotState">PlotState</a></li>
 <li><a title="simulation.modules.save.FileOutput.StateClass" href="#simulation.module.Module.StateClass">FileOutput.StateClass</a></li>
 <li><a title="simulation.modules.visualization.VisualizationState" href="modules/visualization.html#simulation.modules.visualization.VisualizationState">VisualizationState</a></li>
 </ul>
@@ -694,10 +653,8 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <h4><code><a title="simulation.module.Module" href="#simulation.module.Module">Module</a></code></h4>
 <ul class="two-column">
 <li><code><a title="simulation.module.Module.StateClass" href="#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.add_cost" href="#simulation.module.Module.add_cost">add_cost</a></code></li>
 <li><code><a title="simulation.module.Module.advance" href="#simulation.module.Module.advance">advance</a></code></li>
 <li><code><a title="simulation.module.Module.construct" href="#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.cost" href="#simulation.module.Module.cost">cost</a></code></li>
 <li><code><a title="simulation.module.Module.defaults" href="#simulation.module.Module.defaults">defaults</a></code></li>
 <li><code><a title="simulation.module.Module.finalize" href="#simulation.module.Module.finalize">finalize</a></code></li>
 <li><code><a title="simulation.module.Module.initialize" href="#simulation.module.Module.initialize">initialize</a></code></li>
