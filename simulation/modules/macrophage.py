@@ -9,7 +9,6 @@ from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
-from simulation.plot import plot_cells_num
 from simulation.state import State
 
 MAX_CONIDIA = 100
@@ -319,9 +318,6 @@ class Macrophage(Module):
 
         macrophage.cells = MacrophageCellList(grid=grid)
 
-        self.time_step = [0.0]
-        self.m_num = [len(macrophage.cells.alive())]
-
         return state
 
     def advance(self, state: State, previous_time: float):
@@ -363,13 +359,4 @@ class Macrophage(Module):
         if len(fungus.alive(fungus.cell_data['form'] == FungusCellData.Form.CONIDIA)) == 0:
             m_cells.remove_if_sporeless(macrophage.rm)
 
-        self.time_step.append(state.time)
-        self.m_num.append(len(m_cells.alive()))
-
-        return state
-
-    def finalize(self, state: State):
-        time_step = np.asarray(self.time_step)
-        m_num = np.asarray(self.m_num)
-        plot_cells_num(time_step, m_num, 'Marophage', './results/Marophage.png')
         return state
