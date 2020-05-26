@@ -21,10 +21,10 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.molecules.Molecules
           simulation.modules.fungus.Fungus
           simulation.modules.epithelium.Epithelium
-          #simulation.modules.save.FileOutput     
+          simulation.modules.save.FileOutput
           simulation.modules.macrophage.Macrophage
           simulation.modules.neutrophil.Neutrophil
-                   
+
 
 
 [file_output]
