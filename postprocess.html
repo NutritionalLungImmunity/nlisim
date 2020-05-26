@@ -1,0 +1,1810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>simulation.postprocess API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>simulation.postprocess</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from pathlib import Path
+from typing import Dict, Tuple
+
+import numpy as np  # type: ignore
+from vtk import (  # type: ignore
+    vtkPoints,
+    vtkPolyData,
+    vtkStructuredPoints,
+    vtkXMLImageDataWriter,
+    vtkXMLPolyDataWriter,
+)
+from vtk.util.numpy_support import numpy_to_vtk  # type: ignore
+
+from simulation.cell import CellList
+from simulation.grid import RectangularGrid
+from simulation.modules.geometry import GeometryState
+from simulation.state import State
+
+
+def convert_cells(cells: CellList) -&gt; vtkPolyData:
+    cell_data = cells.cell_data
+    fields = dict(cell_data.dtype.fields)
+    fields.pop(&#39;point&#39;)
+
+    points = vtkPoints()
+    poly = vtkPolyData()
+    poly.SetPoints(points)
+
+    if not len(cell_data):
+        return poly
+
+    # vtk uses coordinate ordering x, y, z while we use z, y, x.
+    points.SetData(numpy_to_vtk(np.flip(cell_data[&#39;point&#39;], axis=1)))
+    point_data = poly.GetPointData()
+
+    for field, (dtype, _) in fields.items():
+        data = cell_data[field]
+
+        # numpy_to_vtk doesn&#39;t handle bool for some reason
+        if dtype == np.dtype(&#39;bool&#39;):
+            data = data.astype(np.dtype(&#39;uint8&#39;))
+
+        try:
+            scalar = numpy_to_vtk(data)
+        except Exception:
+            print(f&#39;Unhandled data type in field {field}&#39;)
+            continue
+
+        scalar.SetName(field)
+        point_data.AddArray(scalar)
+
+    return poly
+
+
+def create_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+    x = grid.x
+    y = grid.y
+    z = grid.z
+    vtk_grid = vtkStructuredPoints()
+    vtk_grid.SetDimensions(len(x), len(y), len(z))
+
+    # In theory, the rectangular grid used in our code is more general than
+    # than a vtkStructuredPoints object.  In practice, we always construct
+    # a uniform grid, so we choose to use the more efficient vtk data structure.
+    vtk_grid.SetOrigin(0, 0, 0)
+    vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
+
+    point_data = vtk_grid.GetPointData()
+    point_data.SetScalars(numpy_to_vtk(geometry.lung_tissue.ravel()))
+    return vtk_grid
+
+
+def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_volume(state.grid, state.geometry)
+    cells = {
+        &#39;spore&#39;: convert_cells(state.fungus.cells),
+        &#39;epithelium&#39;: convert_cells(state.epithelium.cells),
+        &#39;macrophage&#39;: convert_cells(state.macrophage.cells),
+        &#39;neutrophil&#39;: convert_cells(state.neutrophil.cells),
+    }
+
+    return volume, cells
+
+
+def process_output(file_name: str, output_dir: Path):
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    state = State.load(file_name)
+    volume, cells = generate_vtk_objects(state)
+
+    grid_writer = vtkXMLImageDataWriter()
+    grid_writer.SetDataModeToBinary()
+    grid_writer.SetFileName(str(output_dir / &#39;geometry_001.vti&#39;))
+    grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    cell_writer = vtkXMLPolyDataWriter()
+    cell_writer.SetDataModeToBinary()
+    for module, data in cells.items():
+        cell_writer.SetFileName(str(output_dir / f&#39;{module}_001.vtp&#39;))
+        cell_writer.SetInputData(data)
+        cell_writer.Write()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="simulation.postprocess.convert_cells"><code class="name flex">
+<span>def <span class="ident">convert_cells</span></span>(<span>cells: <a title="simulation.cell.CellList" href="cell.html#simulation.cell.CellList">CellList</a>) -> vtkCommonDataModelPython.vtkPolyData</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_cells(cells: CellList) -&gt; vtkPolyData:
+    cell_data = cells.cell_data
+    fields = dict(cell_data.dtype.fields)
+    fields.pop(&#39;point&#39;)
+
+    points = vtkPoints()
+    poly = vtkPolyData()
+    poly.SetPoints(points)
+
+    if not len(cell_data):
+        return poly
+
+    # vtk uses coordinate ordering x, y, z while we use z, y, x.
+    points.SetData(numpy_to_vtk(np.flip(cell_data[&#39;point&#39;], axis=1)))
+    point_data = poly.GetPointData()
+
+    for field, (dtype, _) in fields.items():
+        data = cell_data[field]
+
+        # numpy_to_vtk doesn&#39;t handle bool for some reason
+        if dtype == np.dtype(&#39;bool&#39;):
+            data = data.astype(np.dtype(&#39;uint8&#39;))
+
+        try:
+            scalar = numpy_to_vtk(data)
+        except Exception:
+            print(f&#39;Unhandled data type in field {field}&#39;)
+            continue
+
+        scalar.SetName(field)
+        point_data.AddArray(scalar)
+
+    return poly</code></pre>
+</details>
+</dd>
+<dt id="simulation.postprocess.create_volume"><code class="name flex">
+<span>def <span class="ident">create_volume</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a>) -> vtkCommonDataModelPython.vtkStructuredPoints</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+    x = grid.x
+    y = grid.y
+    z = grid.z
+    vtk_grid = vtkStructuredPoints()
+    vtk_grid.SetDimensions(len(x), len(y), len(z))
+
+    # In theory, the rectangular grid used in our code is more general than
+    # than a vtkStructuredPoints object.  In practice, we always construct
+    # a uniform grid, so we choose to use the more efficient vtk data structure.
+    vtk_grid.SetOrigin(0, 0, 0)
+    vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
+
+    point_data = vtk_grid.GetPointData()
+    point_data.SetScalars(numpy_to_vtk(geometry.lung_tissue.ravel()))
+    return vtk_grid</code></pre>
+</details>
+</dd>
+<dt id="simulation.postprocess.generate_vtk_objects"><code class="name flex">
+<span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) -> Tuple[vtkCommonDataModelPython.vtkStructuredPoints, Dict[str, vtkCommonDataModelPython.vtkPolyData]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_volume(state.grid, state.geometry)
+    cells = {
+        &#39;spore&#39;: convert_cells(state.fungus.cells),
+        &#39;epithelium&#39;: convert_cells(state.epithelium.cells),
+        &#39;macrophage&#39;: convert_cells(state.macrophage.cells),
+        &#39;neutrophil&#39;: convert_cells(state.neutrophil.cells),
+    }
+
+    return volume, cells</code></pre>
+</details>
+</dd>
+<dt id="simulation.postprocess.process_output"><code class="name flex">
+<span>def <span class="ident">process_output</span></span>(<span>file_name: str, output_dir: pathlib.Path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_output(file_name: str, output_dir: Path):
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    state = State.load(file_name)
+    volume, cells = generate_vtk_objects(state)
+
+    grid_writer = vtkXMLImageDataWriter()
+    grid_writer.SetDataModeToBinary()
+    grid_writer.SetFileName(str(output_dir / &#39;geometry_001.vti&#39;))
+    grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    cell_writer = vtkXMLPolyDataWriter()
+    cell_writer.SetDataModeToBinary()
+    for module, data in cells.items():
+        cell_writer.SetFileName(str(output_dir / f&#39;{module}_001.vtp&#39;))
+        cell_writer.SetInputData(data)
+        cell_writer.Write()</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="simulation.postprocess.vtkPoints"><code class="flex name class">
+<span>class <span class="ident">vtkPoints</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>vtkPoints - represent and manipulate 3D points</p>
+<p>Superclass: vtkObject</p>
+<p>vtkPoints represents 3D points. The data model for vtkPoints is an
+array of vx-vy-vz triplets accessible by (point or cell) id.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>vtkCommonCorePython.vtkObject</li>
+<li>vtkCommonCorePython.vtkObjectBase</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li>vtkCommonDataModelPython.vtkPointsProjectedHull</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.postprocess.vtkPoints.Allocate"><code class="name flex">
+<span>def <span class="ident">Allocate</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Allocate(int, int) -&gt; int
+C++: virtual int Allocate(vtkIdType sz, vtkIdType ext=1000)</p>
+<p>Allocate initial memory size. ext is no longer used.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.ComputeBounds"><code class="name flex">
+<span>def <span class="ident">ComputeBounds</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ComputeBounds()
+C++: virtual void ComputeBounds()</p>
+<p>Determine (xmin,xmax, ymin,ymax, zmin,zmax) bounds of points.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.DeepCopy"><code class="name flex">
+<span>def <span class="ident">DeepCopy</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeepCopy(vtkPoints)
+C++: virtual void DeepCopy(vtkPoints *ad)</p>
+<p>Different ways to copy data. Shallow copy does reference count
+(i.e., assigns pointers and updates reference count); deep copy
+runs through entire data array assigning values.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetActualMemorySize"><code class="name flex">
+<span>def <span class="ident">GetActualMemorySize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetActualMemorySize() -&gt; int
+C++: unsigned long GetActualMemorySize()</p>
+<p>Return the memory in kibibytes (1024 bytes) consumed by this
+attribute data. Used to support streaming and reading/writing
+data. The value returned is guaranteed to be greater than or
+equal to the memory required to actually represent the data
+represented by this object. The information returned is valid
+only after the pipeline has been updated.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetBounds"><code class="name flex">
+<span>def <span class="ident">GetBounds</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetBounds() -&gt; (float, float, float, float, float, float)
+C++: double *GetBounds()
+V.GetBounds([float, float, float, float, float, float])
+C++: void GetBounds(double bounds[6])</p>
+<p>Return the bounds of the points.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetData"><code class="name flex">
+<span>def <span class="ident">GetData</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetData() -&gt; vtkDataArray
+C++: vtkDataArray *GetData()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetDataType"><code class="name flex">
+<span>def <span class="ident">GetDataType</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetDataType() -&gt; int
+C++: virtual int GetDataType()</p>
+<p>Return the underlying data type. An integer indicating data type
+is returned as specified in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetMTime"><code class="name flex">
+<span>def <span class="ident">GetMTime</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetMTime() -&gt; int
+C++: vtkMTimeType GetMTime() override;</p>
+<p>The modified time of the points.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetNumberOfPoints"><code class="name flex">
+<span>def <span class="ident">GetNumberOfPoints</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfPoints() -&gt; int
+C++: vtkIdType GetNumberOfPoints()</p>
+<p>Return number of points in array.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetPoint"><code class="name flex">
+<span>def <span class="ident">GetPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetPoint(int) -&gt; (float, float, float)
+C++: double *GetPoint(vtkIdType id)
+V.GetPoint(int, [float, float, float])
+C++: void GetPoint(vtkIdType id, double x[3])</p>
+<p>Return a pointer to a double point x[3] for a specific id.
+WARNING: Just don't use this error-prone method, the returned
+pointer and its values are only valid as long as another method
+invocation is not performed. Prefer GetPoint() with the return
+value in argument.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetPoints"><code class="name flex">
+<span>def <span class="ident">GetPoints</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetPoints(vtkIdList, vtkPoints)
+C++: void GetPoints(vtkIdList <em>ptId, vtkPoints </em>fp)</p>
+<p>Given a list of pt ids, return an array of points.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.GetVoidPointer"><code class="name flex">
+<span>def <span class="ident">GetVoidPointer</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetVoidPointer(int) -&gt; void
+C++: void *GetVoidPointer(const int id)</p>
+<p>Return a void pointer. For image pipeline interface and other
+special pointer manipulation.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.Initialize"><code class="name flex">
+<span>def <span class="ident">Initialize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Initialize()
+C++: virtual void Initialize()</p>
+<p>Return object to instantiated state.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.InsertNextPoint"><code class="name flex">
+<span>def <span class="ident">InsertNextPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertNextPoint((float, float, float)) -&gt; int
+C++: vtkIdType InsertNextPoint(const double x[3])
+V.InsertNextPoint(float, float, float) -&gt; int
+C++: vtkIdType InsertNextPoint(double x, double y, double z)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.InsertPoint"><code class="name flex">
+<span>def <span class="ident">InsertPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertPoint(int, (float, float, float))
+C++: void InsertPoint(vtkIdType id, const double x[3])
+V.InsertPoint(int, float, float, float)
+C++: void InsertPoint(vtkIdType id, double x, double y, double z)</p>
+<p>Insert point into object. Range checking performed and memory
+allocated as necessary.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.InsertPoints"><code class="name flex">
+<span>def <span class="ident">InsertPoints</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertPoints(vtkIdList, vtkIdList, vtkPoints)
+C++: void InsertPoints(vtkIdList <em>dstIds, vtkIdList </em>srcIds,
+vtkPoints <em>source)
+V.InsertPoints(int, int, int, vtkPoints)
+C++: void InsertPoints(vtkIdType dstStart, vtkIdType n,
+vtkIdType srcStart, vtkPoints </em>source)</p>
+<p>Copy the points indexed in srcIds from the source array to the
+tuple locations indexed by dstIds in this array. Note that memory
+allocation is performed as necessary to hold the data.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.IsA"><code class="name flex">
+<span>def <span class="ident">IsA</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsA(string) -&gt; int
+C++: vtkTypeBool IsA(const char *type) override;</p>
+<p>Return 1 if this class is the same type of (or a subclass of) the
+named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.IsTypeOf"><code class="name flex">
+<span>def <span class="ident">IsTypeOf</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTypeOf(string) -&gt; int
+C++: static vtkTypeBool IsTypeOf(const char *type)</p>
+<p>Return 1 if this class type is the same type of (or a subclass
+of) the named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.Modified"><code class="name flex">
+<span>def <span class="ident">Modified</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Modified()
+C++: void Modified() override;</p>
+<p>Update the modification time for this object and its Data. As
+this object acts as a shell around a DataArray and forwards Set
+methods it needs to forward Modified as well.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.NewInstance"><code class="name flex">
+<span>def <span class="ident">NewInstance</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NewInstance() -&gt; vtkPoints
+C++: vtkPoints *NewInstance()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.Reset"><code class="name flex">
+<span>def <span class="ident">Reset</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Reset()
+C++: virtual void Reset()</p>
+<p>Make object look empty but do not delete memory.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.Resize"><code class="name flex">
+<span>def <span class="ident">Resize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Resize(int) -&gt; int
+C++: int Resize(vtkIdType numPoints)</p>
+<p>Resize the internal array while conserving the data.
+Returns 1
+if resizing succeeded and 0 otherwise.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SafeDownCast"><code class="name flex">
+<span>def <span class="ident">SafeDownCast</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SafeDownCast(vtkObjectBase) -&gt; vtkPoints
+C++: static vtkPoints <em>SafeDownCast(vtkObjectBase </em>o)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetData"><code class="name flex">
+<span>def <span class="ident">SetData</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetData(vtkDataArray)
+C++: virtual void SetData(vtkDataArray *)</p>
+<p>Set/Get the underlying data array. This function must be
+implemented in a concrete subclass to check for consistency. (The
+tuple size must match the type of data. For example, 3-tuple data
+array can be assigned to a vector, normal, or points object, but
+not a tensor object, which has a tuple dimension of 9. Scalars,
+on the other hand, can have tuple dimension from 1-4, depending
+on the type of scalar.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataType"><code class="name flex">
+<span>def <span class="ident">SetDataType</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataType(int)
+C++: virtual void SetDataType(int dataType)</p>
+<p>Specify the underlying data type of the object.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToBit"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToBit</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToBit()
+C++: void SetDataTypeToBit()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToChar"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToChar</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToChar()
+C++: void SetDataTypeToChar()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToDouble"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToDouble</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToDouble()
+C++: void SetDataTypeToDouble()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToFloat"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToFloat</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToFloat()
+C++: void SetDataTypeToFloat()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToInt"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToInt</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToInt()
+C++: void SetDataTypeToInt()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToLong"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToLong</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToLong()
+C++: void SetDataTypeToLong()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToShort"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToShort</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToShort()
+C++: void SetDataTypeToShort()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedChar"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToUnsignedChar</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToUnsignedChar()
+C++: void SetDataTypeToUnsignedChar()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedInt"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToUnsignedInt</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToUnsignedInt()
+C++: void SetDataTypeToUnsignedInt()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedLong"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToUnsignedLong</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToUnsignedLong()
+C++: void SetDataTypeToUnsignedLong()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedShort"><code class="name flex">
+<span>def <span class="ident">SetDataTypeToUnsignedShort</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetDataTypeToUnsignedShort()
+C++: void SetDataTypeToUnsignedShort()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetNumberOfPoints"><code class="name flex">
+<span>def <span class="ident">SetNumberOfPoints</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetNumberOfPoints(int)
+C++: void SetNumberOfPoints(vtkIdType numPoints)</p>
+<p>Specify the number of points for this object to hold. Does an
+allocation as well as setting the MaxId ivar. Used in conjunction
+with SetPoint() method for fast insertion.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.SetPoint"><code class="name flex">
+<span>def <span class="ident">SetPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetPoint(int, (float, float, float))
+C++: void SetPoint(vtkIdType id, const double x[3])
+V.SetPoint(int, float, float, float)
+C++: void SetPoint(vtkIdType id, double x, double y, double z)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.ShallowCopy"><code class="name flex">
+<span>def <span class="ident">ShallowCopy</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ShallowCopy(vtkPoints)
+C++: virtual void ShallowCopy(vtkPoints *ad)</p>
+<p>Different ways to copy data. Shallow copy does reference count
+(i.e., assigns pointers and updates reference count); deep copy
+runs through entire data array assigning values.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPoints.Squeeze"><code class="name flex">
+<span>def <span class="ident">Squeeze</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Squeeze()
+C++: virtual void Squeeze()</p>
+<p>Reclaim any extra memory.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData"><code class="flex name class">
+<span>class <span class="ident">vtkPolyData</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>vtkPolyData - concrete dataset represents vertices, lines, polygons,
+and triangle strips</p>
+<p>Superclass: vtkPointSet</p>
+<p>vtkPolyData is a data object that is a concrete implementation of
+vtkDataSet. vtkPolyData represents a geometric structure consisting
+of vertices, lines, polygons, and/or triangle strips. Point and cell
+attribute values (e.g., scalars, vectors, etc.) also are represented.</p>
+<p>The actual cell types (vtkCellType.h) supported by vtkPolyData are:
+vtkVertex, vtkPolyVertex, vtkLine, vtkPolyLine, vtkTriangle, vtkQuad,
+vtkPolygon, and vtkTriangleStrip.</p>
+<p>One important feature of vtkPolyData objects is that special
+traversal and data manipulation methods are available to process
+data. These methods are generally more efficient than vtkDataSet
+methods and should be used whenever possible. For example, traversing
+the cells in a dataset we would use GetCell(). To traverse cells with
+vtkPolyData we would retrieve the cell array object representing
+polygons (for example using GetPolys()) and then use vtkCellArray's
+InitTraversal() and GetNextCell() methods.</p>
+<p>@warning
+Because vtkPolyData is implemented with four separate instances of
+vtkCellArray to represent 0D vertices, 1D lines, 2D polygons, and 2D
+triangle strips, it is possible to create vtkPolyData instances that
+consist of a mixture of cell types. Because of the design of the
+class, there are certain limitations on how mixed cell types are
+inserted into the vtkPolyData, and in turn the order in which they
+are processed and rendered. To preserve the consistency of cell ids,
+and to insure that cells with cell data are rendered properly, users
+must insert mixed cells in the order of vertices (vtkVertex and
+vtkPolyVertex), lines (vtkLine and vtkPolyLine), polygons
+(vtkTriangle, vtkQuad, vtkPolygon), and triangle strips
+(vtkTriangleStrip).</p>
+<p>@warning
+Some filters when processing vtkPolyData with mixed cell types may
+process the cells in differing ways. Some will convert one type into
+another (e.g., vtkTriangleStrip into vtkTriangles) or expect a
+certain type (vtkDecimatePro expects triangles or triangle strips;
+vtkTubeFilter expects lines). Read the documentation for each filter
+carefully to understand how each part of vtkPolyData is processed.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>vtkCommonDataModelPython.vtkPointSet</li>
+<li>vtkCommonDataModelPython.vtkDataSet</li>
+<li>vtkCommonDataModelPython.vtkDataObject</li>
+<li>vtkCommonCorePython.vtkObject</li>
+<li>vtkCommonCorePython.vtkObjectBase</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="simulation.postprocess.vtkPolyData.ERR_INCORRECT_FIELD"><code class="name">var <span class="ident">ERR_INCORRECT_FIELD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ERR_NON_MANIFOLD_STAR"><code class="name">var <span class="ident">ERR_NON_MANIFOLD_STAR</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ERR_NO_SUCH_FIELD"><code class="name">var <span class="ident">ERR_NO_SUCH_FIELD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.MAXIMUM"><code class="name">var <span class="ident">MAXIMUM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.MINIMUM"><code class="name">var <span class="ident">MINIMUM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.REGULAR_POINT"><code class="name">var <span class="ident">REGULAR_POINT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SADDLE"><code class="name">var <span class="ident">SADDLE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.postprocess.vtkPolyData.AddCellReference"><code class="name flex">
+<span>def <span class="ident">AddCellReference</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.AddCellReference(int)
+C++: void AddCellReference(vtkIdType cellId)</p>
+<p>Add references to cell in cell structure. This means the links
+from the cell's points to the cell are modified. Memory is not
+extended. Use the method ResizeCellList() to resize the link list
+from a point to its using cells. (This operator assumes
+BuildLinks() has been called.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.AddReferenceToCell"><code class="name flex">
+<span>def <span class="ident">AddReferenceToCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.AddReferenceToCell(int, int)
+C++: void AddReferenceToCell(vtkIdType ptId, vtkIdType cellId)</p>
+<p>Add a reference to a cell in a particular point's link list. (You
+may also consider using AddCellReference() to add the references
+from all the cell's points to the cell.) This operator does not
+realloc memory; use the operator ResizeCellList() to do this if
+necessary.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.Allocate"><code class="name flex">
+<span>def <span class="ident">Allocate</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Allocate(int, int)
+C++: void Allocate(vtkIdType numCells=1000, int extSize=1000)
+V.Allocate(vtkPolyData, int, int)
+C++: void Allocate(vtkPolyData *inPolyData,
+vtkIdType numCells=1000, int extSize=1000)</p>
+<p>Method allocates initial storage for vertex, line, polygon, and
+triangle strip arrays. Use this method before the method
+PolyData::InsertNextCell(). (Or, provide vertex, line, polygon,
+and triangle strip cell arrays.) The array capacity is doubled
+when the inserting a cell exceeds the current capacity. extSize
+is no longer used.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.BuildCells"><code class="name flex">
+<span>def <span class="ident">BuildCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.BuildCells()
+C++: void BuildCells()</p>
+<p>Create data structure that allows random access of cells.
+BuildCells is expensive but necessary to make use of the faster
+non-virtual implementations of GetCell/GetCellPoints. One may
+check if cells need to be built via NeedToBuilds before invoking.
+Cells always need to be built/re-built after low level direct
+modifications to verts, lines, polys or strips cell arrays.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.BuildLinks"><code class="name flex">
+<span>def <span class="ident">BuildLinks</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.BuildLinks(int)
+C++: void BuildLinks(int initialSize=0)</p>
+<p>Create upward links from points to cells that use each point.
+Enables topologically complex queries. Normally the links array
+is allocated based on the number of points in the vtkPolyData.
+The optional initialSize parameter can be used to allocate a
+larger size initially.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ComputeBounds"><code class="name flex">
+<span>def <span class="ident">ComputeBounds</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ComputeBounds()
+C++: void ComputeBounds() override;</p>
+<p>Compute the (X, Y, Z)
+bounds of the data.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.CopyCells"><code class="name flex">
+<span>def <span class="ident">CopyCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.CopyCells(vtkPolyData, vtkIdList, vtkPointLocator)
+C++: void CopyCells(vtkPolyData <em>pd, vtkIdList </em>idList,
+vtkPointLocator *locator=nullptr)</p>
+<p>Copy cells listed in idList from pd, including points, point
+data, and cell data.
+This method assumes that point and cell
+data have been allocated.
+If you pass in a point locator, then
+the points won't be duplicated in the output.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.CopyStructure"><code class="name flex">
+<span>def <span class="ident">CopyStructure</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.CopyStructure(vtkDataSet)
+C++: void CopyStructure(vtkDataSet *ds) override;</p>
+<p>Copy the geometric and topological structure of an input poly
+data object.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.DeepCopy"><code class="name flex">
+<span>def <span class="ident">DeepCopy</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeepCopy(vtkDataObject)
+C++: void DeepCopy(vtkDataObject *src) override;</p>
+<p>Shallow and Deep copy.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.DeleteCell"><code class="name flex">
+<span>def <span class="ident">DeleteCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeleteCell(int)
+C++: void DeleteCell(vtkIdType cellId)</p>
+<p>Mark a point/cell as deleted from this vtkPolyData.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.DeleteCells"><code class="name flex">
+<span>def <span class="ident">DeleteCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeleteCells()
+C++: void DeleteCells()</p>
+<p>Release data structure that allows random access of the cells.
+This must be done before a 2nd call to BuildLinks(). DeleteCells
+implicitly deletes the links as well since they are no longer
+valid.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.DeleteLinks"><code class="name flex">
+<span>def <span class="ident">DeleteLinks</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeleteLinks()
+C++: void DeleteLinks()</p>
+<p>Release the upward links from point to cells that use each point.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.DeletePoint"><code class="name flex">
+<span>def <span class="ident">DeletePoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.DeletePoint(int)
+C++: void DeletePoint(vtkIdType ptId)</p>
+<p>Mark a point/cell as deleted from this vtkPolyData.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetActualMemorySize"><code class="name flex">
+<span>def <span class="ident">GetActualMemorySize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetActualMemorySize() -&gt; int
+C++: unsigned long GetActualMemorySize() override;</p>
+<p>Return the actual size of the data in kibibytes (1024 bytes).
+This number is valid only after the pipeline has updated. The
+memory size returned is guaranteed to be greater than or equal to
+the memory required to represent the data (e.g., extra space in
+arrays, etc. are not included in the return value). THIS METHOD
+IS THREAD SAFE.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCell"><code class="name flex">
+<span>def <span class="ident">GetCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCell(int) -&gt; vtkCell
+C++: vtkCell <em>GetCell(vtkIdType cellId) override;
+V.GetCell(int, vtkGenericCell)
+C++: void GetCell(vtkIdType cellId, vtkGenericCell </em>cell)
+override;
+V.GetCell(int, [int, &hellip;]) -&gt; int
+C++: unsigned char GetCell(vtkIdType cellId, vtkIdType <em>&amp;pts)
+V.GetCell(int, int, int) -&gt; vtkCell
+C++: virtual vtkCell </em>GetCell(int i, int j, int k)</p>
+<p>Standard vtkDataSet interface.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCellBounds"><code class="name flex">
+<span>def <span class="ident">GetCellBounds</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCellBounds(int, [float, float, float, float, float, float])
+C++: void GetCellBounds(vtkIdType cellId, double bounds[6])
+override;</p>
+<p>Standard vtkDataSet interface.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCellEdgeNeighbors"><code class="name flex">
+<span>def <span class="ident">GetCellEdgeNeighbors</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCellEdgeNeighbors(int, int, int, vtkIdList)
+C++: void GetCellEdgeNeighbors(vtkIdType cellId, vtkIdType p1,
+vtkIdType p2, vtkIdList *cellIds)</p>
+<p>Get the neighbors at an edge. More efficient than the general
+GetCellNeighbors(). Assumes links have been built (with
+BuildLinks()), and looks specifically for edge neighbors.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCellNeighbors"><code class="name flex">
+<span>def <span class="ident">GetCellNeighbors</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCellNeighbors(int, vtkIdList, vtkIdList)
+C++: void GetCellNeighbors(vtkIdType cellId, vtkIdList <em>ptIds,
+vtkIdList </em>cellIds) override;</p>
+<p>Standard vtkDataSet interface.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCellPoints"><code class="name flex">
+<span>def <span class="ident">GetCellPoints</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCellPoints(int, vtkIdList)
+C++: void GetCellPoints(vtkIdType cellId, vtkIdList <em>ptIds)
+override;
+V.GetCellPoints(int, int, [int, &hellip;]) -&gt; int
+C++: unsigned char GetCellPoints(vtkIdType cellId,
+vtkIdType &amp;npts, vtkIdType </em>&amp;pts)</p>
+<p>Copy a cells point ids into list provided. (Less efficient.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetCellType"><code class="name flex">
+<span>def <span class="ident">GetCellType</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetCellType(int) -&gt; int
+C++: int GetCellType(vtkIdType cellId) override;</p>
+<p>Standard vtkDataSet interface.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetData"><code class="name flex">
+<span>def <span class="ident">GetData</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetData(vtkInformation) -&gt; vtkPolyData
+C++: static vtkPolyData <em>GetData(vtkInformation </em>info)
+V.GetData(vtkInformationVector, int) -&gt; vtkPolyData
+C++: static vtkPolyData <em>GetData(vtkInformationVector </em>v, int i=0)</p>
+<p>Retrieve an instance of this class from an information object.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetDataObjectType"><code class="name flex">
+<span>def <span class="ident">GetDataObjectType</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetDataObjectType() -&gt; int
+C++: int GetDataObjectType() override;</p>
+<p>Return what type of dataset this is.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetGhostLevel"><code class="name flex">
+<span>def <span class="ident">GetGhostLevel</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetGhostLevel() -&gt; int
+C++: virtual int GetGhostLevel()</p>
+<p>Get the ghost level.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetLines"><code class="name flex">
+<span>def <span class="ident">GetLines</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetLines() -&gt; vtkCellArray
+C++: vtkCellArray *GetLines()</p>
+<p>Get the cell array defining lines. If there are no lines, an
+empty array will be returned (convenience to simplify traversal).</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetMaxCellSize"><code class="name flex">
+<span>def <span class="ident">GetMaxCellSize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetMaxCellSize() -&gt; int
+C++: int GetMaxCellSize() override;</p>
+<p>Return the maximum cell size in this poly data.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetMeshMTime"><code class="name flex">
+<span>def <span class="ident">GetMeshMTime</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetMeshMTime() -&gt; int
+C++: virtual vtkMTimeType GetMeshMTime()</p>
+<p>Return the mesh (geometry/topology) modification time. This time
+is different from the usual MTime which also takes into account
+the modification of data arrays. This function can be used to
+track the changes on the mesh separately from the data arrays
+(eg. static mesh over time with transient data).</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfCells"><code class="name flex">
+<span>def <span class="ident">GetNumberOfCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfCells() -&gt; int
+C++: vtkIdType GetNumberOfCells() override;</p>
+<p>Standard vtkDataSet interface.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfLines"><code class="name flex">
+<span>def <span class="ident">GetNumberOfLines</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfLines() -&gt; int
+C++: vtkIdType GetNumberOfLines()</p>
+<p>Return the number of primitives of a particular type held.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfPieces"><code class="name flex">
+<span>def <span class="ident">GetNumberOfPieces</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfPieces() -&gt; int
+C++: virtual int GetNumberOfPieces()</p>
+<p>Get the piece and the number of pieces. Similar to extent in 3D.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfPolys"><code class="name flex">
+<span>def <span class="ident">GetNumberOfPolys</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfPolys() -&gt; int
+C++: vtkIdType GetNumberOfPolys()</p>
+<p>Return the number of primitives of a particular type held.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfStrips"><code class="name flex">
+<span>def <span class="ident">GetNumberOfStrips</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfStrips() -&gt; int
+C++: vtkIdType GetNumberOfStrips()</p>
+<p>Return the number of primitives of a particular type held.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetNumberOfVerts"><code class="name flex">
+<span>def <span class="ident">GetNumberOfVerts</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetNumberOfVerts() -&gt; int
+C++: vtkIdType GetNumberOfVerts()</p>
+<p>Return the number of primitives of a particular type held.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetPiece"><code class="name flex">
+<span>def <span class="ident">GetPiece</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetPiece() -&gt; int
+C++: virtual int GetPiece()</p>
+<p>Get the piece and the number of pieces. Similar to extent in 3D.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetPointCells"><code class="name flex">
+<span>def <span class="ident">GetPointCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetPointCells(int, vtkIdList)
+C++: void GetPointCells(vtkIdType ptId, vtkIdList <em>cellIds)
+override;
+V.GetPointCells(int, int, [int, &hellip;])
+C++: void GetPointCells(vtkIdType ptId, unsigned short &amp;ncells,
+vtkIdType </em>&amp;cells)</p>
+<p>Efficient method to obtain cells using a particular point. Make
+sure that routine BuildLinks() has been called.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetPolys"><code class="name flex">
+<span>def <span class="ident">GetPolys</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetPolys() -&gt; vtkCellArray
+C++: vtkCellArray *GetPolys()</p>
+<p>Get the cell array defining polygons. If there are no polygons,
+an empty array will be returned (convenience to simplify
+traversal).</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetScalarFieldCriticalIndex"><code class="name flex">
+<span>def <span class="ident">GetScalarFieldCriticalIndex</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetScalarFieldCriticalIndex(int, vtkDataArray) -&gt; int
+C++: int GetScalarFieldCriticalIndex(vtkIdType pointId,
+vtkDataArray <em>scalarField)
+V.GetScalarFieldCriticalIndex(int, int) -&gt; int
+C++: int GetScalarFieldCriticalIndex(vtkIdType pointId,
+int fieldId)
+V.GetScalarFieldCriticalIndex(int, string) -&gt; int
+C++: int GetScalarFieldCriticalIndex(vtkIdType pointId,
+const char </em>fieldName)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetStrips"><code class="name flex">
+<span>def <span class="ident">GetStrips</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetStrips() -&gt; vtkCellArray
+C++: vtkCellArray *GetStrips()</p>
+<p>Get the cell array defining triangle strips. If there are no
+triangle strips, an empty array will be returned (convenience to
+simplify traversal).</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.GetVerts"><code class="name flex">
+<span>def <span class="ident">GetVerts</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetVerts() -&gt; vtkCellArray
+C++: vtkCellArray *GetVerts()</p>
+<p>Get the cell array defining vertices. If there are no vertices,
+an empty array will be returned (convenience to simplify
+traversal).</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.Initialize"><code class="name flex">
+<span>def <span class="ident">Initialize</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Initialize()
+C++: void Initialize() override;</p>
+<p>Restore object to initial state. Release memory back to system.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.InsertNextCell"><code class="name flex">
+<span>def <span class="ident">InsertNextCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertNextCell(int, int, [int, &hellip;]) -&gt; int
+C++: vtkIdType InsertNextCell(int type, int npts, vtkIdType <em>pts)
+V.InsertNextCell(int, vtkIdList) -&gt; int
+C++: vtkIdType InsertNextCell(int type, vtkIdList </em>pts)</p>
+<p>Insert a cell of type VTK_VERTEX, VTK_POLY_VERTEX, VTK_LINE,
+VTK_POLY_LINE, VTK_TRIANGLE, VTK_QUAD, VTK_POLYGON, or
+VTK_TRIANGLE_STRIP.
+Make sure that the PolyData::Allocate()
+function has been called first or that vertex, line, polygon, and
+triangle strip arrays have been supplied. Note: will also insert
+VTK_PIXEL, but converts it to VTK_QUAD.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.InsertNextLinkedCell"><code class="name flex">
+<span>def <span class="ident">InsertNextLinkedCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertNextLinkedCell(int, int, [int, &hellip;]) -&gt; int
+C++: vtkIdType InsertNextLinkedCell(int type, int npts,
+vtkIdType *pts)</p>
+<p>Add a new cell to the cell data structure (after cell pointers
+have been built). This method adds the cell and then updates the
+links from the points to the cells. (Memory is allocated as
+necessary.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.InsertNextLinkedPoint"><code class="name flex">
+<span>def <span class="ident">InsertNextLinkedPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.InsertNextLinkedPoint(int) -&gt; int
+C++: vtkIdType InsertNextLinkedPoint(int numLinks)
+V.InsertNextLinkedPoint([float, float, float], int) -&gt; int
+C++: vtkIdType InsertNextLinkedPoint(double x[3], int numLinks)</p>
+<p>Add a point to the cell data structure (after cell pointers have
+been built). This method adds the point and then allocates memory
+for the links to the cells.
+(To use this method, make sure
+points are available and BuildLinks() has been invoked.) Of the
+two methods below, one inserts a point coordinate and the other
+just makes room for cell links.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.IsA"><code class="name flex">
+<span>def <span class="ident">IsA</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsA(string) -&gt; int
+C++: vtkTypeBool IsA(const char *type) override;</p>
+<p>Return 1 if this class is the same type of (or a subclass of) the
+named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.IsEdge"><code class="name flex">
+<span>def <span class="ident">IsEdge</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsEdge(int, int) -&gt; int
+C++: int IsEdge(vtkIdType p1, vtkIdType p2)</p>
+<p>Determine whether two points form an edge. If they do, return
+non-zero. By definition PolyVertex and PolyLine have no edges
+since 1-dimensional edges are only found on cells 2D and higher.
+Edges are defined as 1-D boundary entities to cells. Make sure
+BuildLinks() has been called first.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.IsPointUsedByCell"><code class="name flex">
+<span>def <span class="ident">IsPointUsedByCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsPointUsedByCell(int, int) -&gt; int
+C++: int IsPointUsedByCell(vtkIdType ptId, vtkIdType cellId)</p>
+<p>Determine whether a point is used by a particular cell. If it is,
+return non-zero. Make sure BuildCells() has been called first.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.IsTriangle"><code class="name flex">
+<span>def <span class="ident">IsTriangle</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTriangle(int, int, int) -&gt; int
+C++: int IsTriangle(int v1, int v2, int v3)</p>
+<p>Given three vertices, determine whether it's a triangle. Make
+sure BuildLinks() has been called first.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.IsTypeOf"><code class="name flex">
+<span>def <span class="ident">IsTypeOf</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTypeOf(string) -&gt; int
+C++: static vtkTypeBool IsTypeOf(const char *type)</p>
+<p>Return 1 if this class type is the same type of (or a subclass
+of) the named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.NeedToBuildCells"><code class="name flex">
+<span>def <span class="ident">NeedToBuildCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NeedToBuildCells() -&gt; bool
+C++: bool NeedToBuildCells()</p>
+<p>Check if BuildCells is needed.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.NewInstance"><code class="name flex">
+<span>def <span class="ident">NewInstance</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NewInstance() -&gt; vtkPolyData
+C++: vtkPolyData *NewInstance()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.RemoveCellReference"><code class="name flex">
+<span>def <span class="ident">RemoveCellReference</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.RemoveCellReference(int)
+C++: void RemoveCellReference(vtkIdType cellId)</p>
+<p>Remove all references to cell in cell structure. This means the
+links from the cell's points to the cell are deleted. Memory is
+not reclaimed. Use the method ResizeCellList() to resize the link
+list from a point to its using cells. (This operator assumes
+BuildLinks() has been called.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.RemoveDeletedCells"><code class="name flex">
+<span>def <span class="ident">RemoveDeletedCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.RemoveDeletedCells()
+C++: void RemoveDeletedCells()</p>
+<p>The cells marked by calls to DeleteCell are stored in the Cell
+Array VTK_EMPTY_CELL, but they still exist in the cell arrays.
+Calling RemoveDeletedCells will traverse the cell arrays and
+remove/compact the cell arrays as well as any cell data thus
+truly removing the cells from the polydata object.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.RemoveGhostCells"><code class="name flex">
+<span>def <span class="ident">RemoveGhostCells</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.RemoveGhostCells()
+C++: void RemoveGhostCells()</p>
+<p>This method will remove any cell that is marked as ghost (has the
+vtkDataSetAttributes::DUPLICATECELL bit set). It does not remove
+unused points.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.RemoveReferenceToCell"><code class="name flex">
+<span>def <span class="ident">RemoveReferenceToCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.RemoveReferenceToCell(int, int)
+C++: void RemoveReferenceToCell(vtkIdType ptId, vtkIdType cellId)</p>
+<p>Remove a reference to a cell in a particular point's link list.
+You may also consider using RemoveCellReference() to remove the
+references from all the cell's points to the cell. This operator
+does not reallocate memory; use the operator ResizeCellList() to
+do this if necessary.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ReplaceCell"><code class="name flex">
+<span>def <span class="ident">ReplaceCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ReplaceCell(int, int, [int, &hellip;])
+C++: void ReplaceCell(vtkIdType cellId, int npts, vtkIdType *pts)</p>
+<p>Replace the points defining cell "cellId" with a new set of
+points. This operator is (typically) used when links from points
+to cells have not been built (i.e., BuildLinks() has not been
+executed). Use the operator ReplaceLinkedCell() to replace a cell
+when cell structure has been built.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ReplaceCellPoint"><code class="name flex">
+<span>def <span class="ident">ReplaceCellPoint</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ReplaceCellPoint(int, int, int)
+C++: void ReplaceCellPoint(vtkIdType cellId, vtkIdType oldPtId,
+vtkIdType newPtId)</p>
+<p>Replace a point in the cell connectivity list with a different
+point.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ReplaceLinkedCell"><code class="name flex">
+<span>def <span class="ident">ReplaceLinkedCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ReplaceLinkedCell(int, int, [int, &hellip;])
+C++: void ReplaceLinkedCell(vtkIdType cellId, int npts,
+vtkIdType *pts)</p>
+<p>Replace one cell with another in cell structure. This operator
+updates the connectivity list and the point's link list. It does
+not delete references to the old cell in the point's link list.
+Use the operator RemoveCellReference() to delete all references
+from points to (old) cell. You may also want to consider using
+the operator ResizeCellList() if the link list is changing size.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.Reset"><code class="name flex">
+<span>def <span class="ident">Reset</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Reset()
+C++: void Reset()</p>
+<p>Begin inserting data all over again. Memory is not freed but
+otherwise objects are returned to their initial state.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ResizeCellList"><code class="name flex">
+<span>def <span class="ident">ResizeCellList</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ResizeCellList(int, int)
+C++: void ResizeCellList(vtkIdType ptId, int size)</p>
+<p>Resize the list of cells using a particular point. (This operator
+assumes that BuildLinks() has been called.)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ReverseCell"><code class="name flex">
+<span>def <span class="ident">ReverseCell</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ReverseCell(int)
+C++: void ReverseCell(vtkIdType cellId)</p>
+<p>Reverse the order of point ids defining the cell.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SafeDownCast"><code class="name flex">
+<span>def <span class="ident">SafeDownCast</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SafeDownCast(vtkObjectBase) -&gt; vtkPolyData
+C++: static vtkPolyData <em>SafeDownCast(vtkObjectBase </em>o)</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SetLines"><code class="name flex">
+<span>def <span class="ident">SetLines</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetLines(vtkCellArray)
+C++: void SetLines(vtkCellArray *l)</p>
+<p>Set the cell array defining lines.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SetPolys"><code class="name flex">
+<span>def <span class="ident">SetPolys</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetPolys(vtkCellArray)
+C++: void SetPolys(vtkCellArray *p)</p>
+<p>Set the cell array defining polygons.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SetStrips"><code class="name flex">
+<span>def <span class="ident">SetStrips</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetStrips(vtkCellArray)
+C++: void SetStrips(vtkCellArray *s)</p>
+<p>Set the cell array defining triangle strips.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.SetVerts"><code class="name flex">
+<span>def <span class="ident">SetVerts</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SetVerts(vtkCellArray)
+C++: void SetVerts(vtkCellArray *v)</p>
+<p>Set the cell array defining vertices.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.ShallowCopy"><code class="name flex">
+<span>def <span class="ident">ShallowCopy</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.ShallowCopy(vtkDataObject)
+C++: void ShallowCopy(vtkDataObject *src) override;</p>
+<p>Shallow and Deep copy.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkPolyData.Squeeze"><code class="name flex">
+<span>def <span class="ident">Squeeze</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.Squeeze()
+C++: void Squeeze() override;</p>
+<p>Recover extra allocated memory when creating data whose initial
+size is unknown. Examples include using the InsertNextCell()
+method, or when using the CellArray::EstimateSize() method to
+create vertices, lines, polygons, or triangle strips.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.postprocess.vtkStructuredPoints"><code class="flex name class">
+<span>class <span class="ident">vtkStructuredPoints</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>vtkStructuredPoints - A subclass of ImageData.</p>
+<p>Superclass: vtkImageData</p>
+<p>StructuredPoints is a subclass of ImageData that requires the data
+extent to exactly match the update extent. Normall image data allows
+that the data extent may be larger than the update extent.
+StructuredPoints also defines the origin differently that
+vtkImageData. For structured points the origin is the location of
+first point. Whereas images define the origin as the location of
+point 0, 0, 0. Image Origin is stored in ivar, and structured points
+have special methods for setting/getting the origin/extents.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>vtkCommonDataModelPython.vtkImageData</li>
+<li>vtkCommonDataModelPython.vtkDataSet</li>
+<li>vtkCommonDataModelPython.vtkDataObject</li>
+<li>vtkCommonCorePython.vtkObject</li>
+<li>vtkCommonCorePython.vtkObjectBase</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.postprocess.vtkStructuredPoints.GetDataObjectType"><code class="name flex">
+<span>def <span class="ident">GetDataObjectType</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetDataObjectType() -&gt; int
+C++: int GetDataObjectType() override;</p>
+<p>To simplify filter superclasses,</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkStructuredPoints.IsA"><code class="name flex">
+<span>def <span class="ident">IsA</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsA(string) -&gt; int
+C++: vtkTypeBool IsA(const char *type) override;</p>
+<p>Return 1 if this class is the same type of (or a subclass of) the
+named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkStructuredPoints.IsTypeOf"><code class="name flex">
+<span>def <span class="ident">IsTypeOf</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTypeOf(string) -&gt; int
+C++: static vtkTypeBool IsTypeOf(const char *type)</p>
+<p>Return 1 if this class type is the same type of (or a subclass
+of) the named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkStructuredPoints.NewInstance"><code class="name flex">
+<span>def <span class="ident">NewInstance</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NewInstance() -&gt; vtkStructuredPoints
+C++: vtkStructuredPoints *NewInstance()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkStructuredPoints.SafeDownCast"><code class="name flex">
+<span>def <span class="ident">SafeDownCast</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SafeDownCast(vtkObjectBase) -&gt; vtkStructuredPoints
+C++: static vtkStructuredPoints <em>SafeDownCast(vtkObjectBase </em>o)</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter"><code class="flex name class">
+<span>class <span class="ident">vtkXMLImageDataWriter</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>vtkXMLImageDataWriter - Write VTK XML ImageData files.</p>
+<p>Superclass: vtkXMLStructuredDataWriter</p>
+<p>vtkXMLImageDataWriter writes the VTK XML ImageData file format. One
+image data input can be written into one file in any number of
+streamed pieces.
+The standard extension for this writer's file
+format is "vti".
+This writer is also used to write a single piece of
+the parallel file format.</p>
+<p>@sa
+vtkXMLPImageDataWriter</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>vtkIOXMLPython.vtkXMLStructuredDataWriter</li>
+<li>vtkIOXMLPython.vtkXMLWriter</li>
+<li>vtkCommonExecutionModelPython.vtkAlgorithm</li>
+<li>vtkCommonCorePython.vtkObject</li>
+<li>vtkCommonCorePython.vtkObjectBase</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.GetDefaultFileExtension"><code class="name flex">
+<span>def <span class="ident">GetDefaultFileExtension</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetDefaultFileExtension() -&gt; string
+C++: const char *GetDefaultFileExtension() override;</p>
+<p>Get the default file extension for files written by this writer.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.GetInput"><code class="name flex">
+<span>def <span class="ident">GetInput</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetInput() -&gt; vtkImageData
+C++: vtkImageData *GetInput()</p>
+<p>Get/Set the writer's input.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.IsA"><code class="name flex">
+<span>def <span class="ident">IsA</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsA(string) -&gt; int
+C++: vtkTypeBool IsA(const char *type) override;</p>
+<p>Return 1 if this class is the same type of (or a subclass of) the
+named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.IsTypeOf"><code class="name flex">
+<span>def <span class="ident">IsTypeOf</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTypeOf(string) -&gt; int
+C++: static vtkTypeBool IsTypeOf(const char *type)</p>
+<p>Return 1 if this class type is the same type of (or a subclass
+of) the named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.NewInstance"><code class="name flex">
+<span>def <span class="ident">NewInstance</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NewInstance() -&gt; vtkXMLImageDataWriter
+C++: vtkXMLImageDataWriter *NewInstance()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLImageDataWriter.SafeDownCast"><code class="name flex">
+<span>def <span class="ident">SafeDownCast</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SafeDownCast(vtkObjectBase) -&gt; vtkXMLImageDataWriter
+C++: static vtkXMLImageDataWriter <em>SafeDownCast(vtkObjectBase </em>o)</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter"><code class="flex name class">
+<span>class <span class="ident">vtkXMLPolyDataWriter</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>vtkXMLPolyDataWriter - Write VTK XML PolyData files.</p>
+<p>Superclass: vtkXMLUnstructuredDataWriter</p>
+<p>vtkXMLPolyDataWriter writes the VTK XML PolyData file format.
+One
+polygonal data input can be written into one file in any number of
+streamed pieces (if supported by the rest of the pipeline).
+The
+standard extension for this writer's file format is "vtp".
+This
+writer is also used to write a single piece of the parallel file
+format.</p>
+<p>@sa
+vtkXMLPPolyDataWriter</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>vtkIOXMLPython.vtkXMLUnstructuredDataWriter</li>
+<li>vtkIOXMLPython.vtkXMLWriter</li>
+<li>vtkCommonExecutionModelPython.vtkAlgorithm</li>
+<li>vtkCommonCorePython.vtkObject</li>
+<li>vtkCommonCorePython.vtkObjectBase</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.GetDefaultFileExtension"><code class="name flex">
+<span>def <span class="ident">GetDefaultFileExtension</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetDefaultFileExtension() -&gt; string
+C++: const char *GetDefaultFileExtension() override;</p>
+<p>Get the default file extension for files written by this writer.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.GetInput"><code class="name flex">
+<span>def <span class="ident">GetInput</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.GetInput() -&gt; vtkPolyData
+C++: vtkPolyData *GetInput()</p>
+<p>Get/Set the writer's input.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.IsA"><code class="name flex">
+<span>def <span class="ident">IsA</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsA(string) -&gt; int
+C++: vtkTypeBool IsA(const char *type) override;</p>
+<p>Return 1 if this class is the same type of (or a subclass of) the
+named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.IsTypeOf"><code class="name flex">
+<span>def <span class="ident">IsTypeOf</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.IsTypeOf(string) -&gt; int
+C++: static vtkTypeBool IsTypeOf(const char *type)</p>
+<p>Return 1 if this class type is the same type of (or a subclass
+of) the named class. Returns 0 otherwise. This method works in
+combination with vtkTypeMacro found in vtkSetGet.h.</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.NewInstance"><code class="name flex">
+<span>def <span class="ident">NewInstance</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.NewInstance() -&gt; vtkXMLPolyDataWriter
+C++: vtkXMLPolyDataWriter *NewInstance()</p></div>
+</dd>
+<dt id="simulation.postprocess.vtkXMLPolyDataWriter.SafeDownCast"><code class="name flex">
+<span>def <span class="ident">SafeDownCast</span></span>(<span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>V.SafeDownCast(vtkObjectBase) -&gt; vtkXMLPolyDataWriter
+C++: static vtkXMLPolyDataWriter <em>SafeDownCast(vtkObjectBase </em>o)</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="simulation.postprocess.convert_cells" href="#simulation.postprocess.convert_cells">convert_cells</a></code></li>
+<li><code><a title="simulation.postprocess.create_volume" href="#simulation.postprocess.create_volume">create_volume</a></code></li>
+<li><code><a title="simulation.postprocess.generate_vtk_objects" href="#simulation.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>
+<li><code><a title="simulation.postprocess.process_output" href="#simulation.postprocess.process_output">process_output</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="simulation.postprocess.vtkPoints" href="#simulation.postprocess.vtkPoints">vtkPoints</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.postprocess.vtkPoints.Allocate" href="#simulation.postprocess.vtkPoints.Allocate">Allocate</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.ComputeBounds" href="#simulation.postprocess.vtkPoints.ComputeBounds">ComputeBounds</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.DeepCopy" href="#simulation.postprocess.vtkPoints.DeepCopy">DeepCopy</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetActualMemorySize" href="#simulation.postprocess.vtkPoints.GetActualMemorySize">GetActualMemorySize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetBounds" href="#simulation.postprocess.vtkPoints.GetBounds">GetBounds</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetData" href="#simulation.postprocess.vtkPoints.GetData">GetData</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetDataType" href="#simulation.postprocess.vtkPoints.GetDataType">GetDataType</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetMTime" href="#simulation.postprocess.vtkPoints.GetMTime">GetMTime</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetNumberOfPoints" href="#simulation.postprocess.vtkPoints.GetNumberOfPoints">GetNumberOfPoints</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetPoint" href="#simulation.postprocess.vtkPoints.GetPoint">GetPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetPoints" href="#simulation.postprocess.vtkPoints.GetPoints">GetPoints</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.GetVoidPointer" href="#simulation.postprocess.vtkPoints.GetVoidPointer">GetVoidPointer</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.Initialize" href="#simulation.postprocess.vtkPoints.Initialize">Initialize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.InsertNextPoint" href="#simulation.postprocess.vtkPoints.InsertNextPoint">InsertNextPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.InsertPoint" href="#simulation.postprocess.vtkPoints.InsertPoint">InsertPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.InsertPoints" href="#simulation.postprocess.vtkPoints.InsertPoints">InsertPoints</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.IsA" href="#simulation.postprocess.vtkPoints.IsA">IsA</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.IsTypeOf" href="#simulation.postprocess.vtkPoints.IsTypeOf">IsTypeOf</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.Modified" href="#simulation.postprocess.vtkPoints.Modified">Modified</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.NewInstance" href="#simulation.postprocess.vtkPoints.NewInstance">NewInstance</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.Reset" href="#simulation.postprocess.vtkPoints.Reset">Reset</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.Resize" href="#simulation.postprocess.vtkPoints.Resize">Resize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SafeDownCast" href="#simulation.postprocess.vtkPoints.SafeDownCast">SafeDownCast</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetData" href="#simulation.postprocess.vtkPoints.SetData">SetData</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataType" href="#simulation.postprocess.vtkPoints.SetDataType">SetDataType</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToBit" href="#simulation.postprocess.vtkPoints.SetDataTypeToBit">SetDataTypeToBit</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToChar" href="#simulation.postprocess.vtkPoints.SetDataTypeToChar">SetDataTypeToChar</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToDouble" href="#simulation.postprocess.vtkPoints.SetDataTypeToDouble">SetDataTypeToDouble</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToFloat" href="#simulation.postprocess.vtkPoints.SetDataTypeToFloat">SetDataTypeToFloat</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToInt" href="#simulation.postprocess.vtkPoints.SetDataTypeToInt">SetDataTypeToInt</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToLong" href="#simulation.postprocess.vtkPoints.SetDataTypeToLong">SetDataTypeToLong</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToShort" href="#simulation.postprocess.vtkPoints.SetDataTypeToShort">SetDataTypeToShort</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedChar" href="#simulation.postprocess.vtkPoints.SetDataTypeToUnsignedChar">SetDataTypeToUnsignedChar</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedInt" href="#simulation.postprocess.vtkPoints.SetDataTypeToUnsignedInt">SetDataTypeToUnsignedInt</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedLong" href="#simulation.postprocess.vtkPoints.SetDataTypeToUnsignedLong">SetDataTypeToUnsignedLong</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetDataTypeToUnsignedShort" href="#simulation.postprocess.vtkPoints.SetDataTypeToUnsignedShort">SetDataTypeToUnsignedShort</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetNumberOfPoints" href="#simulation.postprocess.vtkPoints.SetNumberOfPoints">SetNumberOfPoints</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.SetPoint" href="#simulation.postprocess.vtkPoints.SetPoint">SetPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.ShallowCopy" href="#simulation.postprocess.vtkPoints.ShallowCopy">ShallowCopy</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPoints.Squeeze" href="#simulation.postprocess.vtkPoints.Squeeze">Squeeze</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.postprocess.vtkPolyData" href="#simulation.postprocess.vtkPolyData">vtkPolyData</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.postprocess.vtkPolyData.AddCellReference" href="#simulation.postprocess.vtkPolyData.AddCellReference">AddCellReference</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.AddReferenceToCell" href="#simulation.postprocess.vtkPolyData.AddReferenceToCell">AddReferenceToCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.Allocate" href="#simulation.postprocess.vtkPolyData.Allocate">Allocate</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.BuildCells" href="#simulation.postprocess.vtkPolyData.BuildCells">BuildCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.BuildLinks" href="#simulation.postprocess.vtkPolyData.BuildLinks">BuildLinks</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ComputeBounds" href="#simulation.postprocess.vtkPolyData.ComputeBounds">ComputeBounds</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.CopyCells" href="#simulation.postprocess.vtkPolyData.CopyCells">CopyCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.CopyStructure" href="#simulation.postprocess.vtkPolyData.CopyStructure">CopyStructure</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.DeepCopy" href="#simulation.postprocess.vtkPolyData.DeepCopy">DeepCopy</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.DeleteCell" href="#simulation.postprocess.vtkPolyData.DeleteCell">DeleteCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.DeleteCells" href="#simulation.postprocess.vtkPolyData.DeleteCells">DeleteCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.DeleteLinks" href="#simulation.postprocess.vtkPolyData.DeleteLinks">DeleteLinks</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.DeletePoint" href="#simulation.postprocess.vtkPolyData.DeletePoint">DeletePoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ERR_INCORRECT_FIELD" href="#simulation.postprocess.vtkPolyData.ERR_INCORRECT_FIELD">ERR_INCORRECT_FIELD</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ERR_NON_MANIFOLD_STAR" href="#simulation.postprocess.vtkPolyData.ERR_NON_MANIFOLD_STAR">ERR_NON_MANIFOLD_STAR</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ERR_NO_SUCH_FIELD" href="#simulation.postprocess.vtkPolyData.ERR_NO_SUCH_FIELD">ERR_NO_SUCH_FIELD</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetActualMemorySize" href="#simulation.postprocess.vtkPolyData.GetActualMemorySize">GetActualMemorySize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCell" href="#simulation.postprocess.vtkPolyData.GetCell">GetCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCellBounds" href="#simulation.postprocess.vtkPolyData.GetCellBounds">GetCellBounds</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCellEdgeNeighbors" href="#simulation.postprocess.vtkPolyData.GetCellEdgeNeighbors">GetCellEdgeNeighbors</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCellNeighbors" href="#simulation.postprocess.vtkPolyData.GetCellNeighbors">GetCellNeighbors</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCellPoints" href="#simulation.postprocess.vtkPolyData.GetCellPoints">GetCellPoints</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetCellType" href="#simulation.postprocess.vtkPolyData.GetCellType">GetCellType</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetData" href="#simulation.postprocess.vtkPolyData.GetData">GetData</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetDataObjectType" href="#simulation.postprocess.vtkPolyData.GetDataObjectType">GetDataObjectType</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetGhostLevel" href="#simulation.postprocess.vtkPolyData.GetGhostLevel">GetGhostLevel</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetLines" href="#simulation.postprocess.vtkPolyData.GetLines">GetLines</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetMaxCellSize" href="#simulation.postprocess.vtkPolyData.GetMaxCellSize">GetMaxCellSize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetMeshMTime" href="#simulation.postprocess.vtkPolyData.GetMeshMTime">GetMeshMTime</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfCells" href="#simulation.postprocess.vtkPolyData.GetNumberOfCells">GetNumberOfCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfLines" href="#simulation.postprocess.vtkPolyData.GetNumberOfLines">GetNumberOfLines</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfPieces" href="#simulation.postprocess.vtkPolyData.GetNumberOfPieces">GetNumberOfPieces</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfPolys" href="#simulation.postprocess.vtkPolyData.GetNumberOfPolys">GetNumberOfPolys</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfStrips" href="#simulation.postprocess.vtkPolyData.GetNumberOfStrips">GetNumberOfStrips</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetNumberOfVerts" href="#simulation.postprocess.vtkPolyData.GetNumberOfVerts">GetNumberOfVerts</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetPiece" href="#simulation.postprocess.vtkPolyData.GetPiece">GetPiece</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetPointCells" href="#simulation.postprocess.vtkPolyData.GetPointCells">GetPointCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetPolys" href="#simulation.postprocess.vtkPolyData.GetPolys">GetPolys</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetScalarFieldCriticalIndex" href="#simulation.postprocess.vtkPolyData.GetScalarFieldCriticalIndex">GetScalarFieldCriticalIndex</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetStrips" href="#simulation.postprocess.vtkPolyData.GetStrips">GetStrips</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.GetVerts" href="#simulation.postprocess.vtkPolyData.GetVerts">GetVerts</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.Initialize" href="#simulation.postprocess.vtkPolyData.Initialize">Initialize</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.InsertNextCell" href="#simulation.postprocess.vtkPolyData.InsertNextCell">InsertNextCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.InsertNextLinkedCell" href="#simulation.postprocess.vtkPolyData.InsertNextLinkedCell">InsertNextLinkedCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.InsertNextLinkedPoint" href="#simulation.postprocess.vtkPolyData.InsertNextLinkedPoint">InsertNextLinkedPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.IsA" href="#simulation.postprocess.vtkPolyData.IsA">IsA</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.IsEdge" href="#simulation.postprocess.vtkPolyData.IsEdge">IsEdge</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.IsPointUsedByCell" href="#simulation.postprocess.vtkPolyData.IsPointUsedByCell">IsPointUsedByCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.IsTriangle" href="#simulation.postprocess.vtkPolyData.IsTriangle">IsTriangle</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.IsTypeOf" href="#simulation.postprocess.vtkPolyData.IsTypeOf">IsTypeOf</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.MAXIMUM" href="#simulation.postprocess.vtkPolyData.MAXIMUM">MAXIMUM</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.MINIMUM" href="#simulation.postprocess.vtkPolyData.MINIMUM">MINIMUM</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.NeedToBuildCells" href="#simulation.postprocess.vtkPolyData.NeedToBuildCells">NeedToBuildCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.NewInstance" href="#simulation.postprocess.vtkPolyData.NewInstance">NewInstance</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.REGULAR_POINT" href="#simulation.postprocess.vtkPolyData.REGULAR_POINT">REGULAR_POINT</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.RemoveCellReference" href="#simulation.postprocess.vtkPolyData.RemoveCellReference">RemoveCellReference</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.RemoveDeletedCells" href="#simulation.postprocess.vtkPolyData.RemoveDeletedCells">RemoveDeletedCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.RemoveGhostCells" href="#simulation.postprocess.vtkPolyData.RemoveGhostCells">RemoveGhostCells</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.RemoveReferenceToCell" href="#simulation.postprocess.vtkPolyData.RemoveReferenceToCell">RemoveReferenceToCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ReplaceCell" href="#simulation.postprocess.vtkPolyData.ReplaceCell">ReplaceCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ReplaceCellPoint" href="#simulation.postprocess.vtkPolyData.ReplaceCellPoint">ReplaceCellPoint</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ReplaceLinkedCell" href="#simulation.postprocess.vtkPolyData.ReplaceLinkedCell">ReplaceLinkedCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.Reset" href="#simulation.postprocess.vtkPolyData.Reset">Reset</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ResizeCellList" href="#simulation.postprocess.vtkPolyData.ResizeCellList">ResizeCellList</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ReverseCell" href="#simulation.postprocess.vtkPolyData.ReverseCell">ReverseCell</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SADDLE" href="#simulation.postprocess.vtkPolyData.SADDLE">SADDLE</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SafeDownCast" href="#simulation.postprocess.vtkPolyData.SafeDownCast">SafeDownCast</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SetLines" href="#simulation.postprocess.vtkPolyData.SetLines">SetLines</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SetPolys" href="#simulation.postprocess.vtkPolyData.SetPolys">SetPolys</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SetStrips" href="#simulation.postprocess.vtkPolyData.SetStrips">SetStrips</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.SetVerts" href="#simulation.postprocess.vtkPolyData.SetVerts">SetVerts</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.ShallowCopy" href="#simulation.postprocess.vtkPolyData.ShallowCopy">ShallowCopy</a></code></li>
+<li><code><a title="simulation.postprocess.vtkPolyData.Squeeze" href="#simulation.postprocess.vtkPolyData.Squeeze">Squeeze</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.postprocess.vtkStructuredPoints" href="#simulation.postprocess.vtkStructuredPoints">vtkStructuredPoints</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.postprocess.vtkStructuredPoints.GetDataObjectType" href="#simulation.postprocess.vtkStructuredPoints.GetDataObjectType">GetDataObjectType</a></code></li>
+<li><code><a title="simulation.postprocess.vtkStructuredPoints.IsA" href="#simulation.postprocess.vtkStructuredPoints.IsA">IsA</a></code></li>
+<li><code><a title="simulation.postprocess.vtkStructuredPoints.IsTypeOf" href="#simulation.postprocess.vtkStructuredPoints.IsTypeOf">IsTypeOf</a></code></li>
+<li><code><a title="simulation.postprocess.vtkStructuredPoints.NewInstance" href="#simulation.postprocess.vtkStructuredPoints.NewInstance">NewInstance</a></code></li>
+<li><code><a title="simulation.postprocess.vtkStructuredPoints.SafeDownCast" href="#simulation.postprocess.vtkStructuredPoints.SafeDownCast">SafeDownCast</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.postprocess.vtkXMLImageDataWriter" href="#simulation.postprocess.vtkXMLImageDataWriter">vtkXMLImageDataWriter</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.GetDefaultFileExtension" href="#simulation.postprocess.vtkXMLImageDataWriter.GetDefaultFileExtension">GetDefaultFileExtension</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.GetInput" href="#simulation.postprocess.vtkXMLImageDataWriter.GetInput">GetInput</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.IsA" href="#simulation.postprocess.vtkXMLImageDataWriter.IsA">IsA</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.IsTypeOf" href="#simulation.postprocess.vtkXMLImageDataWriter.IsTypeOf">IsTypeOf</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.NewInstance" href="#simulation.postprocess.vtkXMLImageDataWriter.NewInstance">NewInstance</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLImageDataWriter.SafeDownCast" href="#simulation.postprocess.vtkXMLImageDataWriter.SafeDownCast">SafeDownCast</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="simulation.postprocess.vtkXMLPolyDataWriter" href="#simulation.postprocess.vtkXMLPolyDataWriter">vtkXMLPolyDataWriter</a></code></h4>
+<ul class="">
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.GetDefaultFileExtension" href="#simulation.postprocess.vtkXMLPolyDataWriter.GetDefaultFileExtension">GetDefaultFileExtension</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.GetInput" href="#simulation.postprocess.vtkXMLPolyDataWriter.GetInput">GetInput</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.IsA" href="#simulation.postprocess.vtkXMLPolyDataWriter.IsA">IsA</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.IsTypeOf" href="#simulation.postprocess.vtkXMLPolyDataWriter.IsTypeOf">IsTypeOf</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.NewInstance" href="#simulation.postprocess.vtkXMLPolyDataWriter.NewInstance">NewInstance</a></code></li>
+<li><code><a title="simulation.postprocess.vtkXMLPolyDataWriter.SafeDownCast" href="#simulation.postprocess.vtkXMLPolyDataWriter.SafeDownCast">SafeDownCast</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

@@ -26,12 +26,14 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from math import ceil
+from pathlib import Path
 
 import attr
 import click
 import click_pathlib
 
 from simulation.config import SimulationConfig
+from simulation.postprocess import process_output
 from simulation.solver import advance, finalize, initialize
 from simulation.state import State
 
@@ -40,12 +42,6 @@ FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, reada
 
 
 @click.group()
-def main():
-    pass
-
-
-@main.command()
-@click.argument(&#39;target_time&#39;, type=click.FLOAT, default=20)
 @click.option(
     &#39;--config&#39;,
     &#39;config_files&#39;,
@@ -55,9 +51,17 @@ def main():
     help=&#39;Path to a simulation config. May be specificed multiple times to cascade configurations.&#39;,
     show_default=True,
 )
-def run(target_time, config_files):
+@click.pass_context
+def main(ctx, config_files):
+    ctx.obj = {&#39;config&#39;: SimulationConfig(*config_files)}
+
+
+@main.command()
+@click.argument(&#39;target_time&#39;, type=click.FLOAT, default=20)
+@click.pass_obj
+def run(obj, target_time):
     &#34;&#34;&#34;Run a simulation.&#34;&#34;&#34;
-    config = SimulationConfig(*config_files)
+    config = obj[&#39;config&#39;]
     total = ceil(target_time / config.getfloat(&#39;simulation&#39;, &#39;time_step&#39;))
 
     attr.set_run_validators(config.getboolean(&#39;simulation&#39;, &#39;validate&#39;))
@@ -80,6 +84,24 @@ def run(target_time, config_files):
     state = finalize(state)
 
     state.save(&#39;simulation-final.pkl&#39;)
+
+
+@main.command(&#39;postprocess&#39;, help=&#39;Postprocess simulation output files&#39;)
+@click.option(
+    &#39;--output&#39;,
+    type=click_pathlib.Path(file_okay=False, dir_okay=True, writable=True),
+    default=&#39;postprocessed&#39;,
+    help=&#39;Path to dump postprocessed data files&#39;,
+    show_default=True,
+)
+@click.pass_obj
+def postprocess(obj, output):
+    files = Path(&#39;.&#39;).glob(
+        obj[&#39;config&#39;][&#39;file_output&#39;].get(&#39;save_file_name&#39;).replace(&#39;&lt;time&gt;&#39;, &#39;*&#39;)
+    )
+    for index, file in enumerate(sorted(files)):
+        output_dir = Path(output) / (&#39;%03i&#39; % (index + 1))
+        process_output(file, output_dir)
 
 
 if __name__ == &#39;__main__&#39;:
