@@ -159,7 +159,7 @@ class FungusCellList(CellList):
         # grow hyphae
         if len(hyphae_indices) != 0:
             cells['status'][hyphae_indices] = FungusCellData.Status.GROWN
-            branch_mask = np.random.rand(len(hyphae_indices)) < p_branch
+            branch_mask = rg.random(len(hyphae_indices)) < p_branch
             not_branch_indices = (np.invert(branch_mask)).nonzero()[0]
             branch_indices = branch_mask.nonzero()[0]
 
@@ -218,7 +218,7 @@ class FungusCellList(CellList):
         ).nonzero()[0]
 
         # internal fungus with REST status
-        swall_mask = np.random.rand(len(internalized_rest_indices)) < p_internal_swell
+        swall_mask = rg.random(len(internalized_rest_indices)) < p_internal_swell
         internalized_rest_indices = swall_mask.nonzero()[0]
 
         cells['status'][internalized_rest_indices] = FungusCellData.Status.SWOLLEN

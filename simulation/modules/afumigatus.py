@@ -12,6 +12,7 @@ from simulation.cell import CellData, CellList, CellType
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.random import rg
 from simulation.state import get_class_path, State
 
 
@@ -61,7 +62,7 @@ class AfumigatusCellData(CellData):
         **kwargs,
     ) -> np.record:
 
-        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
         switched = False
