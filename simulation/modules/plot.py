@@ -59,25 +59,34 @@ class Plot(Module):
         plt.figure()
 
         fungal_burdens = plot.fungal_burdens[:num_steps]
-        plt.plot(time_steps, fungal_burdens)
+        plt.plot(time_steps, fungal_burdens, 'b.-')
         self.setup_plot(
             'Fungal Burden', 'Fungal Burden vs Time', plot_output_folder + 'fungal_burden_vs_time'
         )
 
         macrophage_counts = plot.macrophage_counts[:num_steps]
-        plt.plot(time_steps, macrophage_counts)
+        plt.plot(time_steps, macrophage_counts, 'b.-')
         self.setup_plot(
             'Macrophage Count',
             'Macrophage Count vs Time',
-            plot_output_folder + 'vmacrophage_count_vs_time',
+            plot_output_folder + 'macrophage_count_vs_time',
         )
 
         neutrophil_counts = plot.neutrophil_counts[:num_steps]
-        plt.plot(time_steps, neutrophil_counts)
+        plt.plot(time_steps, neutrophil_counts, 'b.-')
         self.setup_plot(
             'Neutrophil Count',
             'Neutrophil Count vs Time',
             plot_output_folder + 'neutrophil_count_vs_time',
         )
+
+        ax = plt.subplot(111)
+        plt.plot(time_steps, fungal_burdens, 'b.-', label='Fungal Burden')
+        plt.plot(time_steps, macrophage_counts, 'g*-', label='Macrophage Count')
+        plt.plot(time_steps, neutrophil_counts, 'r+-', label='Neutrophil Count')
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.0, fontsize='small')
+        self.setup_plot('Count', 'Counts vs Time', plot_output_folder + '/all_vs_time')
 
         return state
