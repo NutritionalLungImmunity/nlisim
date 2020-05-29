@@ -1,5 +1,4 @@
 from enum import IntEnum
-import random
 
 import attr
 import numpy as np
@@ -8,6 +7,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 from simulation.state import State
 
 
@@ -119,9 +119,9 @@ class FungusCellList(CellList):
             if len(indices) > 0:
                 np.random.shuffle(indices)
                 for i in range(init_num):
-                    x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                    y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                    z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+                    x = rg.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                    y = rg.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                    z = rg.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                     point = Point(x=x, y=y, z=z)
                     points[i] = point
