@@ -152,7 +152,7 @@ class FungusCellList(CellList):
             cells['form'][conidia_indices] = FungusCellData.Form.HYPHAE
             children = FungusCellData(len(conidia_indices), initialize=True)
             children['iron'] = cells['iron'][conidia_indices]
-            growth = spacing * (np.random.rand(len(conidia_indices), 3) * 2 - 1)
+            growth = spacing * (rg.random((len(conidia_indices), 3)) * 2 - 1)
             children['point'] = cells['point'][conidia_indices] + growth
             self.spawn_hypahael_cell(children)
 
@@ -167,7 +167,7 @@ class FungusCellList(CellList):
             branch_children = FungusCellData(len(branch_indices), initialize=True)
 
             elongate_children['iron'] = cells['iron'][hyphae_indices] / 2
-            growth = spacing * (np.random.rand(len(hyphae_indices), 3) * 2 - 1)
+            growth = spacing * (rg.random((len(hyphae_indices), 3)) * 2 - 1)
             elongate_children['point'] = cells['point'][hyphae_indices] + growth
 
             if len(branch_indices) != 0:
@@ -176,7 +176,7 @@ class FungusCellList(CellList):
                 )
 
                 branch_children['iron'] = cells['iron'][hyphae_indices[branch_indices]] / 3
-                growth = spacing * (np.random.rand(len(hyphae_indices[branch_indices]), 3) * 2 - 1)
+                growth = spacing * (rg.random((len(hyphae_indices[branch_indices]), 3)) * 2 - 1)
                 branch_children['point'] = cells['point'][hyphae_indices[branch_indices]] + growth
 
             # update iron in orignal cells
