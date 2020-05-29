@@ -1,5 +1,3 @@
-import random
-
 import attr
 import numpy as np
 
@@ -88,7 +86,7 @@ class MacrophageCellList(CellList):
 
         for _ in range(0, num_reps):
             if len(cyto_index) > 0:
-                ii = random.randint(0, len(cyto_index) - 1)
+                ii = rg.integers(len(cyto_index))
                 point = Point(
                     x=grid.x[cyto_index[ii][2]],
                     y=grid.y[cyto_index[ii][1]],
@@ -180,7 +178,7 @@ class MacrophageCellList(CellList):
                 np.random.shuffle(inds)
                 i = inds[0][0]
             else:
-                i = random.randint(0, len(vox_list) - 1)
+                i = rg.integers(len(vox_list))
 
             point = Point(
                 x=grid.x[vox.x + vox_list[i][0]],
@@ -259,7 +257,7 @@ class MacrophageCellList(CellList):
         if num == 0 and living_len > 0:
             num = 1
         for _ in range(num):
-            r = random.randint(0, living_len - 1)
+            r = rg.integers(living_len)
             self.cell_data[living[r]]['dead'] = True
 
 
