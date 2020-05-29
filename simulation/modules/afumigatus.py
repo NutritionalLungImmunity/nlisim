@@ -241,7 +241,7 @@ class AfumigatusCellTreeList(object):
         growth = Point.from_array(growth)
 
         # get a random vector orthogonal to the growth vector
-        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
         axis = (np.pi / 4) * axis / axis.norm()
 
         # rotate the growth vector 45 degrees along the random axis
