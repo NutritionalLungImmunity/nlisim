@@ -310,7 +310,7 @@ class AfumigatusCellTreeList(object):
         cells = self.cells.cell_data
         return self.cells.alive(
             cells['branchable']
-            & (np.random.rand(*cells.shape) < branch_probability)
+            & (rg.random(cells.shape) < branch_probability)
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
         )
 
