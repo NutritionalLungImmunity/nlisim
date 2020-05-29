@@ -3,6 +3,7 @@ from typing import Iterator
 
 import attr
 
+from simulation.config import SimulationConfig
 from simulation.state import State
 from simulation.validation import context as validation_context
 
@@ -43,4 +44,32 @@ def finalize(state: State) -> State:
         with validation_context(m.name):
             state = m.finalize(state)
 
+    return state
+
+
+def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[State]:
+    """Initialize and advance a simulation to the target time.
+
+    This method is a convenience method to automate running the
+    methods above that will be sufficient for most use cases.  It
+    will:
+    1. Construct a new state object
+    2. Initialize the state object (yielding the result)
+    3. Advance the simulation by single time steps (yielding the result)
+    4. Finalize the simulation (yielding the result)
+    """
+    attr.set_run_validators(config.getboolean('simulation', 'validate'))
+    state = initialize(State.create(config))
+    yield state
+
+    for state in advance(state, target_time):
+        yield state
+
+    yield finalize(state)
+
+
+def run(config: SimulationConfig, target_time: float) -> State:
+    """Run a simulation to the target time and return the result."""
+    for state_iteration in run_iterator(config, target_time):
+        state = state_iteration
     return state
