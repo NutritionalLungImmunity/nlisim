@@ -117,7 +117,7 @@ class FungusCellList(CellList):
             points = np.zeros((init_num, 3))
             indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
             if len(indices) > 0:
-                np.random.shuffle(indices)
+                rg.shuffle(indices)
                 for i in range(init_num):
                     x = rg.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
                     y = rg.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])

@@ -82,7 +82,7 @@ class MacrophageCellList(CellList):
         mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
-        np.random.shuffle(cyto_index)
+        rg.shuffle(cyto_index)
 
         for _ in range(0, num_reps):
             if len(cyto_index) > 0:
@@ -175,7 +175,7 @@ class MacrophageCellList(CellList):
                 i = indices[0][0]
             elif num_vox_possible > 1:
                 inds = np.argwhere(p == p[np.argmax(p)])
-                np.random.shuffle(inds)
+                rg.shuffle(inds)
                 i = inds[0][0]
             else:
                 i = rg.integers(len(vox_list))
