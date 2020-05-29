@@ -9,6 +9,7 @@ from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 from simulation.state import State
 
 MAX_CONIDIA = 100
@@ -94,7 +95,7 @@ class MacrophageCellList(CellList):
                     z=grid.z[cyto_index[ii][0]],
                 )
 
-                if p_rec_r > random.random():
+                if p_rec_r > rg.random():
                     self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
@@ -210,7 +211,7 @@ class MacrophageCellList(CellList):
                     if (
                         fungus[index]['form'] == FungusCellData.Form.CONIDIA
                         and not fungus[index]['internalized']
-                        and p_in > random.random()
+                        and p_in > rg.random()
                     ):
                         fungus[index]['internalized'] = True
                         self.append_to_phagosome(i, index, max_spores)
@@ -237,7 +238,7 @@ class MacrophageCellList(CellList):
                                     if (
                                         fungus[index]['form'] == FungusCellData.Form.CONIDIA
                                         and not fungus[index]['internalized']
-                                        and p_in > random.random()
+                                        and p_in > rg.random()
                                     ):
                                         fungus[index]['internalized'] = True
                                         self.append_to_phagosome(i, index, max_spores)

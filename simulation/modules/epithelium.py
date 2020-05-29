@@ -1,5 +1,4 @@
 from enum import IntEnum
-import random
 
 import attr
 import numpy as np
@@ -10,6 +9,7 @@ from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 from simulation.state import State
 
 
@@ -107,7 +107,7 @@ class EpitheliumCellList(CellList):
                     if (
                         spores[index]['form'] == FungusCellData.Form.CONIDIA
                         and not spores[index]['internalized']
-                        and p_in > random.random()
+                        and p_in > rg.random()
                     ):
                         spores[index]['internalized'] = True
                         val = self.append_to_phagosome(i, index, max_spores)
@@ -138,7 +138,7 @@ class EpitheliumCellList(CellList):
                                     if (
                                         spores[index]['form'] == FungusCellData.Form.CONIDIA
                                         and not spores[index]['internalized']
-                                        and p_in > random.random()
+                                        and p_in > rg.random()
                                     ):
                                         spores[index]['internalized'] = True
                                         val = self.append_to_phagosome(i, index, max_spores)

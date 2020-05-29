@@ -442,7 +442,7 @@ class Afumigatus(Module):
         #            cell['status'] = AfumigatusCellData.Status.DEAD
         #            cell['dead'] = True
         #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
-        #            if afumigatus.p_lodge > random.random:
+        #            if afumigatus.p_lodge > rg.random():
         #                cell['mobile'] = False
         #    if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
         #        if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
@@ -450,7 +450,7 @@ class Afumigatus(Module):
         #        elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
         #            cell['status'] = AfumigatusCellData.Status.GERMTUBE
         #        elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
-        #            if afumigatus.p_internal_swell > random.random():
+        #            if afumigatus.p_internal_swell > rg.random():
         #                cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
         #
         #        if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
