@@ -26,6 +26,11 @@ class Plot(Module):
     defaults = {'plot_output_folder': 'output/plots/'}
     StateClass = PlotState
 
+    def initialize(self, state: State):
+        self.advance(state, state.time)
+
+        return state
+
     def advance(self, state: State, previous_time: float):
         plot: PlotState = state.plot
         step_num = plot.step_num
