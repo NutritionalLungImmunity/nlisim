@@ -321,7 +321,7 @@ class AfumigatusCellTreeList(object):
         """
         #  TODO: implement a real iron uptake model
         cells = self.cells.cell_data
-        iron = np.random.uniform(size=len(self.cells))
+        iron = rg.random(len(self.cells))
         cells['iron_pool'] = np.add(cells['iron_pool'], iron)
 
     def age(self):
