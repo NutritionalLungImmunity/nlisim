@@ -24,6 +24,7 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.save.FileOutput
           simulation.modules.macrophage.Macrophage
           simulation.modules.neutrophil.Neutrophil
+          simulation.modules.plot.Plot
 
 
 
@@ -144,3 +145,6 @@ visual_variables =  [
                     ]
 visualize_interval = 1
 visualization_file_name = output/<variable>-<time>.vtk
+
+[plot]
+plot_output_folder = output/plots/
