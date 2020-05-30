@@ -30,6 +30,7 @@ from typing import Iterator
 
 import attr
 
+from simulation.config import SimulationConfig
 from simulation.state import State
 from simulation.validation import context as validation_context
 
@@ -70,6 +71,34 @@ def finalize(state: State) -&gt; State:
         with validation_context(m.name):
             state = m.finalize(state)
 
+    return state
+
+
+def run_iterator(config: SimulationConfig, target_time: float) -&gt; Iterator[State]:
+    &#34;&#34;&#34;Initialize and advance a simulation to the target time.
+
+    This method is a convenience method to automate running the
+    methods above that will be sufficient for most use cases.  It
+    will:
+    1. Construct a new state object
+    2. Initialize the state object (yielding the result)
+    3. Advance the simulation by single time steps (yielding the result)
+    4. Finalize the simulation (yielding the result)
+    &#34;&#34;&#34;
+    attr.set_run_validators(config.getboolean(&#39;simulation&#39;, &#39;validate&#39;))
+    state = initialize(State.create(config))
+    yield state
+
+    for state in advance(state, target_time):
+        yield state
+
+    yield finalize(state)
+
+
+def run(config: SimulationConfig, target_time: float) -&gt; State:
+    &#34;&#34;&#34;Run a simulation to the target time and return the result.&#34;&#34;&#34;
+    for state_iteration in run_iterator(config, target_time):
+        state = state_iteration
     return state</code></pre>
 </details>
 </section>
@@ -146,6 +175,60 @@ def finalize(state: State) -&gt; State:
     return state</code></pre>
 </details>
 </dd>
+<dt id="simulation.solver.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>config: <a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a>, target_time: float) -> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run a simulation to the target time and return the result.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(config: SimulationConfig, target_time: float) -&gt; State:
+    &#34;&#34;&#34;Run a simulation to the target time and return the result.&#34;&#34;&#34;
+    for state_iteration in run_iterator(config, target_time):
+        state = state_iteration
+    return state</code></pre>
+</details>
+</dd>
+<dt id="simulation.solver.run_iterator"><code class="name flex">
+<span>def <span class="ident">run_iterator</span></span>(<span>config: <a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a>, target_time: float) -> Iterator[<a title="simulation.state.State" href="state.html#simulation.state.State">State</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize and advance a simulation to the target time.</p>
+<p>This method is a convenience method to automate running the
+methods above that will be sufficient for most use cases.
+It
+will:
+1. Construct a new state object
+2. Initialize the state object (yielding the result)
+3. Advance the simulation by single time steps (yielding the result)
+4. Finalize the simulation (yielding the result)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_iterator(config: SimulationConfig, target_time: float) -&gt; Iterator[State]:
+    &#34;&#34;&#34;Initialize and advance a simulation to the target time.
+
+    This method is a convenience method to automate running the
+    methods above that will be sufficient for most use cases.  It
+    will:
+    1. Construct a new state object
+    2. Initialize the state object (yielding the result)
+    3. Advance the simulation by single time steps (yielding the result)
+    4. Finalize the simulation (yielding the result)
+    &#34;&#34;&#34;
+    attr.set_run_validators(config.getboolean(&#39;simulation&#39;, &#39;validate&#39;))
+    state = initialize(State.create(config))
+    yield state
+
+    for state in advance(state, target_time):
+        yield state
+
+    yield finalize(state)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -167,6 +250,8 @@ def finalize(state: State) -&gt; State:
 <li><code><a title="simulation.solver.advance" href="#simulation.solver.advance">advance</a></code></li>
 <li><code><a title="simulation.solver.finalize" href="#simulation.solver.finalize">finalize</a></code></li>
 <li><code><a title="simulation.solver.initialize" href="#simulation.solver.initialize">initialize</a></code></li>
+<li><code><a title="simulation.solver.run" href="#simulation.solver.run">run</a></code></li>
+<li><code><a title="simulation.solver.run_iterator" href="#simulation.solver.run_iterator">run_iterator</a></code></li>
 </ul>
 </li>
 </ul>

@@ -25,17 +25,15 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from math import ceil
-from pathlib import Path
+<pre><code class="python">from pathlib import Path
 
-import attr
 import click
 import click_pathlib
+from tqdm import tqdm
 
 from simulation.config import SimulationConfig
 from simulation.postprocess import process_output
-from simulation.solver import advance, finalize, initialize
-from simulation.state import State
+from simulation.solver import run_iterator
 
 
 FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
@@ -62,26 +60,10 @@ def main(ctx, config_files):
 def run(obj, target_time):
     &#34;&#34;&#34;Run a simulation.&#34;&#34;&#34;
     config = obj[&#39;config&#39;]
-    total = ceil(target_time / config.getfloat(&#39;simulation&#39;, &#39;time_step&#39;))
 
-    attr.set_run_validators(config.getboolean(&#39;simulation&#39;, &#39;validate&#39;))
-
-    def get_time(x):
-        if x is None:
-            return &#39;0&#39;
-        return &#39;%.2f&#39; % x.time
-
-    state = initialize(State.create(config))
-    with click.progressbar(
-        advance(state, target_time),
-        label=&#39;Running simulation&#39;,
-        length=total,
-        item_show_func=get_time,
-    ) as bar:
-        for _state in bar:
-            pass
-
-    state = finalize(state)
+    with tqdm(desc=&#39;Running simulation&#39;, total=target_time,) as pbar:
+        for state in run_iterator(config, target_time):
+            pbar.update(state.time - pbar.n)
 
 
 @main.command(&#39;postprocess&#39;, help=&#39;Postprocess simulation output files&#39;)
