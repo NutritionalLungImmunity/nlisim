@@ -1,4 +1,6 @@
 from pathlib import Path
+import shutil
+from typing import Tuple
 
 import click
 import click_pathlib
@@ -43,17 +45,22 @@ def run(obj, target_time: float) -> None:
 @main.command('postprocess', help='Postprocess simulation output files')
 @click.option(
     '--output',
+    'postprocess_dir',
     type=OutputDirPath,
     default='postprocessed',
     help='Path to dump postprocessed data files',
     show_default=True,
 )
 @click.pass_obj
-def postprocess(obj, output: Path) -> None:
-    files = Path(obj['config']['state_output'].get('output_dir')).glob('simulation-*.hdf5')
-    for index, file in enumerate(sorted(files)):
-        output_dir = Path(output) / ('%03i' % (index + 1))
-        process_output(file, output_dir)
+def postprocess(obj, postprocess_dir: Path) -> None:
+    if postprocess_dir.exists():
+        click.echo(f'Postprocess output directory {postprocess_dir.resolve()} exists. Clearing it.')
+        shutil.rmtree(postprocess_dir)
+    postprocess_dir.mkdir(parents=True)
+
+    state_files = Path(obj['config']['state_output'].get('output_dir')).glob('simulation-*.hdf5')
+
+    process_output(state_files, postprocess_dir)
 
 
 if __name__ == '__main__':
