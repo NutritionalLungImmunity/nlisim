@@ -9,6 +9,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.grid import RectangularGrid
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -130,7 +131,7 @@ class PhagocyteCellList(CellList):
 
         # 1. Get cells that are alive
         for index in self.alive():
-            prob = random.random()
+            prob = rg.random()
 
             # 2. Get voxel for each cell to get molecule in that voxel
             cell = self[index]

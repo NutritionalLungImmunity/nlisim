@@ -21,16 +21,14 @@ modules = simulation.modules.geometry.Geometry
           simulation.modules.molecules.Molecules
           simulation.modules.fungus.Fungus
           simulation.modules.epithelium.Epithelium
-          simulation.modules.save.FileOutput
           simulation.modules.macrophage.Macrophage
           simulation.modules.neutrophil.Neutrophil
+          simulation.modules.state_output.StateOutput
 
-
-
-[file_output]
+[state_output]
 # save the simulation state every 1 simulation second
 save_interval = 1.0
-save_file_name = output/simulation-<time>.hdf5
+output_dir = output
 
 [geometry]
 # path of the imported geoemtry file
