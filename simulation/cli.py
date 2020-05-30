@@ -18,7 +18,7 @@ FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, reada
     'config_files',
     type=FilePath,
     multiple=True,
-    default=['config.ini'],
+    default=['config.ini.example'],
     help='Path to a simulation config. May be specificed multiple times to cascade configurations.',
     show_default=True,
 )
