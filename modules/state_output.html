@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>simulation.modules.save API documentation</title>
+<title>simulation.modules.state_output API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -18,7 +18,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.save</code></h1>
+<h1 class="title">Module <code>simulation.modules.state_output</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -26,6 +26,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from pathlib import Path
+import shutil
 
 import attr
 
@@ -33,25 +34,51 @@ from simulation.module import Module, ModuleState
 from simulation.state import State
 
 
-class FileOutput(Module):
-    name = &#39;file_output&#39;
-    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;save_file_name&#39;: &#39;output/simulation-&lt;time&gt;.hdf5&#39;}
+@attr.s(kw_only=True)
+class StateOutputState(ModuleState):
+    last_save: float = attr.ib(default=0)
 
-    @attr.s(kw_only=True)
-    class StateClass(ModuleState):
-        last_save: float = attr.ib(default=0)
+
+class StateOutput(Module):
+    &#34;&#34;&#34;
+    After time steps, serialize the simulation state to an HDF5 file.
+
+    When registered for execution, this module should always be placed last in the ordering.
+    &#34;&#34;&#34;
+
+    name = &#39;state_output&#39;
+    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;output_dir&#39;: &#39;output&#39;}
+    StateClass = StateOutputState
+
+    @property
+    def _output_dir(self) -&gt; Path:
+        return Path(self.config.get(&#39;output_dir&#39;))
+
+    def _write_output(self, state: State) -&gt; None:
+        now = state.time
+        output_file_name = f&#39;simulation-{now:010.3f}.hdf5&#39;
+        output_file_path = self._output_dir / output_file_name
+
+        state.save(output_file_path)
+
+        state.state_output.last_save = now
+
+    def initialize(self, state: State) -&gt; State:
+        output_dir = self._output_dir
+        if output_dir.exists():
+            print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
+
+        # Initial time is typically 0, but it can be read from state
+        self._write_output(state)
+        return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         save_interval = self.config.getfloat(&#39;save_interval&#39;)
-        save_file_name = self.config.get(&#39;save_file_name&#39;)
         now = state.time
-
-        if now - state.file_output.last_save &gt; save_interval - 1e-8:
-            path = Path(save_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%010.3f&#39; % now).strip()))
-            path.parent.mkdir(parents=True, exist_ok=True)
-            state.save(path)
-            state.file_output.last_save = now
-
+        if now - state.state_output.last_save &gt; save_interval - 1e-8:
+            self._write_output(state)
         return state</code></pre>
 </details>
 </section>
@@ -64,35 +91,57 @@ class FileOutput(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.save.FileOutput"><code class="flex name class">
-<span>class <span class="ident">FileOutput</span></span>
+<dt id="simulation.modules.state_output.StateOutput"><code class="flex name class">
+<span>class <span class="ident">StateOutput</span></span>
 <span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>After time steps, serialize the simulation state to an HDF5 file.</p>
+<p>When registered for execution, this module should always be placed last in the ordering.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class FileOutput(Module):
-    name = &#39;file_output&#39;
-    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;save_file_name&#39;: &#39;output/simulation-&lt;time&gt;.hdf5&#39;}
+<pre><code class="python">class StateOutput(Module):
+    &#34;&#34;&#34;
+    After time steps, serialize the simulation state to an HDF5 file.
 
-    @attr.s(kw_only=True)
-    class StateClass(ModuleState):
-        last_save: float = attr.ib(default=0)
+    When registered for execution, this module should always be placed last in the ordering.
+    &#34;&#34;&#34;
+
+    name = &#39;state_output&#39;
+    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;output_dir&#39;: &#39;output&#39;}
+    StateClass = StateOutputState
+
+    @property
+    def _output_dir(self) -&gt; Path:
+        return Path(self.config.get(&#39;output_dir&#39;))
+
+    def _write_output(self, state: State) -&gt; None:
+        now = state.time
+        output_file_name = f&#39;simulation-{now:010.3f}.hdf5&#39;
+        output_file_path = self._output_dir / output_file_name
+
+        state.save(output_file_path)
+
+        state.state_output.last_save = now
+
+    def initialize(self, state: State) -&gt; State:
+        output_dir = self._output_dir
+        if output_dir.exists():
+            print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
+
+        # Initial time is typically 0, but it can be read from state
+        self._write_output(state)
+        return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         save_interval = self.config.getfloat(&#39;save_interval&#39;)
-        save_file_name = self.config.get(&#39;save_file_name&#39;)
         now = state.time
-
-        if now - state.file_output.last_save &gt; save_interval - 1e-8:
-            path = Path(save_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%010.3f&#39; % now).strip()))
-            path.parent.mkdir(parents=True, exist_ok=True)
-            state.save(path)
-            state.file_output.last_save = now
-
+        if now - state.state_output.last_save &gt; save_interval - 1e-8:
+            self._write_output(state)
         return state</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -115,6 +164,39 @@ class FileOutput(Module):
 </li>
 </ul>
 </dd>
+<dt id="simulation.modules.state_output.StateOutputState"><code class="flex name class">
+<span>class <span class="ident">StateOutputState</span></span>
+<span>(</span><span>*, global_state: State, last_save: float = 0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class StateOutputState(ModuleState):
+    last_save: float = attr.ib(default=0)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 </dl>
 </section>
 </article>
@@ -132,7 +214,10 @@ class FileOutput(Module):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.save.FileOutput" href="#simulation.modules.save.FileOutput">FileOutput</a></code></h4>
+<h4><code><a title="simulation.modules.state_output.StateOutput" href="#simulation.modules.state_output.StateOutput">StateOutput</a></code></h4>
+</li>
+<li>
+<h4><code><a title="simulation.modules.state_output.StateOutputState" href="#simulation.modules.state_output.StateOutputState">StateOutputState</a></code></h4>
 </li>
 </ul>
 </li>

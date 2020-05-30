@@ -83,8 +83,6 @@ def run(obj, target_time):
 
     state = finalize(state)
 
-    state.save(&#39;simulation-final.pkl&#39;)
-
 
 @main.command(&#39;postprocess&#39;, help=&#39;Postprocess simulation output files&#39;)
 @click.option(
@@ -96,9 +94,7 @@ def run(obj, target_time):
 )
 @click.pass_obj
 def postprocess(obj, output):
-    files = Path(&#39;.&#39;).glob(
-        obj[&#39;config&#39;][&#39;file_output&#39;].get(&#39;save_file_name&#39;).replace(&#39;&lt;time&gt;&#39;, &#39;*&#39;)
-    )
+    files = Path(obj[&#39;config&#39;][&#39;state_output&#39;].get(&#39;output_dir&#39;)).glob(&#39;simulation-*.hdf5&#39;)
     for index, file in enumerate(sorted(files)):
         output_dir = Path(output) / (&#39;%03i&#39; % (index + 1))
         process_output(file, output_dir)
