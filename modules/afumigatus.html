@@ -39,6 +39,7 @@ from simulation.cell import CellData, CellList, CellType
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.random import rg
 from simulation.state import get_class_path, State
 
 
@@ -88,7 +89,7 @@ class AfumigatusCellData(CellData):
         **kwargs,
     ) -&gt; np.record:
 
-        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
         switched = False
@@ -267,7 +268,7 @@ class AfumigatusCellTreeList(object):
         growth = Point.from_array(growth)
 
         # get a random vector orthogonal to the growth vector
-        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
         axis = (np.pi / 4) * axis / axis.norm()
 
         # rotate the growth vector 45 degrees along the random axis
@@ -336,7 +337,7 @@ class AfumigatusCellTreeList(object):
         cells = self.cells.cell_data
         return self.cells.alive(
             cells[&#39;branchable&#39;]
-            &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+            &amp; (rg.random(cells.shape) &lt; branch_probability)
             &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
         )
 
@@ -347,7 +348,7 @@ class AfumigatusCellTreeList(object):
         &#34;&#34;&#34;
         #  TODO: implement a real iron uptake model
         cells = self.cells.cell_data
-        iron = np.random.uniform(size=len(self.cells))
+        iron = rg.random(len(self.cells))
         cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)
 
     def age(self):
@@ -469,7 +470,7 @@ class Afumigatus(Module):
         #            cell[&#39;status&#39;] = AfumigatusCellData.Status.DEAD
         #            cell[&#39;dead&#39;] = True
         #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
-        #            if afumigatus.p_lodge &gt; random.random:
+        #            if afumigatus.p_lodge &gt; rg.random():
         #                cell[&#39;mobile&#39;] = False
         #    if cell[&#39;iteration&#39;] &gt;= afumigatus.ITER_TO_CHANGE_STATUS:
         #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.RESTING_CONIDIA:
@@ -477,7 +478,7 @@ class Afumigatus(Module):
         #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
         #            cell[&#39;status&#39;] = AfumigatusCellData.Status.GERMTUBE
         #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.INTERNALIZED:
-        #            if afumigatus.p_internal_swell &gt; random.random():
+        #            if afumigatus.p_internal_swell &gt; rg.random():
         #                cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
         #
         #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
@@ -553,7 +554,7 @@ class Afumigatus(Module):
         #            cell[&#39;status&#39;] = AfumigatusCellData.Status.DEAD
         #            cell[&#39;dead&#39;] = True
         #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
-        #            if afumigatus.p_lodge &gt; random.random:
+        #            if afumigatus.p_lodge &gt; rg.random():
         #                cell[&#39;mobile&#39;] = False
         #    if cell[&#39;iteration&#39;] &gt;= afumigatus.ITER_TO_CHANGE_STATUS:
         #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.RESTING_CONIDIA:
@@ -561,7 +562,7 @@ class Afumigatus(Module):
         #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
         #            cell[&#39;status&#39;] = AfumigatusCellData.Status.GERMTUBE
         #        elif cell[&#39;status&#39;] == AfumigatusCellData.Status.INTERNALIZED:
-        #            if afumigatus.p_internal_swell &gt; random.random():
+        #            if afumigatus.p_internal_swell &gt; rg.random():
         #                cell[&#39;status&#39;] = AfumigatusCellData.Status.SWELLING_CONIDIA
         #
         #        if cell[&#39;status&#39;] == AfumigatusCellData.Status.SWELLING_CONIDIA:
@@ -840,7 +841,7 @@ associated with each cell.</p>
         **kwargs,
     ) -&gt; np.record:
 
-        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
         switched = False
@@ -1097,7 +1098,7 @@ low-level array.</p>
         growth = Point.from_array(growth)
 
         # get a random vector orthogonal to the growth vector
-        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
         axis = (np.pi / 4) * axis / axis.norm()
 
         # rotate the growth vector 45 degrees along the random axis
@@ -1166,7 +1167,7 @@ low-level array.</p>
         cells = self.cells.cell_data
         return self.cells.alive(
             cells[&#39;branchable&#39;]
-            &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+            &amp; (rg.random(cells.shape) &lt; branch_probability)
             &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
         )
 
@@ -1177,7 +1178,7 @@ low-level array.</p>
         &#34;&#34;&#34;
         #  TODO: implement a real iron uptake model
         cells = self.cells.cell_data
-        iron = np.random.uniform(size=len(self.cells))
+        iron = rg.random(len(self.cells))
         cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)
 
     def age(self):
@@ -1314,7 +1315,7 @@ def random_branch_direction(cls, growth: np.ndarray) -&gt; np.ndarray:
     growth = Point.from_array(growth)
 
     # get a random vector orthogonal to the growth vector
-    axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+    axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
     axis = (np.pi / 4) * axis / axis.norm()
 
     # rotate the growth vector 45 degrees along the random axis
@@ -1411,7 +1412,7 @@ def roots(self) -&gt; List[CellType]:
     &#34;&#34;&#34;
     #  TODO: implement a real iron uptake model
     cells = self.cells.cell_data
-    iron = np.random.uniform(size=len(self.cells))
+    iron = rg.random(len(self.cells))
     cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)</code></pre>
 </details>
 </dd>
@@ -1554,7 +1555,7 @@ def roots(self) -&gt; List[CellType]:
     cells = self.cells.cell_data
     return self.cells.alive(
         cells[&#39;branchable&#39;]
-        &amp; (np.random.rand(*cells.shape) &lt; branch_probability)
+        &amp; (rg.random(cells.shape) &lt; branch_probability)
         &amp; (cells[&#39;status&#39;] == AfumigatusCellData.Status.HYPHAE)
     )</code></pre>
 </details>

@@ -25,9 +25,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import random
-
-import attr
+<pre><code class="python">import attr
 import numpy as np
 
 from simulation.cell import CellData, CellList
@@ -36,6 +34,7 @@ from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
 from simulation.modules.fungus import FungusCellData, FungusCellList
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 from simulation.state import State
 
 MAX_CONIDIA = 100
@@ -110,18 +109,18 @@ class MacrophageCellList(CellList):
         mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
-        np.random.shuffle(cyto_index)
+        rg.shuffle(cyto_index)
 
         for _ in range(0, num_reps):
             if len(cyto_index) &gt; 0:
-                ii = random.randint(0, len(cyto_index) - 1)
+                ii = rg.integers(len(cyto_index))
                 point = Point(
                     x=grid.x[cyto_index[ii][2]],
                     y=grid.y[cyto_index[ii][1]],
                     z=grid.z[cyto_index[ii][0]],
                 )
 
-                if p_rec_r &gt; random.random():
+                if p_rec_r &gt; rg.random():
                     self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
@@ -203,10 +202,10 @@ class MacrophageCellList(CellList):
                 i = indices[0][0]
             elif num_vox_possible &gt; 1:
                 inds = np.argwhere(p == p[np.argmax(p)])
-                np.random.shuffle(inds)
+                rg.shuffle(inds)
                 i = inds[0][0]
             else:
-                i = random.randint(0, len(vox_list) - 1)
+                i = rg.integers(len(vox_list))
 
             point = Point(
                 x=grid.x[vox.x + vox_list[i][0]],
@@ -237,7 +236,7 @@ class MacrophageCellList(CellList):
                     if (
                         fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                         and not fungus[index][&#39;internalized&#39;]
-                        and p_in &gt; random.random()
+                        and p_in &gt; rg.random()
                     ):
                         fungus[index][&#39;internalized&#39;] = True
                         self.append_to_phagosome(i, index, max_spores)
@@ -264,7 +263,7 @@ class MacrophageCellList(CellList):
                                     if (
                                         fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                                         and not fungus[index][&#39;internalized&#39;]
-                                        and p_in &gt; random.random()
+                                        and p_in &gt; rg.random()
                                     ):
                                         fungus[index][&#39;internalized&#39;] = True
                                         self.append_to_phagosome(i, index, max_spores)
@@ -285,7 +284,7 @@ class MacrophageCellList(CellList):
         if num == 0 and living_len &gt; 0:
             num = 1
         for _ in range(num):
-            r = random.randint(0, living_len - 1)
+            r = rg.integers(living_len)
             self.cell_data[living[r]][&#39;dead&#39;] = True
 
 
@@ -684,18 +683,18 @@ low-level array.</p>
         mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
-        np.random.shuffle(cyto_index)
+        rg.shuffle(cyto_index)
 
         for _ in range(0, num_reps):
             if len(cyto_index) &gt; 0:
-                ii = random.randint(0, len(cyto_index) - 1)
+                ii = rg.integers(len(cyto_index))
                 point = Point(
                     x=grid.x[cyto_index[ii][2]],
                     y=grid.y[cyto_index[ii][1]],
                     z=grid.z[cyto_index[ii][0]],
                 )
 
-                if p_rec_r &gt; random.random():
+                if p_rec_r &gt; rg.random():
                     self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
@@ -777,10 +776,10 @@ low-level array.</p>
                 i = indices[0][0]
             elif num_vox_possible &gt; 1:
                 inds = np.argwhere(p == p[np.argmax(p)])
-                np.random.shuffle(inds)
+                rg.shuffle(inds)
                 i = inds[0][0]
             else:
-                i = random.randint(0, len(vox_list) - 1)
+                i = rg.integers(len(vox_list))
 
             point = Point(
                 x=grid.x[vox.x + vox_list[i][0]],
@@ -811,7 +810,7 @@ low-level array.</p>
                     if (
                         fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                         and not fungus[index][&#39;internalized&#39;]
-                        and p_in &gt; random.random()
+                        and p_in &gt; rg.random()
                     ):
                         fungus[index][&#39;internalized&#39;] = True
                         self.append_to_phagosome(i, index, max_spores)
@@ -838,7 +837,7 @@ low-level array.</p>
                                     if (
                                         fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                                         and not fungus[index][&#39;internalized&#39;]
-                                        and p_in &gt; random.random()
+                                        and p_in &gt; rg.random()
                                     ):
                                         fungus[index][&#39;internalized&#39;] = True
                                         self.append_to_phagosome(i, index, max_spores)
@@ -859,7 +858,7 @@ low-level array.</p>
         if num == 0 and living_len &gt; 0:
             num = 1
         for _ in range(num):
-            r = random.randint(0, living_len - 1)
+            r = rg.integers(living_len)
             self.cell_data[living[r]][&#39;dead&#39;] = True</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -968,7 +967,7 @@ low-level array.</p>
                 if (
                     fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                     and not fungus[index][&#39;internalized&#39;]
-                    and p_in &gt; random.random()
+                    and p_in &gt; rg.random()
                 ):
                     fungus[index][&#39;internalized&#39;] = True
                     self.append_to_phagosome(i, index, max_spores)
@@ -995,7 +994,7 @@ low-level array.</p>
                                 if (
                                     fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
                                     and not fungus[index][&#39;internalized&#39;]
-                                    and p_in &gt; random.random()
+                                    and p_in &gt; rg.random()
                                 ):
                                     fungus[index][&#39;internalized&#39;] = True
                                     self.append_to_phagosome(i, index, max_spores)</code></pre>
@@ -1054,10 +1053,10 @@ low-level array.</p>
             i = indices[0][0]
         elif num_vox_possible &gt; 1:
             inds = np.argwhere(p == p[np.argmax(p)])
-            np.random.shuffle(inds)
+            rg.shuffle(inds)
             i = inds[0][0]
         else:
-            i = random.randint(0, len(vox_list) - 1)
+            i = rg.integers(len(vox_list))
 
         point = Point(
             x=grid.x[vox.x + vox_list[i][0]],
@@ -1142,18 +1141,18 @@ low-level array.</p>
     mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
     blood_index = np.transpose(blood_index)
     cyto_index = blood_index[mask]
-    np.random.shuffle(cyto_index)
+    rg.shuffle(cyto_index)
 
     for _ in range(0, num_reps):
         if len(cyto_index) &gt; 0:
-            ii = random.randint(0, len(cyto_index) - 1)
+            ii = rg.integers(len(cyto_index))
             point = Point(
                 x=grid.x[cyto_index[ii][2]],
                 y=grid.y[cyto_index[ii][1]],
                 z=grid.z[cyto_index[ii][0]],
             )
 
-            if p_rec_r &gt; random.random():
+            if p_rec_r &gt; rg.random():
                 self.append(MacrophageCellData.create_cell(point=point))</code></pre>
 </details>
 </dd>
@@ -1199,7 +1198,7 @@ low-level array.</p>
     if num == 0 and living_len &gt; 0:
         num = 1
     for _ in range(num):
-        r = random.randint(0, living_len - 1)
+        r = rg.integers(living_len)
         self.cell_data[living[r]][&#39;dead&#39;] = True</code></pre>
 </details>
 </dd>
