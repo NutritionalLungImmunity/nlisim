@@ -12,6 +12,7 @@ from simulation.cell import CellData, CellList, CellType
 from simulation.coordinates import Point
 from simulation.grid import RectangularGrid
 from simulation.module import Module, ModuleState
+from simulation.random import rg
 from simulation.state import get_class_path, State
 
 
@@ -61,7 +62,7 @@ class AfumigatusCellData(CellData):
         **kwargs,
     ) -> np.record:
 
-        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
         switched = False
@@ -240,7 +241,7 @@ class AfumigatusCellTreeList(object):
         growth = Point.from_array(growth)
 
         # get a random vector orthogonal to the growth vector
-        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
         axis = (np.pi / 4) * axis / axis.norm()
 
         # rotate the growth vector 45 degrees along the random axis
@@ -309,7 +310,7 @@ class AfumigatusCellTreeList(object):
         cells = self.cells.cell_data
         return self.cells.alive(
             cells['branchable']
-            & (np.random.rand(*cells.shape) < branch_probability)
+            & (rg.random(cells.shape) < branch_probability)
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
         )
 
@@ -320,7 +321,7 @@ class AfumigatusCellTreeList(object):
         """
         #  TODO: implement a real iron uptake model
         cells = self.cells.cell_data
-        iron = np.random.uniform(size=len(self.cells))
+        iron = rg.random(len(self.cells))
         cells['iron_pool'] = np.add(cells['iron_pool'], iron)
 
     def age(self):
@@ -442,7 +443,7 @@ class Afumigatus(Module):
         #            cell['status'] = AfumigatusCellData.Status.DEAD
         #            cell['dead'] = True
         #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
-        #            if afumigatus.p_lodge > random.random:
+        #            if afumigatus.p_lodge > rg.random():
         #                cell['mobile'] = False
         #    if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
         #        if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
@@ -450,7 +451,7 @@ class Afumigatus(Module):
         #        elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
         #            cell['status'] = AfumigatusCellData.Status.GERMTUBE
         #        elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
-        #            if afumigatus.p_internal_swell > random.random():
+        #            if afumigatus.p_internal_swell > rg.random():
         #                cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
         #
         #        if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
