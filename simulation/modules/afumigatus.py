@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
 from enum import IntEnum
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Union
 
 import attr
 from h5py import Group
@@ -150,7 +150,7 @@ class AfumigatusCell(MutableMapping):
         raise Exception(f'Invalid adjacency matrix at index {self.index}')
 
     @property
-    def children(self) -> Iterable['AfumigatusCell']:
+    def children(self) -> Iterator['AfumigatusCell']:
         indices = self.tree.adjacency[self.index].nonzero()[1]
         for index in indices:
             if index != self.index:
