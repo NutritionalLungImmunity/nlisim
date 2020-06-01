@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Iterable, Tuple
 
 import numpy as np  # type: ignore
 from vtk import (  # type: ignore
@@ -17,7 +17,7 @@ from simulation.modules.geometry import GeometryState
 from simulation.state import State
 
 
-def convert_cells(cells: CellList) -> vtkPolyData:
+def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     cell_data = cells.cell_data
     fields = dict(cell_data.dtype.fields)
     fields.pop('point')
@@ -52,7 +52,7 @@ def convert_cells(cells: CellList) -> vtkPolyData:
     return poly
 
 
-def create_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -71,32 +71,38 @@ def create_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStructur
 
 
 def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_volume(state.grid, state.geometry)
+    volume = create_vtk_volume(state.grid, state.geometry)
     cells = {
-        'spore': convert_cells(state.fungus.cells),
-        'epithelium': convert_cells(state.epithelium.cells),
-        'macrophage': convert_cells(state.macrophage.cells),
-        'neutrophil': convert_cells(state.neutrophil.cells),
+        'spore': convert_cells_to_vtk(state.fungus.cells),
+        'epithelium': convert_cells_to_vtk(state.epithelium.cells),
+        'macrophage': convert_cells_to_vtk(state.macrophage.cells),
+        'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
     }
 
     return volume, cells
 
 
-def process_output(file_name: str, output_dir: Path):
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    state = State.load(file_name)
+def generate_vtk(state: State, postprocess_step_dir: Path):
     volume, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
-    grid_writer.SetFileName(str(output_dir / 'geometry_001.vti'))
+    grid_writer.SetFileName(str(postprocess_step_dir / 'geometry_001.vti'))
     grid_writer.SetInputData(volume)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
     cell_writer.SetDataModeToBinary()
     for module, data in cells.items():
-        cell_writer.SetFileName(str(output_dir / f'{module}_001.vtp'))
+        cell_writer.SetFileName(str(postprocess_step_dir / f'{module}_001.vtp'))
         cell_writer.SetInputData(data)
         cell_writer.Write()
+
+
+def process_output(state_files: Iterable[Path], postprocess_dir: Path) -> None:
+    for state_file_index, state_file in enumerate(sorted(state_files)):
+        state = State.load(state_file)
+
+        postprocess_step_dir = postprocess_dir / ('%03i' % (state_file_index + 1))
+        postprocess_step_dir.mkdir()
+        generate_vtk(state, postprocess_step_dir)
