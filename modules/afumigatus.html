@@ -27,7 +27,7 @@
 </summary>
 <pre><code class="python">from collections.abc import MutableMapping
 from enum import IntEnum
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Union
 
 import attr
 from h5py import Group
@@ -177,7 +177,7 @@ class AfumigatusCell(MutableMapping):
         raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)
 
     @property
-    def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+    def children(self) -&gt; Iterator[&#39;AfumigatusCell&#39;]:
         indices = self.tree.adjacency[self.index].nonzero()[1]
         for index in indices:
             if index != self.index:
@@ -631,7 +631,7 @@ class Afumigatus(Module):
         raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)
 
     @property
-    def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+    def children(self) -&gt; Iterator[&#39;AfumigatusCell&#39;]:
         indices = self.tree.adjacency[self.index].nonzero()[1]
         for index in indices:
             if index != self.index:
@@ -676,7 +676,7 @@ class Afumigatus(Module):
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.children"><code class="name">var <span class="ident">children</span> : Iterable[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</code></dt>
+<dt id="simulation.modules.afumigatus.AfumigatusCell.children"><code class="name">var <span class="ident">children</span> : Iterator[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -684,7 +684,7 @@ class Afumigatus(Module):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def children(self) -&gt; Iterable[&#39;AfumigatusCell&#39;]:
+def children(self) -&gt; Iterator[&#39;AfumigatusCell&#39;]:
     indices = self.tree.adjacency[self.index].nonzero()[1]
     for index in indices:
         if index != self.index:
