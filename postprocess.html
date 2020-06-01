@@ -26,7 +26,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Iterable, Tuple
 
 import numpy as np  # type: ignore
 from vtk import (  # type: ignore
@@ -44,7 +44,7 @@ from simulation.modules.geometry import GeometryState
 from simulation.state import State
 
 
-def convert_cells(cells: CellList) -&gt; vtkPolyData:
+def convert_cells_to_vtk(cells: CellList) -&gt; vtkPolyData:
     cell_data = cells.cell_data
     fields = dict(cell_data.dtype.fields)
     fields.pop(&#39;point&#39;)
@@ -79,7 +79,7 @@ def convert_cells(cells: CellList) -&gt; vtkPolyData:
     return poly
 
 
-def create_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -98,35 +98,41 @@ def create_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStruc
 
 
 def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_volume(state.grid, state.geometry)
+    volume = create_vtk_volume(state.grid, state.geometry)
     cells = {
-        &#39;spore&#39;: convert_cells(state.fungus.cells),
-        &#39;epithelium&#39;: convert_cells(state.epithelium.cells),
-        &#39;macrophage&#39;: convert_cells(state.macrophage.cells),
-        &#39;neutrophil&#39;: convert_cells(state.neutrophil.cells),
+        &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
+        &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
+        &#39;macrophage&#39;: convert_cells_to_vtk(state.macrophage.cells),
+        &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
     }
 
     return volume, cells
 
 
-def process_output(file_name: str, output_dir: Path):
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    state = State.load(file_name)
+def generate_vtk(state: State, postprocess_step_dir: Path):
     volume, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
-    grid_writer.SetFileName(str(output_dir / &#39;geometry_001.vti&#39;))
+    grid_writer.SetFileName(str(postprocess_step_dir / &#39;geometry_001.vti&#39;))
     grid_writer.SetInputData(volume)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
     cell_writer.SetDataModeToBinary()
     for module, data in cells.items():
-        cell_writer.SetFileName(str(output_dir / f&#39;{module}_001.vtp&#39;))
+        cell_writer.SetFileName(str(postprocess_step_dir / f&#39;{module}_001.vtp&#39;))
         cell_writer.SetInputData(data)
-        cell_writer.Write()</code></pre>
+        cell_writer.Write()
+
+
+def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; None:
+    for state_file_index, state_file in enumerate(sorted(state_files)):
+        state = State.load(state_file)
+
+        postprocess_step_dir = postprocess_dir / (&#39;%03i&#39; % (state_file_index + 1))
+        postprocess_step_dir.mkdir()
+        generate_vtk(state, postprocess_step_dir)</code></pre>
 </details>
 </section>
 <section>
@@ -136,8 +142,8 @@ def process_output(file_name: str, output_dir: Path):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.postprocess.convert_cells"><code class="name flex">
-<span>def <span class="ident">convert_cells</span></span>(<span>cells: <a title="simulation.cell.CellList" href="cell.html#simulation.cell.CellList">CellList</a>) -> vtkCommonDataModelPython.vtkPolyData</span>
+<dt id="simulation.postprocess.convert_cells_to_vtk"><code class="name flex">
+<span>def <span class="ident">convert_cells_to_vtk</span></span>(<span>cells: <a title="simulation.cell.CellList" href="cell.html#simulation.cell.CellList">CellList</a>) -> vtkCommonDataModelPython.vtkPolyData</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -145,7 +151,7 @@ def process_output(file_name: str, output_dir: Path):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def convert_cells(cells: CellList) -&gt; vtkPolyData:
+<pre><code class="python">def convert_cells_to_vtk(cells: CellList) -&gt; vtkPolyData:
     cell_data = cells.cell_data
     fields = dict(cell_data.dtype.fields)
     fields.pop(&#39;point&#39;)
@@ -180,8 +186,8 @@ def process_output(file_name: str, output_dir: Path):
     return poly</code></pre>
 </details>
 </dd>
-<dt id="simulation.postprocess.create_volume"><code class="name flex">
-<span>def <span class="ident">create_volume</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a>) -> vtkCommonDataModelPython.vtkStructuredPoints</span>
+<dt id="simulation.postprocess.create_vtk_volume"><code class="name flex">
+<span>def <span class="ident">create_vtk_volume</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a>) -> vtkCommonDataModelPython.vtkStructuredPoints</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -189,7 +195,7 @@ def process_output(file_name: str, output_dir: Path):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+<pre><code class="python">def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -207,6 +213,32 @@ def process_output(file_name: str, output_dir: Path):
     return vtk_grid</code></pre>
 </details>
 </dd>
+<dt id="simulation.postprocess.generate_vtk"><code class="name flex">
+<span>def <span class="ident">generate_vtk</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, postprocess_step_dir: pathlib.Path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_vtk(state: State, postprocess_step_dir: Path):
+    volume, cells = generate_vtk_objects(state)
+
+    grid_writer = vtkXMLImageDataWriter()
+    grid_writer.SetDataModeToBinary()
+    grid_writer.SetFileName(str(postprocess_step_dir / &#39;geometry_001.vti&#39;))
+    grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    cell_writer = vtkXMLPolyDataWriter()
+    cell_writer.SetDataModeToBinary()
+    for module, data in cells.items():
+        cell_writer.SetFileName(str(postprocess_step_dir / f&#39;{module}_001.vtp&#39;))
+        cell_writer.SetInputData(data)
+        cell_writer.Write()</code></pre>
+</details>
+</dd>
 <dt id="simulation.postprocess.generate_vtk_objects"><code class="name flex">
 <span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) -> Tuple[vtkCommonDataModelPython.vtkStructuredPoints, Dict[str, vtkCommonDataModelPython.vtkPolyData]]</span>
 </code></dt>
@@ -217,19 +249,19 @@ def process_output(file_name: str, output_dir: Path):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_volume(state.grid, state.geometry)
+    volume = create_vtk_volume(state.grid, state.geometry)
     cells = {
-        &#39;spore&#39;: convert_cells(state.fungus.cells),
-        &#39;epithelium&#39;: convert_cells(state.epithelium.cells),
-        &#39;macrophage&#39;: convert_cells(state.macrophage.cells),
-        &#39;neutrophil&#39;: convert_cells(state.neutrophil.cells),
+        &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
+        &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
+        &#39;macrophage&#39;: convert_cells_to_vtk(state.macrophage.cells),
+        &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
     }
 
     return volume, cells</code></pre>
 </details>
 </dd>
 <dt id="simulation.postprocess.process_output"><code class="name flex">
-<span>def <span class="ident">process_output</span></span>(<span>file_name: str, output_dir: pathlib.Path)</span>
+<span>def <span class="ident">process_output</span></span>(<span>state_files: Iterable[pathlib.Path], postprocess_dir: pathlib.Path) -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -237,24 +269,13 @@ def process_output(file_name: str, output_dir: Path):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_output(file_name: str, output_dir: Path):
-    output_dir.mkdir(parents=True, exist_ok=True)
+<pre><code class="python">def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; None:
+    for state_file_index, state_file in enumerate(sorted(state_files)):
+        state = State.load(state_file)
 
-    state = State.load(file_name)
-    volume, cells = generate_vtk_objects(state)
-
-    grid_writer = vtkXMLImageDataWriter()
-    grid_writer.SetDataModeToBinary()
-    grid_writer.SetFileName(str(output_dir / &#39;geometry_001.vti&#39;))
-    grid_writer.SetInputData(volume)
-    grid_writer.Write()
-
-    cell_writer = vtkXMLPolyDataWriter()
-    cell_writer.SetDataModeToBinary()
-    for module, data in cells.items():
-        cell_writer.SetFileName(str(output_dir / f&#39;{module}_001.vtp&#39;))
-        cell_writer.SetInputData(data)
-        cell_writer.Write()</code></pre>
+        postprocess_step_dir = postprocess_dir / (&#39;%03i&#39; % (state_file_index + 1))
+        postprocess_step_dir.mkdir()
+        generate_vtk(state, postprocess_step_dir)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1633,8 +1654,9 @@ C++: static vtkXMLPolyDataWriter <em>SafeDownCast(vtkObjectBase </em>o)</p></div
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.postprocess.convert_cells" href="#simulation.postprocess.convert_cells">convert_cells</a></code></li>
-<li><code><a title="simulation.postprocess.create_volume" href="#simulation.postprocess.create_volume">create_volume</a></code></li>
+<li><code><a title="simulation.postprocess.convert_cells_to_vtk" href="#simulation.postprocess.convert_cells_to_vtk">convert_cells_to_vtk</a></code></li>
+<li><code><a title="simulation.postprocess.create_vtk_volume" href="#simulation.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
+<li><code><a title="simulation.postprocess.generate_vtk" href="#simulation.postprocess.generate_vtk">generate_vtk</a></code></li>
 <li><code><a title="simulation.postprocess.generate_vtk_objects" href="#simulation.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>
 <li><code><a title="simulation.postprocess.process_output" href="#simulation.postprocess.process_output">process_output</a></code></li>
 </ul>

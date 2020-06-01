@@ -26,6 +26,8 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from pathlib import Path
+import shutil
+from typing import Tuple
 
 import click
 import click_pathlib
@@ -36,28 +38,29 @@ from simulation.postprocess import process_output
 from simulation.solver import run_iterator
 
 
-FilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
+InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
+OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
 
 
 @click.group()
 @click.option(
     &#39;--config&#39;,
     &#39;config_files&#39;,
-    type=FilePath,
+    type=InputFilePath,
     multiple=True,
     default=[&#39;config.ini&#39;],
     help=&#39;Path to a simulation config. May be specificed multiple times to cascade configurations.&#39;,
     show_default=True,
 )
 @click.pass_context
-def main(ctx, config_files):
+def main(ctx: click.Context, config_files: Tuple[Path]) -&gt; None:
     ctx.obj = {&#39;config&#39;: SimulationConfig(*config_files)}
 
 
 @main.command()
 @click.argument(&#39;target_time&#39;, type=click.FLOAT, default=20)
 @click.pass_obj
-def run(obj, target_time):
+def run(obj, target_time: float) -&gt; None:
     &#34;&#34;&#34;Run a simulation.&#34;&#34;&#34;
     config = obj[&#39;config&#39;]
 
@@ -69,17 +72,22 @@ def run(obj, target_time):
 @main.command(&#39;postprocess&#39;, help=&#39;Postprocess simulation output files&#39;)
 @click.option(
     &#39;--output&#39;,
-    type=click_pathlib.Path(file_okay=False, dir_okay=True, writable=True),
+    &#39;postprocess_dir&#39;,
+    type=OutputDirPath,
     default=&#39;postprocessed&#39;,
     help=&#39;Path to dump postprocessed data files&#39;,
     show_default=True,
 )
 @click.pass_obj
-def postprocess(obj, output):
-    files = Path(obj[&#39;config&#39;][&#39;state_output&#39;].get(&#39;output_dir&#39;)).glob(&#39;simulation-*.hdf5&#39;)
-    for index, file in enumerate(sorted(files)):
-        output_dir = Path(output) / (&#39;%03i&#39; % (index + 1))
-        process_output(file, output_dir)
+def postprocess(obj, postprocess_dir: Path) -&gt; None:
+    if postprocess_dir.exists():
+        click.echo(f&#39;Postprocess output directory {postprocess_dir.resolve()} exists. Clearing it.&#39;)
+        shutil.rmtree(postprocess_dir)
+    postprocess_dir.mkdir(parents=True)
+
+    state_files = Path(obj[&#39;config&#39;][&#39;state_output&#39;].get(&#39;output_dir&#39;)).glob(&#39;simulation-*.hdf5&#39;)
+
+    process_output(state_files, postprocess_dir)
 
 
 if __name__ == &#39;__main__&#39;:
