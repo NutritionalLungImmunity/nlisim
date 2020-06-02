@@ -1,4 +1,6 @@
-import os
+from pathlib import Path
+import shutil
+from typing import List
 
 import attr
 import matplotlib.pyplot as plt
@@ -23,15 +25,14 @@ class PlotState(ModuleState):
 
 class Plot(Module):
     name = 'plot'
-    defaults = {'plot_output_folder': 'output/plots/'}
+    defaults = {'output_dir': 'output/plots'}
     StateClass = PlotState
 
-    def initialize(self, state: State):
-        self.advance(state, state.time)
+    @property
+    def _output_dir(self) -> Path:
+        return Path(self.config.get('output_dir'))
 
-        return state
-
-    def advance(self, state: State, previous_time: float):
+    def _update_arrays(self, state: State) -> State:
         plot: PlotState = state.plot
         step_num = plot.step_num
 
@@ -44,54 +45,72 @@ class Plot(Module):
 
         return state
 
-    def setup_plot(self, ylabel: str, title: str, filename: str):
+    def initialize(self, state: State) -> State:
+        output_dir = self._output_dir
+        if output_dir.exists():
+            print(f'File output directory {output_dir.resolve()} exists. Clearing it.')
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
+
+        return self._update_arrays(state)
+
+    def advance(self, state: State, previous_time: float) -> State:
+        return self._update_arrays(state)
+
+    def _create_plot(
+        self,
+        fig_num: int,
+        time_steps: np.ndarray,
+        counts: List[np.ndarray],
+        markers: List[str],
+        cells: List[str],
+        ylabel: str,
+    ) -> None:
+        plt.figure(fig_num)
+        for (count, marker, cell) in zip(counts, markers, cells):
+            plt.plot(time_steps, count, marker, label=cell)
         plt.xlabel('Time Unit (Typically Hours)')
         plt.ylabel(ylabel)
-        plt.title(title)
+        plt.title(f'{ylabel} vs. Time')
         plt.grid(True)
         plt.xlim(xmin=0)
         plt.ylim(ymin=0)
-        plt.savefig(f'{filename}.png')
-        plt.clf()
 
-    def finalize(self, state: State):
-        plot_output_folder = self.config.get('plot_output_folder')
-        if not os.path.exists(plot_output_folder):
-            os.mkdir(plot_output_folder)
+    def finalize(self, state: State) -> State:
         plot: PlotState = state.plot
         num_steps = plot.step_num
         time_steps = plot.time_steps[:num_steps]
-        plt.figure()
 
         fungal_burdens = plot.fungal_burdens[:num_steps]
-        plt.plot(time_steps, fungal_burdens, 'b.-')
-        self.setup_plot(
-            'Fungal Burden', 'Fungal Burden vs Time', plot_output_folder + 'fungal_burden_vs_time'
+        self._create_plot(
+            1, time_steps, [fungal_burdens], ['b.-'], ['Fungal Burden'], 'Fungal Burden'
         )
+        plt.savefig(f'{self._output_dir}/fungal_burden_vs_time.png')
 
         macrophage_counts = plot.macrophage_counts[:num_steps]
-        plt.plot(time_steps, macrophage_counts, 'b.-')
-        self.setup_plot(
-            'Macrophage Count',
-            'Macrophage Count vs Time',
-            plot_output_folder + 'macrophage_count_vs_time',
+        self._create_plot(
+            2, time_steps, [macrophage_counts], ['b.-'], ['Macrophage Count'], 'Macrophage Count'
         )
+        plt.savefig(f'{self._output_dir}/macrophage_count_vs_time.png')
 
         neutrophil_counts = plot.neutrophil_counts[:num_steps]
-        plt.plot(time_steps, neutrophil_counts, 'b.-')
-        self.setup_plot(
-            'Neutrophil Count',
-            'Neutrophil Count vs Time',
-            plot_output_folder + 'neutrophil_count_vs_time',
+        self._create_plot(
+            3, time_steps, [neutrophil_counts], ['b.-'], ['Neutrophil Count'], 'Neutrophil Count'
         )
+        plt.savefig(f'{self._output_dir}/neutrophil_count_vs_time.png')
 
-        ax = plt.subplot(111)
-        plt.plot(time_steps, fungal_burdens, 'b.-', label='Fungal Burden')
-        plt.plot(time_steps, macrophage_counts, 'g*-', label='Macrophage Count')
-        plt.plot(time_steps, neutrophil_counts, 'r+-', label='Neutrophil Count')
+        self._create_plot(
+            4,
+            time_steps,
+            [fungal_burdens, macrophage_counts, neutrophil_counts],
+            ['b.-', 'g*-', 'r+-'],
+            ['Fungal Burden', 'Macrophage Count', 'Neutrophil Count'],
+            'Count',
+        )
+        ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.0, fontsize='small')
-        self.setup_plot('Count', 'Counts vs Time', plot_output_folder + '/all_vs_time')
+        plt.savefig(f'{self._output_dir}/all_vs_time.png')
 
         return state
