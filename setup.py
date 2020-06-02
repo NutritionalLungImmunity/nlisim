@@ -12,6 +12,7 @@ setup(
         'matplotlib',
         'numpy',
         'scipy',
+        'tqdm',
         'vtk',
     ],
     entry_points={'console_scripts': ['simulation = simulation.cli:main']},

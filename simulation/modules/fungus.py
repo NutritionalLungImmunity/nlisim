@@ -1,5 +1,4 @@
 from enum import IntEnum
-import random
 
 import attr
 import numpy as np
@@ -8,6 +7,7 @@ from simulation.cell import CellData, CellList
 from simulation.coordinates import Point, Voxel
 from simulation.module import Module, ModuleState
 from simulation.modules.geometry import TissueTypes
+from simulation.random import rg
 from simulation.state import State
 
 
@@ -117,11 +117,11 @@ class FungusCellList(CellList):
             points = np.zeros((init_num, 3))
             indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
             if len(indices) > 0:
-                np.random.shuffle(indices)
+                rg.shuffle(indices)
                 for i in range(init_num):
-                    x = random.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                    y = random.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                    z = random.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+                    x = rg.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+                    y = rg.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+                    z = rg.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                     point = Point(x=x, y=y, z=z)
                     points[i] = point
@@ -152,14 +152,14 @@ class FungusCellList(CellList):
             cells['form'][conidia_indices] = FungusCellData.Form.HYPHAE
             children = FungusCellData(len(conidia_indices), initialize=True)
             children['iron'] = cells['iron'][conidia_indices]
-            growth = spacing * (np.random.rand(len(conidia_indices), 3) * 2 - 1)
+            growth = spacing * (rg.random((len(conidia_indices), 3)) * 2 - 1)
             children['point'] = cells['point'][conidia_indices] + growth
             self.spawn_hypahael_cell(children)
 
         # grow hyphae
         if len(hyphae_indices) != 0:
             cells['status'][hyphae_indices] = FungusCellData.Status.GROWN
-            branch_mask = np.random.rand(len(hyphae_indices)) < p_branch
+            branch_mask = rg.random(len(hyphae_indices)) < p_branch
             not_branch_indices = (np.invert(branch_mask)).nonzero()[0]
             branch_indices = branch_mask.nonzero()[0]
 
@@ -167,7 +167,7 @@ class FungusCellList(CellList):
             branch_children = FungusCellData(len(branch_indices), initialize=True)
 
             elongate_children['iron'] = cells['iron'][hyphae_indices] / 2
-            growth = spacing * (np.random.rand(len(hyphae_indices), 3) * 2 - 1)
+            growth = spacing * (rg.random((len(hyphae_indices), 3)) * 2 - 1)
             elongate_children['point'] = cells['point'][hyphae_indices] + growth
 
             if len(branch_indices) != 0:
@@ -176,7 +176,7 @@ class FungusCellList(CellList):
                 )
 
                 branch_children['iron'] = cells['iron'][hyphae_indices[branch_indices]] / 3
-                growth = spacing * (np.random.rand(len(hyphae_indices[branch_indices]), 3) * 2 - 1)
+                growth = spacing * (rg.random((len(hyphae_indices[branch_indices]), 3)) * 2 - 1)
                 branch_children['point'] = cells['point'][hyphae_indices[branch_indices]] + growth
 
             # update iron in orignal cells
@@ -218,7 +218,7 @@ class FungusCellList(CellList):
         ).nonzero()[0]
 
         # internal fungus with REST status
-        swall_mask = np.random.rand(len(internalized_rest_indices)) < p_internal_swell
+        swall_mask = rg.random(len(internalized_rest_indices)) < p_internal_swell
         internalized_rest_indices = swall_mask.nonzero()[0]
 
         cells['status'][internalized_rest_indices] = FungusCellData.Status.SWOLLEN
