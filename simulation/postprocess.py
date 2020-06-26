@@ -66,7 +66,11 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
 
     point_data = vtk_grid.GetPointData()
-    point_data.SetScalars(numpy_to_vtk(geometry.lung_tissue.ravel()))
+
+    # transform color values to get around categorical interpolation issue in visualization
+    tissue = geometry.lung_tissue
+    tissue[tissue == 0] = 4
+    point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
 
 
