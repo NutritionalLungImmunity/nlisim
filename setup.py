@@ -16,4 +16,5 @@ setup(
         'vtk',
     ],
     entry_points={'console_scripts': ['simulation = simulation.cli:main']},
+    extras_require={'celery': ['celery', 'girder-client']},
 )
