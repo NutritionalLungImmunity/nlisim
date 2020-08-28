@@ -24,10 +24,18 @@ class NeutrophilCellData(CellData):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, status=Status.NONGRANULATING, granule_count=0, **kwargs,
+        cls,
+        *,
+        status=Status.NONGRANULATING,
+        granule_count=0,
+        **kwargs,
     ) -> np.record:
         iteration = 0
-        return CellData.create_cell_tuple(**kwargs) + (status, iteration, granule_count,)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            iteration,
+            granule_count,
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)

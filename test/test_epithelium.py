@@ -54,7 +54,9 @@ def epithelium_list(grid: RectangularGrid):
 @fixture
 def populated_epithelium(epithelium_list: EpitheliumCellList, grid: RectangularGrid):
     epithelium_list.append(
-        EpitheliumCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),)
+        EpitheliumCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+        )
     )
 
     yield epithelium_list
@@ -89,7 +91,9 @@ def populated_fungus(fungus_list: FungusCellList, grid: RectangularGrid):
 
 # internalize_conidia
 def test_internalize_conidia_none(
-    populated_epithelium: EpitheliumCellList, grid: RectangularGrid, fungus_list: FungusCellList,
+    populated_epithelium: EpitheliumCellList,
+    grid: RectangularGrid,
+    fungus_list: FungusCellList,
 ):
     cell = populated_epithelium[0]
     vox = grid.get_voxel(cell['point'])

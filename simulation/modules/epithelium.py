@@ -40,13 +40,22 @@ class EpitheliumCellData(CellData):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, iron_pool: float = 0, status: Status = Status.RESTING, **kwargs,
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        **kwargs,
     ) -> np.record:
 
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (status, iron_pool, iteration, phagosome,)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            iron_pool,
+            iteration,
+            phagosome,
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -316,7 +325,11 @@ class Epithelium(Module):
 
             point = Point(x=x, y=y, z=z)
 
-            epithelium.cells.append(EpitheliumCellData.create_cell(point=point,))
+            epithelium.cells.append(
+                EpitheliumCellData.create_cell(
+                    point=point,
+                )
+            )
 
         return state
 

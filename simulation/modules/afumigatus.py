@@ -393,7 +393,10 @@ class AfumigatusCellTreeList(object):
         cells = AfumigatusCellList.load(global_state, composite_dataset, 'cells', metadata)
 
         adjacency = coo_matrix(
-            (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col']),),
+            (
+                composite_dataset['value'],
+                (composite_dataset['row'], composite_dataset['col']),
+            ),
             shape=(cells.max_cells, cells.max_cells),
         ).todok()
 

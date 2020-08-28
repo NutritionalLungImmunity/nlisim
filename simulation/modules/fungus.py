@@ -202,7 +202,9 @@ class FungusCellList(CellList):
     def change_status(self, p_internal_swell: float, rest_time: int, swell_time: int):
         cells = self.cell_data
 
-        indices = self.alive(cells['form'] != FungusCellData.Form.HYPHAE,)
+        indices = self.alive(
+            cells['form'] != FungusCellData.Form.HYPHAE,
+        )
 
         internalized_indices = (cells['internalized'][indices]).nonzero()[0]
         not_internalized_indices = (np.invert(cells['internalized'][indices])).nonzero()[0]

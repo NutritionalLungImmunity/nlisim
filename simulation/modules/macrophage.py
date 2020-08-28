@@ -23,12 +23,18 @@ class MacrophageCellData(CellData):
     dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs,) -> np.record:
+    def create_cell_tuple(
+        cls,
+        **kwargs,
+    ) -> np.record:
 
         iteration = 0
         phagosome = np.empty(MAX_CONIDIA)
         phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (iteration, phagosome,)
+        return CellData.create_cell_tuple(**kwargs) + (
+            iteration,
+            phagosome,
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)

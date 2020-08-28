@@ -47,7 +47,9 @@ def macrophage_list(grid: RectangularGrid):
 @fixture
 def populated_macrophage(macrophage_list: MacrophageCellList, grid: RectangularGrid):
     macrophage_list.append(
-        MacrophageCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),)
+        MacrophageCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+        )
     )
 
     yield macrophage_list
@@ -131,7 +133,9 @@ def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: Recta
     cyto[1, 2, 3] = 64
 
     macrophage_list.append(
-        MacrophageCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),)
+        MacrophageCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+        )
     )
 
     assert len(macrophage_list) == 1
@@ -145,7 +149,9 @@ def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: Recta
     assert cyto[1, 2, 3] == 16
 
     macrophage_list.append(
-        MacrophageCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),)
+        MacrophageCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[2], z=grid.z[1]),
+        )
     )
 
     macrophage_list.absorb_cytokines(m_abs, cyto, grid)
@@ -164,7 +170,9 @@ def test_produce_cytokines_0(
     assert cyto[3, 3, 3] == 0
 
     macrophage_list.append(
-        MacrophageCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),)
+        MacrophageCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+        )
     )
 
     vox = grid.get_voxel(macrophage_list[0]['point'])
@@ -183,7 +191,9 @@ def test_produce_cytokines_n(
 ):
     m_n = 10
     macrophage_list.append(
-        MacrophageCellData.create_cell(point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),)
+        MacrophageCellData.create_cell(
+            point=Point(x=grid.x[3], y=grid.y[3], z=grid.z[3]),
+        )
     )
     vox = grid.get_voxel(macrophage_list[0]['point'])
     assert vox.z == 3 and vox.y == 3 and vox.x == 3
