@@ -587,7 +587,9 @@ def test_update(
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
 
 
-def test_age(neutrophil_list: NeutrophilCellList,):
+def test_age(
+    neutrophil_list: NeutrophilCellList,
+):
     age_limit = 2
 
     point = Point(x=35, y=35, z=35)

@@ -37,7 +37,10 @@ def run(obj, target_time: float) -> None:
     """Run a simulation."""
     config = obj['config']
 
-    with tqdm(desc='Running simulation', total=target_time,) as pbar:
+    with tqdm(
+        desc='Running simulation',
+        total=target_time,
+    ) as pbar:
         for state in run_iterator(config, target_time):
             pbar.update(state.time - pbar.n)
 

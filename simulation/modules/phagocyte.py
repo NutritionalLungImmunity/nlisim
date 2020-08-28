@@ -124,7 +124,12 @@ class PhagocyteCellList(CellList):
 
     # move
     def chemotaxis(
-        self, molecule, drift_lambda, drift_bias, tissue, grid: RectangularGrid,
+        self,
+        molecule,
+        drift_lambda,
+        drift_bias,
+        tissue,
+        grid: RectangularGrid,
     ):
         # 'molecule' = state.'molecule'.concentration
         # prob = 0-1 random number to determine which voxel is chosen to move

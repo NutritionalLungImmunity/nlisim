@@ -132,7 +132,7 @@ def test_get_corner_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
         (p(-1, 0, 0), False),
         (p(100, 0, 0), False),
         (p(100, 10, -100), False),
-    ]
+    ],
 )
 def test_point_in_domain(grid, point, in_domain):
     assert grid.is_point_in_domain(point) == in_domain
@@ -144,7 +144,7 @@ def test_point_in_domain(grid, point, in_domain):
         (p(0.5, 0.5, 0.5), v(0, 0, 0)),
         (p(1.5, 0.5, 0.5), v(1, 0, 0)),
         (p(1.1, 5.5, 1.9), v(1, 5, 1)),
-    ]
+    ],
 )
 def test_get_nearest_voxel(grid, point, voxel):
     assert grid.get_nearest_voxel(point) == voxel
@@ -215,13 +215,7 @@ def test_get_voxels_in_large_range(grid: RectangularGrid):
 
 @pytest.mark.parametrize(
     'voxel,index',
-    [
-        (v(0, 0, 0), 0),
-        (v(1, 0, 0), 1),
-        (v(0, 1, 0), 30),
-        (v(0, 0, 1), 600),
-        (v(1, 1, 1), 631)
-    ]
+    [(v(0, 0, 0), 0), (v(1, 0, 0), 1), (v(0, 1, 0), 30), (v(0, 0, 1), 600), (v(1, 1, 1), 631)],
 )
 def test_get_flattened_index(voxel, index, grid: RectangularGrid):
     assert grid.get_flattened_index(voxel) == index

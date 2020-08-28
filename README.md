@@ -30,7 +30,7 @@ There is an example configuration in the repository to get you started.
 
 Now run simulation up to 50 seconds using the first example config.
 ```bash
-    simulation run 50 --config.ini.example
+    simulation --config config.ini.example run 50
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing

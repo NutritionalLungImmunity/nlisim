@@ -31,7 +31,7 @@ save_interval = 1.0
 output_dir = output
 
 [geometry]
-# path of the imported geoemtry file
+# path of the imported geometry file
 geometry_path = geometry.hdf5
 preview_geometry = false
 
