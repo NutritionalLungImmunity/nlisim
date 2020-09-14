@@ -9,8 +9,8 @@ from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
-    from simulation.module import Module  # noqa
-    from simulation.state import State  # noqa
+    from nlisim.module import Module  # noqa
+    from nlisim.state import State  # noqa
 
 
 DEFAULTS = {
@@ -84,7 +84,7 @@ class SimulationConfig(ConfigParser):
     @classmethod
     def validate_module(cls, func: Type['Module'], path: Optional[str] = None) -> None:
         """Validate basic aspects of a module class."""
-        from simulation.module import Module  # noqa avoid circular imports
+        from nlisim.module import Module  # noqa avoid circular imports
 
         if path is None:
             path = repr(func)

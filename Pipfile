@@ -18,7 +18,7 @@ pytest-cov = '*'
 jupyter = "*"
 
 [packages]
-simulation = {editable = true,path = "."}
+nlisim = {editable = true,path = "."}
 
 [requires]
 python_version = "3.7"

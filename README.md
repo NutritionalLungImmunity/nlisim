@@ -30,7 +30,7 @@ There is an example configuration in the repository to get you started.
 
 Now run simulation up to 50 seconds using the first example config.
 ```bash
-    simulation --config config.ini.example run 50
+    nlisim --config config.ini.example run 50
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
@@ -56,8 +56,8 @@ test environments. Useful sub-commands include:
 * `tox -e py3`: Run only the unit tests.
 * `tox -e py3 -- --cov`: Run the unit tests and output coverage information.
 
-Finally, you can run `tox -e format` to automatically reformat your code to 
-comply with some (but unfortunatly not all) of the style checks.
+Finally, you can run `tox -e format` to automatically reformat your code to
+comply with some (but unfortunately not all) of the style checks.
 
 # Code organization
 
@@ -76,7 +76,7 @@ comply with some (but unfortunatly not all) of the style checks.
     This module defines a class representing the discretization of the 3D
     simulation domain.  Any variable representing a quantity that exists over
     the entire spatial domain should be split into chunks defined by this grid.
-    For more details, see `simulation.grid`.
+    For more details, see `nlisim.grid`.
 
 * `cell.py `
 
@@ -127,8 +127,8 @@ Absent any additional modules, the simulation state is an object containing only
 following attributes:
 
 * time: The simulation time as a floating point number
-* grid: An instance of `simulation.grid.RectangularGrid` defining the simulation discretization
-* config: An instance of `simulation.config.SimulationConfig` providing configuration options
+* grid: An instance of `nlisim.grid.RectangularGrid` defining the simulation discretization
+* config: An instance of `nlisim.config.SimulationConfig` providing configuration options
 
 When a module is included in the runtime configuration, its own state is
 included as an additional "dynamic" attribute on this object.  For example when
@@ -152,12 +152,12 @@ At a high level, an extension module contains the following features:
   * iteration (advancing the state in time)
 
 An extension module is registered with the simulation by providing a subclass
-of `simulation.module.Module`.  Features are added by overriding attributes on
+of `nlisim.module.Module`.  Features are added by overriding attributes on
 this class.  The following is small example demonstrating some of the features:
 ```python
     import attr
 
-    from simulation.module import Module, ModuleState
+    from nlisim.module import Module, ModuleState
 
 
     class HelloWorld(Module):

@@ -7,12 +7,12 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support
 
-from simulation.cell import CellList
-from simulation.module import Module, ModuleState
-from simulation.modules.afumigatus import AfumigatusCellTreeList
-from simulation.modules.fungus import FungusCellData
-from simulation.modules.geometry import TissueTypes
-from simulation.state import State
+from nlisim.cell import CellList
+from nlisim.module import Module, ModuleState
+from nlisim.modules.afumigatus import AfumigatusCellTreeList
+from nlisim.modules.fungus import FungusCellData
+from nlisim.modules.geometry import TissueTypes
+from nlisim.state import State
 
 # suppress the future warning caused by numpy_to_vtk
 warnings.filterwarnings('ignore', category=FutureWarning)

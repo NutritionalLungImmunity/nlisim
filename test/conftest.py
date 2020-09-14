@@ -4,10 +4,10 @@ from h5py import File
 import numpy as np
 from pytest import fixture
 
-from simulation.config import SimulationConfig
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.state import State
+from nlisim.config import SimulationConfig
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.state import State
 
 
 @fixture
@@ -17,7 +17,7 @@ def base_config():
 
 @fixture
 def config():
-    yield SimulationConfig({'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}})
+    yield SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
 
 
 @fixture

@@ -5,9 +5,9 @@ import attr
 from h5py import Group
 import numpy as np
 
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.state import get_class_path, State
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.state import get_class_path, State
 
 MAX_CELL_LIST_SIZE = 1000000
 

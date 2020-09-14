@@ -16,14 +16,14 @@ dz = 10
 validate = True
 
 # a list of modules to run with the simulation
-modules = simulation.modules.geometry.Geometry
-          simulation.modules.visualization.Visualization
-          simulation.modules.molecules.Molecules
-          simulation.modules.fungus.Fungus
-          simulation.modules.epithelium.Epithelium
-          simulation.modules.macrophage.Macrophage
-          simulation.modules.neutrophil.Neutrophil
-          simulation.modules.state_output.StateOutput
+modules = nlisim.modules.geometry.Geometry
+          nlisim.modules.visualization.Visualization
+          nlisim.modules.molecules.Molecules
+          nlisim.modules.fungus.Fungus
+          nlisim.modules.epithelium.Epithelium
+          nlisim.modules.macrophage.Macrophage
+          nlisim.modules.neutrophil.Neutrophil
+          nlisim.modules.state_output.StateOutput
 
 [state_output]
 # save the simulation state every 1 simulation second

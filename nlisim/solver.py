@@ -4,9 +4,9 @@ from typing import Iterator, Tuple
 
 import attr
 
-from simulation.config import SimulationConfig
-from simulation.state import State
-from simulation.validation import context as validation_context
+from nlisim.config import SimulationConfig
+from nlisim.state import State
+from nlisim.validation import context as validation_context
 
 
 class Status(Enum):

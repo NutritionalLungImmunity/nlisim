@@ -30,7 +30,7 @@ import attr
 from h5py import File as H5File
 import numpy as np
 
-from simulation.coordinates import Point, Voxel
+from nlisim.coordinates import Point, Voxel
 
 ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]

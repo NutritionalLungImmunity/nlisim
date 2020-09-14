@@ -1,8 +1,8 @@
 import numpy as np
 from pytest import fixture
 
-# from simulation.grid import RectangularGrid
-from simulation.modules.molecules import Molecules
+# from nlisim.grid import RectangularGrid
+from nlisim.modules.molecules import Molecules
 
 
 @fixture

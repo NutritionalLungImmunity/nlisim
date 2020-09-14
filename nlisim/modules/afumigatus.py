@@ -8,12 +8,12 @@ import numpy as np
 from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation
 
-from simulation.cell import CellData, CellList, CellType
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.random import rg
-from simulation.state import get_class_path, State
+from nlisim.cell import CellData, CellList, CellType
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.random import rg
+from nlisim.state import get_class_path, State
 
 
 class AfumigatusCellData(CellData):

@@ -1,13 +1,13 @@
 import numpy as np
 from pytest import fixture
 
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.modules.epithelium import (
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.modules.epithelium import (
     EpitheliumCellData,
     EpitheliumCellList,
 )
-from simulation.modules.fungus import (
+from nlisim.modules.fungus import (
     FungusCellData,
     FungusCellList,
 )

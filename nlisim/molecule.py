@@ -5,8 +5,8 @@ import attr
 from h5py import Group
 import numpy as np
 
-from simulation.grid import RectangularGrid
-from simulation.state import get_class_path, State
+from nlisim.grid import RectangularGrid
+from nlisim.state import get_class_path, State
 
 
 @unique

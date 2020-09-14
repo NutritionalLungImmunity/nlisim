@@ -5,8 +5,8 @@ import attr
 from h5py import Dataset, Group
 import numpy as np
 
-from simulation.config import SimulationConfig
-from simulation.state import State
+from nlisim.config import SimulationConfig
+from nlisim.state import State
 
 AttrValue = Union[float, str, bool, np.ndarray]
 
