@@ -1,11 +1,18 @@
+from enum import Enum
 from math import ceil
-from typing import Iterator
+from typing import Iterator, Tuple
 
 import attr
 
 from simulation.config import SimulationConfig
 from simulation.state import State
 from simulation.validation import context as validation_context
+
+
+class Status(Enum):
+    initialize: int = 0
+    time_step: int = 1
+    finalize: int = 2
 
 
 def initialize(state: State) -> State:
@@ -47,7 +54,7 @@ def finalize(state: State) -> State:
     return state
 
 
-def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[State]:
+def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[Tuple[State, Status]]:
     """Initialize and advance a simulation to the target time.
 
     This method is a convenience method to automate running the
@@ -60,16 +67,16 @@ def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[State
     """
     attr.set_run_validators(config.getboolean('simulation', 'validate'))
     state = initialize(State.create(config))
-    yield state
+    yield state, Status.initialize
 
     for state in advance(state, target_time):
-        yield state
+        yield state, Status.time_step
 
-    yield finalize(state)
+    yield finalize(state), Status.finalize
 
 
 def run(config: SimulationConfig, target_time: float) -> State:
     """Run a simulation to the target time and return the result."""
-    for state_iteration in run_iterator(config, target_time):
+    for state_iteration, _ in run_iterator(config, target_time):
         state = state_iteration
     return state

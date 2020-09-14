@@ -41,7 +41,7 @@ def run(obj, target_time: float) -> None:
         desc='Running simulation',
         total=target_time,
     ) as pbar:
-        for state in run_iterator(config, target_time):
+        for state, _ in run_iterator(config, target_time):
             pbar.update(state.time - pbar.n)
 
 
