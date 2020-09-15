@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.molecules API documentation</title>
+<title>nlisim.modules.molecules API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.molecules</code></h1>
+<h1 class="title">Module <code>nlisim.modules.molecules</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -33,12 +33,12 @@ import attr
 import numpy as np
 from scipy.ndimage import convolve
 
-# from simulation.coordinates import Voxel
-# from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.modules.geometry import GeometryState, TissueTypes
-from simulation.molecule import MoleculeGrid, MoleculeTypes
-from simulation.state import State
+# from nlisim.coordinates import Voxel
+# from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.modules.geometry import GeometryState, TissueTypes
+from nlisim.molecule import MoleculeGrid, MoleculeTypes
+from nlisim.state import State
 
 
 def molecule_grid_factory(self: &#39;MoleculesState&#39;):
@@ -243,8 +243,8 @@ class Molecules(Module):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.molecules.molecule_grid_factory"><code class="name flex">
-<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="simulation.modules.molecules.MoleculesState" href="#simulation.modules.molecules.MoleculesState">MoleculesState</a>)</span>
+<dt id="nlisim.modules.molecules.molecule_grid_factory"><code class="name flex">
+<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="nlisim.modules.molecules.MoleculesState" href="#nlisim.modules.molecules.MoleculesState">MoleculesState</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -261,9 +261,9 @@ class Molecules(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.molecules.Molecules"><code class="flex name class">
+<dt id="nlisim.modules.molecules.Molecules"><code class="flex name class">
 <span>class <span class="ident">Molecules</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -377,11 +377,11 @@ class Molecules(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.modules.molecules.Molecules.convolution_diffusion"><code class="name flex">
+<dt id="nlisim.modules.molecules.Molecules.convolution_diffusion"><code class="name flex">
 <span>def <span class="ident">convolution_diffusion</span></span>(<span>molecule: numpy.ndarray, tissue: numpy.ndarray, threshold=None)</span>
 </code></dt>
 <dd>
@@ -403,7 +403,7 @@ def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, thresho
         molecule[molecule &gt; threshold] = threshold</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.molecules.Molecules.degrade"><code class="name flex">
+<dt id="nlisim.modules.molecules.Molecules.degrade"><code class="name flex">
 <span>def <span class="ident">degrade</span></span>(<span>molecule: numpy.ndarray, evap: float)</span>
 </code></dt>
 <dd>
@@ -420,8 +420,8 @@ def degrade(cls, molecule: np.ndarray, evap: float):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.molecules.Molecules.advance"><code class="name flex">
-<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="simulation.state.State" href="../state.html#simulation.state.State">State</a>, previous_time: float)</span>
+<dt id="nlisim.modules.molecules.Molecules.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Advance the state by a single time step.</p></div>
@@ -470,22 +470,22 @@ def degrade(cls, molecule: np.ndarray, evap: float):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.molecules.MoleculesState"><code class="flex name class">
+<dt id="nlisim.modules.molecules.MoleculesState"><code class="flex name class">
 <span>class <span class="ident">MoleculesState</span></span>
-<span>(</span><span>*, global_state: State, grid: <a title="simulation.molecule.MoleculeGrid" href="../molecule.html#simulation.molecule.MoleculeGrid">MoleculeGrid</a> = NOTHING)</span>
+<span>(</span><span>*, global_state: State, grid: <a title="nlisim.molecule.MoleculeGrid" href="../molecule.html#nlisim.molecule.MoleculeGrid">MoleculeGrid</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -507,39 +507,39 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.molecules.MoleculesState.cyto_evap_m"><code class="name">var <span class="ident">cyto_evap_m</span> : float</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.cyto_evap_m"><code class="name">var <span class="ident">cyto_evap_m</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.molecules.MoleculesState.cyto_evap_n"><code class="name">var <span class="ident">cyto_evap_n</span> : float</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.cyto_evap_n"><code class="name">var <span class="ident">cyto_evap_n</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.molecules.MoleculesState.diffusion_rate"><code class="name">var <span class="ident">diffusion_rate</span> : float</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.diffusion_rate"><code class="name">var <span class="ident">diffusion_rate</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.molecules.MoleculesState.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.molecule.MoleculeGrid" href="../molecule.html#simulation.molecule.MoleculeGrid">MoleculeGrid</a></code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.molecule.MoleculeGrid" href="../molecule.html#nlisim.molecule.MoleculeGrid">MoleculeGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.molecules.MoleculesState.iron_max"><code class="name">var <span class="ident">iron_max</span> : float</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.iron_max"><code class="name">var <span class="ident">iron_max</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -555,32 +555,32 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.molecules.molecule_grid_factory" href="#simulation.modules.molecules.molecule_grid_factory">molecule_grid_factory</a></code></li>
+<li><code><a title="nlisim.modules.molecules.molecule_grid_factory" href="#nlisim.modules.molecules.molecule_grid_factory">molecule_grid_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.molecules.Molecules" href="#simulation.modules.molecules.Molecules">Molecules</a></code></h4>
+<h4><code><a title="nlisim.modules.molecules.Molecules" href="#nlisim.modules.molecules.Molecules">Molecules</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.molecules.Molecules.advance" href="#simulation.modules.molecules.Molecules.advance">advance</a></code></li>
-<li><code><a title="simulation.modules.molecules.Molecules.convolution_diffusion" href="#simulation.modules.molecules.Molecules.convolution_diffusion">convolution_diffusion</a></code></li>
-<li><code><a title="simulation.modules.molecules.Molecules.degrade" href="#simulation.modules.molecules.Molecules.degrade">degrade</a></code></li>
+<li><code><a title="nlisim.modules.molecules.Molecules.advance" href="#nlisim.modules.molecules.Molecules.advance">advance</a></code></li>
+<li><code><a title="nlisim.modules.molecules.Molecules.convolution_diffusion" href="#nlisim.modules.molecules.Molecules.convolution_diffusion">convolution_diffusion</a></code></li>
+<li><code><a title="nlisim.modules.molecules.Molecules.degrade" href="#nlisim.modules.molecules.Molecules.degrade">degrade</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.molecules.MoleculesState" href="#simulation.modules.molecules.MoleculesState">MoleculesState</a></code></h4>
+<h4><code><a title="nlisim.modules.molecules.MoleculesState" href="#nlisim.modules.molecules.MoleculesState">MoleculesState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.molecules.MoleculesState.cyto_evap_m" href="#simulation.modules.molecules.MoleculesState.cyto_evap_m">cyto_evap_m</a></code></li>
-<li><code><a title="simulation.modules.molecules.MoleculesState.cyto_evap_n" href="#simulation.modules.molecules.MoleculesState.cyto_evap_n">cyto_evap_n</a></code></li>
-<li><code><a title="simulation.modules.molecules.MoleculesState.diffusion_rate" href="#simulation.modules.molecules.MoleculesState.diffusion_rate">diffusion_rate</a></code></li>
-<li><code><a title="simulation.modules.molecules.MoleculesState.grid" href="#simulation.modules.molecules.MoleculesState.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.molecules.MoleculesState.iron_max" href="#simulation.modules.molecules.MoleculesState.iron_max">iron_max</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.cyto_evap_m" href="#nlisim.modules.molecules.MoleculesState.cyto_evap_m">cyto_evap_m</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.cyto_evap_n" href="#nlisim.modules.molecules.MoleculesState.cyto_evap_n">cyto_evap_n</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.diffusion_rate" href="#nlisim.modules.molecules.MoleculesState.diffusion_rate">diffusion_rate</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.grid" href="#nlisim.modules.molecules.MoleculesState.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.iron_max" href="#nlisim.modules.molecules.MoleculesState.iron_max">iron_max</a></code></li>
 </ul>
 </li>
 </ul>

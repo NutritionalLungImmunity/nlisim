@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.molecule API documentation</title>
+<title>nlisim.molecule API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.molecule</code></h1>
+<h1 class="title">Module <code>nlisim.molecule</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,8 +34,8 @@ import attr
 from h5py import Group
 import numpy as np
 
-from simulation.grid import RectangularGrid
-from simulation.state import get_class_path, State
+from nlisim.grid import RectangularGrid
+from nlisim.state import get_class_path, State
 
 
 @unique
@@ -183,9 +183,9 @@ class MoleculeGrid(object):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.molecule.MoleculeGrid"><code class="flex name class">
+<dt id="nlisim.molecule.MoleculeGrid"><code class="flex name class">
 <span>class <span class="ident">MoleculeGrid</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, concentrations=NOTHING, sources=NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, concentrations=NOTHING, sources=NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class contains a list of grids for each molecule type.</p>
@@ -305,15 +305,15 @@ class MoleculeGrid(object):
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.molecule.MoleculeGrid.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.molecule.MoleculeGrid.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.molecule.MoleculeGrid.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>global_state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="simulation.molecule.MoleculeGrid" href="#simulation.molecule.MoleculeGrid">MoleculeGrid</a></span>
+<dt id="nlisim.molecule.MoleculeGrid.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>global_state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="nlisim.molecule.MoleculeGrid" href="#nlisim.molecule.MoleculeGrid">MoleculeGrid</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load a molecule grid object.</p></div>
@@ -337,7 +337,7 @@ def load(cls, global_state: State, group: Group, name: str, metadata: dict) -&gt
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.molecule.MoleculeGrid.concentrations"><code class="name">var <span class="ident">concentrations</span></code></dt>
+<dt id="nlisim.molecule.MoleculeGrid.concentrations"><code class="name">var <span class="ident">concentrations</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -349,7 +349,7 @@ def concentrations(self):
     return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)</code></pre>
 </details>
 </dd>
-<dt id="simulation.molecule.MoleculeGrid.sources"><code class="name">var <span class="ident">sources</span></code></dt>
+<dt id="nlisim.molecule.MoleculeGrid.sources"><code class="name">var <span class="ident">sources</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -361,7 +361,7 @@ def sources(self):
     return self._sources[[name for name in self._molecule_type]].view(np.recarray)</code></pre>
 </details>
 </dd>
-<dt id="simulation.molecule.MoleculeGrid.types"><code class="name">var <span class="ident">types</span></code></dt>
+<dt id="nlisim.molecule.MoleculeGrid.types"><code class="name">var <span class="ident">types</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -376,7 +376,7 @@ def types(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.molecule.MoleculeGrid.append_molecule_type"><code class="name flex">
+<dt id="nlisim.molecule.MoleculeGrid.append_molecule_type"><code class="name flex">
 <span>def <span class="ident">append_molecule_type</span></span>(<span>self, molecule: str)</span>
 </code></dt>
 <dd>
@@ -391,7 +391,7 @@ def types(self):
     self._molecule_type.append(molecule)</code></pre>
 </details>
 </dd>
-<dt id="simulation.molecule.MoleculeGrid.incr"><code class="name flex">
+<dt id="nlisim.molecule.MoleculeGrid.incr"><code class="name flex">
 <span>def <span class="ident">incr</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -407,7 +407,7 @@ def types(self):
         concentrations[name] += sources[name]</code></pre>
 </details>
 </dd>
-<dt id="simulation.molecule.MoleculeGrid.save"><code class="name flex">
+<dt id="nlisim.molecule.MoleculeGrid.save"><code class="name flex">
 <span>def <span class="ident">save</span></span>(<span>self, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> h5py._hl.group.Group</span>
 </code></dt>
 <dd>
@@ -443,7 +443,7 @@ an HDF5 group.</p></div>
     return composite_group</code></pre>
 </details>
 </dd>
-<dt id="simulation.molecule.MoleculeGrid.shape"><code class="name flex">
+<dt id="nlisim.molecule.MoleculeGrid.shape"><code class="name flex">
 <span>def <span class="ident">shape</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -458,7 +458,7 @@ an HDF5 group.</p></div>
 </dd>
 </dl>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes"><code class="flex name class">
+<dt id="nlisim.molecule.MoleculeTypes"><code class="flex name class">
 <span>class <span class="ident">MoleculeTypes</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
@@ -497,79 +497,79 @@ an HDF5 group.</p></div>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.molecule.MoleculeTypes.hepcidin"><code class="name">var <span class="ident">hepcidin</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.hepcidin"><code class="name">var <span class="ident">hepcidin</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.il10"><code class="name">var <span class="ident">il10</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.il10"><code class="name">var <span class="ident">il10</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.il6"><code class="name">var <span class="ident">il6</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.il6"><code class="name">var <span class="ident">il6</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.il8"><code class="name">var <span class="ident">il8</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.il8"><code class="name">var <span class="ident">il8</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.iron"><code class="name">var <span class="ident">iron</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.iron"><code class="name">var <span class="ident">iron</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.lactoferrin"><code class="name">var <span class="ident">lactoferrin</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.lactoferrin"><code class="name">var <span class="ident">lactoferrin</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.lactoferrinbi"><code class="name">var <span class="ident">lactoferrinbi</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.lactoferrinbi"><code class="name">var <span class="ident">lactoferrinbi</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.m_cyto"><code class="name">var <span class="ident">m_cyto</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.m_cyto"><code class="name">var <span class="ident">m_cyto</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.mcp1"><code class="name">var <span class="ident">mcp1</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.mcp1"><code class="name">var <span class="ident">mcp1</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.mip1b"><code class="name">var <span class="ident">mip1b</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.mip1b"><code class="name">var <span class="ident">mip1b</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.mip2"><code class="name">var <span class="ident">mip2</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.mip2"><code class="name">var <span class="ident">mip2</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.n_cyto"><code class="name">var <span class="ident">n_cyto</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.n_cyto"><code class="name">var <span class="ident">n_cyto</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.ros"><code class="name">var <span class="ident">ros</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.ros"><code class="name">var <span class="ident">ros</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tafc"><code class="name">var <span class="ident">tafc</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tafc"><code class="name">var <span class="ident">tafc</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tafcbi"><code class="name">var <span class="ident">tafcbi</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tafcbi"><code class="name">var <span class="ident">tafcbi</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tf"><code class="name">var <span class="ident">tf</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tf"><code class="name">var <span class="ident">tf</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tfbi"><code class="name">var <span class="ident">tfbi</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tfbi"><code class="name">var <span class="ident">tfbi</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tgfb"><code class="name">var <span class="ident">tgfb</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tgfb"><code class="name">var <span class="ident">tgfb</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.molecule.MoleculeTypes.tnfa"><code class="name">var <span class="ident">tnfa</span></code></dt>
+<dt id="nlisim.molecule.MoleculeTypes.tnfa"><code class="name">var <span class="ident">tnfa</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -586,47 +586,47 @@ an HDF5 group.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.molecule.MoleculeGrid" href="#simulation.molecule.MoleculeGrid">MoleculeGrid</a></code></h4>
+<h4><code><a title="nlisim.molecule.MoleculeGrid" href="#nlisim.molecule.MoleculeGrid">MoleculeGrid</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.molecule.MoleculeGrid.append_molecule_type" href="#simulation.molecule.MoleculeGrid.append_molecule_type">append_molecule_type</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.concentrations" href="#simulation.molecule.MoleculeGrid.concentrations">concentrations</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.grid" href="#simulation.molecule.MoleculeGrid.grid">grid</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.incr" href="#simulation.molecule.MoleculeGrid.incr">incr</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.load" href="#simulation.molecule.MoleculeGrid.load">load</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.save" href="#simulation.molecule.MoleculeGrid.save">save</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.shape" href="#simulation.molecule.MoleculeGrid.shape">shape</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.sources" href="#simulation.molecule.MoleculeGrid.sources">sources</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeGrid.types" href="#simulation.molecule.MoleculeGrid.types">types</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.append_molecule_type" href="#nlisim.molecule.MoleculeGrid.append_molecule_type">append_molecule_type</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.concentrations" href="#nlisim.molecule.MoleculeGrid.concentrations">concentrations</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.grid" href="#nlisim.molecule.MoleculeGrid.grid">grid</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.incr" href="#nlisim.molecule.MoleculeGrid.incr">incr</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.load" href="#nlisim.molecule.MoleculeGrid.load">load</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.save" href="#nlisim.molecule.MoleculeGrid.save">save</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.shape" href="#nlisim.molecule.MoleculeGrid.shape">shape</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.sources" href="#nlisim.molecule.MoleculeGrid.sources">sources</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.types" href="#nlisim.molecule.MoleculeGrid.types">types</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.molecule.MoleculeTypes" href="#simulation.molecule.MoleculeTypes">MoleculeTypes</a></code></h4>
+<h4><code><a title="nlisim.molecule.MoleculeTypes" href="#nlisim.molecule.MoleculeTypes">MoleculeTypes</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.molecule.MoleculeTypes.hepcidin" href="#simulation.molecule.MoleculeTypes.hepcidin">hepcidin</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.il10" href="#simulation.molecule.MoleculeTypes.il10">il10</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.il6" href="#simulation.molecule.MoleculeTypes.il6">il6</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.il8" href="#simulation.molecule.MoleculeTypes.il8">il8</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.iron" href="#simulation.molecule.MoleculeTypes.iron">iron</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.lactoferrin" href="#simulation.molecule.MoleculeTypes.lactoferrin">lactoferrin</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.lactoferrinbi" href="#simulation.molecule.MoleculeTypes.lactoferrinbi">lactoferrinbi</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.m_cyto" href="#simulation.molecule.MoleculeTypes.m_cyto">m_cyto</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.mcp1" href="#simulation.molecule.MoleculeTypes.mcp1">mcp1</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.mip1b" href="#simulation.molecule.MoleculeTypes.mip1b">mip1b</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.mip2" href="#simulation.molecule.MoleculeTypes.mip2">mip2</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.n_cyto" href="#simulation.molecule.MoleculeTypes.n_cyto">n_cyto</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.ros" href="#simulation.molecule.MoleculeTypes.ros">ros</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tafc" href="#simulation.molecule.MoleculeTypes.tafc">tafc</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tafcbi" href="#simulation.molecule.MoleculeTypes.tafcbi">tafcbi</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tf" href="#simulation.molecule.MoleculeTypes.tf">tf</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tfbi" href="#simulation.molecule.MoleculeTypes.tfbi">tfbi</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tgfb" href="#simulation.molecule.MoleculeTypes.tgfb">tgfb</a></code></li>
-<li><code><a title="simulation.molecule.MoleculeTypes.tnfa" href="#simulation.molecule.MoleculeTypes.tnfa">tnfa</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.hepcidin" href="#nlisim.molecule.MoleculeTypes.hepcidin">hepcidin</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.il10" href="#nlisim.molecule.MoleculeTypes.il10">il10</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.il6" href="#nlisim.molecule.MoleculeTypes.il6">il6</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.il8" href="#nlisim.molecule.MoleculeTypes.il8">il8</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.iron" href="#nlisim.molecule.MoleculeTypes.iron">iron</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.lactoferrin" href="#nlisim.molecule.MoleculeTypes.lactoferrin">lactoferrin</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.lactoferrinbi" href="#nlisim.molecule.MoleculeTypes.lactoferrinbi">lactoferrinbi</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.m_cyto" href="#nlisim.molecule.MoleculeTypes.m_cyto">m_cyto</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.mcp1" href="#nlisim.molecule.MoleculeTypes.mcp1">mcp1</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.mip1b" href="#nlisim.molecule.MoleculeTypes.mip1b">mip1b</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.mip2" href="#nlisim.molecule.MoleculeTypes.mip2">mip2</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.n_cyto" href="#nlisim.molecule.MoleculeTypes.n_cyto">n_cyto</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.ros" href="#nlisim.molecule.MoleculeTypes.ros">ros</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tafc" href="#nlisim.molecule.MoleculeTypes.tafc">tafc</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tafcbi" href="#nlisim.molecule.MoleculeTypes.tafcbi">tafcbi</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tf" href="#nlisim.molecule.MoleculeTypes.tf">tf</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tfbi" href="#nlisim.molecule.MoleculeTypes.tfbi">tfbi</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tgfb" href="#nlisim.molecule.MoleculeTypes.tgfb">tgfb</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeTypes.tnfa" href="#nlisim.molecule.MoleculeTypes.tnfa">tnfa</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.postprocess API documentation</title>
+<title>nlisim.postprocess API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.postprocess</code></h1>
+<h1 class="title">Module <code>nlisim.postprocess</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -40,10 +40,10 @@ from vtk import (  # type: ignore
 )
 from vtk.util.numpy_support import numpy_to_vtk  # type: ignore
 
-from simulation.cell import CellList
-from simulation.grid import RectangularGrid
-from simulation.modules.geometry import GeometryState
-from simulation.state import State
+from nlisim.cell import CellList
+from nlisim.grid import RectangularGrid
+from nlisim.modules.geometry import GeometryState
+from nlisim.state import State
 
 
 def convert_cells_to_vtk(cells: CellList) -&gt; vtkPolyData:
@@ -148,8 +148,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.postprocess.convert_cells_to_vtk"><code class="name flex">
-<span>def <span class="ident">convert_cells_to_vtk</span></span>(<span>cells: <a title="simulation.cell.CellList" href="cell.html#simulation.cell.CellList">CellList</a>) ‑> vtkmodules.vtkCommonDataModel.vtkPolyData</span>
+<dt id="nlisim.postprocess.convert_cells_to_vtk"><code class="name flex">
+<span>def <span class="ident">convert_cells_to_vtk</span></span>(<span>cells: <a title="nlisim.cell.CellList" href="cell.html#nlisim.cell.CellList">CellList</a>) ‑> vtkmodules.vtkCommonDataModel.vtkPolyData</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -192,8 +192,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     return poly</code></pre>
 </details>
 </dd>
-<dt id="simulation.postprocess.create_vtk_volume"><code class="name flex">
-<span>def <span class="ident">create_vtk_volume</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+<dt id="nlisim.postprocess.create_vtk_volume"><code class="name flex">
+<span>def <span class="ident">create_vtk_volume</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -223,8 +223,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     return vtk_grid</code></pre>
 </details>
 </dd>
-<dt id="simulation.postprocess.generate_vtk"><code class="name flex">
-<span>def <span class="ident">generate_vtk</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, postprocess_step_dir: pathlib.Path)</span>
+<dt id="nlisim.postprocess.generate_vtk"><code class="name flex">
+<span>def <span class="ident">generate_vtk</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, postprocess_step_dir: pathlib.Path)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -249,8 +249,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
         cell_writer.Write()</code></pre>
 </details>
 </dd>
-<dt id="simulation.postprocess.generate_vtk_objects"><code class="name flex">
-<span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> Tuple[vtkmodules.vtkCommonDataModel.vtkStructuredPoints, Dict[str, vtkmodules.vtkCommonDataModel.vtkPolyData]]</span>
+<dt id="nlisim.postprocess.generate_vtk_objects"><code class="name flex">
+<span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Tuple[vtkmodules.vtkCommonDataModel.vtkStructuredPoints, Dict[str, vtkmodules.vtkCommonDataModel.vtkPolyData]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -270,7 +270,7 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     return volume, cells</code></pre>
 </details>
 </dd>
-<dt id="simulation.postprocess.process_output"><code class="name flex">
+<dt id="nlisim.postprocess.process_output"><code class="name flex">
 <span>def <span class="ident">process_output</span></span>(<span>state_files: Iterable[pathlib.Path], postprocess_dir: pathlib.Path) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -301,16 +301,16 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.postprocess.convert_cells_to_vtk" href="#simulation.postprocess.convert_cells_to_vtk">convert_cells_to_vtk</a></code></li>
-<li><code><a title="simulation.postprocess.create_vtk_volume" href="#simulation.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
-<li><code><a title="simulation.postprocess.generate_vtk" href="#simulation.postprocess.generate_vtk">generate_vtk</a></code></li>
-<li><code><a title="simulation.postprocess.generate_vtk_objects" href="#simulation.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>
-<li><code><a title="simulation.postprocess.process_output" href="#simulation.postprocess.process_output">process_output</a></code></li>
+<li><code><a title="nlisim.postprocess.convert_cells_to_vtk" href="#nlisim.postprocess.convert_cells_to_vtk">convert_cells_to_vtk</a></code></li>
+<li><code><a title="nlisim.postprocess.create_vtk_volume" href="#nlisim.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
+<li><code><a title="nlisim.postprocess.generate_vtk" href="#nlisim.postprocess.generate_vtk">generate_vtk</a></code></li>
+<li><code><a title="nlisim.postprocess.generate_vtk_objects" href="#nlisim.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>
+<li><code><a title="nlisim.postprocess.process_output" href="#nlisim.postprocess.process_output">process_output</a></code></li>
 </ul>
 </li>
 </ul>

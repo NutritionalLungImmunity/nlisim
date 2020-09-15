@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.visualization API documentation</title>
+<title>nlisim.modules.visualization API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.visualization</code></h1>
+<h1 class="title">Module <code>nlisim.modules.visualization</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -36,12 +36,12 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support
 
-from simulation.cell import CellList
-from simulation.module import Module, ModuleState
-from simulation.modules.afumigatus import AfumigatusCellTreeList
-from simulation.modules.fungus import FungusCellData
-from simulation.modules.geometry import TissueTypes
-from simulation.state import State
+from nlisim.cell import CellList
+from nlisim.module import Module, ModuleState
+from nlisim.modules.afumigatus import AfumigatusCellTreeList
+from nlisim.modules.fungus import FungusCellData
+from nlisim.modules.geometry import TissueTypes
+from nlisim.state import State
 
 # suppress the future warning caused by numpy_to_vtk
 warnings.filterwarnings(&#39;ignore&#39;, category=FutureWarning)
@@ -246,7 +246,7 @@ class Visualization(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.visualization.VTKTypes"><code class="flex name class">
+<dt id="nlisim.modules.visualization.VTKTypes"><code class="flex name class">
 <span>class <span class="ident">VTKTypes</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
@@ -271,31 +271,31 @@ class Visualization(Module):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.visualization.VTKTypes.POLY_DATA"><code class="name">var <span class="ident">POLY_DATA</span></code></dt>
+<dt id="nlisim.modules.visualization.VTKTypes.POLY_DATA"><code class="name">var <span class="ident">POLY_DATA</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.visualization.VTKTypes.RECTILINEAR_GRID"><code class="name">var <span class="ident">RECTILINEAR_GRID</span></code></dt>
+<dt id="nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID"><code class="name">var <span class="ident">RECTILINEAR_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.visualization.VTKTypes.STRUCTURED_GRID"><code class="name">var <span class="ident">STRUCTURED_GRID</span></code></dt>
+<dt id="nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID"><code class="name">var <span class="ident">STRUCTURED_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.visualization.VTKTypes.STRUCTURED_POINTS"><code class="name">var <span class="ident">STRUCTURED_POINTS</span></code></dt>
+<dt id="nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS"><code class="name">var <span class="ident">STRUCTURED_POINTS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.visualization.VTKTypes.UNSTRUCTURED_GRID"><code class="name">var <span class="ident">UNSTRUCTURED_GRID</span></code></dt>
+<dt id="nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID"><code class="name">var <span class="ident">UNSTRUCTURED_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="simulation.modules.visualization.Visualization"><code class="flex name class">
+<dt id="nlisim.modules.visualization.Visualization"><code class="flex name class">
 <span>class <span class="ident">Visualization</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -476,11 +476,11 @@ class Visualization(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.modules.visualization.Visualization.write_poly_data"><code class="name flex">
+<dt id="nlisim.modules.visualization.Visualization.write_poly_data"><code class="name flex">
 <span>def <span class="ident">write_poly_data</span></span>(<span>var, filename: str, attr_names: str) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -531,7 +531,7 @@ def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
     writer.Write()</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.visualization.Visualization.write_structured_points"><code class="name flex">
+<dt id="nlisim.modules.visualization.Visualization.write_structured_points"><code class="name flex">
 <span>def <span class="ident">write_structured_points</span></span>(<span>var: numpy.ndarray, filename: str, dx: float, dy: float, dz: float) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -564,8 +564,8 @@ def write_structured_points(
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.visualization.Visualization.visualize"><code class="name flex">
-<span>def <span class="ident">visualize</span></span>(<span>self, state: <a title="simulation.state.State" href="../state.html#simulation.state.State">State</a>, json_config: dict, filename: str) ‑> NoneType</span>
+<dt id="nlisim.modules.visualization.Visualization.visualize"><code class="name flex">
+<span>def <span class="ident">visualize</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, json_config: dict, filename: str) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -629,21 +629,21 @@ def write_structured_points(
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.visualization.VisualizationState"><code class="flex name class">
+<dt id="nlisim.modules.visualization.VisualizationState"><code class="flex name class">
 <span>class <span class="ident">VisualizationState</span></span>
 <span>(</span><span>*, global_state: State, last_visualize: float = 0)</span>
 </code></dt>
@@ -666,23 +666,23 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.visualization.VisualizationState.last_visualize"><code class="name">var <span class="ident">last_visualize</span> : float</code></dt>
+<dt id="nlisim.modules.visualization.VisualizationState.last_visualize"><code class="name">var <span class="ident">last_visualize</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -698,33 +698,33 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.visualization.VTKTypes" href="#simulation.modules.visualization.VTKTypes">VTKTypes</a></code></h4>
+<h4><code><a title="nlisim.modules.visualization.VTKTypes" href="#nlisim.modules.visualization.VTKTypes">VTKTypes</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.visualization.VTKTypes.POLY_DATA" href="#simulation.modules.visualization.VTKTypes.POLY_DATA">POLY_DATA</a></code></li>
-<li><code><a title="simulation.modules.visualization.VTKTypes.RECTILINEAR_GRID" href="#simulation.modules.visualization.VTKTypes.RECTILINEAR_GRID">RECTILINEAR_GRID</a></code></li>
-<li><code><a title="simulation.modules.visualization.VTKTypes.STRUCTURED_GRID" href="#simulation.modules.visualization.VTKTypes.STRUCTURED_GRID">STRUCTURED_GRID</a></code></li>
-<li><code><a title="simulation.modules.visualization.VTKTypes.STRUCTURED_POINTS" href="#simulation.modules.visualization.VTKTypes.STRUCTURED_POINTS">STRUCTURED_POINTS</a></code></li>
-<li><code><a title="simulation.modules.visualization.VTKTypes.UNSTRUCTURED_GRID" href="#simulation.modules.visualization.VTKTypes.UNSTRUCTURED_GRID">UNSTRUCTURED_GRID</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VTKTypes.POLY_DATA" href="#nlisim.modules.visualization.VTKTypes.POLY_DATA">POLY_DATA</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID" href="#nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID">RECTILINEAR_GRID</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID" href="#nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID">STRUCTURED_GRID</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS" href="#nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS">STRUCTURED_POINTS</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID" href="#nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID">UNSTRUCTURED_GRID</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.visualization.Visualization" href="#simulation.modules.visualization.Visualization">Visualization</a></code></h4>
+<h4><code><a title="nlisim.modules.visualization.Visualization" href="#nlisim.modules.visualization.Visualization">Visualization</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.visualization.Visualization.visualize" href="#simulation.modules.visualization.Visualization.visualize">visualize</a></code></li>
-<li><code><a title="simulation.modules.visualization.Visualization.write_poly_data" href="#simulation.modules.visualization.Visualization.write_poly_data">write_poly_data</a></code></li>
-<li><code><a title="simulation.modules.visualization.Visualization.write_structured_points" href="#simulation.modules.visualization.Visualization.write_structured_points">write_structured_points</a></code></li>
+<li><code><a title="nlisim.modules.visualization.Visualization.visualize" href="#nlisim.modules.visualization.Visualization.visualize">visualize</a></code></li>
+<li><code><a title="nlisim.modules.visualization.Visualization.write_poly_data" href="#nlisim.modules.visualization.Visualization.write_poly_data">write_poly_data</a></code></li>
+<li><code><a title="nlisim.modules.visualization.Visualization.write_structured_points" href="#nlisim.modules.visualization.Visualization.write_structured_points">write_structured_points</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.visualization.VisualizationState" href="#simulation.modules.visualization.VisualizationState">VisualizationState</a></code></h4>
+<h4><code><a title="nlisim.modules.visualization.VisualizationState" href="#nlisim.modules.visualization.VisualizationState">VisualizationState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.visualization.VisualizationState.last_visualize" href="#simulation.modules.visualization.VisualizationState.last_visualize">last_visualize</a></code></li>
+<li><code><a title="nlisim.modules.visualization.VisualizationState.last_visualize" href="#nlisim.modules.visualization.VisualizationState.last_visualize">last_visualize</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.solver API documentation</title>
+<title>nlisim.solver API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.solver</code></h1>
+<h1 class="title">Module <code>nlisim.solver</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -33,9 +33,9 @@ from typing import Iterator, Tuple
 
 import attr
 
-from simulation.config import SimulationConfig
-from simulation.state import State
-from simulation.validation import context as validation_context
+from nlisim.config import SimulationConfig
+from nlisim.state import State
+from nlisim.validation import context as validation_context
 
 
 class Status(Enum):
@@ -118,8 +118,8 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.solver.advance"><code class="name flex">
-<span>def <span class="ident">advance</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, target_time: float) ‑> Iterator[<a title="simulation.state.State" href="state.html#simulation.state.State">State</a>]</span>
+<dt id="nlisim.solver.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, target_time: float) ‑> Iterator[<a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Advance a simulation to the given target time.</p></div>
@@ -145,8 +145,8 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
         yield state</code></pre>
 </details>
 </dd>
-<dt id="simulation.solver.finalize"><code class="name flex">
-<span>def <span class="ident">finalize</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.solver.finalize"><code class="name flex">
+<span>def <span class="ident">finalize</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -162,8 +162,8 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
     return state</code></pre>
 </details>
 </dd>
-<dt id="simulation.solver.initialize"><code class="name flex">
-<span>def <span class="ident">initialize</span></span>(<span>state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.solver.initialize"><code class="name flex">
+<span>def <span class="ident">initialize</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initialize a simulation state.</p></div>
@@ -184,8 +184,8 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
     return state</code></pre>
 </details>
 </dd>
-<dt id="simulation.solver.run"><code class="name flex">
-<span>def <span class="ident">run</span></span>(<span>config: <a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a>, target_time: float) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.solver.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>config: <a title="nlisim.config.SimulationConfig" href="config.html#nlisim.config.SimulationConfig">SimulationConfig</a>, target_time: float) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run a simulation to the target time and return the result.</p></div>
@@ -200,8 +200,8 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
     return state</code></pre>
 </details>
 </dd>
-<dt id="simulation.solver.run_iterator"><code class="name flex">
-<span>def <span class="ident">run_iterator</span></span>(<span>config: <a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a>, target_time: float) ‑> Iterator[Tuple[<a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, <a title="simulation.solver.Status" href="#simulation.solver.Status">Status</a>]]</span>
+<dt id="nlisim.solver.run_iterator"><code class="name flex">
+<span>def <span class="ident">run_iterator</span></span>(<span>config: <a title="nlisim.config.SimulationConfig" href="config.html#nlisim.config.SimulationConfig">SimulationConfig</a>, target_time: float) ‑> Iterator[Tuple[<a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, <a title="nlisim.solver.Status" href="#nlisim.solver.Status">Status</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initialize and advance a simulation to the target time.</p>
@@ -243,7 +243,7 @@ will:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.solver.Status"><code class="flex name class">
+<dt id="nlisim.solver.Status"><code class="flex name class">
 <span>class <span class="ident">Status</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
@@ -264,15 +264,15 @@ will:
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.solver.Status.finalize"><code class="name">var <span class="ident">finalize</span> : int</code></dt>
+<dt id="nlisim.solver.Status.finalize"><code class="name">var <span class="ident">finalize</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.solver.Status.initialize"><code class="name">var <span class="ident">initialize</span> : int</code></dt>
+<dt id="nlisim.solver.Status.initialize"><code class="name">var <span class="ident">initialize</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.solver.Status.time_step"><code class="name">var <span class="ident">time_step</span> : int</code></dt>
+<dt id="nlisim.solver.Status.time_step"><code class="name">var <span class="ident">time_step</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -289,26 +289,26 @@ will:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.solver.advance" href="#simulation.solver.advance">advance</a></code></li>
-<li><code><a title="simulation.solver.finalize" href="#simulation.solver.finalize">finalize</a></code></li>
-<li><code><a title="simulation.solver.initialize" href="#simulation.solver.initialize">initialize</a></code></li>
-<li><code><a title="simulation.solver.run" href="#simulation.solver.run">run</a></code></li>
-<li><code><a title="simulation.solver.run_iterator" href="#simulation.solver.run_iterator">run_iterator</a></code></li>
+<li><code><a title="nlisim.solver.advance" href="#nlisim.solver.advance">advance</a></code></li>
+<li><code><a title="nlisim.solver.finalize" href="#nlisim.solver.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.solver.initialize" href="#nlisim.solver.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.solver.run" href="#nlisim.solver.run">run</a></code></li>
+<li><code><a title="nlisim.solver.run_iterator" href="#nlisim.solver.run_iterator">run_iterator</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.solver.Status" href="#simulation.solver.Status">Status</a></code></h4>
+<h4><code><a title="nlisim.solver.Status" href="#nlisim.solver.Status">Status</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.solver.Status.finalize" href="#simulation.solver.Status.finalize">finalize</a></code></li>
-<li><code><a title="simulation.solver.Status.initialize" href="#simulation.solver.Status.initialize">initialize</a></code></li>
-<li><code><a title="simulation.solver.Status.time_step" href="#simulation.solver.Status.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.solver.Status.finalize" href="#nlisim.solver.Status.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.solver.Status.initialize" href="#nlisim.solver.Status.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.solver.Status.time_step" href="#nlisim.solver.Status.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.coordinates API documentation</title>
+<title>nlisim.coordinates API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.coordinates</code></h1>
+<h1 class="title">Module <code>nlisim.coordinates</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -111,7 +111,7 @@ class Voxel(Coordinate):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.coordinates.Coordinate"><code class="flex name class">
+<dt id="nlisim.coordinates.Coordinate"><code class="flex name class">
 <span>class <span class="ident">Coordinate</span></span>
 <span>(</span><span>*, x: float = 0, y: float = 0, z: float = 0)</span>
 </code></dt>
@@ -174,16 +174,16 @@ class Voxel(Coordinate):
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="simulation.coordinates.Point" href="#simulation.coordinates.Point">Point</a></li>
-<li><a title="simulation.coordinates.Voxel" href="#simulation.coordinates.Voxel">Voxel</a></li>
+<li><a title="nlisim.coordinates.Point" href="#nlisim.coordinates.Point">Point</a></li>
+<li><a title="nlisim.coordinates.Voxel" href="#nlisim.coordinates.Voxel">Voxel</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.coordinates.Coordinate.from_array"><code class="name flex">
-<span>def <span class="ident">from_array</span></span>(<span>array: numpy.ndarray) ‑> <a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></span>
+<dt id="nlisim.coordinates.Coordinate.from_array"><code class="name flex">
+<span>def <span class="ident">from_array</span></span>(<span>array: numpy.ndarray) ‑> <a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Generate a <code><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></code> vector from a 3-element array.</p></div>
+<div class="desc"><p>Generate a <code><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></code> vector from a 3-element array.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -199,7 +199,7 @@ def from_array(cls, array: np.ndarray) -&gt; &#39;Coordinate&#39;:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.coordinates.Coordinate.x"><code class="name">var <span class="ident">x</span> : float</code></dt>
+<dt id="nlisim.coordinates.Coordinate.x"><code class="name">var <span class="ident">x</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Return the <code>x</code>-coordinate of the vector.</p></div>
 <details class="source">
@@ -212,7 +212,7 @@ def x(self) -&gt; float:
     return self[2]</code></pre>
 </details>
 </dd>
-<dt id="simulation.coordinates.Coordinate.y"><code class="name">var <span class="ident">y</span> : float</code></dt>
+<dt id="nlisim.coordinates.Coordinate.y"><code class="name">var <span class="ident">y</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Return the <code>y</code>-coordinate of the vector.</p></div>
 <details class="source">
@@ -225,7 +225,7 @@ def y(self) -&gt; float:
     return self[1]</code></pre>
 </details>
 </dd>
-<dt id="simulation.coordinates.Coordinate.z"><code class="name">var <span class="ident">z</span> : float</code></dt>
+<dt id="nlisim.coordinates.Coordinate.z"><code class="name">var <span class="ident">z</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Return the <code>z</code>-coordinate of the vector.</p></div>
 <details class="source">
@@ -241,7 +241,7 @@ def z(self) -&gt; float:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.coordinates.Coordinate.norm"><code class="name flex">
+<dt id="nlisim.coordinates.Coordinate.norm"><code class="name flex">
 <span>def <span class="ident">norm</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -257,7 +257,7 @@ def z(self) -&gt; float:
 </dd>
 </dl>
 </dd>
-<dt id="simulation.coordinates.Point"><code class="flex name class">
+<dt id="nlisim.coordinates.Point"><code class="flex name class">
 <span>class <span class="ident">Point</span></span>
 <span>(</span><span>*, x: float = 0, y: float = 0, z: float = 0)</span>
 </code></dt>
@@ -274,30 +274,30 @@ def z(self) -&gt; float:
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></li>
+<li><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.coordinates.Point.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
+<dt id="nlisim.coordinates.Point.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></b></code>:
+<li><code><b><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.coordinates.Coordinate.from_array" href="#simulation.coordinates.Coordinate.from_array">from_array</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.norm" href="#simulation.coordinates.Coordinate.norm">norm</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.x" href="#simulation.coordinates.Coordinate.x">x</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.y" href="#simulation.coordinates.Coordinate.y">y</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.z" href="#simulation.coordinates.Coordinate.z">z</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.from_array" href="#nlisim.coordinates.Coordinate.from_array">from_array</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.norm" href="#nlisim.coordinates.Coordinate.norm">norm</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.x" href="#nlisim.coordinates.Coordinate.x">x</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.y" href="#nlisim.coordinates.Coordinate.y">y</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.z" href="#nlisim.coordinates.Coordinate.z">z</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.coordinates.Voxel"><code class="flex name class">
+<dt id="nlisim.coordinates.Voxel"><code class="flex name class">
 <span>class <span class="ident">Voxel</span></span>
 <span>(</span><span>*, x: float = 0, y: float = 0, z: float = 0)</span>
 </code></dt>
@@ -326,25 +326,25 @@ def z(self) -&gt; float:
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></li>
+<li><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.coordinates.Voxel.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
+<dt id="nlisim.coordinates.Voxel.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></b></code>:
+<li><code><b><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.coordinates.Coordinate.from_array" href="#simulation.coordinates.Coordinate.from_array">from_array</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.norm" href="#simulation.coordinates.Coordinate.norm">norm</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.x" href="#simulation.coordinates.Coordinate.x">x</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.y" href="#simulation.coordinates.Coordinate.y">y</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.z" href="#simulation.coordinates.Coordinate.z">z</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.from_array" href="#nlisim.coordinates.Coordinate.from_array">from_array</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.norm" href="#nlisim.coordinates.Coordinate.norm">norm</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.x" href="#nlisim.coordinates.Coordinate.x">x</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.y" href="#nlisim.coordinates.Coordinate.y">y</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.z" href="#nlisim.coordinates.Coordinate.z">z</a></code></li>
 </ul>
 </li>
 </ul>
@@ -360,31 +360,31 @@ def z(self) -&gt; float:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.coordinates.Coordinate" href="#simulation.coordinates.Coordinate">Coordinate</a></code></h4>
+<h4><code><a title="nlisim.coordinates.Coordinate" href="#nlisim.coordinates.Coordinate">Coordinate</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.coordinates.Coordinate.from_array" href="#simulation.coordinates.Coordinate.from_array">from_array</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.norm" href="#simulation.coordinates.Coordinate.norm">norm</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.x" href="#simulation.coordinates.Coordinate.x">x</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.y" href="#simulation.coordinates.Coordinate.y">y</a></code></li>
-<li><code><a title="simulation.coordinates.Coordinate.z" href="#simulation.coordinates.Coordinate.z">z</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.from_array" href="#nlisim.coordinates.Coordinate.from_array">from_array</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.norm" href="#nlisim.coordinates.Coordinate.norm">norm</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.x" href="#nlisim.coordinates.Coordinate.x">x</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.y" href="#nlisim.coordinates.Coordinate.y">y</a></code></li>
+<li><code><a title="nlisim.coordinates.Coordinate.z" href="#nlisim.coordinates.Coordinate.z">z</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.coordinates.Point" href="#simulation.coordinates.Point">Point</a></code></h4>
+<h4><code><a title="nlisim.coordinates.Point" href="#nlisim.coordinates.Point">Point</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.coordinates.Point.dtype" href="#simulation.coordinates.Point.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.coordinates.Point.dtype" href="#nlisim.coordinates.Point.dtype">dtype</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.coordinates.Voxel" href="#simulation.coordinates.Voxel">Voxel</a></code></h4>
+<h4><code><a title="nlisim.coordinates.Voxel" href="#nlisim.coordinates.Voxel">Voxel</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.coordinates.Voxel.dtype" href="#simulation.coordinates.Voxel.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.coordinates.Voxel.dtype" href="#nlisim.coordinates.Voxel.dtype">dtype</a></code></li>
 </ul>
 </li>
 </ul>

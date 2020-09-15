@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.phagocyte API documentation</title>
+<title>nlisim.modules.phagocyte API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.phagocyte</code></h1>
+<h1 class="title">Module <code>nlisim.modules.phagocyte</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,11 +34,11 @@ import random
 import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.modules.geometry import TissueTypes
-from simulation.random import rg
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.modules.geometry import TissueTypes
+from nlisim.random import rg
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -233,7 +233,7 @@ def logistic(x, lamb, bias):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.phagocyte.logistic"><code class="name flex">
+<dt id="nlisim.modules.phagocyte.logistic"><code class="name flex">
 <span>def <span class="ident">logistic</span></span>(<span>x, lamb, bias)</span>
 </code></dt>
 <dd>
@@ -251,7 +251,7 @@ def logistic(x, lamb, bias):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData"><code class="flex name class">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData"><code class="flex name class">
 <span>class <span class="ident">PhagocyteCellData</span></span>
 <span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
@@ -342,60 +342,60 @@ associated with each cell.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD"><code class="name">var <span class="ident">CHEMOKINE_THRESHOLD</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD"><code class="name">var <span class="ident">CHEMOKINE_THRESHOLD</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL"><code class="name">var <span class="ident">LEAVES_BOOL</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL"><code class="name">var <span class="ident">LEAVES_BOOL</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE"><code class="name">var <span class="ident">LEAVE_RATE</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE"><code class="name">var <span class="ident">LEAVE_RATE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE"><code class="name">var <span class="ident">RECRUIT_RATE</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE"><code class="name">var <span class="ident">RECRUIT_RATE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList"><code class="flex name class">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList"><code class="flex name class">
 <span>class <span class="ident">PhagocyteCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -414,11 +414,11 @@ This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>Method generated by attrs for class PhagocyteCellList.</p></div>
@@ -552,22 +552,22 @@ low-level array.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome"><code class="name flex">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome"><code class="name flex">
 <span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
 </code></dt>
 <dd>
@@ -586,8 +586,8 @@ low-level array.</p>
         return False</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.chemotaxis"><code class="name flex">
-<span>def <span class="ident">chemotaxis</span></span>(<span>self, molecule, drift_lambda, drift_bias, tissue, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis"><code class="name flex">
+<span>def <span class="ident">chemotaxis</span></span>(<span>self, molecule, drift_lambda, drift_bias, tissue, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -665,7 +665,7 @@ low-level array.</p>
                 break</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome"><code class="name flex">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome"><code class="name flex">
 <span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index)</span>
 </code></dt>
 <dd>
@@ -678,8 +678,8 @@ low-level array.</p>
     self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.is_moveable"><code class="name flex">
-<span>def <span class="ident">is_moveable</span></span>(<span>self, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.is_moveable"><code class="name flex">
+<span>def <span class="ident">is_moveable</span></span>(<span>self, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -695,7 +695,7 @@ low-level array.</p>
     )</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.len_phagosome"><code class="name flex">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome"><code class="name flex">
 <span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
 </code></dt>
 <dd>
@@ -709,8 +709,8 @@ low-level array.</p>
     return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.recruit"><code class="name flex">
-<span>def <span class="ident">recruit</span></span>(<span>self, rate, molecule, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.recruit"><code class="name flex">
+<span>def <span class="ident">recruit</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -725,8 +725,8 @@ low-level array.</p>
     return</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.remove"><code class="name flex">
-<span>def <span class="ident">remove</span></span>(<span>self, rate, molecule, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.remove"><code class="name flex">
+<span>def <span class="ident">remove</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -741,7 +741,7 @@ low-level array.</p>
     return</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome"><code class="name flex">
+<dt id="nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome"><code class="name flex">
 <span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
 </code></dt>
 <dd>
@@ -770,19 +770,19 @@ low-level array.</p>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
 </ul>
 </li>
 </ul>
@@ -798,42 +798,42 @@ low-level array.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.phagocyte.logistic" href="#simulation.modules.phagocyte.logistic">logistic</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.logistic" href="#nlisim.modules.phagocyte.logistic">logistic</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.phagocyte.PhagocyteCellData" href="#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></h4>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD" href="#simulation.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD">CHEMOKINE_THRESHOLD</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="#simulation.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="#simulation.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#simulation.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#simulation.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.State" href="#simulation.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellData.Status" href="#simulation.modules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD" href="#nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD">CHEMOKINE_THRESHOLD</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="#nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="#nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.State" href="#nlisim.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.Status" href="#nlisim.modules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.phagocyte.PhagocyteCellList" href="#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></code></h4>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteCellList" href="#nlisim.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.append_to_phagosome">append_to_phagosome</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.chemotaxis" href="#simulation.modules.phagocyte.PhagocyteCellList.chemotaxis">chemotaxis</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.grid" href="#simulation.modules.phagocyte.PhagocyteCellList.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.is_moveable" href="#simulation.modules.phagocyte.PhagocyteCellList.is_moveable">is_moveable</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.len_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.len_phagosome">len_phagosome</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.max_cells" href="#simulation.modules.phagocyte.PhagocyteCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.recruit" href="#simulation.modules.phagocyte.PhagocyteCellList.recruit">recruit</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.remove" href="#simulation.modules.phagocyte.PhagocyteCellList.remove">remove</a></code></li>
-<li><code><a title="simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome" href="#simulation.modules.phagocyte.PhagocyteCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome">append_to_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis" href="#nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis">chemotaxis</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.grid" href="#nlisim.modules.phagocyte.PhagocyteCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.is_moveable" href="#nlisim.modules.phagocyte.PhagocyteCellList.is_moveable">is_moveable</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome">len_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.max_cells" href="#nlisim.modules.phagocyte.PhagocyteCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.recruit" href="#nlisim.modules.phagocyte.PhagocyteCellList.recruit">recruit</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.remove" href="#nlisim.modules.phagocyte.PhagocyteCellList.remove">remove</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
 </ul>
 </li>
 </ul>

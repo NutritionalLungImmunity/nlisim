@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.cell API documentation</title>
+<title>nlisim.cell API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.cell</code></h1>
+<h1 class="title">Module <code>nlisim.cell</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,9 +34,9 @@ import attr
 from h5py import Group
 import numpy as np
 
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.state import get_class_path, State
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.state import get_class_path, State
 
 MAX_CELL_LIST_SIZE = 1000000
 
@@ -381,7 +381,7 @@ class CellList(object):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.cell.CellData"><code class="flex name class">
+<dt id="nlisim.cell.CellData"><code class="flex name class">
 <span>class <span class="ident">CellData</span></span>
 <span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
@@ -528,21 +528,21 @@ associated with each cell.</p>
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.afumigatus.AfumigatusCellData" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></li>
-<li><a title="simulation.modules.epithelium.EpitheliumCellData" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumCellData">EpitheliumCellData</a></li>
-<li><a title="simulation.modules.fungus.FungusCellData" href="modules/fungus.html#simulation.modules.fungus.FungusCellData">FungusCellData</a></li>
-<li><a title="simulation.modules.macrophage.MacrophageCellData" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageCellData">MacrophageCellData</a></li>
-<li><a title="simulation.modules.neutrophil.NeutrophilCellData" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></li>
-<li><a title="simulation.modules.phagocyte.PhagocyteCellData" href="modules/phagocyte.html#simulation.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
+<li><a title="nlisim.modules.afumigatus.AfumigatusCellData" href="modules/afumigatus.html#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></li>
+<li><a title="nlisim.modules.epithelium.EpitheliumCellData" href="modules/epithelium.html#nlisim.modules.epithelium.EpitheliumCellData">EpitheliumCellData</a></li>
+<li><a title="nlisim.modules.fungus.FungusCellData" href="modules/fungus.html#nlisim.modules.fungus.FungusCellData">FungusCellData</a></li>
+<li><a title="nlisim.modules.macrophage.MacrophageCellData" href="modules/macrophage.html#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></li>
+<li><a title="nlisim.modules.neutrophil.NeutrophilCellData" href="modules/neutrophil.html#nlisim.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></li>
+<li><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="modules/phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span> : List[Any]</code></dt>
+<dt id="nlisim.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span> : List[Any]</code></dt>
 <dd>
 <div class="desc"><p>This variable contains the base fields that all subclasses should include
 in their derived data type.</p></div>
 </dd>
-<dt id="simulation.cell.CellData.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
+<dt id="nlisim.cell.CellData.dtype"><code class="name">var <span class="ident">dtype</span></code></dt>
 <dd>
 <div class="desc"><p>Subclasses <strong>must</strong> override this value to append custom fields into each
 cell record.</p></div>
@@ -550,7 +550,7 @@ cell record.</p></div>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.cell.CellData.create_cell"><code class="name flex">
+<dt id="nlisim.cell.CellData.create_cell"><code class="name flex">
 <span>def <span class="ident">create_cell</span></span>(<span>**kwargs) ‑> numpy.record</span>
 </code></dt>
 <dd>
@@ -571,8 +571,8 @@ def create_cell(cls, **kwargs) -&gt; np.record:
     return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellData.create_cell_tuple"><code class="name flex">
-<span>def <span class="ident">create_cell_tuple</span></span>(<span>*, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a> = None, dead: bool = False)</span>
+<dt id="nlisim.cell.CellData.create_cell_tuple"><code class="name flex">
+<span>def <span class="ident">create_cell_tuple</span></span>(<span>*, point: <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a> = None, dead: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a tuple of fields attached to a single cell.</p>
@@ -603,8 +603,8 @@ def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
     return (point, dead)</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellData.point_mask"><code class="name flex">
-<span>def <span class="ident">point_mask</span></span>(<span>points: numpy.ndarray, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>)</span>
+<dt id="nlisim.cell.CellData.point_mask"><code class="name flex">
+<span>def <span class="ident">point_mask</span></span>(<span>points: numpy.ndarray, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generate a mask array from a set of points.</p>
@@ -637,9 +637,9 @@ def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
 </dd>
 </dl>
 </dd>
-<dt id="simulation.cell.CellList"><code class="flex name class">
+<dt id="nlisim.cell.CellList"><code class="flex name class">
 <span>class <span class="ident">CellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -653,16 +653,16 @@ transparently available.
 User-facing properties are sliced to make it
 appear as if the extra data is not there.</p>
 <p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
-a subclass of <code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code>.
+a subclass of <code><a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a></code>.
 This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>Method generated by attrs for class CellList.</p></div>
@@ -893,33 +893,33 @@ low-level array.</p>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.afumigatus.AfumigatusCellList" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></li>
-<li><a title="simulation.modules.epithelium.EpitheliumCellList" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></li>
-<li><a title="simulation.modules.fungus.FungusCellList" href="modules/fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a></li>
-<li><a title="simulation.modules.macrophage.MacrophageCellList" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></li>
-<li><a title="simulation.modules.neutrophil.NeutrophilCellList" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></li>
-<li><a title="simulation.modules.phagocyte.PhagocyteCellList" href="modules/phagocyte.html#simulation.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></li>
+<li><a title="nlisim.modules.afumigatus.AfumigatusCellList" href="modules/afumigatus.html#nlisim.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></li>
+<li><a title="nlisim.modules.epithelium.EpitheliumCellList" href="modules/epithelium.html#nlisim.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></li>
+<li><a title="nlisim.modules.fungus.FungusCellList" href="modules/fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a></li>
+<li><a title="nlisim.modules.macrophage.MacrophageCellList" href="modules/macrophage.html#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a></li>
+<li><a title="nlisim.modules.neutrophil.NeutrophilCellList" href="modules/neutrophil.html#nlisim.modules.neutrophil.NeutrophilCellList">NeutrophilCellList</a></li>
+<li><a title="nlisim.modules.phagocyte.PhagocyteCellList" href="modules/phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.cell.CellList.CellDataClass"><code class="name">var <span class="ident">CellDataClass</span> : Type[<a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>]</code></dt>
+<dt id="nlisim.cell.CellList.CellDataClass"><code class="name">var <span class="ident">CellDataClass</span> : Type[<a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a>]</code></dt>
 <dd>
-<div class="desc"><p>A class that overrides <code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code> that represents the format of the data
+<div class="desc"><p>A class that overrides <code><a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a></code> that represents the format of the data
 contained in the list.</p></div>
 </dd>
-<dt id="simulation.cell.CellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.cell.CellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.cell.CellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.cell.CellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.cell.CellList.create_from_seed"><code class="name flex">
-<span>def <span class="ident">create_from_seed</span></span>(<span>grid: <a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, **kwargs) ‑> <a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></span>
+<dt id="nlisim.cell.CellList.create_from_seed"><code class="name flex">
+<span>def <span class="ident">create_from_seed</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, **kwargs) ‑> <a title="nlisim.cell.CellList" href="#nlisim.cell.CellList">CellList</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new cell list initialized with a single cell.</p>
@@ -942,14 +942,14 @@ def create_from_seed(cls, grid: RectangularGrid, **kwargs) -&gt; &#39;CellList&#
     return cls(grid=grid, cell_data=cell_data)</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>global_state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></span>
+<dt id="nlisim.cell.CellList.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>global_state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="nlisim.cell.CellList" href="#nlisim.cell.CellList">CellList</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load a cell list object.</p>
-<p>Load a <code><a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></code> subclass from a composite group inside an HDF5 file.
+<p>Load a <code><a title="nlisim.cell.CellList" href="#nlisim.cell.CellList">CellList</a></code> subclass from a composite group inside an HDF5 file.
 As with
-<code><a title="simulation.cell.CellList.save" href="#simulation.cell.CellList.save">CellList.save()</a></code>, subclasses should not need to override this
+<code>simulation.cell.CellList.save</code>, subclasses should not need to override this
 method.</p></div>
 <details class="source">
 <summary>
@@ -975,7 +975,7 @@ def load(cls, global_state: State, group: Group, name: str, metadata: dict) -&gt
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.cell.CellList.cell_data"><code class="name">var <span class="ident">cell_data</span> : <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code></dt>
+<dt id="nlisim.cell.CellList.cell_data"><code class="name">var <span class="ident">cell_data</span> : <a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a></code></dt>
 <dd>
 <div class="desc"><p>Return the portion of the underlying data array containing valid data.</p></div>
 <details class="source">
@@ -988,7 +988,7 @@ def cell_data(self) -&gt; CellData:
     return self._cell_data[: self._ncells]</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.voxel_index"><code class="name">var <span class="ident">voxel_index</span></code></dt>
+<dt id="nlisim.cell.CellList.voxel_index"><code class="name">var <span class="ident">voxel_index</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1003,7 +1003,7 @@ def voxel_index(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.cell.CellList.alive"><code class="name flex">
+<dt id="nlisim.cell.CellList.alive"><code class="name flex">
 <span>def <span class="ident">alive</span></span>(<span>self, sample: Iterable = None) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -1080,7 +1080,7 @@ for index in cells.alive(sample):
     return sample_indices[mask]</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.append"><code class="name flex">
+<dt id="nlisim.cell.CellList.append"><code class="name flex">
 <span>def <span class="ident">append</span></span>(<span>self, cell: Any) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -1102,8 +1102,8 @@ for index in cells.alive(sample):
     self._reverse_voxel_index.append(voxel)</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.extend"><code class="name flex">
-<span>def <span class="ident">extend</span></span>(<span>self, cells: Iterable[<a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>]) ‑> NoneType</span>
+<dt id="nlisim.cell.CellList.extend"><code class="name flex">
+<span>def <span class="ident">extend</span></span>(<span>self, cells: Iterable[<a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a>]) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Extend the cell list by multiple cells.</p></div>
@@ -1117,8 +1117,8 @@ for index in cells.alive(sample):
         self.append(cell)</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.get_cells_in_voxel"><code class="name flex">
-<span>def <span class="ident">get_cells_in_voxel</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) ‑> numpy.ndarray</span>
+<dt id="nlisim.cell.CellList.get_cells_in_voxel"><code class="name flex">
+<span>def <span class="ident">get_cells_in_voxel</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a list of cell indices contained in a given voxel.</p></div>
@@ -1131,8 +1131,8 @@ for index in cells.alive(sample):
     return np.asarray(sorted((self._voxel_index[voxel])))</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.get_neighboring_cells"><code class="name flex">
-<span>def <span class="ident">get_neighboring_cells</span></span>(<span>self, cell: <a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a>) ‑> numpy.ndarray</span>
+<dt id="nlisim.cell.CellList.get_neighboring_cells"><code class="name flex">
+<span>def <span class="ident">get_neighboring_cells</span></span>(<span>self, cell: <a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a list of cells indices in the same voxel.</p></div>
@@ -1145,7 +1145,7 @@ for index in cells.alive(sample):
     return self.get_cells_in_voxel(self.grid.get_voxel(cell[&#39;point&#39;]))</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.save"><code class="name flex">
+<dt id="nlisim.cell.CellList.save"><code class="name flex">
 <span>def <span class="ident">save</span></span>(<span>self, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> h5py._hl.group.Group</span>
 </code></dt>
 <dd>
@@ -1180,7 +1180,7 @@ class so that it can be deserialized into the correct type.</p></div>
     return composite_group</code></pre>
 </details>
 </dd>
-<dt id="simulation.cell.CellList.update_voxel_index"><code class="name flex">
+<dt id="nlisim.cell.CellList.update_voxel_index"><code class="name flex">
 <span>def <span class="ident">update_voxel_index</span></span>(<span>self, indices: Iterable = None)</span>
 </code></dt>
 <dd>
@@ -1233,38 +1233,38 @@ voxel.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.cell.CellData" href="#simulation.cell.CellData">CellData</a></code></h4>
+<h4><code><a title="nlisim.cell.CellData" href="#nlisim.cell.CellData">CellData</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.cell.CellData.FIELDS" href="#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell" href="#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.cell.CellData.dtype" href="#simulation.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="simulation.cell.CellData.point_mask" href="#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.cell.CellList" href="#simulation.cell.CellList">CellList</a></code></h4>
+<h4><code><a title="nlisim.cell.CellList" href="#nlisim.cell.CellList">CellList</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.cell.CellList.CellDataClass" href="#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.cell.CellList.alive" href="#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.cell.CellList.append" href="#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.cell.CellList.cell_data" href="#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.cell.CellList.create_from_seed" href="#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.cell.CellList.extend" href="#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.grid" href="#simulation.cell.CellList.grid">grid</a></code></li>
-<li><code><a title="simulation.cell.CellList.load" href="#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.cell.CellList.max_cells" href="#simulation.cell.CellList.max_cells">max_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.save" href="#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.cell.CellList.update_voxel_index" href="#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
-<li><code><a title="simulation.cell.CellList.voxel_index" href="#simulation.cell.CellList.voxel_index">voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.grid" href="#nlisim.cell.CellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.max_cells" href="#nlisim.cell.CellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.voxel_index" href="#nlisim.cell.CellList.voxel_index">voxel_index</a></code></li>
 </ul>
 </li>
 </ul>

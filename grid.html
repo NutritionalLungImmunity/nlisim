@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.grid API documentation</title>
+<title>nlisim.grid API documentation</title>
 <meta name="description" content="Domain discretization interface …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.grid</code></h1>
+<h1 class="title">Module <code>nlisim.grid</code></h1>
 </header>
 <section id="section-intro">
 <p>Domain discretization interface.</p>
@@ -50,7 +50,7 @@ geometry of these voxels is arbitrary and unstructured, but currently only
 implemented.
 For these grids, all voxels are hyper-rectangles and are aligned
 along the domains axes.
-See the <code><a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></code> implementation
+See the <code>simulation.grid.RectangularGrid</code> implementation
 for details.</p>
 <details class="source">
 <summary>
@@ -88,7 +88,7 @@ import attr
 from h5py import File as H5File
 import numpy as np
 
-from simulation.coordinates import Point, Voxel
+from nlisim.coordinates import Point, Voxel
 
 ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]
@@ -403,7 +403,7 @@ class RectangularGrid(object):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.grid.RectangularGrid"><code class="flex name class">
+<dt id="nlisim.grid.RectangularGrid"><code class="flex name class">
 <span>class <span class="ident">RectangularGrid</span></span>
 <span>(</span><span>x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, xv: numpy.ndarray, yv: numpy.ndarray, zv: numpy.ndarray)</span>
 </code></dt>
@@ -773,35 +773,35 @@ right edge of the previous element.</p>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.grid.RectangularGrid.x"><code class="name">var <span class="ident">x</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.x"><code class="name">var <span class="ident">x</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.grid.RectangularGrid.xv"><code class="name">var <span class="ident">xv</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.xv"><code class="name">var <span class="ident">xv</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.grid.RectangularGrid.y"><code class="name">var <span class="ident">y</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.y"><code class="name">var <span class="ident">y</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.grid.RectangularGrid.yv"><code class="name">var <span class="ident">yv</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.yv"><code class="name">var <span class="ident">yv</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.grid.RectangularGrid.z"><code class="name">var <span class="ident">z</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.z"><code class="name">var <span class="ident">z</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.grid.RectangularGrid.zv"><code class="name">var <span class="ident">zv</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.grid.RectangularGrid.zv"><code class="name">var <span class="ident">zv</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.grid.RectangularGrid.construct_uniform"><code class="name flex">
-<span>def <span class="ident">construct_uniform</span></span>(<span>shape: Tuple[int, int, int], spacing: Tuple[float, float, float]) ‑> <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></span>
+<dt id="nlisim.grid.RectangularGrid.construct_uniform"><code class="name flex">
+<span>def <span class="ident">construct_uniform</span></span>(<span>shape: Tuple[int, int, int], spacing: Tuple[float, float, float]) ‑> <a title="nlisim.grid.RectangularGrid" href="#nlisim.grid.RectangularGrid">RectangularGrid</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a rectangular grid with uniform spacing in each axis.</p></div>
@@ -820,8 +820,8 @@ def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -&gt; &#39;Re
     return cls(x=x, y=y, z=z, xv=xv, yv=yv, zv=zv)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>file: h5py._hl.files.File) ‑> <a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></span>
+<dt id="nlisim.grid.RectangularGrid.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>file: h5py._hl.files.File) ‑> <a title="nlisim.grid.RectangularGrid" href="#nlisim.grid.RectangularGrid">RectangularGrid</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generate a grid object from an existing HDF5 file.</p></div>
@@ -841,7 +841,7 @@ def load(cls, file: H5File) -&gt; &#39;RectangularGrid&#39;:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.grid.RectangularGrid.meshgrid"><code class="name">var <span class="ident">meshgrid</span> : List[numpy.ndarray]</code></dt>
+<dt id="nlisim.grid.RectangularGrid.meshgrid"><code class="name">var <span class="ident">meshgrid</span> : List[numpy.ndarray]</code></dt>
 <dd>
 <div class="desc"><p>Return the coordinate grid representation.</p>
 <p>This returns three 3D arrays containing the z, y, x coordinates
@@ -873,7 +873,7 @@ def meshgrid(self) -&gt; List[np.ndarray]:
     return np.meshgrid(self.z, self.y, self.x, indexing=&#39;ij&#39;, copy=False)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.shape"><code class="name">var <span class="ident">shape</span> : Tuple[int, int, int]</code></dt>
+<dt id="nlisim.grid.RectangularGrid.shape"><code class="name">var <span class="ident">shape</span> : Tuple[int, int, int]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -888,7 +888,7 @@ def shape(self) -&gt; ShapeType:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.grid.RectangularGrid.allocate_variable"><code class="name flex">
+<dt id="nlisim.grid.RectangularGrid.allocate_variable"><code class="name flex">
 <span>def <span class="ident">allocate_variable</span></span>(<span>self, dtype: numpy.dtype = dtype('float64')) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -902,7 +902,7 @@ def shape(self) -&gt; ShapeType:
     return np.zeros(self.shape, dtype=dtype)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.delta"><code class="name flex">
+<dt id="nlisim.grid.RectangularGrid.delta"><code class="name flex">
 <span>def <span class="ident">delta</span></span>(<span>self, axis: int) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -925,14 +925,14 @@ def shape(self) -&gt; ShapeType:
     return np.diff(meshgrid, axis=axis)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_adjecent_voxels"><code class="name flex">
-<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>, corners: bool = False) ‑> Iterator[<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>]</span>
+<dt id="nlisim.grid.RectangularGrid.get_adjecent_voxels"><code class="name flex">
+<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, corners: bool = False) ‑> Iterator[<a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return an iterator over all neighbors of a given voxel.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>voxel</code></strong> :&ensp;<code><a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></code></dt>
+<dt><strong><code>voxel</code></strong> :&ensp;<code>simulation.coordinates.Voxel</code></dt>
 <dd>The target voxel</dd>
 <dt><strong><code>corners</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Include voxels sharing corners and edges in addition to those sharing sides.</dd>
@@ -968,8 +968,8 @@ def shape(self) -&gt; ShapeType:
             yield neighbor</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_flattened_index"><code class="name flex">
-<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) ‑> int</span>
+<dt id="nlisim.grid.RectangularGrid.get_flattened_index"><code class="name flex">
+<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> int</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the flattened index of a voxel inside the grid.</p>
@@ -986,14 +986,14 @@ def shape(self) -&gt; ShapeType:
     return np.ravel_multi_index(voxel, self.shape)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_nearest_voxel"><code class="name flex">
-<span>def <span class="ident">get_nearest_voxel</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) ‑> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
+<dt id="nlisim.grid.RectangularGrid.get_nearest_voxel"><code class="name flex">
+<span>def <span class="ident">get_nearest_voxel</span></span>(<span>self, point: <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a>) ‑> <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the nearest voxel to a given point.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>point</code></strong> :&ensp;<code><a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></code></dt>
+<dt><strong><code>point</code></strong> :&ensp;<code>simulation.coordinates.Point</code></dt>
 <dd>The target point</dd>
 </dl></div>
 <details class="source">
@@ -1016,8 +1016,8 @@ def shape(self) -&gt; ShapeType:
     return self.get_voxel(point)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_voxel"><code class="name flex">
-<span>def <span class="ident">get_voxel</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) ‑> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
+<dt id="nlisim.grid.RectangularGrid.get_voxel"><code class="name flex">
+<span>def <span class="ident">get_voxel</span></span>(<span>self, point: <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a>) ‑> <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the voxel containing the given point.</p>
@@ -1051,8 +1051,8 @@ the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></
     return Voxel(x=ix, y=iy, z=iz)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_voxel_center"><code class="name flex">
-<span>def <span class="ident">get_voxel_center</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) ‑> <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></span>
+<dt id="nlisim.grid.RectangularGrid.get_voxel_center"><code class="name flex">
+<span>def <span class="ident">get_voxel_center</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Get the coordinates of the center point of a voxel.</p></div>
@@ -1065,8 +1065,8 @@ the <code>is_valid_voxel</code> method to determine if the voxel is valid.</p></
     return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.get_voxels_in_range"><code class="name flex">
-<span>def <span class="ident">get_voxels_in_range</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>, distance: float) ‑> Iterator[Tuple[<a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>, float]]</span>
+<dt id="nlisim.grid.RectangularGrid.get_voxels_in_range"><code class="name flex">
+<span>def <span class="ident">get_voxels_in_range</span></span>(<span>self, point: <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a>, distance: float) ‑> Iterator[Tuple[<a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, float]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return an iterator of voxels within a given distance of a point.</p>
@@ -1080,7 +1080,7 @@ For example,</p>
 iterated.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>point</code></strong> :&ensp;<code><a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a></code></dt>
+<dt><strong><code>point</code></strong> :&ensp;<code>simulation.coordinates.Point</code></dt>
 <dd>The center point</dd>
 <dt><strong><code>distance</code></strong> :&ensp;<code>float</code></dt>
 <dd>Return all voxels with centers less than the distance from the center point</dd>
@@ -1145,8 +1145,8 @@ iterated.</p>
                     yield Voxel(x=(i + i0), y=(j + j0), z=(k + k0)), d</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.is_point_in_domain"><code class="name flex">
-<span>def <span class="ident">is_point_in_domain</span></span>(<span>self, point: <a title="simulation.coordinates.Point" href="coordinates.html#simulation.coordinates.Point">Point</a>) ‑> bool</span>
+<dt id="nlisim.grid.RectangularGrid.is_point_in_domain"><code class="name flex">
+<span>def <span class="ident">is_point_in_domain</span></span>(<span>self, point: <a title="nlisim.coordinates.Point" href="coordinates.html#nlisim.coordinates.Point">Point</a>) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return whether or not a point in inside the domain.</p></div>
@@ -1163,8 +1163,8 @@ iterated.</p>
     )</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.is_valid_voxel"><code class="name flex">
-<span>def <span class="ident">is_valid_voxel</span></span>(<span>self, voxel: <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a>) ‑> bool</span>
+<dt id="nlisim.grid.RectangularGrid.is_valid_voxel"><code class="name flex">
+<span>def <span class="ident">is_valid_voxel</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return whether or not a voxel index is valid.</p></div>
@@ -1178,7 +1178,7 @@ iterated.</p>
     return 0 &lt;= v.x &lt; len(self.x) and 0 &lt;= v.y &lt; len(self.y) and 0 &lt;= v.z &lt; len(self.z)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.save"><code class="name flex">
+<dt id="nlisim.grid.RectangularGrid.save"><code class="name flex">
 <span>def <span class="ident">save</span></span>(<span>self, file: h5py._hl.files.File) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -1194,8 +1194,8 @@ iterated.</p>
         d.make_scale(dim)</code></pre>
 </details>
 </dd>
-<dt id="simulation.grid.RectangularGrid.voxel_from_flattened_index"><code class="name flex">
-<span>def <span class="ident">voxel_from_flattened_index</span></span>(<span>self, index: int) ‑> <a title="simulation.coordinates.Voxel" href="coordinates.html#simulation.coordinates.Voxel">Voxel</a></span>
+<dt id="nlisim.grid.RectangularGrid.voxel_from_flattened_index"><code class="name flex">
+<span>def <span class="ident">voxel_from_flattened_index</span></span>(<span>self, index: int) ‑> <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a Voxel from flattened index of the grid.</p>
@@ -1226,36 +1226,36 @@ iterated.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.grid.RectangularGrid" href="#simulation.grid.RectangularGrid">RectangularGrid</a></code></h4>
+<h4><code><a title="nlisim.grid.RectangularGrid" href="#nlisim.grid.RectangularGrid">RectangularGrid</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.grid.RectangularGrid.allocate_variable" href="#simulation.grid.RectangularGrid.allocate_variable">allocate_variable</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.construct_uniform" href="#simulation.grid.RectangularGrid.construct_uniform">construct_uniform</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.delta" href="#simulation.grid.RectangularGrid.delta">delta</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_adjecent_voxels" href="#simulation.grid.RectangularGrid.get_adjecent_voxels">get_adjecent_voxels</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_flattened_index" href="#simulation.grid.RectangularGrid.get_flattened_index">get_flattened_index</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_nearest_voxel" href="#simulation.grid.RectangularGrid.get_nearest_voxel">get_nearest_voxel</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_voxel" href="#simulation.grid.RectangularGrid.get_voxel">get_voxel</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_voxel_center" href="#simulation.grid.RectangularGrid.get_voxel_center">get_voxel_center</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.get_voxels_in_range" href="#simulation.grid.RectangularGrid.get_voxels_in_range">get_voxels_in_range</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.is_point_in_domain" href="#simulation.grid.RectangularGrid.is_point_in_domain">is_point_in_domain</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.is_valid_voxel" href="#simulation.grid.RectangularGrid.is_valid_voxel">is_valid_voxel</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.load" href="#simulation.grid.RectangularGrid.load">load</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.meshgrid" href="#simulation.grid.RectangularGrid.meshgrid">meshgrid</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.save" href="#simulation.grid.RectangularGrid.save">save</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.shape" href="#simulation.grid.RectangularGrid.shape">shape</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.voxel_from_flattened_index" href="#simulation.grid.RectangularGrid.voxel_from_flattened_index">voxel_from_flattened_index</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.x" href="#simulation.grid.RectangularGrid.x">x</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.xv" href="#simulation.grid.RectangularGrid.xv">xv</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.y" href="#simulation.grid.RectangularGrid.y">y</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.yv" href="#simulation.grid.RectangularGrid.yv">yv</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.z" href="#simulation.grid.RectangularGrid.z">z</a></code></li>
-<li><code><a title="simulation.grid.RectangularGrid.zv" href="#simulation.grid.RectangularGrid.zv">zv</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.allocate_variable" href="#nlisim.grid.RectangularGrid.allocate_variable">allocate_variable</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.construct_uniform" href="#nlisim.grid.RectangularGrid.construct_uniform">construct_uniform</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.delta" href="#nlisim.grid.RectangularGrid.delta">delta</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_adjecent_voxels" href="#nlisim.grid.RectangularGrid.get_adjecent_voxels">get_adjecent_voxels</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_flattened_index" href="#nlisim.grid.RectangularGrid.get_flattened_index">get_flattened_index</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_nearest_voxel" href="#nlisim.grid.RectangularGrid.get_nearest_voxel">get_nearest_voxel</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_voxel" href="#nlisim.grid.RectangularGrid.get_voxel">get_voxel</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_voxel_center" href="#nlisim.grid.RectangularGrid.get_voxel_center">get_voxel_center</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_voxels_in_range" href="#nlisim.grid.RectangularGrid.get_voxels_in_range">get_voxels_in_range</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.is_point_in_domain" href="#nlisim.grid.RectangularGrid.is_point_in_domain">is_point_in_domain</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.is_valid_voxel" href="#nlisim.grid.RectangularGrid.is_valid_voxel">is_valid_voxel</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.load" href="#nlisim.grid.RectangularGrid.load">load</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.meshgrid" href="#nlisim.grid.RectangularGrid.meshgrid">meshgrid</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.save" href="#nlisim.grid.RectangularGrid.save">save</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.shape" href="#nlisim.grid.RectangularGrid.shape">shape</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.voxel_from_flattened_index" href="#nlisim.grid.RectangularGrid.voxel_from_flattened_index">voxel_from_flattened_index</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.x" href="#nlisim.grid.RectangularGrid.x">x</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.xv" href="#nlisim.grid.RectangularGrid.xv">xv</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.y" href="#nlisim.grid.RectangularGrid.y">y</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.yv" href="#nlisim.grid.RectangularGrid.yv">yv</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.z" href="#nlisim.grid.RectangularGrid.z">z</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.zv" href="#nlisim.grid.RectangularGrid.zv">zv</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.config API documentation</title>
+<title>nlisim.config API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.config</code></h1>
+<h1 class="title">Module <code>nlisim.config</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -38,8 +38,8 @@ from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
-    from simulation.module import Module  # noqa
-    from simulation.state import State  # noqa
+    from nlisim.module import Module  # noqa
+    from nlisim.state import State  # noqa
 
 
 DEFAULTS = {
@@ -113,7 +113,7 @@ class SimulationConfig(ConfigParser):
     @classmethod
     def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
         &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
-        from simulation.module import Module  # noqa avoid circular imports
+        from nlisim.module import Module  # noqa avoid circular imports
 
         if path is None:
             path = repr(func)
@@ -176,7 +176,7 @@ class SimulationConfig(ConfigParser):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.config.SimulationConfig"><code class="flex name class">
+<dt id="nlisim.config.SimulationConfig"><code class="flex name class">
 <span>class <span class="ident">SimulationConfig</span></span>
 <span>(</span><span>*config_sources: Union[str, pathlib.PurePath, TextIO, dict])</span>
 </code></dt>
@@ -244,7 +244,7 @@ class SimulationConfig(ConfigParser):
     @classmethod
     def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
         &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
-        from simulation.module import Module  # noqa avoid circular imports
+        from nlisim.module import Module  # noqa avoid circular imports
 
         if path is None:
             path = repr(func)
@@ -310,7 +310,7 @@ class SimulationConfig(ConfigParser):
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.config.SimulationConfig.load_module"><code class="name flex">
+<dt id="nlisim.config.SimulationConfig.load_module"><code class="name flex">
 <span>def <span class="ident">load_module</span></span>(<span>path: str) ‑> Type[_ForwardRef('Module')]</span>
 </code></dt>
 <dd>
@@ -331,7 +331,7 @@ def load_module(cls, path: str) -&gt; Type[&#39;Module&#39;]:
     return func</code></pre>
 </details>
 </dd>
-<dt id="simulation.config.SimulationConfig.parselist"><code class="name flex">
+<dt id="nlisim.config.SimulationConfig.parselist"><code class="name flex">
 <span>def <span class="ident">parselist</span></span>(<span>value: str) ‑> List[str]</span>
 </code></dt>
 <dd>
@@ -356,7 +356,7 @@ def parselist(cls, value: str) -&gt; List[str]:
     return values</code></pre>
 </details>
 </dd>
-<dt id="simulation.config.SimulationConfig.validate_module"><code class="name flex">
+<dt id="nlisim.config.SimulationConfig.validate_module"><code class="name flex">
 <span>def <span class="ident">validate_module</span></span>(<span>func: Type[_ForwardRef('Module')], path: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
@@ -368,7 +368,7 @@ def parselist(cls, value: str) -&gt; List[str]:
 <pre><code class="python">@classmethod
 def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = None) -&gt; None:
     &#34;&#34;&#34;Validate basic aspects of a module class.&#34;&#34;&#34;
-    from simulation.module import Module  # noqa avoid circular imports
+    from nlisim.module import Module  # noqa avoid circular imports
 
     if path is None:
         path = repr(func)
@@ -382,7 +382,7 @@ def validate_module(cls, func: Type[&#39;Module&#39;], path: Optional[str] = Non
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.config.SimulationConfig.modules"><code class="name">var <span class="ident">modules</span> : List[_ForwardRef('Module')]</code></dt>
+<dt id="nlisim.config.SimulationConfig.modules"><code class="name">var <span class="ident">modules</span> : List[_ForwardRef('Module')]</code></dt>
 <dd>
 <div class="desc"><p>Return a list of instantiated modules connected to this config.</p></div>
 <details class="source">
@@ -398,7 +398,7 @@ def modules(self) -&gt; List[&#39;Module&#39;]:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.config.SimulationConfig.add_module"><code class="name flex">
+<dt id="nlisim.config.SimulationConfig.add_module"><code class="name flex">
 <span>def <span class="ident">add_module</span></span>(<span>self, module_ref: Union[str, Type[_ForwardRef('Module')]])</span>
 </code></dt>
 <dd>
@@ -421,7 +421,7 @@ def modules(self) -&gt; List[&#39;Module&#39;]:
     self._modules[module.name] = module</code></pre>
 </details>
 </dd>
-<dt id="simulation.config.SimulationConfig.getlist"><code class="name flex">
+<dt id="nlisim.config.SimulationConfig.getlist"><code class="name flex">
 <span>def <span class="ident">getlist</span></span>(<span>self, section: str, option: str) ‑> List[str]</span>
 </code></dt>
 <dd>
@@ -485,20 +485,20 @@ value = a b
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.config.SimulationConfig" href="#simulation.config.SimulationConfig">SimulationConfig</a></code></h4>
+<h4><code><a title="nlisim.config.SimulationConfig" href="#nlisim.config.SimulationConfig">SimulationConfig</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.config.SimulationConfig.add_module" href="#simulation.config.SimulationConfig.add_module">add_module</a></code></li>
-<li><code><a title="simulation.config.SimulationConfig.getlist" href="#simulation.config.SimulationConfig.getlist">getlist</a></code></li>
-<li><code><a title="simulation.config.SimulationConfig.load_module" href="#simulation.config.SimulationConfig.load_module">load_module</a></code></li>
-<li><code><a title="simulation.config.SimulationConfig.modules" href="#simulation.config.SimulationConfig.modules">modules</a></code></li>
-<li><code><a title="simulation.config.SimulationConfig.parselist" href="#simulation.config.SimulationConfig.parselist">parselist</a></code></li>
-<li><code><a title="simulation.config.SimulationConfig.validate_module" href="#simulation.config.SimulationConfig.validate_module">validate_module</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.add_module" href="#nlisim.config.SimulationConfig.add_module">add_module</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.getlist" href="#nlisim.config.SimulationConfig.getlist">getlist</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.load_module" href="#nlisim.config.SimulationConfig.load_module">load_module</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.modules" href="#nlisim.config.SimulationConfig.modules">modules</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.parselist" href="#nlisim.config.SimulationConfig.parselist">parselist</a></code></li>
+<li><code><a title="nlisim.config.SimulationConfig.validate_module" href="#nlisim.config.SimulationConfig.validate_module">validate_module</a></code></li>
 </ul>
 </li>
 </ul>

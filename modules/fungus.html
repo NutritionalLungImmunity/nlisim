@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.fungus API documentation</title>
+<title>nlisim.modules.fungus API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.fungus</code></h1>
+<h1 class="title">Module <code>nlisim.modules.fungus</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -32,12 +32,12 @@
 import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.module import Module, ModuleState
-from simulation.modules.geometry import TissueTypes
-from simulation.random import rg
-from simulation.state import State
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.module import Module, ModuleState
+from nlisim.modules.geometry import TissueTypes
+from nlisim.random import rg
+from nlisim.state import State
 
 
 class FungusCellData(CellData):
@@ -368,8 +368,8 @@ class Fungus(Module):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.fungus.cell_list_factory"><code class="name flex">
-<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="simulation.modules.fungus.FungusState" href="#simulation.modules.fungus.FungusState">FungusState</a>)</span>
+<dt id="nlisim.modules.fungus.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.fungus.FungusState" href="#nlisim.modules.fungus.FungusState">FungusState</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -386,9 +386,9 @@ class Fungus(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.fungus.Fungus"><code class="flex name class">
+<dt id="nlisim.modules.fungus.Fungus"><code class="flex name class">
 <span>class <span class="ident">Fungus</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -460,25 +460,25 @@ class Fungus(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellData"><code class="flex name class">
+<dt id="nlisim.modules.fungus.FungusCellData"><code class="flex name class">
 <span>class <span class="ident">FungusCellData</span></span>
 <span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
@@ -567,40 +567,40 @@ associated with each cell.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS"><code class="name">var <span class="ident">FUNGUS_FIELDS</span></code></dt>
+<dt id="nlisim.modules.fungus.FungusCellData.FUNGUS_FIELDS"><code class="name">var <span class="ident">FUNGUS_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellData.Form"><code class="name">var <span class="ident">Form</span></code></dt>
+<dt id="nlisim.modules.fungus.FungusCellData.Form"><code class="name">var <span class="ident">Form</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dt id="nlisim.modules.fungus.FungusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList"><code class="flex name class">
+<dt id="nlisim.modules.fungus.FungusCellList"><code class="flex name class">
 <span>class <span class="ident">FungusCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -619,11 +619,11 @@ This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>Method generated by attrs for class FungusCellList.</p></div>
@@ -817,22 +817,22 @@ low-level array.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.fungus.FungusCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.fungus.FungusCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.modules.fungus.FungusCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.fungus.FungusCellList.age"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.age"><code class="name flex">
 <span>def <span class="ident">age</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -846,7 +846,7 @@ low-level array.</p>
     np.add.at(self.cell_data[&#39;iteration&#39;], self.alive(), 1)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.change_status"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.change_status"><code class="name flex">
 <span>def <span class="ident">change_status</span></span>(<span>self, p_internal_swell: float, rest_time: int, swell_time: int)</span>
 </code></dt>
 <dd>
@@ -904,7 +904,7 @@ low-level array.</p>
     cells[&#39;iteration&#39;][swollen_indices] = 0</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.grow_hyphae"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.grow_hyphae"><code class="name flex">
 <span>def <span class="ident">grow_hyphae</span></span>(<span>self, iron_min_grow, grow_time, p_branch, spacing)</span>
 </code></dt>
 <dd>
@@ -972,7 +972,7 @@ low-level array.</p>
         self.spawn_hypahael_cell(branch_children)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.initialize_spores"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.initialize_spores"><code class="name flex">
 <span>def <span class="ident">initialize_spores</span></span>(<span>self, tissue: numpy.ndarray, init_num: int)</span>
 </code></dt>
 <dd>
@@ -1000,7 +1000,7 @@ low-level array.</p>
             self.spawn_spores(points)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.iron_uptake"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.iron_uptake"><code class="name flex">
 <span>def <span class="ident">iron_uptake</span></span>(<span>self, iron: numpy.ndarray, iron_max: float, iron_min: float, iron_absorb: float)</span>
 </code></dt>
 <dd>
@@ -1036,7 +1036,7 @@ low-level array.</p>
             iron[vox.z, vox.y, vox.x] = (1 - iron_absorb) * iron[vox.z, vox.y, vox.x]</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.kill"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.kill"><code class="name flex">
 <span>def <span class="ident">kill</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1055,7 +1055,7 @@ low-level array.</p>
     cells[&#39;dead&#39;][indices] = True</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.spawn_hypahael_cell"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.spawn_hypahael_cell"><code class="name flex">
 <span>def <span class="ident">spawn_hypahael_cell</span></span>(<span>self, children)</span>
 </code></dt>
 <dd>
@@ -1071,7 +1071,7 @@ low-level array.</p>
     self.extend(children)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.fungus.FungusCellList.spawn_spores"><code class="name flex">
+<dt id="nlisim.modules.fungus.FungusCellList.spawn_spores"><code class="name flex">
 <span>def <span class="ident">spawn_spores</span></span>(<span>self, points)</span>
 </code></dt>
 <dd>
@@ -1096,26 +1096,26 @@ low-level array.</p>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.fungus.FungusState"><code class="flex name class">
+<dt id="nlisim.modules.fungus.FungusState"><code class="flex name class">
 <span>class <span class="ident">FungusState</span></span>
-<span>(</span><span>*, global_state: State, cells: <a title="simulation.modules.fungus.FungusCellList" href="#simulation.modules.fungus.FungusCellList">FungusCellList</a> = NOTHING)</span>
+<span>(</span><span>*, global_state: State, cells: <a title="nlisim.modules.fungus.FungusCellList" href="#nlisim.modules.fungus.FungusCellList">FungusCellList</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -1145,27 +1145,27 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.fungus.FungusState.cells"><code class="name">var <span class="ident">cells</span> : <a title="simulation.modules.fungus.FungusCellList" href="#simulation.modules.fungus.FungusCellList">FungusCellList</a></code></dt>
+<dt id="nlisim.modules.fungus.FungusState.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.modules.fungus.FungusCellList" href="#nlisim.modules.fungus.FungusCellList">FungusCellList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.fungus.FungusState.health"><code class="name">var <span class="ident">health</span> : float</code></dt>
+<dt id="nlisim.modules.fungus.FungusState.health"><code class="name">var <span class="ident">health</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1181,47 +1181,47 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.fungus.cell_list_factory" href="#simulation.modules.fungus.cell_list_factory">cell_list_factory</a></code></li>
+<li><code><a title="nlisim.modules.fungus.cell_list_factory" href="#nlisim.modules.fungus.cell_list_factory">cell_list_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.fungus.Fungus" href="#simulation.modules.fungus.Fungus">Fungus</a></code></h4>
+<h4><code><a title="nlisim.modules.fungus.Fungus" href="#nlisim.modules.fungus.Fungus">Fungus</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.fungus.FungusCellData" href="#simulation.modules.fungus.FungusCellData">FungusCellData</a></code></h4>
+<h4><code><a title="nlisim.modules.fungus.FungusCellData" href="#nlisim.modules.fungus.FungusCellData">FungusCellData</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS" href="#simulation.modules.fungus.FungusCellData.FUNGUS_FIELDS">FUNGUS_FIELDS</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellData.Form" href="#simulation.modules.fungus.FungusCellData.Form">Form</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellData.Status" href="#simulation.modules.fungus.FungusCellData.Status">Status</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellData.FUNGUS_FIELDS" href="#nlisim.modules.fungus.FungusCellData.FUNGUS_FIELDS">FUNGUS_FIELDS</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellData.Form" href="#nlisim.modules.fungus.FungusCellData.Form">Form</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellData.Status" href="#nlisim.modules.fungus.FungusCellData.Status">Status</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.fungus.FungusCellList" href="#simulation.modules.fungus.FungusCellList">FungusCellList</a></code></h4>
+<h4><code><a title="nlisim.modules.fungus.FungusCellList" href="#nlisim.modules.fungus.FungusCellList">FungusCellList</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.modules.fungus.FungusCellList.age" href="#simulation.modules.fungus.FungusCellList.age">age</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.change_status" href="#simulation.modules.fungus.FungusCellList.change_status">change_status</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.grid" href="#simulation.modules.fungus.FungusCellList.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.grow_hyphae" href="#simulation.modules.fungus.FungusCellList.grow_hyphae">grow_hyphae</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.initialize_spores" href="#simulation.modules.fungus.FungusCellList.initialize_spores">initialize_spores</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.iron_uptake" href="#simulation.modules.fungus.FungusCellList.iron_uptake">iron_uptake</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.kill" href="#simulation.modules.fungus.FungusCellList.kill">kill</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.max_cells" href="#simulation.modules.fungus.FungusCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.spawn_hypahael_cell" href="#simulation.modules.fungus.FungusCellList.spawn_hypahael_cell">spawn_hypahael_cell</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusCellList.spawn_spores" href="#simulation.modules.fungus.FungusCellList.spawn_spores">spawn_spores</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.age" href="#nlisim.modules.fungus.FungusCellList.age">age</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.change_status" href="#nlisim.modules.fungus.FungusCellList.change_status">change_status</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.grid" href="#nlisim.modules.fungus.FungusCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.grow_hyphae" href="#nlisim.modules.fungus.FungusCellList.grow_hyphae">grow_hyphae</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.initialize_spores" href="#nlisim.modules.fungus.FungusCellList.initialize_spores">initialize_spores</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.iron_uptake" href="#nlisim.modules.fungus.FungusCellList.iron_uptake">iron_uptake</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.kill" href="#nlisim.modules.fungus.FungusCellList.kill">kill</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.max_cells" href="#nlisim.modules.fungus.FungusCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.spawn_hypahael_cell" href="#nlisim.modules.fungus.FungusCellList.spawn_hypahael_cell">spawn_hypahael_cell</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusCellList.spawn_spores" href="#nlisim.modules.fungus.FungusCellList.spawn_spores">spawn_spores</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.fungus.FungusState" href="#simulation.modules.fungus.FungusState">FungusState</a></code></h4>
+<h4><code><a title="nlisim.modules.fungus.FungusState" href="#nlisim.modules.fungus.FungusState">FungusState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.fungus.FungusState.cells" href="#simulation.modules.fungus.FungusState.cells">cells</a></code></li>
-<li><code><a title="simulation.modules.fungus.FungusState.health" href="#simulation.modules.fungus.FungusState.health">health</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusState.cells" href="#nlisim.modules.fungus.FungusState.cells">cells</a></code></li>
+<li><code><a title="nlisim.modules.fungus.FungusState.health" href="#nlisim.modules.fungus.FungusState.health">health</a></code></li>
 </ul>
 </li>
 </ul>

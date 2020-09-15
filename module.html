@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.module API documentation</title>
+<title>nlisim.module API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.module</code></h1>
+<h1 class="title">Module <code>nlisim.module</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,8 +34,8 @@ import attr
 from h5py import Dataset, Group
 import numpy as np
 
-from simulation.config import SimulationConfig
-from simulation.state import State
+from nlisim.config import SimulationConfig
+from nlisim.state import State
 
 AttrValue = Union[float, str, bool, np.ndarray]
 
@@ -198,9 +198,9 @@ class Module(object):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.module.Module"><code class="flex name class">
+<dt id="nlisim.module.Module"><code class="flex name class">
 <span>class <span class="ident">Module</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -251,35 +251,35 @@ class Module(object):
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#simulation.modules.afumigatus.Afumigatus">Afumigatus</a></li>
-<li><a title="simulation.modules.epithelium.Epithelium" href="modules/epithelium.html#simulation.modules.epithelium.Epithelium">Epithelium</a></li>
-<li><a title="simulation.modules.fungus.Fungus" href="modules/fungus.html#simulation.modules.fungus.Fungus">Fungus</a></li>
-<li><a title="simulation.modules.geometry.Geometry" href="modules/geometry.html#simulation.modules.geometry.Geometry">Geometry</a></li>
-<li><a title="simulation.modules.macrophage.Macrophage" href="modules/macrophage.html#simulation.modules.macrophage.Macrophage">Macrophage</a></li>
-<li><a title="simulation.modules.molecules.Molecules" href="modules/molecules.html#simulation.modules.molecules.Molecules">Molecules</a></li>
-<li><a title="simulation.modules.neutrophil.Neutrophil" href="modules/neutrophil.html#simulation.modules.neutrophil.Neutrophil">Neutrophil</a></li>
-<li><a title="simulation.modules.plot.Plot" href="modules/plot.html#simulation.modules.plot.Plot">Plot</a></li>
-<li><a title="simulation.modules.state_output.StateOutput" href="modules/state_output.html#simulation.modules.state_output.StateOutput">StateOutput</a></li>
-<li><a title="simulation.modules.visualization.Visualization" href="modules/visualization.html#simulation.modules.visualization.Visualization">Visualization</a></li>
+<li><a title="nlisim.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#nlisim.modules.afumigatus.Afumigatus">Afumigatus</a></li>
+<li><a title="nlisim.modules.epithelium.Epithelium" href="modules/epithelium.html#nlisim.modules.epithelium.Epithelium">Epithelium</a></li>
+<li><a title="nlisim.modules.fungus.Fungus" href="modules/fungus.html#nlisim.modules.fungus.Fungus">Fungus</a></li>
+<li><a title="nlisim.modules.geometry.Geometry" href="modules/geometry.html#nlisim.modules.geometry.Geometry">Geometry</a></li>
+<li><a title="nlisim.modules.macrophage.Macrophage" href="modules/macrophage.html#nlisim.modules.macrophage.Macrophage">Macrophage</a></li>
+<li><a title="nlisim.modules.molecules.Molecules" href="modules/molecules.html#nlisim.modules.molecules.Molecules">Molecules</a></li>
+<li><a title="nlisim.modules.neutrophil.Neutrophil" href="modules/neutrophil.html#nlisim.modules.neutrophil.Neutrophil">Neutrophil</a></li>
+<li><a title="nlisim.modules.plot.Plot" href="modules/plot.html#nlisim.modules.plot.Plot">Plot</a></li>
+<li><a title="nlisim.modules.state_output.StateOutput" href="modules/state_output.html#nlisim.modules.state_output.StateOutput">StateOutput</a></li>
+<li><a title="nlisim.modules.visualization.Visualization" href="modules/visualization.html#nlisim.modules.visualization.Visualization">Visualization</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.module.Module.StateClass"><code class="name">var <span class="ident">StateClass</span> : Type[<a title="simulation.module.ModuleState" href="#simulation.module.ModuleState">ModuleState</a>]</code></dt>
+<dt id="nlisim.module.Module.StateClass"><code class="name">var <span class="ident">StateClass</span> : Type[<a title="nlisim.module.ModuleState" href="#nlisim.module.ModuleState">ModuleState</a>]</code></dt>
 <dd>
 <div class="desc"><p>Container for extra state required by this module.</p></div>
 </dd>
-<dt id="simulation.module.Module.defaults"><code class="name">var <span class="ident">defaults</span> : Dict[str, str]</code></dt>
+<dt id="nlisim.module.Module.defaults"><code class="name">var <span class="ident">defaults</span> : Dict[str, str]</code></dt>
 <dd>
 <div class="desc"><p>Default values for all config options</p></div>
 </dd>
-<dt id="simulation.module.Module.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dt id="nlisim.module.Module.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
 <dd>
 <div class="desc"><p>A unique name for this module used for namespacing</p></div>
 </dd>
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.module.Module.section"><code class="name">var <span class="ident">section</span></code></dt>
+<dt id="nlisim.module.Module.section"><code class="name">var <span class="ident">section</span></code></dt>
 <dd>
 <div class="desc"><p>Return the section in the configuration object used by this module.</p></div>
 <details class="source">
@@ -295,8 +295,8 @@ def section(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.module.Module.advance"><code class="name flex">
-<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, previous_time: float) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.module.Module.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, previous_time: float) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run after advancing the simulation state in time.</p></div>
@@ -309,8 +309,8 @@ def section(self):
     return state</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.Module.construct"><code class="name flex">
-<span>def <span class="ident">construct</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> NoneType</span>
+<dt id="nlisim.module.Module.construct"><code class="name flex">
+<span>def <span class="ident">construct</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run after state construction.</p></div>
@@ -322,8 +322,8 @@ def section(self):
     &#34;&#34;&#34;Run after state construction.&#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.Module.finalize"><code class="name flex">
-<span>def <span class="ident">finalize</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.module.Module.finalize"><code class="name flex">
+<span>def <span class="ident">finalize</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run after the last timestep.</p></div>
@@ -336,8 +336,8 @@ def section(self):
     return state</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.Module.initialize"><code class="name flex">
-<span>def <span class="ident">initialize</span></span>(<span>self, state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>) ‑> <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></span>
+<dt id="nlisim.module.Module.initialize"><code class="name flex">
+<span>def <span class="ident">initialize</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run after state initialization.</p></div>
@@ -352,7 +352,7 @@ def section(self):
 </dd>
 </dl>
 </dd>
-<dt id="simulation.module.ModuleState"><code class="flex name class">
+<dt id="nlisim.module.ModuleState"><code class="flex name class">
 <span>class <span class="ident">ModuleState</span></span>
 <span>(</span><span>*, global_state: State)</span>
 </code></dt>
@@ -474,28 +474,28 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="simulation.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
-<li><a title="simulation.modules.epithelium.EpitheliumState" href="modules/epithelium.html#simulation.modules.epithelium.EpitheliumState">EpitheliumState</a></li>
-<li><a title="simulation.modules.fungus.FungusState" href="modules/fungus.html#simulation.modules.fungus.FungusState">FungusState</a></li>
-<li><a title="simulation.modules.geometry.GeometryState" href="modules/geometry.html#simulation.modules.geometry.GeometryState">GeometryState</a></li>
-<li><a title="simulation.modules.macrophage.MacrophageState" href="modules/macrophage.html#simulation.modules.macrophage.MacrophageState">MacrophageState</a></li>
-<li><a title="simulation.modules.molecules.MoleculesState" href="modules/molecules.html#simulation.modules.molecules.MoleculesState">MoleculesState</a></li>
-<li><a title="simulation.modules.neutrophil.NeutrophilState" href="modules/neutrophil.html#simulation.modules.neutrophil.NeutrophilState">NeutrophilState</a></li>
-<li><a title="simulation.modules.plot.PlotState" href="modules/plot.html#simulation.modules.plot.PlotState">PlotState</a></li>
-<li><a title="simulation.modules.state_output.StateOutputState" href="modules/state_output.html#simulation.modules.state_output.StateOutputState">StateOutputState</a></li>
-<li><a title="simulation.modules.visualization.VisualizationState" href="modules/visualization.html#simulation.modules.visualization.VisualizationState">VisualizationState</a></li>
+<li><a title="nlisim.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
+<li><a title="nlisim.modules.epithelium.EpitheliumState" href="modules/epithelium.html#nlisim.modules.epithelium.EpitheliumState">EpitheliumState</a></li>
+<li><a title="nlisim.modules.fungus.FungusState" href="modules/fungus.html#nlisim.modules.fungus.FungusState">FungusState</a></li>
+<li><a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a></li>
+<li><a title="nlisim.modules.macrophage.MacrophageState" href="modules/macrophage.html#nlisim.modules.macrophage.MacrophageState">MacrophageState</a></li>
+<li><a title="nlisim.modules.molecules.MoleculesState" href="modules/molecules.html#nlisim.modules.molecules.MoleculesState">MoleculesState</a></li>
+<li><a title="nlisim.modules.neutrophil.NeutrophilState" href="modules/neutrophil.html#nlisim.modules.neutrophil.NeutrophilState">NeutrophilState</a></li>
+<li><a title="nlisim.modules.plot.PlotState" href="modules/plot.html#nlisim.modules.plot.PlotState">PlotState</a></li>
+<li><a title="nlisim.modules.state_output.StateOutputState" href="modules/state_output.html#nlisim.modules.state_output.StateOutputState">StateOutputState</a></li>
+<li><a title="nlisim.modules.visualization.VisualizationState" href="modules/visualization.html#nlisim.modules.visualization.VisualizationState">VisualizationState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.module.ModuleState.global_state"><code class="name">var <span class="ident">global_state</span> : <a title="simulation.state.State" href="state.html#simulation.state.State">State</a></code></dt>
+<dt id="nlisim.module.ModuleState.global_state"><code class="name">var <span class="ident">global_state</span> : <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.module.ModuleState.load_attribute"><code class="name flex">
-<span>def <span class="ident">load_attribute</span></span>(<span>global_state: <a title="simulation.state.State" href="state.html#simulation.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: Union[dict, NoneType] = None) ‑> Union[float, str, bool, numpy.ndarray]</span>
+<dt id="nlisim.module.ModuleState.load_attribute"><code class="name flex">
+<span>def <span class="ident">load_attribute</span></span>(<span>global_state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: Union[dict, NoneType] = None) ‑> Union[float, str, bool, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load a raw value from an HDF5 file group.</p></div>
@@ -516,8 +516,8 @@ def load_attribute(
     return value</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.ModuleState.load_state"><code class="name flex">
-<span>def <span class="ident">load_state</span></span>(<span>global_state: State, group: h5py._hl.group.Group) ‑> <a title="simulation.module.ModuleState" href="#simulation.module.ModuleState">ModuleState</a></span>
+<dt id="nlisim.module.ModuleState.load_state"><code class="name flex">
+<span>def <span class="ident">load_state</span></span>(<span>global_state: State, group: h5py._hl.group.Group) ‑> <a title="nlisim.module.ModuleState" href="#nlisim.module.ModuleState">ModuleState</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load this module's state from an HDF5 group.</p></div>
@@ -562,7 +562,7 @@ def load_state(cls, global_state: &#39;State&#39;, group: Group) -&gt; &#39;Modu
     return cls(**kwargs)</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.ModuleState.save_attribute"><code class="name flex">
+<dt id="nlisim.module.ModuleState.save_attribute"><code class="name flex">
 <span>def <span class="ident">save_attribute</span></span>(<span>group: h5py._hl.group.Group, name: str, value: Union[float, str, bool, numpy.ndarray], metadata: dict) ‑> Union[h5py._hl.dataset.Dataset, h5py._hl.group.Group]</span>
 </code></dt>
 <dd>
@@ -586,7 +586,7 @@ def save_attribute(
         raise TypeError(f&#39;Attribute {name} in {group.name} contains an unsupported datatype.&#39;)</code></pre>
 </details>
 </dd>
-<dt id="simulation.module.ModuleState.save_simple_type"><code class="name flex">
+<dt id="nlisim.module.ModuleState.save_simple_type"><code class="name flex">
 <span>def <span class="ident">save_simple_type</span></span>(<span>group: h5py._hl.group.Group, name: str, value: Union[float, str, bool, numpy.ndarray], metadata: dict) ‑> h5py._hl.dataset.Dataset</span>
 </code></dt>
 <dd>
@@ -622,7 +622,7 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.module.ModuleState.save_state"><code class="name flex">
+<dt id="nlisim.module.ModuleState.save_state"><code class="name flex">
 <span>def <span class="ident">save_state</span></span>(<span>self, group: h5py._hl.group.Group) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -654,33 +654,33 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation" href="index.html">simulation</a></code></li>
+<li><code><a title="nlisim" href="index.html">nlisim</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.module.Module" href="#simulation.module.Module">Module</a></code></h4>
+<h4><code><a title="nlisim.module.Module" href="#nlisim.module.Module">Module</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.module.Module.StateClass" href="#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.module.ModuleState" href="#simulation.module.ModuleState">ModuleState</a></code></h4>
+<h4><code><a title="nlisim.module.ModuleState" href="#nlisim.module.ModuleState">ModuleState</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.module.ModuleState.global_state" href="#simulation.module.ModuleState.global_state">global_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_simple_type" href="#simulation.module.ModuleState.save_simple_type">save_simple_type</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.global_state" href="#nlisim.module.ModuleState.global_state">global_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_simple_type" href="#nlisim.module.ModuleState.save_simple_type">save_simple_type</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>

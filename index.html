@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation API documentation</title>
+<title>nlisim API documentation</title>
 <meta name="description" content="A multiscale simulation framework of *Aspergillus fumigatus* …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Package <code>simulation</code></h1>
+<h1 class="title">Package <code>nlisim</code></h1>
 </header>
 <section id="section-intro">
 <p>A multiscale simulation framework of <em>Aspergillus fumigatus</em>.</p>
@@ -45,13 +45,13 @@ This file is expected to be found as <code>geometry.hdf5 </code> in the director
 are running the simulation from.</p>
 <h2 id="running">Running</h2>
 <p>With the simulation package installed, you should have a new command-line
-program called <code><a title="simulation" href="#simulation">simulation</a> </code> available.
+program called <code>simulation </code> available.
 Try running <code>simulation --help</code> to get
 more information.
 To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.</p>
 <p>Now run simulation up to 50 seconds using the first example config.</p>
-<pre><code class="bash">    simulation --config config.ini.example run 50
+<pre><code class="bash">    nlisim --config config.ini.example run 50
 </code></pre>
 <p>You should now have files like <code>output/simulation-000001.000.hdf5</code> containing
 the simulation state at 1 second intervals through the full simulation.</p>
@@ -74,7 +74,7 @@ test environments. Useful sub-commands include:</p>
 <li><code>tox -e py3 -- --cov</code>: Run the unit tests and output coverage information.</li>
 </ul>
 <p>Finally, you can run <code>tox -e format</code> to automatically reformat your code to
-comply with some (but unfortunatly not all) of the style checks.</p>
+comply with some (but unfortunately not all) of the style checks.</p>
 <h1 id="code-organization">Code organization</h1>
 <ul>
 <li>
@@ -94,7 +94,7 @@ deserialized easily for simulation diagnostic output and checkpoints.</p>
 simulation domain.
 Any variable representing a quantity that exists over
 the entire spatial domain should be split into chunks defined by this grid.
-For more details, see <code><a title="simulation.grid" href="grid.html">simulation.grid</a></code>.</p>
+For more details, see <code><a title="nlisim.grid" href="grid.html">nlisim.grid</a></code>.</p>
 </li>
 <li>
 <p><code>cell.py </code></p>
@@ -125,7 +125,7 @@ a detailed description of this API.</p>
 </li>
 <li>
 <p><code>modules/*</code></p>
-<p>Modules under <code><a title="simulation.modules" href="modules/index.html">simulation.modules</a></code> are "optional" extensions to the main simulation.
+<p>Modules under <code><a title="nlisim.modules" href="modules/index.html">nlisim.modules</a></code> are "optional" extensions to the main simulation.
 They contain functions that are called in one of the extension points in
 the main solver: initialization and iteration.
 These functions could be
@@ -153,8 +153,8 @@ API for designing high quality CLIs.</p>
 following attributes:</p>
 <ul>
 <li>time: The simulation time as a floating point number</li>
-<li>grid: An instance of <code><a title="simulation.grid.RectangularGrid" href="grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code> defining the simulation discretization</li>
-<li>config: An instance of <code><a title="simulation.config.SimulationConfig" href="config.html#simulation.config.SimulationConfig">SimulationConfig</a></code> providing configuration options</li>
+<li>grid: An instance of <code><a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code> defining the simulation discretization</li>
+<li>config: An instance of <code><a title="nlisim.config.SimulationConfig" href="config.html#nlisim.config.SimulationConfig">SimulationConfig</a></code> providing configuration options</li>
 </ul>
 <p>When a module is included in the runtime configuration, its own state is
 included as an additional "dynamic" attribute on this object.
@@ -178,13 +178,13 @@ attrs documentation to learn more about how to work with the state object.</p>
 <li>iteration (advancing the state in time)</li>
 </ul>
 <p>An extension module is registered with the simulation by providing a subclass
-of <code><a title="simulation.module.Module" href="module.html#simulation.module.Module">Module</a></code>.
+of <code><a title="nlisim.module.Module" href="module.html#nlisim.module.Module">Module</a></code>.
 Features are added by overriding attributes on
 this class.
 The following is small example demonstrating some of the features:</p>
 <pre><code class="python">    import attr
 
-    from simulation.module import Module, ModuleState
+    from nlisim.module import Module, ModuleState
 
 
     class HelloWorld(Module):
@@ -255,59 +255,59 @@ A multiscale simulation framework of *Aspergillus fumigatus*.
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="simulation.cell" href="cell.html">simulation.cell</a></code></dt>
+<dt><code class="name"><a title="nlisim.cell" href="cell.html">nlisim.cell</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.cli" href="cli.html">simulation.cli</a></code></dt>
+<dt><code class="name"><a title="nlisim.cli" href="cli.html">nlisim.cli</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.config" href="config.html">simulation.config</a></code></dt>
+<dt><code class="name"><a title="nlisim.config" href="config.html">nlisim.config</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.coordinates" href="coordinates.html">simulation.coordinates</a></code></dt>
+<dt><code class="name"><a title="nlisim.coordinates" href="coordinates.html">nlisim.coordinates</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.diffusion" href="diffusion.html">simulation.diffusion</a></code></dt>
+<dt><code class="name"><a title="nlisim.diffusion" href="diffusion.html">nlisim.diffusion</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.grid" href="grid.html">simulation.grid</a></code></dt>
+<dt><code class="name"><a title="nlisim.grid" href="grid.html">nlisim.grid</a></code></dt>
 <dd>
 <div class="desc"><p>Domain discretization interface …</p></div>
 </dd>
-<dt><code class="name"><a title="simulation.module" href="module.html">simulation.module</a></code></dt>
+<dt><code class="name"><a title="nlisim.module" href="module.html">nlisim.module</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.modules" href="modules/index.html">simulation.modules</a></code></dt>
+<dt><code class="name"><a title="nlisim.modules" href="modules/index.html">nlisim.modules</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.molecule" href="molecule.html">simulation.molecule</a></code></dt>
+<dt><code class="name"><a title="nlisim.molecule" href="molecule.html">nlisim.molecule</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.postprocess" href="postprocess.html">simulation.postprocess</a></code></dt>
+<dt><code class="name"><a title="nlisim.postprocess" href="postprocess.html">nlisim.postprocess</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.random" href="random.html">simulation.random</a></code></dt>
+<dt><code class="name"><a title="nlisim.random" href="random.html">nlisim.random</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.solver" href="solver.html">simulation.solver</a></code></dt>
+<dt><code class="name"><a title="nlisim.solver" href="solver.html">nlisim.solver</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.state" href="state.html">simulation.state</a></code></dt>
+<dt><code class="name"><a title="nlisim.state" href="state.html">nlisim.state</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="simulation.validation" href="validation.html">simulation.validation</a></code></dt>
+<dt><code class="name"><a title="nlisim.validation" href="validation.html">nlisim.validation</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -340,20 +340,20 @@ A multiscale simulation framework of *Aspergillus fumigatus*.
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
-<li><code><a title="simulation.cell" href="cell.html">simulation.cell</a></code></li>
-<li><code><a title="simulation.cli" href="cli.html">simulation.cli</a></code></li>
-<li><code><a title="simulation.config" href="config.html">simulation.config</a></code></li>
-<li><code><a title="simulation.coordinates" href="coordinates.html">simulation.coordinates</a></code></li>
-<li><code><a title="simulation.diffusion" href="diffusion.html">simulation.diffusion</a></code></li>
-<li><code><a title="simulation.grid" href="grid.html">simulation.grid</a></code></li>
-<li><code><a title="simulation.module" href="module.html">simulation.module</a></code></li>
-<li><code><a title="simulation.modules" href="modules/index.html">simulation.modules</a></code></li>
-<li><code><a title="simulation.molecule" href="molecule.html">simulation.molecule</a></code></li>
-<li><code><a title="simulation.postprocess" href="postprocess.html">simulation.postprocess</a></code></li>
-<li><code><a title="simulation.random" href="random.html">simulation.random</a></code></li>
-<li><code><a title="simulation.solver" href="solver.html">simulation.solver</a></code></li>
-<li><code><a title="simulation.state" href="state.html">simulation.state</a></code></li>
-<li><code><a title="simulation.validation" href="validation.html">simulation.validation</a></code></li>
+<li><code><a title="nlisim.cell" href="cell.html">nlisim.cell</a></code></li>
+<li><code><a title="nlisim.cli" href="cli.html">nlisim.cli</a></code></li>
+<li><code><a title="nlisim.config" href="config.html">nlisim.config</a></code></li>
+<li><code><a title="nlisim.coordinates" href="coordinates.html">nlisim.coordinates</a></code></li>
+<li><code><a title="nlisim.diffusion" href="diffusion.html">nlisim.diffusion</a></code></li>
+<li><code><a title="nlisim.grid" href="grid.html">nlisim.grid</a></code></li>
+<li><code><a title="nlisim.module" href="module.html">nlisim.module</a></code></li>
+<li><code><a title="nlisim.modules" href="modules/index.html">nlisim.modules</a></code></li>
+<li><code><a title="nlisim.molecule" href="molecule.html">nlisim.molecule</a></code></li>
+<li><code><a title="nlisim.postprocess" href="postprocess.html">nlisim.postprocess</a></code></li>
+<li><code><a title="nlisim.random" href="random.html">nlisim.random</a></code></li>
+<li><code><a title="nlisim.solver" href="solver.html">nlisim.solver</a></code></li>
+<li><code><a title="nlisim.state" href="state.html">nlisim.state</a></code></li>
+<li><code><a title="nlisim.validation" href="validation.html">nlisim.validation</a></code></li>
 </ul>
 </li>
 </ul>

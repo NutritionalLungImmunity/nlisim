@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.afumigatus API documentation</title>
+<title>nlisim.modules.afumigatus API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.afumigatus</code></h1>
+<h1 class="title">Module <code>nlisim.modules.afumigatus</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -37,12 +37,12 @@ import numpy as np
 from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation
 
-from simulation.cell import CellData, CellList, CellType
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.random import rg
-from simulation.state import get_class_path, State
+from nlisim.cell import CellData, CellList, CellType
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.random import rg
+from nlisim.state import get_class_path, State
 
 
 class AfumigatusCellData(CellData):
@@ -499,8 +499,8 @@ class Afumigatus(Module):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.afumigatus.cell_list_factory"><code class="name flex">
-<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="simulation.modules.afumigatus.AfumigatusState" href="#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a>)</span>
+<dt id="nlisim.modules.afumigatus.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -518,9 +518,9 @@ class Afumigatus(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.afumigatus.Afumigatus"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.Afumigatus"><code class="flex name class">
 <span>class <span class="ident">Afumigatus</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -577,27 +577,27 @@ class Afumigatus(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCell"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.AfumigatusCell"><code class="flex name class">
 <span>class <span class="ident">AfumigatusCell</span></span>
-<span>(</span><span>*, tree: <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a>, index: int)</span>
+<span>(</span><span>*, tree: <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a>, index: int)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Method generated by attrs for class AfumigatusCell.</p></div>
@@ -681,18 +681,18 @@ class Afumigatus(Module):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.index"><code class="name">var <span class="ident">index</span> : int</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.index"><code class="name">var <span class="ident">index</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.tree"><code class="name">var <span class="ident">tree</span> : <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.tree"><code class="name">var <span class="ident">tree</span> : <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.children"><code class="name">var <span class="ident">children</span> : Iterator[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.children"><code class="name">var <span class="ident">children</span> : Iterator[<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -707,7 +707,7 @@ def children(self) -&gt; Iterator[&#39;AfumigatusCell&#39;]:
             yield self.__class__(tree=self.tree, index=index)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.parent"><code class="name">var <span class="ident">parent</span> : Union[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>, NoneType]</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.parent"><code class="name">var <span class="ident">parent</span> : Union[<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>, NoneType]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -728,7 +728,7 @@ def parent(self) -&gt; Optional[&#39;AfumigatusCell&#39;]:
     raise Exception(f&#39;Invalid adjacency matrix at index {self.index}&#39;)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.record"><code class="name">var <span class="ident">record</span> : Any</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.record"><code class="name">var <span class="ident">record</span> : Any</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -743,8 +743,8 @@ def record(self) -&gt; CellType:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.add_child"><code class="name flex">
-<span>def <span class="ident">add_child</span></span>(<span>self, cell: Union[Any, _ForwardRef('<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>')])</span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.add_child"><code class="name flex">
+<span>def <span class="ident">add_child</span></span>(<span>self, cell: Union[Any, _ForwardRef('<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>')])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -758,8 +758,8 @@ def record(self) -&gt; CellType:
     self.tree.append(cell, parent=self.index)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCell.kill"><code class="name flex">
-<span>def <span class="ident">kill</span></span>(<span>self) ‑> List[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCell.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>self) ‑> List[<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Mark the current cell as dead and remove it from the tree.</p></div>
@@ -774,7 +774,7 @@ def record(self) -&gt; CellType:
 </dd>
 </dl>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData"><code class="flex name class">
 <span>class <span class="ident">AfumigatusCellData</span></span>
 <span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
@@ -914,35 +914,35 @@ associated with each cell.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS"><code class="name">var <span class="ident">AFUMIGATUS_FIELDS</span></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS"><code class="name">var <span class="ident">AFUMIGATUS_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH"><code class="name">var <span class="ident">BOOLEAN_NETWORK_LENGTH</span></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH"><code class="name">var <span class="ident">BOOLEAN_NETWORK_LENGTH</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR"><code class="name">var <span class="ident">GROWTH_SCALE_FACTOR</span></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR"><code class="name">var <span class="ident">GROWTH_SCALE_FACTOR</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.initial_boolean_network"><code class="name flex">
 <span>def <span class="ident">initial_boolean_network</span></span>(<span>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -985,20 +985,20 @@ def initial_boolean_network(cls) -&gt; np.ndarray:
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellList"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellList"><code class="flex name class">
 <span>class <span class="ident">AfumigatusCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -1017,11 +1017,11 @@ This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>Method generated by attrs for class AfumigatusCellList.</p></div>
@@ -1034,41 +1034,41 @@ low-level array.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList"><code class="flex name class">
 <span>class <span class="ident">AfumigatusCellTreeList</span></span>
-<span>(</span><span>*, cells: <a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a>, adjacency: scipy.sparse.dok.dok_matrix = NOTHING)</span>
+<span>(</span><span>*, cells: <a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a>, adjacency: scipy.sparse.dok.dok_matrix = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Method generated by attrs for class AfumigatusCellTreeList.</p></div>
@@ -1289,15 +1289,15 @@ low-level array.</p>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.cells"><code class="name">var <span class="ident">cells</span> : <a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed"><code class="name flex">
-<span>def <span class="ident">create_from_seed</span></span>(<span>grid, **kwargs) ‑> <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.create_from_seed"><code class="name flex">
+<span>def <span class="ident">create_from_seed</span></span>(<span>grid, **kwargs) ‑> <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1314,8 +1314,8 @@ def create_from_seed(cls, grid, **kwargs) -&gt; &#39;AfumigatusCellTreeList&#39;
     return cls(cells=cells, adjacency=adjacency)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.load"><code class="name flex">
-<span>def <span class="ident">load</span></span>(<span>global_state: <a title="simulation.state.State" href="../state.html#simulation.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>global_state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1341,7 +1341,7 @@ def load(
     return cls(cells=cells, adjacency=adjacency)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction"><code class="name flex">
 <span>def <span class="ident">random_branch_direction</span></span>(<span>growth: numpy.ndarray) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -1367,7 +1367,7 @@ def random_branch_direction(cls, growth: np.ndarray) -&gt; np.ndarray:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency"><code class="name">var <span class="ident">adjacency</span> : scipy.sparse.dok.dok_matrix</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.adjacency"><code class="name">var <span class="ident">adjacency</span> : scipy.sparse.dok.dok_matrix</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1379,7 +1379,7 @@ def adjacency(self) -&gt; sparse_matrix:
     return self._adjacency[: len(self), : len(self)]</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data"><code class="name">var <span class="ident">cell_data</span> : <a title="simulation.modules.afumigatus.AfumigatusCellData" href="#simulation.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.cell_data"><code class="name">var <span class="ident">cell_data</span> : <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1391,7 +1391,7 @@ def cell_data(self) -&gt; AfumigatusCellData:
     return self.cells.cell_data</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1403,7 +1403,7 @@ def grid(self) -&gt; RectangularGrid:
     return self.cells.grid</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1415,7 +1415,7 @@ def max_cells(self) -&gt; int:
     return self.cells.max_cells</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.roots"><code class="name">var <span class="ident">roots</span> : List[Any]</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.roots"><code class="name">var <span class="ident">roots</span> : List[Any]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1436,7 +1436,7 @@ def roots(self) -&gt; List[CellType]:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.absorb_iron"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.absorb_iron"><code class="name flex">
 <span>def <span class="ident">absorb_iron</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1457,7 +1457,7 @@ def roots(self) -&gt; List[CellType]:
     cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.age"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.age"><code class="name flex">
 <span>def <span class="ident">age</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1472,7 +1472,7 @@ def roots(self) -&gt; List[CellType]:
     cells[&#39;iteration&#39;] += 1</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.alive"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.alive"><code class="name flex">
 <span>def <span class="ident">alive</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1485,7 +1485,7 @@ def roots(self) -&gt; List[CellType]:
     return self.cells.alive()</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.append"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.append"><code class="name flex">
 <span>def <span class="ident">append</span></span>(<span>self, cell, parent=None)</span>
 </code></dt>
 <dd>
@@ -1505,7 +1505,7 @@ def roots(self) -&gt; List[CellType]:
         self.cells[parent][&#39;iron_pool&#39;] = self.cells[-1][&#39;iron_pool&#39;] = iron_pool</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.branch"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.branch"><code class="name flex">
 <span>def <span class="ident">branch</span></span>(<span>self, branch_probability: float)</span>
 </code></dt>
 <dd>
@@ -1541,7 +1541,7 @@ def roots(self) -&gt; List[CellType]:
     self.extend(children, parents=indices)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.elongate"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.elongate"><code class="name flex">
 <span>def <span class="ident">elongate</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1566,8 +1566,8 @@ def roots(self) -&gt; List[CellType]:
     self.extend(children, parents=mask)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.extend"><code class="name flex">
-<span>def <span class="ident">extend</span></span>(<span>self, cells: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a>, parents: Iterable[Union[int, NoneType]] = None) ‑> NoneType</span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.extend"><code class="name flex">
+<span>def <span class="ident">extend</span></span>(<span>self, cells: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a>, parents: Iterable[Union[int, NoneType]] = None) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1583,7 +1583,7 @@ def roots(self) -&gt; List[CellType]:
         self.append(cell, parent)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.is_branchable"><code class="name flex">
 <span>def <span class="ident">is_branchable</span></span>(<span>self, branch_probability: float) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -1601,7 +1601,7 @@ def roots(self) -&gt; List[CellType]:
     )</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.is_growable"><code class="name flex">
 <span>def <span class="ident">is_growable</span></span>(<span>self) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
@@ -1619,8 +1619,8 @@ def roots(self) -&gt; List[CellType]:
     )</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.kill"><code class="name flex">
-<span>def <span class="ident">kill</span></span>(<span>self, index: int) ‑> List[<a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</span>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>self, index: int) ‑> List[<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Kill the cell at the given index and remove it from the tree.</p>
@@ -1649,7 +1649,7 @@ These children will be the roots of newly formed trees.</p></div>
     return roots</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusCellTreeList.save"><code class="name flex">
+<dt id="nlisim.modules.afumigatus.AfumigatusCellTreeList.save"><code class="name flex">
 <span>def <span class="ident">save</span></span>(<span>self, group: h5py._hl.group.Group, name: str, metadata: dict) ‑> h5py._hl.group.Group</span>
 </code></dt>
 <dd>
@@ -1673,9 +1673,9 @@ These children will be the roots of newly formed trees.</p></div>
 </dd>
 </dl>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusState"><code class="flex name class">
+<dt id="nlisim.modules.afumigatus.AfumigatusState"><code class="flex name class">
 <span>class <span class="ident">AfumigatusState</span></span>
-<span>(</span><span>*, global_state: State, tree: <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a> = NOTHING)</span>
+<span>(</span><span>*, global_state: State, tree: <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -1695,31 +1695,31 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS"><code class="name">var <span class="ident">ITER_TO_CHANGE_STATUS</span> : int</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS"><code class="name">var <span class="ident">ITER_TO_CHANGE_STATUS</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusState.p_lodge"><code class="name">var <span class="ident">p_lodge</span> : float</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.p_lodge"><code class="name">var <span class="ident">p_lodge</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.afumigatus.AfumigatusState.tree"><code class="name">var <span class="ident">tree</span> : <a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.tree"><code class="name">var <span class="ident">tree</span> : <a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1735,80 +1735,80 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.afumigatus.cell_list_factory" href="#simulation.modules.afumigatus.cell_list_factory">cell_list_factory</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.cell_list_factory" href="#nlisim.modules.afumigatus.cell_list_factory">cell_list_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.Afumigatus" href="#simulation.modules.afumigatus.Afumigatus">Afumigatus</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.Afumigatus" href="#nlisim.modules.afumigatus.Afumigatus">Afumigatus</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.AfumigatusCell" href="#simulation.modules.afumigatus.AfumigatusCell">AfumigatusCell</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.add_child" href="#simulation.modules.afumigatus.AfumigatusCell.add_child">add_child</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.children" href="#simulation.modules.afumigatus.AfumigatusCell.children">children</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.index" href="#simulation.modules.afumigatus.AfumigatusCell.index">index</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.kill" href="#simulation.modules.afumigatus.AfumigatusCell.kill">kill</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.parent" href="#simulation.modules.afumigatus.AfumigatusCell.parent">parent</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.record" href="#simulation.modules.afumigatus.AfumigatusCell.record">record</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCell.tree" href="#simulation.modules.afumigatus.AfumigatusCell.tree">tree</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.add_child" href="#nlisim.modules.afumigatus.AfumigatusCell.add_child">add_child</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.children" href="#nlisim.modules.afumigatus.AfumigatusCell.children">children</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.index" href="#nlisim.modules.afumigatus.AfumigatusCell.index">index</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.kill" href="#nlisim.modules.afumigatus.AfumigatusCell.kill">kill</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.parent" href="#nlisim.modules.afumigatus.AfumigatusCell.parent">parent</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.record" href="#nlisim.modules.afumigatus.AfumigatusCell.record">record</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCell.tree" href="#nlisim.modules.afumigatus.AfumigatusCell.tree">tree</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellData" href="#simulation.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS" href="#simulation.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS">AFUMIGATUS_FIELDS</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH" href="#simulation.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH">BOOLEAN_NETWORK_LENGTH</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR" href="#simulation.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR">GROWTH_SCALE_FACTOR</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.State" href="#simulation.modules.afumigatus.AfumigatusCellData.State">State</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.Status" href="#simulation.modules.afumigatus.AfumigatusCellData.Status">Status</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network" href="#simulation.modules.afumigatus.AfumigatusCellData.initial_boolean_network">initial_boolean_network</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS" href="#nlisim.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS">AFUMIGATUS_FIELDS</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH" href="#nlisim.modules.afumigatus.AfumigatusCellData.BOOLEAN_NETWORK_LENGTH">BOOLEAN_NETWORK_LENGTH</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR" href="#nlisim.modules.afumigatus.AfumigatusCellData.GROWTH_SCALE_FACTOR">GROWTH_SCALE_FACTOR</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.State" href="#nlisim.modules.afumigatus.AfumigatusCellData.State">State</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.Status" href="#nlisim.modules.afumigatus.AfumigatusCellData.Status">Status</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellData.initial_boolean_network" href="#nlisim.modules.afumigatus.AfumigatusCellData.initial_boolean_network">initial_boolean_network</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellList" href="#simulation.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.AfumigatusCellList" href="#nlisim.modules.afumigatus.AfumigatusCellList">AfumigatusCellList</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellList.grid" href="#simulation.modules.afumigatus.AfumigatusCellList.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellList.max_cells" href="#simulation.modules.afumigatus.AfumigatusCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellList.grid" href="#nlisim.modules.afumigatus.AfumigatusCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellList.max_cells" href="#nlisim.modules.afumigatus.AfumigatusCellList.max_cells">max_cells</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList" href="#simulation.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList">AfumigatusCellTreeList</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.absorb_iron" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.absorb_iron">absorb_iron</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.adjacency">adjacency</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.age" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.age">age</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.alive" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.alive">alive</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.append" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.append">append</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.branch" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.branch">branch</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.cells" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.cells">cells</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.elongate" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.elongate">elongate</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.extend" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.extend">extend</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.grid" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.is_branchable">is_branchable</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.is_growable">is_growable</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.kill" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.kill">kill</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.load" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.load">load</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.max_cells">max_cells</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction">random_branch_direction</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.roots" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.roots">roots</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusCellTreeList.save" href="#simulation.modules.afumigatus.AfumigatusCellTreeList.save">save</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.absorb_iron" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.absorb_iron">absorb_iron</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.adjacency" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.adjacency">adjacency</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.age" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.age">age</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.alive" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.alive">alive</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.append" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.append">append</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.branch" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.branch">branch</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.cell_data" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.cells" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.cells">cells</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.create_from_seed" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.elongate" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.elongate">elongate</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.extend" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.extend">extend</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.grid" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.is_branchable" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.is_branchable">is_branchable</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.is_growable" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.is_growable">is_growable</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.kill" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.kill">kill</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.load" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.load">load</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.max_cells" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.random_branch_direction">random_branch_direction</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.roots" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.roots">roots</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellTreeList.save" href="#nlisim.modules.afumigatus.AfumigatusCellTreeList.save">save</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.afumigatus.AfumigatusState" href="#simulation.modules.afumigatus.AfumigatusState">AfumigatusState</a></code></h4>
+<h4><code><a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS" href="#simulation.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS">ITER_TO_CHANGE_STATUS</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusState.p_lodge" href="#simulation.modules.afumigatus.AfumigatusState.p_lodge">p_lodge</a></code></li>
-<li><code><a title="simulation.modules.afumigatus.AfumigatusState.tree" href="#simulation.modules.afumigatus.AfumigatusState.tree">tree</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS" href="#nlisim.modules.afumigatus.AfumigatusState.ITER_TO_CHANGE_STATUS">ITER_TO_CHANGE_STATUS</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.p_lodge" href="#nlisim.modules.afumigatus.AfumigatusState.p_lodge">p_lodge</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.tree" href="#nlisim.modules.afumigatus.AfumigatusState.tree">tree</a></code></li>
 </ul>
 </li>
 </ul>

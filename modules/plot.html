@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.plot API documentation</title>
+<title>nlisim.modules.plot API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.plot</code></h1>
+<h1 class="title">Module <code>nlisim.modules.plot</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -31,8 +31,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from simulation.module import Module, ModuleState
-from simulation.state import State
+from nlisim.module import Module, ModuleState
+from nlisim.state import State
 
 MAX_ARRAY_LENGTH = 1000
 
@@ -109,9 +109,9 @@ class Plot(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.plot.Plot"><code class="flex name class">
+<dt id="nlisim.modules.plot.Plot"><code class="flex name class">
 <span>class <span class="ident">Plot</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -174,25 +174,25 @@ class Plot(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.plot.PlotState"><code class="flex name class">
+<dt id="nlisim.modules.plot.PlotState"><code class="flex name class">
 <span>class <span class="ident">PlotState</span></span>
 <span>(</span><span>*, global_state: State, step_num: int = 0, fungal_burdens: numpy.ndarray = NOTHING, macrophage_counts: numpy.ndarray = NOTHING, neutrophil_counts: numpy.ndarray = NOTHING, time_steps: numpy.ndarray = NOTHING)</span>
 </code></dt>
@@ -216,39 +216,39 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.plot.PlotState.fungal_burdens"><code class="name">var <span class="ident">fungal_burdens</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.plot.PlotState.fungal_burdens"><code class="name">var <span class="ident">fungal_burdens</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.plot.PlotState.macrophage_counts"><code class="name">var <span class="ident">macrophage_counts</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.plot.PlotState.macrophage_counts"><code class="name">var <span class="ident">macrophage_counts</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.plot.PlotState.neutrophil_counts"><code class="name">var <span class="ident">neutrophil_counts</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.plot.PlotState.neutrophil_counts"><code class="name">var <span class="ident">neutrophil_counts</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.plot.PlotState.step_num"><code class="name">var <span class="ident">step_num</span> : int</code></dt>
+<dt id="nlisim.modules.plot.PlotState.step_num"><code class="name">var <span class="ident">step_num</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.plot.PlotState.time_steps"><code class="name">var <span class="ident">time_steps</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.plot.PlotState.time_steps"><code class="name">var <span class="ident">time_steps</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -264,22 +264,22 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.plot.Plot" href="#simulation.modules.plot.Plot">Plot</a></code></h4>
+<h4><code><a title="nlisim.modules.plot.Plot" href="#nlisim.modules.plot.Plot">Plot</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.plot.PlotState" href="#simulation.modules.plot.PlotState">PlotState</a></code></h4>
+<h4><code><a title="nlisim.modules.plot.PlotState" href="#nlisim.modules.plot.PlotState">PlotState</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.plot.PlotState.fungal_burdens" href="#simulation.modules.plot.PlotState.fungal_burdens">fungal_burdens</a></code></li>
-<li><code><a title="simulation.modules.plot.PlotState.macrophage_counts" href="#simulation.modules.plot.PlotState.macrophage_counts">macrophage_counts</a></code></li>
-<li><code><a title="simulation.modules.plot.PlotState.neutrophil_counts" href="#simulation.modules.plot.PlotState.neutrophil_counts">neutrophil_counts</a></code></li>
-<li><code><a title="simulation.modules.plot.PlotState.step_num" href="#simulation.modules.plot.PlotState.step_num">step_num</a></code></li>
-<li><code><a title="simulation.modules.plot.PlotState.time_steps" href="#simulation.modules.plot.PlotState.time_steps">time_steps</a></code></li>
+<li><code><a title="nlisim.modules.plot.PlotState.fungal_burdens" href="#nlisim.modules.plot.PlotState.fungal_burdens">fungal_burdens</a></code></li>
+<li><code><a title="nlisim.modules.plot.PlotState.macrophage_counts" href="#nlisim.modules.plot.PlotState.macrophage_counts">macrophage_counts</a></code></li>
+<li><code><a title="nlisim.modules.plot.PlotState.neutrophil_counts" href="#nlisim.modules.plot.PlotState.neutrophil_counts">neutrophil_counts</a></code></li>
+<li><code><a title="nlisim.modules.plot.PlotState.step_num" href="#nlisim.modules.plot.PlotState.step_num">step_num</a></code></li>
+<li><code><a title="nlisim.modules.plot.PlotState.time_steps" href="#nlisim.modules.plot.PlotState.time_steps">time_steps</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>simulation.modules.macrophage API documentation</title>
+<title>nlisim.modules.macrophage API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>simulation.modules.macrophage</code></h1>
+<h1 class="title">Module <code>nlisim.modules.macrophage</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -30,14 +30,14 @@
 <pre><code class="python">import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.modules.fungus import FungusCellData, FungusCellList
-from simulation.modules.geometry import TissueTypes
-from simulation.random import rg
-from simulation.state import State
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.modules.fungus import FungusCellData, FungusCellList
+from nlisim.modules.geometry import TissueTypes
+from nlisim.random import rg
+from nlisim.state import State
 
 MAX_CONIDIA = 100
 
@@ -403,8 +403,8 @@ class Macrophage(Module):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="simulation.modules.macrophage.cell_list_factory"><code class="name flex">
-<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="simulation.modules.macrophage.MacrophageState" href="#simulation.modules.macrophage.MacrophageState">MacrophageState</a>)</span>
+<dt id="nlisim.modules.macrophage.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.macrophage.MacrophageState" href="#nlisim.modules.macrophage.MacrophageState">MacrophageState</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -421,9 +421,9 @@ class Macrophage(Module):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="simulation.modules.macrophage.Macrophage"><code class="flex name class">
+<dt id="nlisim.modules.macrophage.Macrophage"><code class="flex name class">
 <span>class <span class="ident">Macrophage</span></span>
-<span>(</span><span>config: <a title="simulation.config.SimulationConfig" href="../config.html#simulation.config.SimulationConfig">SimulationConfig</a>)</span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -512,25 +512,25 @@ class Macrophage(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></li>
+<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.Module" href="../module.html#simulation.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.Module.StateClass" href="../module.html#simulation.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="simulation.module.Module.advance" href="../module.html#simulation.module.Module.advance">advance</a></code></li>
-<li><code><a title="simulation.module.Module.construct" href="../module.html#simulation.module.Module.construct">construct</a></code></li>
-<li><code><a title="simulation.module.Module.defaults" href="../module.html#simulation.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="simulation.module.Module.finalize" href="../module.html#simulation.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="simulation.module.Module.initialize" href="../module.html#simulation.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="simulation.module.Module.name" href="../module.html#simulation.module.Module.name">name</a></code></li>
-<li><code><a title="simulation.module.Module.section" href="../module.html#simulation.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
+<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
+<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellData"><code class="flex name class">
+<dt id="nlisim.modules.macrophage.MacrophageCellData"><code class="flex name class">
 <span>class <span class="ident">MacrophageCellData</span></span>
 <span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
 </code></dt>
@@ -592,32 +592,32 @@ associated with each cell.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></li>
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS"><code class="name">var <span class="ident">MACROPHAGE_FIELDS</span></code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS"><code class="name">var <span class="ident">MACROPHAGE_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellData.FIELDS" href="../cell.html#simulation.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell" href="../cell.html#simulation.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="simulation.cell.CellData.create_cell_tuple" href="../cell.html#simulation.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
-<li><code><a title="simulation.cell.CellData.dtype" href="../cell.html#simulation.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="simulation.cell.CellData.point_mask" href="../cell.html#simulation.cell.CellData.point_mask">point_mask</a></code></li>
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList"><code class="flex name class">
+<dt id="nlisim.modules.macrophage.MacrophageCellList"><code class="flex name class">
 <span>class <span class="ident">MacrophageCellList</span></span>
-<span>(</span><span>*, grid: <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a> = NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A python view on top of a CellData array.</p>
@@ -636,11 +636,11 @@ This provides information about the underlying
 low-level array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code><a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code><a title="simulation.cell.CellData" href="../cell.html#simulation.cell.CellData">CellData</a></code>, optional</dt>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>Method generated by attrs for class MacrophageCellList.</p></div>
@@ -878,22 +878,22 @@ low-level array.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></li>
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.macrophage.MacrophageCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="simulation.grid.RectangularGrid" href="../grid.html#simulation.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="simulation.modules.macrophage.MacrophageCellList.absorb_cytokines"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines"><code class="name flex">
 <span>def <span class="ident">absorb_cytokines</span></span>(<span>self, m_abs, cyto, grid)</span>
 </code></dt>
 <dd>
@@ -911,7 +911,7 @@ low-level array.</p>
         cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.append_to_phagosome"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome"><code class="name flex">
 <span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
 </code></dt>
 <dd>
@@ -934,8 +934,8 @@ low-level array.</p>
         return False</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.clear_all_phagosome"><code class="name flex">
-<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome"><code class="name flex">
+<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -950,7 +950,7 @@ low-level array.</p>
     self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.damage_conidia"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.damage_conidia"><code class="name flex">
 <span>def <span class="ident">damage_conidia</span></span>(<span>self, kill, t, health, fungus)</span>
 </code></dt>
 <dd>
@@ -969,8 +969,8 @@ low-level array.</p>
                 self.remove_from_phagosome(i, index)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.internalize_conidia"><code class="name flex">
-<span>def <span class="ident">internalize_conidia</span></span>(<span>self, m_det, max_spores, p_in, grid, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.internalize_conidia"><code class="name flex">
+<span>def <span class="ident">internalize_conidia</span></span>(<span>self, m_det, max_spores, p_in, grid, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1026,7 +1026,7 @@ low-level array.</p>
                                     self.append_to_phagosome(i, index, max_spores)</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.len_phagosome"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.len_phagosome"><code class="name flex">
 <span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
 </code></dt>
 <dd>
@@ -1040,8 +1040,8 @@ low-level array.</p>
     return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.move"><code class="name flex">
-<span>def <span class="ident">move</span></span>(<span>self, rec_r, grid, cyto, tissue, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.move"><code class="name flex">
+<span>def <span class="ident">move</span></span>(<span>self, rec_r, grid, cyto, tissue, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1099,8 +1099,8 @@ low-level array.</p>
             fungus.update_voxel_index([f_index])</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.produce_cytokines"><code class="name flex">
-<span>def <span class="ident">produce_cytokines</span></span>(<span>self, m_det, m_n, grid, fungus: <a title="simulation.modules.fungus.FungusCellList" href="fungus.html#simulation.modules.fungus.FungusCellList">FungusCellList</a>, cyto)</span>
+<dt id="nlisim.modules.macrophage.MacrophageCellList.produce_cytokines"><code class="name flex">
+<span>def <span class="ident">produce_cytokines</span></span>(<span>self, m_det, m_n, grid, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>, cyto)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1150,7 +1150,7 @@ low-level array.</p>
         cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.recruit_new"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.recruit_new"><code class="name flex">
 <span>def <span class="ident">recruit_new</span></span>(<span>self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto)</span>
 </code></dt>
 <dd>
@@ -1182,7 +1182,7 @@ low-level array.</p>
                 self.append(MacrophageCellData.create_cell(point=point))</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.remove_from_phagosome"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome"><code class="name flex">
 <span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
 </code></dt>
 <dd>
@@ -1208,7 +1208,7 @@ low-level array.</p>
         return False</code></pre>
 </details>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageCellList.remove_if_sporeless"><code class="name flex">
+<dt id="nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless"><code class="name flex">
 <span>def <span class="ident">remove_if_sporeless</span></span>(<span>self, val)</span>
 </code></dt>
 <dd>
@@ -1231,26 +1231,26 @@ low-level array.</p>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.cell.CellList" href="../cell.html#simulation.cell.CellList">CellList</a></b></code>:
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.cell.CellList.CellDataClass" href="../cell.html#simulation.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="simulation.cell.CellList.alive" href="../cell.html#simulation.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="simulation.cell.CellList.append" href="../cell.html#simulation.cell.CellList.append">append</a></code></li>
-<li><code><a title="simulation.cell.CellList.cell_data" href="../cell.html#simulation.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="simulation.cell.CellList.create_from_seed" href="../cell.html#simulation.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="simulation.cell.CellList.extend" href="../cell.html#simulation.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_cells_in_voxel" href="../cell.html#simulation.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="simulation.cell.CellList.get_neighboring_cells" href="../cell.html#simulation.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="simulation.cell.CellList.load" href="../cell.html#simulation.cell.CellList.load">load</a></code></li>
-<li><code><a title="simulation.cell.CellList.save" href="../cell.html#simulation.cell.CellList.save">save</a></code></li>
-<li><code><a title="simulation.cell.CellList.update_voxel_index" href="../cell.html#simulation.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState"><code class="flex name class">
+<dt id="nlisim.modules.macrophage.MacrophageState"><code class="flex name class">
 <span>class <span class="ident">MacrophageState</span></span>
-<span>(</span><span>*, global_state: State, cells: <a title="simulation.modules.macrophage.MacrophageCellList" href="#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a> = NOTHING)</span>
+<span>(</span><span>*, global_state: State, cells: <a title="nlisim.modules.macrophage.MacrophageCellList" href="#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -1279,67 +1279,67 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="simulation.modules.macrophage.MacrophageState.cells"><code class="name">var <span class="ident">cells</span> : <a title="simulation.modules.macrophage.MacrophageCellList" href="#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.modules.macrophage.MacrophageCellList" href="#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.kill"><code class="name">var <span class="ident">kill</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.kill"><code class="name">var <span class="ident">kill</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.m_abs"><code class="name">var <span class="ident">m_abs</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.m_abs"><code class="name">var <span class="ident">m_abs</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.m_det"><code class="name">var <span class="ident">m_det</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.m_det"><code class="name">var <span class="ident">m_det</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.m_n"><code class="name">var <span class="ident">m_n</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.m_n"><code class="name">var <span class="ident">m_n</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.max_conidia_in_phag"><code class="name">var <span class="ident">max_conidia_in_phag</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag"><code class="name">var <span class="ident">max_conidia_in_phag</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.p_internalization"><code class="name">var <span class="ident">p_internalization</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.p_internalization"><code class="name">var <span class="ident">p_internalization</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.p_rec_r"><code class="name">var <span class="ident">p_rec_r</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.p_rec_r"><code class="name">var <span class="ident">p_rec_r</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.rec_r"><code class="name">var <span class="ident">rec_r</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.rec_r"><code class="name">var <span class="ident">rec_r</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.rec_rate_ph"><code class="name">var <span class="ident">rec_rate_ph</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.rec_rate_ph"><code class="name">var <span class="ident">rec_rate_ph</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.rm"><code class="name">var <span class="ident">rm</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.rm"><code class="name">var <span class="ident">rm</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="simulation.modules.macrophage.MacrophageState.time_m"><code class="name">var <span class="ident">time_m</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.time_m"><code class="name">var <span class="ident">time_m</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="simulation.module.ModuleState" href="../module.html#simulation.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="simulation.module.ModuleState.load_attribute" href="../module.html#simulation.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.load_state" href="../module.html#simulation.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_attribute" href="../module.html#simulation.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="simulation.module.ModuleState.save_state" href="../module.html#simulation.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1355,58 +1355,58 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="simulation.modules" href="index.html">simulation.modules</a></code></li>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.cell_list_factory" href="#simulation.modules.macrophage.cell_list_factory">cell_list_factory</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.cell_list_factory" href="#nlisim.modules.macrophage.cell_list_factory">cell_list_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="simulation.modules.macrophage.Macrophage" href="#simulation.modules.macrophage.Macrophage">Macrophage</a></code></h4>
+<h4><code><a title="nlisim.modules.macrophage.Macrophage" href="#nlisim.modules.macrophage.Macrophage">Macrophage</a></code></h4>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageCellData" href="#simulation.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></h4>
+<h4><code><a title="nlisim.modules.macrophage.MacrophageCellData" href="#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS" href="#simulation.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS">MACROPHAGE_FIELDS</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS" href="#nlisim.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS">MACROPHAGE_FIELDS</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageCellList" href="#simulation.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></h4>
+<h4><code><a title="nlisim.modules.macrophage.MacrophageCellList" href="#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></h4>
 <ul class="">
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.absorb_cytokines" href="#simulation.modules.macrophage.MacrophageCellList.absorb_cytokines">absorb_cytokines</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.append_to_phagosome" href="#simulation.modules.macrophage.MacrophageCellList.append_to_phagosome">append_to_phagosome</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.clear_all_phagosome" href="#simulation.modules.macrophage.MacrophageCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.damage_conidia" href="#simulation.modules.macrophage.MacrophageCellList.damage_conidia">damage_conidia</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.grid" href="#simulation.modules.macrophage.MacrophageCellList.grid">grid</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.internalize_conidia" href="#simulation.modules.macrophage.MacrophageCellList.internalize_conidia">internalize_conidia</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.len_phagosome" href="#simulation.modules.macrophage.MacrophageCellList.len_phagosome">len_phagosome</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.max_cells" href="#simulation.modules.macrophage.MacrophageCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.move" href="#simulation.modules.macrophage.MacrophageCellList.move">move</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.produce_cytokines" href="#simulation.modules.macrophage.MacrophageCellList.produce_cytokines">produce_cytokines</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.recruit_new" href="#simulation.modules.macrophage.MacrophageCellList.recruit_new">recruit_new</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.remove_from_phagosome" href="#simulation.modules.macrophage.MacrophageCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageCellList.remove_if_sporeless" href="#simulation.modules.macrophage.MacrophageCellList.remove_if_sporeless">remove_if_sporeless</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines" href="#nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines">absorb_cytokines</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome">append_to_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.damage_conidia" href="#nlisim.modules.macrophage.MacrophageCellList.damage_conidia">damage_conidia</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.grid" href="#nlisim.modules.macrophage.MacrophageCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.internalize_conidia" href="#nlisim.modules.macrophage.MacrophageCellList.internalize_conidia">internalize_conidia</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.len_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.len_phagosome">len_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.max_cells" href="#nlisim.modules.macrophage.MacrophageCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.move" href="#nlisim.modules.macrophage.MacrophageCellList.move">move</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.produce_cytokines" href="#nlisim.modules.macrophage.MacrophageCellList.produce_cytokines">produce_cytokines</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.recruit_new" href="#nlisim.modules.macrophage.MacrophageCellList.recruit_new">recruit_new</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless" href="#nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless">remove_if_sporeless</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="simulation.modules.macrophage.MacrophageState" href="#simulation.modules.macrophage.MacrophageState">MacrophageState</a></code></h4>
+<h4><code><a title="nlisim.modules.macrophage.MacrophageState" href="#nlisim.modules.macrophage.MacrophageState">MacrophageState</a></code></h4>
 <ul class="two-column">
-<li><code><a title="simulation.modules.macrophage.MacrophageState.cells" href="#simulation.modules.macrophage.MacrophageState.cells">cells</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.kill" href="#simulation.modules.macrophage.MacrophageState.kill">kill</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.m_abs" href="#simulation.modules.macrophage.MacrophageState.m_abs">m_abs</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.m_det" href="#simulation.modules.macrophage.MacrophageState.m_det">m_det</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.m_n" href="#simulation.modules.macrophage.MacrophageState.m_n">m_n</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.max_conidia_in_phag" href="#simulation.modules.macrophage.MacrophageState.max_conidia_in_phag">max_conidia_in_phag</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.p_internalization" href="#simulation.modules.macrophage.MacrophageState.p_internalization">p_internalization</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.p_rec_r" href="#simulation.modules.macrophage.MacrophageState.p_rec_r">p_rec_r</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.rec_r" href="#simulation.modules.macrophage.MacrophageState.rec_r">rec_r</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.rec_rate_ph" href="#simulation.modules.macrophage.MacrophageState.rec_rate_ph">rec_rate_ph</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.rm" href="#simulation.modules.macrophage.MacrophageState.rm">rm</a></code></li>
-<li><code><a title="simulation.modules.macrophage.MacrophageState.time_m" href="#simulation.modules.macrophage.MacrophageState.time_m">time_m</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.cells" href="#nlisim.modules.macrophage.MacrophageState.cells">cells</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.kill" href="#nlisim.modules.macrophage.MacrophageState.kill">kill</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_abs" href="#nlisim.modules.macrophage.MacrophageState.m_abs">m_abs</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_det" href="#nlisim.modules.macrophage.MacrophageState.m_det">m_det</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_n" href="#nlisim.modules.macrophage.MacrophageState.m_n">m_n</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag" href="#nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag">max_conidia_in_phag</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.p_internalization" href="#nlisim.modules.macrophage.MacrophageState.p_internalization">p_internalization</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.p_rec_r" href="#nlisim.modules.macrophage.MacrophageState.p_rec_r">p_rec_r</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_r" href="#nlisim.modules.macrophage.MacrophageState.rec_r">rec_r</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_rate_ph" href="#nlisim.modules.macrophage.MacrophageState.rec_rate_ph">rec_rate_ph</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.rm" href="#nlisim.modules.macrophage.MacrophageState.rm">rm</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.time_m" href="#nlisim.modules.macrophage.MacrophageState.time_m">time_m</a></code></li>
 </ul>
 </li>
 </ul>
