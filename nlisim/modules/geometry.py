@@ -5,9 +5,9 @@ import h5py
 import numpy as np
 import vtk
 
-from simulation.module import Module, ModuleState
-from simulation.state import grid_variable, State
-from simulation.validation import ValidationError
+from nlisim.module import Module, ModuleState
+from nlisim.state import grid_variable, State
+from nlisim.validation import ValidationError
 
 
 # I am not quite sure if we should put the definition of the lung tissue types here

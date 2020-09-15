@@ -18,7 +18,7 @@ jobs:
           command: tox -e docs
       - persist_to_workspace:
           root: docs
-          paths: simulation
+          paths: nlisim
 
   # https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
   docs-deploy:
@@ -39,7 +39,7 @@ jobs:
             - "78:29:f4:32:31:b1:c1:93:99:6d:2f:66:aa:8e:41:90"
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --message "[skip ci] Update docs" --dist docs/simulation
+          command: gh-pages --message "[skip ci] Update docs" --dist docs/nlisim
 
 
 workflows:

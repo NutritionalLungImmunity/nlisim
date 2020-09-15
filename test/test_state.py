@@ -1,6 +1,6 @@
 from tempfile import TemporaryFile
 
-from simulation.state import State
+from nlisim.state import State
 
 
 def test_save_state(state: State):

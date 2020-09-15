@@ -3,14 +3,14 @@ from enum import IntEnum
 import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.modules.fungus import FungusCellData, FungusCellList
-from simulation.modules.geometry import TissueTypes
-from simulation.random import rg
-from simulation.state import State
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.modules.fungus import FungusCellData, FungusCellList
+from nlisim.modules.geometry import TissueTypes
+from nlisim.random import rg
+from nlisim.state import State
 
 
 class NeutrophilCellData(CellData):

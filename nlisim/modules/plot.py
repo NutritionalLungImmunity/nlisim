@@ -2,8 +2,8 @@ import attr
 import matplotlib.pyplot as plt
 import numpy as np
 
-from simulation.module import Module, ModuleState
-from simulation.state import State
+from nlisim.module import Module, ModuleState
+from nlisim.state import State
 
 MAX_ARRAY_LENGTH = 1000
 

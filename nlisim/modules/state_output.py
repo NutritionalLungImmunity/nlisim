@@ -3,8 +3,8 @@ import shutil
 
 import attr
 
-from simulation.module import Module, ModuleState
-from simulation.state import State
+from nlisim.module import Module, ModuleState
+from nlisim.state import State
 
 
 @attr.s(kw_only=True)

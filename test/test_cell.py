@@ -3,9 +3,9 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from pytest import fixture, raises
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 
 
 @fixture

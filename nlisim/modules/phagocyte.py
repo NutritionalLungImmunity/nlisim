@@ -5,11 +5,11 @@ import random
 import attr
 import numpy as np
 
-from simulation.cell import CellData, CellList
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
-from simulation.modules.geometry import TissueTypes
-from simulation.random import rg
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.modules.geometry import TissueTypes
+from nlisim.random import rg
 
 MAX_PHAGOSOME_LENGTH = 100
 

@@ -11,10 +11,10 @@ from vtk import (  # type: ignore
 )
 from vtk.util.numpy_support import numpy_to_vtk  # type: ignore
 
-from simulation.cell import CellList
-from simulation.grid import RectangularGrid
-from simulation.modules.geometry import GeometryState
-from simulation.state import State
+from nlisim.cell import CellList
+from nlisim.grid import RectangularGrid
+from nlisim.modules.geometry import GeometryState
+from nlisim.state import State
 
 
 def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:

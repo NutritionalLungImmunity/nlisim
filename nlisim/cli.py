@@ -6,9 +6,9 @@ import click
 import click_pathlib
 from tqdm import tqdm
 
-from simulation.config import SimulationConfig
-from simulation.postprocess import process_output
-from simulation.solver import run_iterator
+from nlisim.config import SimulationConfig
+from nlisim.postprocess import process_output
+from nlisim.solver import run_iterator
 
 
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)

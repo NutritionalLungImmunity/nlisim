@@ -4,12 +4,12 @@ import attr
 import numpy as np
 from scipy.ndimage import convolve
 
-# from simulation.coordinates import Voxel
-# from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.modules.geometry import GeometryState, TissueTypes
-from simulation.molecule import MoleculeGrid, MoleculeTypes
-from simulation.state import State
+# from nlisim.coordinates import Voxel
+# from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.modules.geometry import GeometryState, TissueTypes
+from nlisim.molecule import MoleculeGrid, MoleculeTypes
+from nlisim.state import State
 
 
 def molecule_grid_factory(self: 'MoleculesState'):

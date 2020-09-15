@@ -1,7 +1,7 @@
 import pytest
 
-from simulation.coordinates import Point, Voxel
-from simulation.grid import RectangularGrid
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 
 
 def v(x: int, y: int, z: int) -> Voxel:
