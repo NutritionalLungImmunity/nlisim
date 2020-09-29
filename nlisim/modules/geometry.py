@@ -41,7 +41,6 @@ class GeometryState(ModuleState):
 
 class Geometry(Module):
     name = 'geometry'
-    defaults = {'geometry_path': 'geometry.hdf5', 'preview_geometry': 'False'}
     StateClass = GeometryState
 
     def initialize(self, state: State):
