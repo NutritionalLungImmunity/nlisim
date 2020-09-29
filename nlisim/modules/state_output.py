@@ -1,15 +1,15 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-import attr
+from attr import attrs, attrib
 
 from nlisim.module import Module, ModuleState
 from nlisim.state import State
 
 
-@attr.s(kw_only=True)
+@attrs(kw_only=True)
 class StateOutputState(ModuleState):
-    last_save: float = attr.ib(default=0)
+    last_save: float = attrib(default=0)
 
 
 class StateOutput(Module):
@@ -20,7 +20,6 @@ class StateOutput(Module):
     """
 
     name = 'state_output'
-    defaults = {'save_interval': '1', 'output_dir': 'output'}
     StateClass = StateOutputState
 
     @property
