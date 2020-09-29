@@ -45,6 +45,8 @@ m_det = 1
 rec_rate_ph = 2
 time_step = 1
 max_conidia_in_phag = 50
+p_internalization = 0.3
+rm = 0.05
 
 [neutrophil]
 neutropenic = False
@@ -76,11 +78,13 @@ rest_time = 2
 swell_time = 5
 
 [epithelium]
+init_health = 100
 e_kill = 30
 cyto_rate = 100
 s_det = 1
 h_det = 1
 max_conidia_in_phag = 10
+p_internalization = 0.3
 time_step = 1
 
 
