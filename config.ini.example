@@ -56,6 +56,7 @@ n_det = 1
 granule_count = 10
 n_kill = 2
 time_step = 1
+age_limit = 36
 
 [fungus]
 init_num = 50
