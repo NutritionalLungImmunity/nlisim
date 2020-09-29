@@ -1,17 +1,15 @@
+import logging
+import re
 from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
 from io import StringIO, TextIOBase
-import logging
 from pathlib import PurePath
-import re
 from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
-
 
 if TYPE_CHECKING:
     from nlisim.module import Module  # noqa
     from nlisim.state import State  # noqa
-
 
 DEFAULTS = {
     'time_step': 0.05,
@@ -24,7 +22,7 @@ DEFAULTS = {
     'validate': True,
     'verbosity': logging.WARNING,
     'modules': '',
-}
+    }
 
 
 class SimulationConfig(ConfigParser):
@@ -35,7 +33,8 @@ class SimulationConfig(ConfigParser):
     """
 
     def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
-        super().__init__()
+        super().__init__(allow_no_value=False,
+                         inline_comment_prefixes=("#",))
         self._modules: OrderedDict[str, 'Module'] = OrderedDict()
 
         # set built-in defaults
@@ -93,6 +92,33 @@ class SimulationConfig(ConfigParser):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
+
+    # Wrapper so that this fails when a parameter is missing
+    def getint(self, section: str, option: str, *,
+               raw: bool = False, vars=None, fallback=None, **kwargs) -> int:
+        result = self._get_conv(section, option, int, raw=raw, vars=vars,
+                                fallback=fallback, **kwargs)
+        assert result is not None, f"Missing parameter {option} in section {section}"
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def getfloat(self, section, option, *, raw=False, vars=None,
+                 fallback=None, **kwargs) -> float:
+        result = self._get_conv(section, option, float, raw=raw, vars=vars,
+                                fallback=fallback, **kwargs)
+        assert result is not None, f"Missing parameter {option} in section {section}"
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def getboolean(self, section, option, *, raw=False, vars=None,
+                   fallback=None, **kwargs) -> bool:
+        result = self._get_conv(section, option, self._convert_to_boolean,
+                                raw=raw, vars=vars, fallback=fallback, **kwargs)
+        assert result is not None, f"Missing parameter {option} in section {section}"
+        return result
+
+    # TODO: see if there is a slicker way to do these gettype wrappers.
+    # TODO: do checking on 'type-less' get (or implement one for strings)
 
     def getlist(self, section: str, option: str) -> List[str]:
         """
