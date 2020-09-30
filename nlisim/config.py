@@ -76,27 +76,27 @@ class SimulationConfig(ConfigParser):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
 
     # Wrapper so that this fails when a parameter is missing
-    def getint(self, section: str, option: str, *,
-               raw: bool = False, vars=None, fallback=None, **kwargs) -> int:
-        result = self._get_conv(section, option, int, raw=raw, vars=vars,
-                                fallback=fallback, **kwargs)
-        assert result is not None, f"Missing parameter {option} in section {section}"
+    def getint(self, section: str, option: str, **kwargs) -> int:
+        result = super(ConfigParser, self).getint(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
     # Wrapper so that this fails when a parameter is missing
-    def getfloat(self, section, option, *, raw=False, vars=None,
-                 fallback=None, **kwargs) -> float:
-        result = self._get_conv(section, option, float, raw=raw, vars=vars,
-                                fallback=fallback, **kwargs)
-        assert result is not None, f"Missing parameter {option} in section {section}"
+    def getfloat(self, section, option, **kwargs) -> float:
+        result = super(ConfigParser, self).getfloat(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
     # Wrapper so that this fails when a parameter is missing
-    def getboolean(self, section, option, *, raw=False, vars=None,
-                   fallback=None, **kwargs) -> bool:
-        result = self._get_conv(section, option, self._convert_to_boolean,
-                                raw=raw, vars=vars, fallback=fallback, **kwargs)
-        assert result is not None, f"Missing parameter {option} in section {section}"
+    def getboolean(self, section, option, **kwargs) -> bool:
+        result = super(ConfigParser, self).getboolean(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def get(self, section, option, **kwargs):
+        result = super(ConfigParser, self).get(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
     # TODO: see if there is a slicker way to do these gettype wrappers.
