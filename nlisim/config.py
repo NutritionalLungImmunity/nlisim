@@ -10,19 +10,6 @@ if TYPE_CHECKING:
     from nlisim.module import Module  # noqa
     from nlisim.state import State  # noqa
 
-DEFAULTS = {
-    'time_step': 0.05,
-    'nx': 100,
-    'ny': 80,
-    'nz': 60,
-    'dx': 1.0,
-    'dy': 1.0,
-    'dz': 1.0,
-    'validate': True,
-    'verbosity': logging.WARNING,
-    'modules': '',
-    }
-
 
 class SimulationConfig(ConfigParser):
     """
@@ -34,9 +21,6 @@ class SimulationConfig(ConfigParser):
     def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
         super().__init__(allow_no_value=False, inline_comment_prefixes=('#',))
         self._modules: OrderedDict[str, 'Module'] = OrderedDict()
-
-        # set built-in defaults
-        self.read_dict({'simulation': DEFAULTS})
 
         for config_source in config_sources:
             if isinstance(config_source, dict):
