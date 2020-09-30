@@ -256,12 +256,7 @@ class NeutrophilState(ModuleState):
 
 class Neutrophil(Module):
     name = 'neutrophil'
-    # defaults = {
-    #     'cells': '', # not a str, or parameter
-    #     'n_n': '100', # Nn in config.ini!
-    #     'time_n': '1', # time_step
-    #     'age_limit': '36', # _omitted_ from ini!
-    # }
+
     StateClass = NeutrophilState
 
     def initialize(self, state: State):

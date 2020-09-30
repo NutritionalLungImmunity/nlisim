@@ -38,10 +38,6 @@ class VisualizationState(ModuleState):
 
 class Visualization(Module):
     name = 'visualization'
-    defaults = {
-        'visualize_interval': '1',
-        'visualization_file_name': 'output/<variable>-<time>.vtk',
-    }
     StateClass = VisualizationState
 
     @classmethod

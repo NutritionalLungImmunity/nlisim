@@ -122,7 +122,7 @@ class Module(object):
     name: str = ''
     """A unique name for this module used for namespacing"""
 
-    defaults: Dict[str, str] = {}
+    #defaults: Dict[str, str] = {}
     """Default values for all config options"""
 
     StateClass: Type[ModuleState] = ModuleState
@@ -133,7 +133,8 @@ class Module(object):
             config.add_section(self.section)
 
         self.config = config[self.section]
-        values = dict(self.defaults, **self.config)
+        #values = dict(self.defaults, **self.config)
+        values = dict(**self.config)
         self.config.update(values)
 
     @property
