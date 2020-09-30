@@ -1,7 +1,7 @@
-import shutil
 from pathlib import Path
+import shutil
 
-from attr import attrs, attrib
+from attr import attrib, attrs
 
 from nlisim.module import Module, ModuleState
 from nlisim.state import State

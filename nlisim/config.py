@@ -1,10 +1,9 @@
-import logging
-import re
 from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
 from io import StringIO, TextIOBase
 from pathlib import PurePath
+import re
 from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -33,8 +32,7 @@ class SimulationConfig(ConfigParser):
     """
 
     def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
-        super().__init__(allow_no_value=False,
-                         inline_comment_prefixes=("#",))
+        super().__init__(allow_no_value=False, inline_comment_prefixes=('#',))
         self._modules: OrderedDict[str, 'Module'] = OrderedDict()
 
         # set built-in defaults
