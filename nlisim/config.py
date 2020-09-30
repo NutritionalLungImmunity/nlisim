@@ -77,19 +77,19 @@ class SimulationConfig(ConfigParser):
 
     # Wrapper so that this fails when a parameter is missing
     def getint(self, section: str, option: str, **kwargs) -> int:
-        result = super(ConfigParser, self).getint(section, option, **kwargs)
+        result = super().getint(section, option, **kwargs)
         assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
     # Wrapper so that this fails when a parameter is missing
     def getfloat(self, section, option, **kwargs) -> float:
-        result = super(ConfigParser, self).getfloat(section, option, **kwargs)
+        result = super().getfloat(section, option, **kwargs)
         assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
     # Wrapper so that this fails when a parameter is missing
     def getboolean(self, section, option, **kwargs) -> bool:
-        result = super(ConfigParser, self).getboolean(section, option, **kwargs)
+        result = super().getboolean(section, option, **kwargs)
         assert result is not None, f'Missing parameter {option} in section {section}'
         return result
 
