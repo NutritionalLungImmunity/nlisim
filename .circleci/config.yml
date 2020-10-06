@@ -6,10 +6,7 @@ jobs:
       - image: jbeezley/tox:latest
     steps:
       - checkout
-      - run: 
-          command: |
-            pip install dataclasses
-            tox -e lint,type,py36,py37,py38
+      - run: tox -e lint,type,py36,py37,py38
 
   docs-build:
     docker:
@@ -18,9 +15,7 @@ jobs:
       - checkout
       - run:
           name: Build docs
-          command: |
-            pip insall dataclasses
-            tox -e docs
+          command: tox -e docs
       - persist_to_workspace:
           root: docs
           paths: nlisim
