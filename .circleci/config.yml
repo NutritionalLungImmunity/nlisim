@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run: 
-          command: 
+          command: |
             pip install dataclasses
             tox -e lint,type,py36,py37,py38
 
@@ -18,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: Build docs
-          command: 
+          command: |
             pip insall dataclasses
             tox -e docs
       - persist_to_workspace:
