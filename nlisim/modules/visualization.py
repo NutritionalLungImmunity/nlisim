@@ -156,7 +156,6 @@ class Visualization(Module):
             raise TypeError(f'Unknown VTK data type: {vtk_type}')
 
     def advance(self, state: State, previous_time: float) -> State:
-        time_step = self.config.getfloat('time_step')
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
         print_to_stdout = self.config.getboolean('print_to_stdout')
