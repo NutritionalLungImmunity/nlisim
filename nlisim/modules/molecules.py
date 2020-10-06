@@ -99,6 +99,7 @@ class Molecules(Module):
         # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
 
+        # TODO: determine if this was a time-step issue
         for _ in range(3):
             molecules.grid.incr()
             self.convolution_diffusion(
@@ -116,7 +117,7 @@ class Molecules(Module):
     @classmethod
     def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
         if len(molecule.shape) != 3:
-            raise ValueError(f'Expecting a 3d array. Get dim = {len(molecule.shape)}')
+            raise ValueError(f'Expecting a 3d array. Got dim = {len(molecule.shape)}')
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode='constant')
 

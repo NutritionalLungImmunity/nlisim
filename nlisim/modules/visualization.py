@@ -39,14 +39,13 @@ class VisualizationState(ModuleState):
 class Visualization(Module):
     name = 'visualization'
     defaults = {
-        'visualize_interval': '1',
+        'time_step': '1',
         'visualization_file_name': 'output/<variable>-<time>.vtk',
     }
     StateClass = VisualizationState
 
     @classmethod
     def write_poly_data(cls, var, filename: str, attr_names: str) -> None:
-
         vol = vtk.vtkPolyData()
         verts = vtk.vtkPoints()
         lines = vtk.vtkCellArray()
@@ -89,7 +88,6 @@ class Visualization(Module):
     def write_structured_points(
         cls, var: np.ndarray, filename: str, dx: float, dy: float, dz: float
     ) -> None:
-
         vol = vtk.vtkStructuredPoints()
 
         # set dimensions X, Y, Z
@@ -158,32 +156,31 @@ class Visualization(Module):
             raise TypeError(f'Unknown VTK data type: {vtk_type}')
 
     def advance(self, state: State, previous_time: float) -> State:
-        visualize_interval = self.config.getfloat('visualize_interval')
+        time_step = self.config.getfloat('time_step')
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
         json_config = json.loads(variables)
         now = state.time
 
         print(
-            str(len(state.neutrophil.cells.alive()))
-            + '\t'
-            + str(len(state.fungus.cells.alive()))
-            + '\t'
-            + str(len(state.macrophage.cells.alive()))
-            + '\t'
-            + str(
-                len(
-                    state.fungus.cells.alive(
-                        state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA
-                    )
+            '\t'.join(
+                map(
+                    str,
+                    [
+                        len(state.neutrophil.cells.alive()),
+                        len(state.fungus.cells.alive()),
+                        len(state.macrophage.cells.alive()),
+                        len(
+                            state.fungus.cells.alive(
+                                state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA
+                            )
+                        ),
+                        np.sum(state.molecules.grid['iron']),
+                        np.std(state.molecules.grid['iron']),
+                        np.mean(state.molecules.grid['iron']),
+                    ],
                 )
-            )
-            + '\t'
-            + str(np.sum(state.molecules.grid['iron']))
-            + '\t'
-            + str(np.std(state.molecules.grid['iron']))
-            + '\t'
-            + str(np.mean(state.molecules.grid['iron'])),
+            ),
             end='\t',
         )
 
@@ -199,7 +196,7 @@ class Visualization(Module):
 
         print(str(i_level) + '\t' + str(i_f_tot))
 
-        if now - state.visualization.last_visualize > visualize_interval - 1e-8:
+        if now - state.visualization.last_visualize > time_step - 1e-8:
             for variable in json_config:
                 file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
                 self.visualize(state, variable, file_name)
