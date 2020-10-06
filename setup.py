@@ -33,7 +33,7 @@ setup(
         'scipy',
         'tqdm',
         'vtk',
-        'dataclasses'
+        'dataclasses',
     ],
     entry_points={'console_scripts': ['nlisim = nlisim.cli:main']},
     setup_requires=['setuptools_scm'],
