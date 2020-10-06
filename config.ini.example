@@ -114,6 +114,7 @@ molecules = [
 
 [visualization]
 time_step = 1
+print_to_stdout = False
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
