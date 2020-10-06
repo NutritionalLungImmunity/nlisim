@@ -20,7 +20,7 @@ class StateOutput(Module):
     """
 
     name = 'state_output'
-    defaults = {'save_interval': '1', 'output_dir': 'output'}
+    defaults = {'time_step': '1', 'output_dir': 'output'}
     StateClass = StateOutputState
 
     @property
@@ -48,8 +48,5 @@ class StateOutput(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        save_interval = self.config.getfloat('save_interval')
-        now = state.time
-        if now - state.state_output.last_save > save_interval - 1e-8:
-            self._write_output(state)
+        self._write_output(state)
         return state
