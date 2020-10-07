@@ -44,6 +44,8 @@ kill = 2
 m_det = 1
 rec_rate_ph = 2
 max_conidia_in_phag = 50
+p_internalization = 0.3
+rm = 0.05
 
 [neutrophil]
 time_step = 1
@@ -55,6 +57,7 @@ Nn = 2
 n_det = 1
 granule_count = 10
 n_kill = 2
+age_limit = 36
 
 [fungus]
 time_step = 1
@@ -76,11 +79,13 @@ swell_time = 5
 
 [epithelium]
 time_step = 1
+init_health = 100
 e_kill = 30
 cyto_rate = 100
 s_det = 1
 h_det = 1
 max_conidia_in_phag = 10
+p_internalization = 0.3
 
 [molecules]
 time_step = 0.333333

@@ -289,16 +289,6 @@ class EpitheliumState(ModuleState):
 class Epithelium(Module):
     name = 'epithelium'
 
-    defaults = {
-        'init_health': '100',
-        'e_kill': '10',
-        'cyto_rate': '5',
-        's_det': '1',
-        'h_det': '1',
-        'time_e': '1',
-        'max_conidia_in_phag': '50',
-        'p_internalization': '0.3',
-    }
     StateClass = EpitheliumState
 
     def initialize(self, state: State):

@@ -162,9 +162,6 @@ this class.  The following is small example demonstrating some of the features:
 
     class HelloWorld(Module):
         name = 'hello_world'
-        defaults = {
-            'target_string': 'World'
-        }
 
         @attr.s(kw_only=True, auto_attribs=True)
         class StateClass(ModuleState):

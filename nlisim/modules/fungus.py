@@ -273,25 +273,6 @@ class Fungus(Module):
     name = 'fungus'
     StateClass = FungusState
 
-    # defaults config opt
-    defaults = {
-        'init_num': '10',
-        'p_lodge': '0.1',
-        'p_internal_swell': '0.05',
-        'iron_min': '10',
-        'iron_max': '20',
-        'iron_absorb': '1',
-        'spacing': '0.1',
-        'iron_min_grow': '5',
-        'p_branch': '0.2',
-        'p_internalize': '0.1',
-        'health': '100.0',
-        'rest_time': '1',
-        'swell_time': '1',
-        'grow_time': '1',
-        # ...
-    }
-
     def initialize(self, state: State):
         fungus: FungusState = state.fungus
         # grid: RectangularGrid = state.grid
@@ -311,7 +292,7 @@ class Fungus(Module):
         self.swell_time = self.config.getint('swell_time')
         self.grow_time = self.config.getint('grow_time')
 
-        fungus.health = self.config.getfloat('health')
+        fungus.health = self.config.getfloat('init_health')
 
         cells = fungus.cells
         cells.initialize_spores(tissue, self.init_num)
