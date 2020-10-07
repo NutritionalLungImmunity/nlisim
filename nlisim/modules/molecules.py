@@ -99,24 +99,23 @@ class Molecules(Module):
         # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
 
-        for _ in range(3):
-            molecules.grid.incr()
-            self.convolution_diffusion(
-                molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
-            )
+        molecules.grid.incr()
+        self.convolution_diffusion(
+            molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
+        )
 
-            self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
-            self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
+        self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
+        self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
 
-            self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
-            self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
+        self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
+        self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
     def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
         if len(molecule.shape) != 3:
-            raise ValueError(f'Expecting a 3d array. Get dim = {len(molecule.shape)}')
+            raise ValueError(f'Expecting a 3d array. Got dim = {len(molecule.shape)}')
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode='constant')
 

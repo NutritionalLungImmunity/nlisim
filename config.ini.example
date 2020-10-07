@@ -1,7 +1,4 @@
 [simulation]
-# maximum time step duration
-time_step = 1
-
 # number of grid points in each direction
 nx = 20
 ny = 40
@@ -27,15 +24,18 @@ modules = nlisim.modules.geometry.Geometry
 
 [state_output]
 # save the simulation state every 1 simulation second
-save_interval = 1.0
+time_step = 1
 output_dir = output
 
 [geometry]
+# zero implies only initialization, does not advance in time
+time_step = 0
 # path of the imported geometry file
 geometry_path = geometry.hdf5
 preview_geometry = false
 
 [macrophage]
+time_step = 1
 rec_r = 5
 p_rec_r = 1.0
 m_abs = 0.05
@@ -43,12 +43,12 @@ Mn = 2.0
 kill = 2
 m_det = 1
 rec_rate_ph = 2
-time_step = 1
 max_conidia_in_phag = 50
 p_internalization = 0.3
 rm = 0.05
 
 [neutrophil]
+time_step = 1
 neutropenic = False
 rec_rate_ph = 6
 rec_r = 3
@@ -57,10 +57,10 @@ Nn = 2
 n_det = 1
 granule_count = 10
 n_kill = 2
-time_step = 1
 age_limit = 36
 
 [fungus]
+time_step = 1
 init_num = 50
 init_health = 100
 ITER_TO_CHANGE_STATUS = 2
@@ -78,6 +78,7 @@ rest_time = 2
 swell_time = 5
 
 [epithelium]
+time_step = 1
 init_health = 100
 e_kill = 30
 cyto_rate = 100
@@ -85,10 +86,9 @@ s_det = 1
 h_det = 1
 max_conidia_in_phag = 10
 p_internalization = 0.3
-time_step = 1
-
 
 [molecules]
+time_step = 0.333333
 diffusion_rate = 0.8
 cyto_evap_m = 0.2
 cyto_evap_n = 0.2
@@ -118,6 +118,8 @@ molecules = [
             ]
 
 [visualization]
+time_step = 1
+print_to_stdout = False
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
@@ -145,5 +147,4 @@ visual_variables =  [
                            "attributes":["iron", "form", "status", "point"]
                         }
                     ]
-visualize_interval = 1
 visualization_file_name = output/<variable>-<time>.vtk

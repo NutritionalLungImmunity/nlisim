@@ -134,6 +134,16 @@ class Module(object):
         self.config.update(values)
 
     @property
+    def time_step(self) -> float:
+        """Return the period over which the module is updated."""
+        assert 'time_step' in self.config.keys(), (
+            f'Module {self.name} has no time step configured! '
+            f'Configuration file must have a time_step field under section [{self.name}] '
+            'Enter zero or negative values for modules which do not update.'
+        )
+        return float(self.config['time_step'])
+
+    @property
     def section(self):
         """Return the section in the configuration object used by this module."""
         return self.name
