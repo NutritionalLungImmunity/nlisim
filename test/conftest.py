@@ -17,7 +17,20 @@ def base_config():
 
 @fixture
 def config():
-    yield SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
+    yield SimulationConfig(
+        {
+            'simulation': {
+                'modules': 'nlisim.modules.afumigatus.Afumigatus',
+                'nx': 20,
+                'ny': 40,
+                'nz': 20,
+                'dx': 20,
+                'dy': 40,
+                'dz': 20,
+                'validate': True,
+            }
+        }
+    )
 
 
 @fixture
