@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 from nlisim.cell import CellData, CellList, CellType
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import get_class_path, State
 
@@ -415,7 +415,7 @@ class AfumigatusState(ModuleState):
     ITER_TO_CHANGE_STATUS: int = 2
 
 
-class Afumigatus(Module):
+class Afumigatus(ModuleModel):
     name = 'afumigatus'
     StateClass = AfumigatusState
 

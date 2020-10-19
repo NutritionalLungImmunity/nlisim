@@ -5,7 +5,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 from nlisim.state import State
@@ -269,7 +269,7 @@ class FungusState(ModuleState):
     health: float = 100.0
 
 
-class Fungus(Module):
+class Fungus(ModuleModel):
     name = 'fungus'
     StateClass = FungusState
 

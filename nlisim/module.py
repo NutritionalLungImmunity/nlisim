@@ -118,7 +118,7 @@ class ModuleState(object):
         return value
 
 
-class Module(object):
+class ModuleModel(object):
     name: str = ''
     """A unique name for this module used for namespacing"""
 

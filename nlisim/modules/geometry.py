@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 import vtk
 
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import grid_variable, State
 from nlisim.validation import ValidationError
 
@@ -39,7 +39,7 @@ class GeometryState(ModuleState):
         return 'GeometryState(lung_tissue)'
 
 
-class Geometry(Module):
+class Geometry(ModuleModel):
     name = 'geometry'
     StateClass = GeometryState
 
