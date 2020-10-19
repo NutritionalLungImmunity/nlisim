@@ -8,7 +8,7 @@ import vtk
 from vtk.util import numpy_support
 
 from nlisim.cell import CellList
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellTreeList
 from nlisim.modules.fungus import FungusCellData
 from nlisim.modules.geometry import TissueTypes
@@ -36,7 +36,7 @@ class VisualizationState(ModuleState):
         return 'VisualizationState(last_visualize)'
 
 
-class Visualization(Module):
+class Visualization(ModuleModel):
     name = 'visualization'
 
     StateClass = VisualizationState

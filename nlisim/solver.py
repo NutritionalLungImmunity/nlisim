@@ -6,7 +6,7 @@ from typing import Iterator, Tuple
 import attr
 
 from nlisim.config import SimulationConfig
-from nlisim.module import Module
+from nlisim.module import ModuleModel
 from nlisim.state import State
 from nlisim.validation import context as validation_context
 
@@ -38,7 +38,7 @@ def advance(state: State, target_time: float) -> Iterator[State]:
     class ModuleUpdateEvent:
         event_time: float
         previous_update: float
-        module: Module = field(compare=False)
+        module: ModuleModel = field(compare=False)
 
     # Create and fill a queue of modules to run. This allows for modules to
     # operate on disparate time scales. Modules which do not have a time step
@@ -59,7 +59,7 @@ def advance(state: State, target_time: float) -> Iterator[State]:
     while previous_time < target_time and not queue.empty():
         update_event = queue.get()
 
-        m: Module = update_event.module
+        m: ModuleModel = update_event.module
         previous_time = update_event.previous_update
         state.time = update_event.event_time
 

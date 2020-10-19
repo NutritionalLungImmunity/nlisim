@@ -3,7 +3,7 @@ import shutil
 
 from attr import attrib, attrs
 
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
@@ -12,7 +12,7 @@ class StateOutputState(ModuleState):
     last_save: float = attrib(default=0)
 
 
-class StateOutput(Module):
+class StateOutput(ModuleModel):
     """
     After time steps, serialize the simulation state to an HDF5 file.
 

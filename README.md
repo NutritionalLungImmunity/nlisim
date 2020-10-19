@@ -157,10 +157,10 @@ this class.  The following is small example demonstrating some of the features:
 ```python
     import attr
 
-    from nlisim.module import Module, ModuleState
+    from nlisim.module import ModuleModel, ModuleState
 
 
-    class HelloWorld(Module):
+    class HelloWorld(ModuleModel):
         name = 'hello_world'
 
         @attr.s(kw_only=True, auto_attribs=True)

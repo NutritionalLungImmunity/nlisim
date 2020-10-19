@@ -6,7 +6,7 @@ from scipy.ndimage import convolve
 
 # from nlisim.coordinates import Voxel
 # from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.geometry import GeometryState, TissueTypes
 from nlisim.molecule import MoleculeGrid, MoleculeTypes
 from nlisim.state import State
@@ -25,7 +25,7 @@ class MoleculesState(ModuleState):
     iron_max: float
 
 
-class Molecules(Module):
+class Molecules(ModuleModel):
     name = 'molecules'
     StateClass = MoleculesState
 
