@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  nlisim:
+    build: .
+    image: nlisim:latest
+    # environment:
+    #   - TIMESTEP={$NILSIM_TIMESTEP}
+    volumes:
+      - ./$NLISIM_CONFIG:/nlisim/config.ini
+      - ./$NLISIM_GEOMETRY:/nlisim/geometry.hdf5
+      - ./$NLISIM_OUTPUT_DIR:/nlisim/output/
+    command: run $NLISIM_TIMESTEP

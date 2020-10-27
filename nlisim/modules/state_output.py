@@ -40,8 +40,14 @@ class StateOutput(Module):
         output_dir = self._output_dir
         if output_dir.exists():
             print(f'File output directory {output_dir.resolve()} exists. Clearing it.')
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True)
+            for file in output_dir.iterdir():
+                if file.is_file():
+                    file.unlink()
+                elif file.is_dir():
+                    shutil.rmtree(file)
+            #shutil.rmtree(output_dir)
+        else:
+            output_dir.mkdir(parents=True)
 
         # Initial time is typically 0, but it can be read from state
         self._write_output(state)
