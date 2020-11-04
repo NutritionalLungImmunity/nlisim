@@ -45,7 +45,6 @@ class StateOutput(Module):
                     file.unlink()
                 elif file.is_dir():
                     shutil.rmtree(file)
-            #shutil.rmtree(output_dir)
         else:
             output_dir.mkdir(parents=True)
 

@@ -23,14 +23,32 @@ are running the simulation from.
 
 ## Running
 
+### Run with python virtual environment
+
 With the simulation package installed, you should have a new command-line
-program called `simulation ` available.  Try running `simulation --help` to get
+program called `nlisim ` available.  Try running `nlisim --help` to get
 more information.  To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.
 
-Now run simulation up to 50 seconds using the first example config.
+Now run simulation up to 50 timesteps using the first example config.
 ```bash
     nlisim --config config.ini.example run 50
+```
+
+### Run with docker container
+
+Build the docker image.
+```bash
+    docker build -t nlisim .
+```
+
+Run the container with imported configuration file and geometry file up to 50 timesteps. Configurate the output path.
+```bash
+    docker run \
+        -v $(pwd)/config.ini:/opt/simulation-framework/config.ini \
+        -v $(pwd)/geometry.hdf5:/opt/simulation-framework/geometry.hdf5  \
+        -v $(pwd)/output:/opt/simulation-framework/output \
+        nlisim run 50
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
