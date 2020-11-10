@@ -1,10 +1,10 @@
 FROM python:3.7-slim-buster
 LABEL maintainer="Aspergillus Developers <aspergillus@mail.computational-biology.org>"
 
-WORKDIR /opt/simulation-framework
-COPY nlisim /opt/simulation-framework/nlisim
-COPY setup.py setup.cfg /opt/simulation-framework/
-COPY .git /opt/simulation-framework/.git
+WORKDIR /opt/nlisim
+COPY nlisim /opt/nlisim/nlisim
+COPY setup.py setup.cfg /opt/nlisim/
+COPY .git /opt/nlisim/.git
 RUN apt update \
     && apt install -y git libgl1 \
     && pip3 install . \

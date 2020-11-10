@@ -45,9 +45,9 @@ Build the docker image.
 Run the container with imported configuration file and geometry file up to 50 timesteps. Configurate the output path.
 ```bash
     docker run \
-        -v $(pwd)/config.ini:/opt/simulation-framework/config.ini \
-        -v $(pwd)/geometry.hdf5:/opt/simulation-framework/geometry.hdf5  \
-        -v $(pwd)/output:/opt/simulation-framework/output \
+        -v $(pwd)/config.ini:/opt/nlisim/config.ini \
+        -v $(pwd)/geometry.hdf5:/nlisim/geometry.hdf5  \
+        -v $(pwd)/output:/opt/nlisim/output \
         nlisim run 50
 ```
 
