@@ -6,7 +6,7 @@ COPY nlisim /opt/nlisim/nlisim
 COPY setup.py setup.cfg /opt/nlisim/
 COPY .git /opt/nlisim/.git
 RUN apt update \
-    && apt install -y git libgl1 \
+    && apt install -y git \
     && pip3 install . \
     && apt remove -y git
 ENTRYPOINT ["nlisim"]
