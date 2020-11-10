@@ -35,24 +35,31 @@ Now run simulation up to 50 timesteps using the first example config.
     nlisim --config config.ini.example run 50
 ```
 
-### Run with docker container
+### Run with Docker
 
-Build the docker image.
-```bash
-    docker build -t nlisim .
-```
+As an alternative to local installation, the simulation may be run within a Docker container. This
+will download the simulation code from
+[the latest published version](https://hub.docker.com/repository/docker/nutritionallungimmunity/nlisim).
 
-Run the container with imported configuration file and geometry file up to 50 timesteps. Configurate the output path.
+To run the same simulation up to 50 timesteps using the first example config:
+
 ```bash
-    docker run \
-        -v $(pwd)/config.ini:/opt/nlisim/config.ini \
-        -v $(pwd)/geometry.hdf5:/nlisim/geometry.hdf5  \
-        -v $(pwd)/output:/opt/nlisim/output \
-        nlisim run 50
+mkdir -p output
+docker run \
+    --rm \
+    --mount type=bind,source="$(pwd)/config.ini.example",destination=/opt/nlisim/config.ini,readonly \
+    --mount type=bind,source="$(pwd)/geometry.hdf5",destination=/opt/nlisim/geometry.hdf5,readonly \
+    --mount type=bind,source="$(pwd)/output/",destination=/opt/nlisim/output/ \
+    nutritionallungimmunity/nlisim run 50
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
 the simulation state at 1 second intervals through the full simulation.
+
+Note, since the application requires read access to files, 
+[Docker must mount](https://docs.docker.com/storage/bind-mounts/#use-a-read-only-bind-mount) 
+them within the container; this example uses `--mount` to 
+[prevent nonexistent host paths from being accidentally created](https://github.com/moby/moby/issues/13121).
 
 ## Testing
 
