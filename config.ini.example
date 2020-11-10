@@ -23,7 +23,7 @@ modules = nlisim.modules.geometry.Geometry
           nlisim.modules.state_output.StateOutput
 
 [state_output]
-# save the simulation state every 1 simulation second
+# save the simulation state every 1 simulation hour
 time_step = 1
 output_dir = output
 

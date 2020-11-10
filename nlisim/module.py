@@ -163,5 +163,5 @@ class ModuleModel(object):
         return state
 
     def finalize(self, state: State) -> State:
-        """Run after the last timestep."""
+        """Run after the last time step."""
         return state
