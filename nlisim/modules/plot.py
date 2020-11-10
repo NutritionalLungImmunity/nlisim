@@ -2,7 +2,7 @@ import attr
 import matplotlib.pyplot as plt
 import numpy as np
 
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 MAX_ARRAY_LENGTH = 1000
@@ -17,7 +17,7 @@ class PlotState(ModuleState):
     time_steps: np.ndarray = attr.ib(factory=lambda: np.zeros(MAX_ARRAY_LENGTH, dtype=float))
 
 
-class Plot(Module):
+class Plot(ModuleModel):
     name = 'plot'
     StateClass = PlotState
 

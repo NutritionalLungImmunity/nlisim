@@ -4,24 +4,24 @@ from tempfile import NamedTemporaryFile
 from pytest import raises
 
 from nlisim.config import SimulationConfig
-from nlisim.module import Module
+from nlisim.module import ModuleModel
 
+# Destroy all defaults!
+# def test_config_defaults():
+#     config = SimulationConfig()
+#     assert config.getboolean('simulation', 'validate') is True
 
-def test_config_defaults():
-    config = SimulationConfig()
-    assert config.getboolean('simulation', 'validate') is True
+# Destroy all defaults!
+# def test_config_default_merging():
+#     config = SimulationConfig({'simulation': {'custom_val': 5}})
+#     # Existing defaults should be merged
+#     assert config.getboolean('simulation', 'validate') is True
 
-
-def test_config_default_merging():
-    config = SimulationConfig({'simulation': {'custom_val': 5}})
-    # Existing defaults should be merged
-    assert config.getboolean('simulation', 'validate') is True
-
-
-def test_config_default_overwrite():
-    config = SimulationConfig({'simulation': {'validate': False}})
-    # Defaults should be overwritable
-    assert config.getboolean('simulation', 'validate') is False
+# Destroy all defaults!
+# def test_config_default_overwrite():
+#     config = SimulationConfig({'simulation': {'validate': False}})
+#     # Defaults should be overwritable
+#     assert config.getboolean('simulation', 'validate') is False
 
 
 def test_config_dict():
@@ -58,17 +58,17 @@ def test_config_add_module_string():
     config = SimulationConfig()
     config.add_module('nlisim.modules.afumigatus.Afumigatus')
     assert len(config.modules) == 1
-    assert isinstance(config.modules[0], Module)
+    assert isinstance(config.modules[0], ModuleModel)
 
 
 def test_config_add_module_object():
-    class ValidModule(Module):
+    class ValidModuleModel(ModuleModel):
         name = 'ValidModule'
 
     config = SimulationConfig()
-    config.add_module(ValidModule)
+    config.add_module(ValidModuleModel)
     assert len(config.modules) == 1
-    assert isinstance(config.modules[0], ValidModule)
+    assert isinstance(config.modules[0], ValidModuleModel)
 
 
 def test_config_add_module_invalid_subclass():
@@ -81,9 +81,9 @@ def test_config_add_module_invalid_subclass():
 
 
 def test_config_add_module_invalid_name():
-    class NoNameModule(Module):
+    class NoNameModuleModel(ModuleModel):
         pass
 
     config = SimulationConfig()
     with raises(ValueError, match=r'^Invalid module name'):
-        config.add_module(NoNameModule)
+        config.add_module(NoNameModuleModel)
