@@ -4,21 +4,23 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-tox = '>=3'
-flake8 = '*'
-flake8-blind-except = '*'
-flake8-bugbear = '*'
-flake8-docstrings = '*'
-flake8-import-order = '*'
-flake8-quotes = '*'
-mypy = '>=0.730'
-pep8-naming = '*'
-pytest = '*'
-pytest-cov = '*'
+black = ">=20.8b1"
+flake8 = "*"
+flake8-black = "*"
+flake8-bugbear = "*"
+flake8-docstrings = "*"
+flake8-isort = "*"
+flake8-quotes = "*"
+isort = "*"
 jupyter = "*"
+mypy = "*"
+pep8-naming = "*"
+pytest = "*"
+pytest-cov = "*"
+tox = ">=3"
 
 [packages]
 nlisim = {editable = true,path = "."}
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"

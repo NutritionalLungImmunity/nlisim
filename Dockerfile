@@ -1,4 +1,4 @@
-FROM python:3.7-slim as builder
+FROM python:3.8-slim as builder
 
 # Git is needed to install nlisim (to compute the version)
 RUN apt-get update && \
@@ -10,7 +10,7 @@ COPY . /opt/nlisim
 RUN PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir --no-compile /opt/nlisim
 
 
-FROM python:3.7-slim as runtime
+FROM python:3.8-slim as runtime
 LABEL maintainer="Aspergillus Developers <aspergillus@mail.computational-biology.org>"
 
 # Set environment to support Unicode: http://click.pocoo.org/5/python3/#python-3-surrogate-handling
