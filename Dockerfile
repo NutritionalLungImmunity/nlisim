@@ -1,13 +1,25 @@
-FROM python:3.7-slim-buster
+FROM python:3.7-slim as builder
+
+# Git is needed to install nlisim (to compute the version)
+RUN apt-get update && \
+    apt-get install --no-install-recommends --yes \
+        git
+
+COPY . /opt/nlisim
+# Both PYTHONDONTWRITEBYTECODE and --no-compile are necessary to avoid creating .pyc files
+RUN PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir --no-compile /opt/nlisim
+
+
+FROM python:3.7-slim as runtime
 LABEL maintainer="Aspergillus Developers <aspergillus@mail.computational-biology.org>"
 
+# Set environment to support Unicode: http://click.pocoo.org/5/python3/#python-3-surrogate-handling
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+COPY --from=builder /usr/local/bin/nlisim /usr/local/bin/nlisim
+COPY --from=builder /usr/local/lib/python3.7/site-packages/ /usr/local/lib/python3.7/site-packages/
+
 WORKDIR /opt/nlisim
-COPY nlisim /opt/nlisim/nlisim
-COPY setup.py setup.cfg /opt/nlisim/
-COPY .git /opt/nlisim/.git
-RUN apt update \
-    && apt install -y git \
-    && pip3 install . \
-    && apt remove -y git
 ENTRYPOINT ["nlisim"]
 CMD ["run", "5"]
