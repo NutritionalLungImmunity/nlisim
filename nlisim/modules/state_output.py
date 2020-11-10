@@ -36,15 +36,21 @@ class StateOutput(Module):
 
         state.state_output.last_save = now
 
+    @staticmethod
+    def _clear_directory(directory: Path) -> None:
+        """Clear the contents of a directory, without removing the directory itself."""
+        for file in directory.iterdir():
+            if file.is_file():
+                file.unlink()
+            elif file.is_dir():
+                shutil.rmtree(file)
+
     def initialize(self, state: State) -> State:
         output_dir = self._output_dir
         if output_dir.exists():
+            # Since output_dir may be a Docker mount point, don't remove the directory itself.
             print(f'File output directory {output_dir.resolve()} exists. Clearing it.')
-            for file in output_dir.iterdir():
-                if file.is_file():
-                    file.unlink()
-                elif file.is_dir():
-                    shutil.rmtree(file)
+            self._clear_directory(output_dir)
         else:
             output_dir.mkdir(parents=True)
 
