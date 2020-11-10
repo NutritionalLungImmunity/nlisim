@@ -43,19 +43,15 @@ jobs:
 
   release:
     docker:
-      - image: jbeezley/tox:latest
+      - image: circleci/python:3.8
     steps:
       - checkout
       - run:
-          name: Install twine
-          command: pip3 install twine
+          name: Install tox
+          command: sudo pip install tox
       - run:
-          name: Build sdist
+          name: Make release
           command: tox -e release
-      - run:
-          name: Upload release
-          command: twine upload --skip-existing dist/*.tar.gz
-
 
 workflows:
   version: 2

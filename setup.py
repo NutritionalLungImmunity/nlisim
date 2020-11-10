@@ -14,7 +14,7 @@ def prerelease_local_scheme(version):
     """
     from setuptools_scm.version import get_local_node_and_date
 
-    if 'CI_COMMIT_REF_NAME' in os.environ and os.environ['CI_COMMIT_REF_NAME'] == 'master':
+    if 'CIRCLE_BRANCH' in os.environ and os.environ['CIRCLE_BRANCH'] == 'master':
         return ''
     else:
         return get_local_node_and_date(version)
