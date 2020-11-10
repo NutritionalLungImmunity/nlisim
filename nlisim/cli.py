@@ -10,7 +10,6 @@ from nlisim.config import SimulationConfig
 from nlisim.postprocess import process_output
 from nlisim.solver import run_iterator
 
-
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
 

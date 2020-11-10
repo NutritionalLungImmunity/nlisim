@@ -1,6 +1,5 @@
 from contextlib import contextmanager
-from typing import Callable, Iterator, List, TYPE_CHECKING
-
+from typing import TYPE_CHECKING, Callable, Iterator, List
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
     from nlisim.state import State  # noqa

@@ -12,7 +12,6 @@ from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 from nlisim.state import State
 
-
 MAX_PHAGOSOME_LENGTH = 100
 
 
