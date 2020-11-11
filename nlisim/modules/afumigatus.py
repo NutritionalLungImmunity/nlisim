@@ -325,7 +325,7 @@ class AfumigatusCellTreeList(object):
         cells['iron_pool'] = np.add(cells['iron_pool'], iron)
 
     def age(self):
-        """Add 1 to iteration each timestep."""
+        """Add 1 to iteration each time step."""
         cells = self.cells.cell_data
         cells['iteration'] += 1
 
