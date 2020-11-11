@@ -13,7 +13,7 @@ from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
-from nlisim.state import get_class_path, State
+from nlisim.state import State, get_class_path
 
 
 class AfumigatusCellData(CellData):

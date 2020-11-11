@@ -1,6 +1,6 @@
 from io import BytesIO, StringIO
 from pathlib import PurePath
-from typing import Any, cast, Dict, IO, Type, TYPE_CHECKING, Union
+from typing import IO, TYPE_CHECKING, Any, Dict, Type, Union, cast
 
 import attr
 from h5py import File as H5File

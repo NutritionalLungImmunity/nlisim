@@ -1,11 +1,13 @@
 from enum import Enum
 import json
-import warnings
 
+# Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import attr
 import numpy as np
-import vtk
-from vtk.util import numpy_support
+from vtkmodules.util.numpy_support import numpy_to_vtk
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
@@ -13,9 +15,6 @@ from nlisim.modules.afumigatus import AfumigatusCellTreeList
 from nlisim.modules.fungus import FungusCellData
 from nlisim.modules.geometry import TissueTypes
 from nlisim.state import State
-
-# suppress the future warning caused by numpy_to_vtk
-warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 class VTKTypes(Enum):
@@ -43,16 +42,16 @@ class Visualization(ModuleModel):
 
     @classmethod
     def write_poly_data(cls, var, filename: str, attr_names: str) -> None:
-        vol = vtk.vtkPolyData()
-        verts = vtk.vtkPoints()
-        lines = vtk.vtkCellArray()
+        vol = vtkPolyData()
+        verts = vtkPoints()
+        lines = vtkCellArray()
 
         if isinstance(var, AfumigatusCellTreeList):
             adjacency = var.adjacency
 
             for i, j in adjacency.keys():
                 if i != j:
-                    line = vtk.vtkLine()
+                    line = vtkLine()
                     line.GetPointIds().SetId(0, i)
                     line.GetPointIds().SetId(1, j)
                     lines.InsertNextCell(line)
@@ -70,13 +69,13 @@ class Visualization(ModuleModel):
         alive_cells = np.take(var.cell_data, var.alive())
         for attr_name in attr_names:
             attr = alive_cells[attr_name]
-            scalars = numpy_support.numpy_to_vtk(num_array=attr)
+            scalars = numpy_to_vtk(num_array=attr)
             scalars.SetName(attr_name)
             vol.GetPointData().AddArray(scalars)
 
         vol.SetPoints(verts)
         vol.SetLines(lines)
-        writer = vtk.vtkPolyDataWriter()
+        writer = vtkPolyDataWriter()
         writer.SetFileName(filename)
         writer.SetInputData(vol)
         writer.Write()
@@ -85,17 +84,17 @@ class Visualization(ModuleModel):
     def write_structured_points(
         cls, var: np.ndarray, filename: str, dx: float, dy: float, dz: float
     ) -> None:
-        vol = vtk.vtkStructuredPoints()
+        vol = vtkStructuredPoints()
 
         # set dimensions X, Y, Z
         vol.SetDimensions(var.shape[2], var.shape[1], var.shape[0])
         vol.SetOrigin(0, 0, 0)
         vol.SetSpacing(dx, dy, dz)
 
-        scalars = numpy_support.numpy_to_vtk(num_array=var.ravel())
+        scalars = numpy_to_vtk(num_array=var.ravel())
 
         vol.GetPointData().SetScalars(scalars)
-        writer = vtk.vtkStructuredPointsWriter()
+        writer = vtkStructuredPointsWriter()
         writer.SetFileName(filename)
         writer.SetInputData(vol)
         writer.Write()

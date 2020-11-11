@@ -4,7 +4,7 @@ from importlib import import_module
 from io import StringIO, TextIOBase
 from pathlib import PurePath
 import re
-from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
 
 if TYPE_CHECKING:
     from nlisim.module import ModuleModel  # noqa

@@ -32,7 +32,6 @@ output_dir = output
 time_step = 0
 # path of the imported geometry file
 geometry_path = geometry.hdf5
-preview_geometry = false
 
 [macrophage]
 time_step = 1

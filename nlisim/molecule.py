@@ -6,7 +6,7 @@ from h5py import Group
 import numpy as np
 
 from nlisim.grid import RectangularGrid
-from nlisim.state import get_class_path, State
+from nlisim.state import State, get_class_path
 
 
 @unique
