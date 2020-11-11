@@ -21,7 +21,7 @@ OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True
     type=InputFilePath,
     multiple=True,
     default=['config.ini'],
-    help='Path to a simulation config. May be specificed multiple times to cascade configurations.',
+    help='Path to a simulation config. May be specified multiple times to cascade configurations.',
     show_default=True,
 )
 @click.pass_context
