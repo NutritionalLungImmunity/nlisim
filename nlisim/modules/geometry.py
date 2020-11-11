@@ -3,10 +3,9 @@ from enum import Enum
 import attr
 import h5py
 import numpy as np
-import vtk
 
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.state import grid_variable, State
+from nlisim.state import State, grid_variable
 from nlisim.validation import ValidationError
 
 
@@ -45,7 +44,6 @@ class Geometry(ModuleModel):
 
     def initialize(self, state: State):
         geometry: GeometryState = state.geometry
-        preview_geometry = self.config.getboolean('preview_geometry')
         path = self.config.get('geometry_path')
         try:
             with h5py.File(path, 'r') as f:
@@ -62,92 +60,7 @@ class Geometry(ModuleModel):
                 for z in range(20):
                     geometry.lung_tissue[z, y, x] = geo[y, x, z]
 
-        if preview_geometry:
-            Geometry.preview(geometry.lung_tissue)
-
         return state
-
-    '''
-    same as the super class. not needed for now
-    def advance(self, state: State, previous_time: float):
-        """Advance the state by a single time step."""
-        # do nothing since the geoemtry is constant
-        return state
-    '''
-
-    @classmethod
-    def preview(cls, grid: np.ndarray):
-        data_importer = vtk.vtkImageImport()
-
-        xbin = grid.shape[2]
-        ybin = grid.shape[1]
-        zbin = grid.shape[0]
-        g = np.uint8(grid.reshape(grid.shape[0] * grid.shape[1] * grid.shape[2]))
-
-        data_string = g.tostring()
-        data_importer.CopyImportVoidPointer(data_string, len(data_string))
-        data_importer.SetDataScalarTypeToUnsignedChar()
-        data_importer.SetNumberOfScalarComponents(1)
-
-        data_importer.SetDataExtent(0, xbin - 1, 0, ybin - 1, 0, zbin - 1)
-        data_importer.SetWholeExtent(0, xbin - 1, 0, ybin - 1, 0, zbin - 1)
-
-        # Create transfer mapping scalar value to opacity
-        opacity_transfer_function = vtk.vtkPiecewiseFunction()
-        opacity_transfer_function.AddPoint(0, 0.0)
-        opacity_transfer_function.AddPoint(1, 0.2)
-        opacity_transfer_function.AddPoint(2, 0.005)
-        opacity_transfer_function.AddPoint(3, 1)
-        opacity_transfer_function.AddPoint(4, 0.2)
-        opacity_transfer_function.AddPoint(5, 0.2)
-
-        # Create transfer mapping scalar value to color
-        color_transfer_function = vtk.vtkColorTransferFunction()
-        color_transfer_function.AddRGBPoint(0, 0.0, 0.0, 1.0)
-        color_transfer_function.AddRGBPoint(1, 1.0, 0.0, 0.0)
-        color_transfer_function.AddRGBPoint(2, 0.0, 0.0, 1.0)
-        color_transfer_function.AddRGBPoint(3, 1.0, 1.0, 1.0)
-        color_transfer_function.AddRGBPoint(4, 1.0, 1.0, 1.0)
-        color_transfer_function.AddRGBPoint(5, 1.0, 1.0, 1.0)
-
-        # The property describes how the data will look
-        volume_property = vtk.vtkVolumeProperty()
-        volume_property.SetColor(color_transfer_function)
-        volume_property.SetScalarOpacity(opacity_transfer_function)
-        # volumeProperty.ShadeOn()
-        volume_property.SetInterpolationTypeToLinear()
-
-        # The mapper / ray cast function know how to render the data
-        volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
-        volume_mapper.SetBlendModeToComposite()
-        volume_mapper.SetInputConnection(data_importer.GetOutputPort())
-
-        # The volume holds the mapper and the property and
-        # can be used to position/orient the volume
-        volume = vtk.vtkVolume()
-        volume.SetMapper(volume_mapper)
-        volume.SetProperty(volume_property)
-
-        ren = vtk.vtkRenderer()
-        ren_win = vtk.vtkRenderWindow()
-        ren_win.AddRenderer(ren)
-        iren = vtk.vtkRenderWindowInteractor()
-        iren.SetRenderWindow(ren_win)
-
-        ren.AddVolume(volume)
-        ren.SetBackground(1, 1, 1)
-        ren_win.SetSize(600, 600)
-        ren_win.Render()
-
-        def check_abort(obj, event):
-            if obj.GetEventPending() != 0:
-                obj.SetAbortRender(1)
-
-        ren_win.AddObserver('AbortCheckEvent', check_abort)
-
-        iren.Initialize()
-        ren_win.Render()
-        iren.Start()
 
 
 def man_geo():

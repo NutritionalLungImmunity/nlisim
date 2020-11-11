@@ -1,15 +1,12 @@
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 
+# Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import numpy as np  # type: ignore
-from vtk import (  # type: ignore
-    vtkPoints,
-    vtkPolyData,
-    vtkStructuredPoints,
-    vtkXMLImageDataWriter,
-    vtkXMLPolyDataWriter,
-)
-from vtk.util.numpy_support import numpy_to_vtk  # type: ignore
+from vtkmodules.util.numpy_support import numpy_to_vtk
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
 from nlisim.cell import CellList
 from nlisim.grid import RectangularGrid

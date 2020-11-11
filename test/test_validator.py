@@ -1,7 +1,7 @@
 import attr
 import pytest
 
-from nlisim.validation import context, ValidationError
+from nlisim.validation import ValidationError, context
 
 
 def test_validate_initial_state(config, state):
