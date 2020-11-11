@@ -23,6 +23,7 @@ def prerelease_local_scheme(version):
 setup(
     name='nlisim',
     packages=find_packages(exclude=['test', 'test.*']),
+    package_data={'nlisim.modules': ['geometry.hdf5']},
     install_requires=[
         'attrs',
         'click',

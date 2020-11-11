@@ -30,8 +30,6 @@ output_dir = output
 [geometry]
 # zero implies only initialization, does not advance in time
 time_step = 0
-# path of the imported geometry file
-geometry_path = geometry.hdf5
 
 [macrophage]
 time_step = 1
