@@ -1,4 +1,4 @@
-from typing import cast, Set
+from typing import Set, cast
 
 from h5py import Group
 from pytest import fixture
@@ -6,11 +6,7 @@ from pytest import fixture
 from nlisim.config import SimulationConfig
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.modules.afumigatus import (
-    AfumigatusCellData,
-    AfumigatusCellTreeList,
-    AfumigatusState,
-)
+from nlisim.modules.afumigatus import AfumigatusCellData, AfumigatusCellTreeList, AfumigatusState
 from nlisim.state import State
 
 Status = AfumigatusCellData.Status

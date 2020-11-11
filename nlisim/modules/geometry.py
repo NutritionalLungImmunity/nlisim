@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.state import grid_variable, State
+from nlisim.state import State, grid_variable
 from nlisim.validation import ValidationError
 
 
