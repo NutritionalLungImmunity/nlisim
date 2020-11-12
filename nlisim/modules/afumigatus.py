@@ -11,9 +11,9 @@ from scipy.spatial.transform import Rotation
 from nlisim.cell import CellData, CellList, CellType
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
-from nlisim.state import get_class_path, State
+from nlisim.state import State, get_class_path
 
 
 class AfumigatusCellData(CellData):
@@ -325,7 +325,7 @@ class AfumigatusCellTreeList(object):
         cells['iron_pool'] = np.add(cells['iron_pool'], iron)
 
     def age(self):
-        """Add 1 to iteration each timestep."""
+        """Add 1 to iteration each time step."""
         cells = self.cells.cell_data
         cells['iteration'] += 1
 
@@ -415,7 +415,7 @@ class AfumigatusState(ModuleState):
     ITER_TO_CHANGE_STATUS: int = 2
 
 
-class Afumigatus(Module):
+class Afumigatus(ModuleModel):
     name = 'afumigatus'
     StateClass = AfumigatusState
 

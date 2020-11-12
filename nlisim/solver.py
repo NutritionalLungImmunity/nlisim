@@ -1,10 +1,12 @@
+from dataclasses import dataclass, field
 from enum import Enum
-from math import ceil
+from queue import PriorityQueue
 from typing import Iterator, Tuple
 
 import attr
 
 from nlisim.config import SimulationConfig
+from nlisim.module import ModuleModel
 from nlisim.state import State
 from nlisim.validation import context as validation_context
 
@@ -30,19 +32,47 @@ def initialize(state: State) -> State:
 
 def advance(state: State, target_time: float) -> Iterator[State]:
     """Advance a simulation to the given target time."""
-    dt = state.config.getfloat('simulation', 'time_step')
-    n_steps = ceil((target_time - state.time) / dt)
     initial_time = state.time
 
-    for i in range(n_steps):
-        previous_time = state.time
-        state.time = min(initial_time + (i + 1) * dt, target_time)
+    @dataclass(order=True)
+    class ModuleUpdateEvent:
+        event_time: float
+        previous_update: float
+        module: ModuleModel = field(compare=False)
 
-        for m in state.config.modules:
-            with validation_context(m.name):
-                state = m.advance(state, previous_time)
-                attr.validate(state)
+    # Create and fill a queue of modules to run. This allows for modules to
+    # operate on disparate time scales. Modules which do not have a time step
+    # set will not be run.
+    queue: PriorityQueue[ModuleUpdateEvent] = PriorityQueue()
+    for module in state.config.modules:
+        if module.time_step is not None and module.time_step > 0:
+            queue.put(
+                ModuleUpdateEvent(
+                    event_time=initial_time, previous_update=initial_time, module=module
+                )
+            )
 
+    # run the simulation until we meet or surpass the desired time
+    # while-loop conditional is on previous time so that all pending
+    # modules are run on final iteration
+    previous_time: float = initial_time
+    while previous_time < target_time and not queue.empty():
+        update_event = queue.get()
+
+        m: ModuleModel = update_event.module
+        previous_time = update_event.previous_update
+        state.time = update_event.event_time
+
+        with validation_context(m.name):
+            state = m.advance(state, previous_time)
+            attr.validate(state)
+
+        # reinsert module with updated time
+        queue.put(
+            ModuleUpdateEvent(
+                event_time=state.time + m.time_step, previous_update=state.time, module=m
+            )
+        )
         yield state
 
 
@@ -75,8 +105,8 @@ def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[Tuple
     yield finalize(state), Status.finalize
 
 
-def run(config: SimulationConfig, target_time: float) -> State:
-    """Run a simulation to the target time and return the result."""
-    for state_iteration, _ in run_iterator(config, target_time):
-        state = state_iteration
-    return state
+# def run(config: SimulationConfig, target_time: float) -> State:
+#     """Run a simulation to the target time and return the result."""
+#     for state_iteration, _ in run_iterator(config, target_time):
+#         state = state_iteration
+#     return state

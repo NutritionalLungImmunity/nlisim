@@ -1,4 +1,4 @@
-from typing import cast, Set
+from typing import Set, cast
 
 from h5py import Group
 from pytest import fixture
@@ -6,11 +6,7 @@ from pytest import fixture
 from nlisim.config import SimulationConfig
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.modules.afumigatus import (
-    AfumigatusCellData,
-    AfumigatusCellTreeList,
-    AfumigatusState,
-)
+from nlisim.modules.afumigatus import AfumigatusCellData, AfumigatusCellTreeList, AfumigatusState
 from nlisim.state import State
 
 Status = AfumigatusCellData.Status
@@ -149,7 +145,20 @@ def test_mutate_cell(populated_tree: AfumigatusCellTreeList):
 
 
 def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
-    config = SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
+    config = SimulationConfig(
+        {
+            'simulation': {
+                'modules': 'nlisim.modules.afumigatus.Afumigatus',
+                'nx': 20,
+                'ny': 40,
+                'nz': 20,
+                'dx': 20,
+                'dy': 40,
+                'dz': 20,
+                'validate': True,
+            }
+        }
+    )
     state = State.create(config)
 
     state.afumigatus.tree.append(cell_tree.cell_data[0])
@@ -164,7 +173,20 @@ def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
 
 
 def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
-    config = SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
+    config = SimulationConfig(
+        {
+            'simulation': {
+                'modules': 'nlisim.modules.afumigatus.Afumigatus',
+                'nx': 20,
+                'ny': 40,
+                'nz': 20,
+                'dx': 20,
+                'dy': 40,
+                'dz': 20,
+                'validate': True,
+            }
+        }
+    )
     state = State.create(config)
 
     state.afumigatus.tree.append(cell_tree.cell_data[0])

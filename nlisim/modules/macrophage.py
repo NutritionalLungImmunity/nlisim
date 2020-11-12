@@ -4,7 +4,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
@@ -287,22 +287,8 @@ class MacrophageState(ModuleState):
     rm: float
 
 
-class Macrophage(Module):
+class Macrophage(ModuleModel):
     name = 'macrophage'
-    defaults = {
-        'cells': '',
-        'rec_r': '1.0',
-        'p_rec_r': '1.0',
-        'm_abs': '0.1 ',
-        'm_n': '10.0 ',
-        'kill': '10.0',
-        'm_det': '15',
-        'rec_rate_ph': '2',
-        'time_m': '1',
-        'max_conidia_in_phag': '50',
-        'p_internalization': '0.3',
-        'rm': '0.05',
-    }
     StateClass = MacrophageState
 
     def initialize(self, state: State):
@@ -320,7 +306,6 @@ class Macrophage(Module):
         macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         macrophage.rm = self.config.getfloat('rm')
         macrophage.p_internalization = self.config.getfloat('p_internalization')
-
         macrophage.cells = MacrophageCellList(grid=grid)
 
         return state

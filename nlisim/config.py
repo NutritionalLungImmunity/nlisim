@@ -2,29 +2,13 @@ from collections import OrderedDict
 from configparser import ConfigParser
 from importlib import import_module
 from io import StringIO, TextIOBase
-import logging
 from pathlib import PurePath
 import re
-from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
-
+from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
 
 if TYPE_CHECKING:
-    from nlisim.module import Module  # noqa
+    from nlisim.module import ModuleModel  # noqa
     from nlisim.state import State  # noqa
-
-
-DEFAULTS = {
-    'time_step': 0.05,
-    'nx': 100,
-    'ny': 80,
-    'nz': 60,
-    'dx': 1.0,
-    'dy': 1.0,
-    'dz': 1.0,
-    'validate': True,
-    'verbosity': logging.WARNING,
-    'modules': '',
-}
 
 
 class SimulationConfig(ConfigParser):
@@ -35,11 +19,8 @@ class SimulationConfig(ConfigParser):
     """
 
     def __init__(self, *config_sources: Union[str, PurePath, TextIO, dict]) -> None:
-        super().__init__()
-        self._modules: OrderedDict[str, 'Module'] = OrderedDict()
-
-        # set built-in defaults
-        self.read_dict({'simulation': DEFAULTS})
+        super().__init__(allow_no_value=False, inline_comment_prefixes=('#',))
+        self._modules: OrderedDict[str, 'ModuleModel'] = OrderedDict()
 
         for config_source in config_sources:
             if isinstance(config_source, dict):
@@ -53,11 +34,11 @@ class SimulationConfig(ConfigParser):
             self.add_module(module_path)
 
     @property
-    def modules(self) -> List['Module']:
+    def modules(self) -> List['ModuleModel']:
         """Return a list of instantiated modules connected to this config."""
         return list(self._modules.values())
 
-    def add_module(self, module_ref: Union[str, Type['Module']]):
+    def add_module(self, module_ref: Union[str, Type['ModuleModel']]):
         if isinstance(module_ref, str):
             module_func = self.load_module(module_ref)
         else:
@@ -71,7 +52,7 @@ class SimulationConfig(ConfigParser):
         self._modules[module.name] = module
 
     @classmethod
-    def load_module(cls, path: str) -> Type['Module']:
+    def load_module(cls, path: str) -> Type['ModuleModel']:
         """Load a module class, returning the class constructor."""
         module_path, func_name = path.rsplit('.', 1)
         module = import_module(module_path, 'simulation')
@@ -82,17 +63,44 @@ class SimulationConfig(ConfigParser):
         return func
 
     @classmethod
-    def validate_module(cls, func: Type['Module'], path: Optional[str] = None) -> None:
+    def validate_module(cls, func: Type['ModuleModel'], path: Optional[str] = None) -> None:
         """Validate basic aspects of a module class."""
-        from nlisim.module import Module  # noqa avoid circular imports
+        from nlisim.module import ModuleModel  # noqa avoid circular imports
 
         if path is None:
             path = repr(func)
 
-        if not issubclass(func, Module):
+        if not issubclass(func, ModuleModel):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')
+
+    # Wrapper so that this fails when a parameter is missing
+    def getint(self, section: str, option: str, **kwargs) -> int:
+        result = super().getint(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def getfloat(self, section, option, **kwargs) -> float:
+        result = super().getfloat(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def getboolean(self, section, option, **kwargs) -> bool:
+        result = super().getboolean(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
+        return result
+
+    # Wrapper so that this fails when a parameter is missing
+    def get(self, section, option, **kwargs):
+        result = super(ConfigParser, self).get(section, option, **kwargs)
+        assert result is not None, f'Missing parameter {option} in section {section}'
+        return result
+
+    # TODO: see if there is a slicker way to do these gettype wrappers.
+    # TODO: do checking on 'type-less' get (or implement one for strings)
 
     def getlist(self, section: str, option: str) -> List[str]:
         """

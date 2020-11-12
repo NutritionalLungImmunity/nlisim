@@ -1,18 +1,18 @@
 from pathlib import Path
 import shutil
 
-import attr
+from attr import attrib, attrs
 
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
-@attr.s(kw_only=True)
+@attrs(kw_only=True)
 class StateOutputState(ModuleState):
-    last_save: float = attr.ib(default=0)
+    last_save: float = attrib(default=0)
 
 
-class StateOutput(Module):
+class StateOutput(ModuleModel):
     """
     After time steps, serialize the simulation state to an HDF5 file.
 
@@ -20,7 +20,7 @@ class StateOutput(Module):
     """
 
     name = 'state_output'
-    defaults = {'save_interval': '1', 'output_dir': 'output'}
+
     StateClass = StateOutputState
 
     @property
@@ -36,20 +36,28 @@ class StateOutput(Module):
 
         state.state_output.last_save = now
 
+    @staticmethod
+    def _clear_directory(directory: Path) -> None:
+        """Clear the contents of a directory, without removing the directory itself."""
+        for file in directory.iterdir():
+            if file.is_file():
+                file.unlink()
+            elif file.is_dir():
+                shutil.rmtree(file)
+
     def initialize(self, state: State) -> State:
         output_dir = self._output_dir
         if output_dir.exists():
+            # Since output_dir may be a Docker mount point, don't remove the directory itself.
             print(f'File output directory {output_dir.resolve()} exists. Clearing it.')
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True)
+            self._clear_directory(output_dir)
+        else:
+            output_dir.mkdir(parents=True)
 
         # Initial time is typically 0, but it can be read from state
         self._write_output(state)
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        save_interval = self.config.getfloat('save_interval')
-        now = state.time
-        if now - state.state_output.last_save > save_interval - 1e-8:
-            self._write_output(state)
+        self._write_output(state)
         return state
