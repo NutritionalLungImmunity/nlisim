@@ -5,8 +5,8 @@ import attr
 from h5py import Group
 import numpy as np
 
-from simulation.grid import RectangularGrid
-from simulation.state import get_class_path, State
+from nlisim.grid import RectangularGrid
+from nlisim.state import get_class_path, State
 
 
 @unique
@@ -30,6 +30,8 @@ class MoleculeTypes(Enum):
     mcp1 = 14
     mip2 = 15
     mip1b = 16
+    m_cyto = 17
+    n_cyto = 18
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)

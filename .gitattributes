@@ -1,0 +1,2 @@
+# Auto-convert line endings and set whitespace warnings for any (Git detected) text files
+* text=auto whitespace=trailing-space,tab-in-indent,space-before-tab,tabwidth=4

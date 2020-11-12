@@ -5,8 +5,8 @@ import attr
 from h5py import Dataset, Group
 import numpy as np
 
-from simulation.config import SimulationConfig
-from simulation.state import State
+from nlisim.config import SimulationConfig
+from nlisim.state import State
 
 AttrValue = Union[float, str, bool, np.ndarray]
 
@@ -153,4 +153,8 @@ class Module(object):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Run after advancing the simulation state in time."""
+        return state
+
+    def finalize(self, state: State) -> State:
+        """Run after the last timestep."""
         return state

@@ -5,8 +5,9 @@
 While not required, it is recommended you use
 [pipenv](https://github.com/pypa/pipenv) to create an isolated environment for
 running and developing.  To do so, run
-
+```bash
     pipenv install --dev
+```
 
 See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
 you can run `pipenv shell` to enter the newly created environment.
@@ -16,21 +17,21 @@ you can run `pipenv shell` to enter the newly created environment.
 For now, running the simulation requires the existence of a pregenerated HDF5
 file containing information about the simulation domain.  This file can be
 downloaded from
-[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5dc778b2ef2e2603553c5a12/download).
+[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5ebd86cec1b2cfe0661e681f/download).
 This file is expected to be found as `geometry.hdf5 ` in the directory you
 are running the simulation from.
 
 ## Running
 
-With the simulation package installed, you should have a new commandline
+With the simulation package installed, you should have a new command-line
 program called `simulation ` available.  Try running `simulation --help` to get
 more information.  To run a simulation, you will need configure a configuration.
-There are two example configurations in the repository to get you started.
+There is an example configuration in the repository to get you started.
 
 Now run simulation up to 50 seconds using the first example config.
-
-    cp config.ini.example config.ini
-    simulation run 50
+```bash
+    nlisim --config config.ini.example run 50
+```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
 the simulation state at 1 second intervals through the full simulation.
@@ -39,18 +40,24 @@ the simulation state at 1 second intervals through the full simulation.
 
 There is a basic test suite included in the package using [tox](https://tox.readthedocs.io/en/latest/)
 as a test runner.  Try running the tests now with
-
+```bash
     tox
+```
 
 This will install the simulation code into a new isolated environment and run
-all of the tests.  It will even test against multiple python versions if you
+all of the tests.  It will even test against multiple Python versions if you
 have them installed.
 
-If you want, you can even run these tests outside of tox.  For example, try
-running `pytest --cov` to get coverage information for the tests run from your
-current python environment.  Tox also handles running the linting and type
-checking as well.  These can be run standalone with `flake8 simulation` or
-`mypy simulation` respectively.
+You can selectively run test environments, or add additional options to
+test environments. Useful sub-commands include:
+
+* `tox -e lint`: Run only the style checks.
+* `tox -e type`: Run only the type checks.
+* `tox -e py3`: Run only the unit tests.
+* `tox -e py3 -- --cov`: Run the unit tests and output coverage information.
+
+Finally, you can run `tox -e format` to automatically reformat your code to
+comply with some (but unfortunately not all) of the style checks.
 
 # Code organization
 
@@ -69,7 +76,7 @@ checking as well.  These can be run standalone with `flake8 simulation` or
     This module defines a class representing the discretization of the 3D
     simulation domain.  Any variable representing a quantity that exists over
     the entire spatial domain should be split into chunks defined by this grid.
-    For more details, see `simulation.grid`.
+    For more details, see `nlisim.grid`.
 
 * `cell.py `
 
@@ -81,7 +88,7 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 
 * `config.py `
 
-    This module defines a subclass of a python
+    This module defines a subclass of a Python
     [ConfigParser](https://docs.python.org/3/library/configparser.html?highlight=configparser#configparser.ConfigParser)
     which parses ".ini" style files for runtime configuration of the
     simulation.  While not currently enforced, it is expected that all values
@@ -111,8 +118,8 @@ checking as well.  These can be run standalone with `flake8 simulation` or
 * `cli.py `
 
     This module uses [click](https://click.palletsprojects.com/en/7.x/) to generate
-    a commandline interface for executing the simulation.  Click provides a flexible
-    API for designing high quality CLI's.
+    a command-line interface for executing the simulation.  Click provides a flexible
+    API for designing high quality CLIs.
 
 # Simulation state
 
@@ -120,8 +127,8 @@ Absent any additional modules, the simulation state is an object containing only
 following attributes:
 
 * time: The simulation time as a floating point number
-* grid: An instance of `simulation.grid.RectangularGrid` defining the simulation discretization
-* config: An instance of `simulation.config.SimulationConfig` providing configuration options
+* grid: An instance of `nlisim.grid.RectangularGrid` defining the simulation discretization
+* config: An instance of `nlisim.config.SimulationConfig` providing configuration options
 
 When a module is included in the runtime configuration, its own state is
 included as an additional "dynamic" attribute on this object.  For example when
@@ -145,12 +152,12 @@ At a high level, an extension module contains the following features:
   * iteration (advancing the state in time)
 
 An extension module is registered with the simulation by providing a subclass
-of `simulation.module.Module`.  Features are added by overriding attributes on
+of `nlisim.module.Module`.  Features are added by overriding attributes on
 this class.  The following is small example demonstrating some of the features:
-
+```python
     import attr
 
-    from simulation.module import Module, ModuleState
+    from nlisim.module import Module, ModuleState
 
 
     class HelloWorld(Module):
@@ -170,6 +177,7 @@ this class.  The following is small example demonstrating some of the features:
         def advance(self, state, previous_time):
             print(f'Hello {state.hello_world.target}!')
             return state
+```
 
 When enabled, this module will
 
@@ -182,8 +190,8 @@ When enabled, this module will
 
 # Visualization Config
 
-To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the cofig file `config.ini` under the `[visualization]` section
-```
+To visualize the output of the simulation, please add the variable names to the list `visual_variables` in the config file, under the `[visualization]` section:
+```ini
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
@@ -209,4 +217,3 @@ For example, to visualize the aspergillus and the alveolar geometry, the variabl
 * structured grid: points data are not regularly and not uniformly spaced
 * unstructured grid: consists of arbitrary combinations of any possible cell type
 * polygonal data: consists of a set of discrete points, vertices, lines or polygons
-

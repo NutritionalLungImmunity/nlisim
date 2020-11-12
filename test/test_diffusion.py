@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from simulation.diffusion import discrete_laplacian
-from simulation.grid import RectangularGrid
+from nlisim.diffusion import discrete_laplacian
+from nlisim.grid import RectangularGrid
 
 
 @pytest.fixture

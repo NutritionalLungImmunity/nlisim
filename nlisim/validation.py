@@ -3,7 +3,7 @@ from typing import Callable, Iterator, List, TYPE_CHECKING
 
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
-    from simulation.state import State  # noqa
+    from nlisim.state import State  # noqa
 
 ValidatorMethod = Callable[['State'], None]
 

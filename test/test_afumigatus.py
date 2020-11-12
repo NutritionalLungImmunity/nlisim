@@ -3,15 +3,15 @@ from typing import cast, Set
 from h5py import Group
 from pytest import fixture
 
-from simulation.config import SimulationConfig
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.modules.afumigatus import (
+from nlisim.config import SimulationConfig
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.modules.afumigatus import (
     AfumigatusCellData,
     AfumigatusCellTreeList,
     AfumigatusState,
 )
-from simulation.state import State
+from nlisim.state import State
 
 Status = AfumigatusCellData.Status
 
@@ -149,9 +149,7 @@ def test_mutate_cell(populated_tree: AfumigatusCellTreeList):
 
 
 def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
-    config = SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
-    )
+    config = SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
     state = State.create(config)
 
     state.afumigatus.tree.append(cell_tree.cell_data[0])
@@ -166,9 +164,7 @@ def test_serialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
 
 
 def test_deserialize(hdf5_group: Group, cell_tree: AfumigatusCellTreeList):
-    config = SimulationConfig(
-        defaults={'simulation': {'modules': 'simulation.modules.afumigatus.Afumigatus'}}
-    )
+    config = SimulationConfig({'simulation': {'modules': 'nlisim.modules.afumigatus.Afumigatus'}})
     state = State.create(config)
 
     state.afumigatus.tree.append(cell_tree.cell_data[0])

@@ -2,8 +2,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix, eye
 from scipy.sparse.linalg import cg
 
-from simulation.coordinates import Voxel
-from simulation.grid import RectangularGrid
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 
 
 def discrete_laplacian(

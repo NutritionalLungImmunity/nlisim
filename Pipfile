@@ -15,9 +15,10 @@ mypy = '>=0.730'
 pep8-naming = '*'
 pytest = '*'
 pytest-cov = '*'
+jupyter = "*"
 
 [packages]
-simulation = {editable = true,path = "."}
+nlisim = {editable = true,path = "."}
 
 [requires]
 python_version = "3.7"

@@ -1,19 +1,18 @@
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import PurePath
-from tempfile import NamedTemporaryFile
 from typing import Any, cast, Dict, IO, Type, TYPE_CHECKING, Union
 
 import attr
 from h5py import File as H5File
 import numpy as np
 
-from simulation.grid import RectangularGrid
-from simulation.validation import context as validation_context
+from nlisim.grid import RectangularGrid
+from nlisim.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
-    from simulation.cell import CellList
-    from simulation.config import SimulationConfig  # noqa
-    from simulation.module import ModuleState  # noqa
+    from nlisim.cell import CellList
+    from nlisim.config import SimulationConfig  # noqa
+    from nlisim.module import ModuleState  # noqa
 
 _dtype_float = np.dtype('float')
 _dtype_float64 = np.dtype('float64')
@@ -36,7 +35,7 @@ class State(object):
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -> 'State':
         """Load a pickled state from either a path, a file, or blob of bytes."""
-        from simulation.config import SimulationConfig  # prevent circular imports
+        from nlisim.config import SimulationConfig  # prevent circular imports
 
         if isinstance(arg, bytes):
             arg = BytesIO(arg)
@@ -45,11 +44,8 @@ class State(object):
             time = hf.attrs['time']
             grid = RectangularGrid.load(hf)
 
-            with NamedTemporaryFile('r+') as cf:
-                cf.write(hf.attrs['config'])
-                cf.flush()
-                cf.seek(0)
-                config = SimulationConfig(file=cf.name)
+            with StringIO(hf.attrs['config']) as cf:
+                config = SimulationConfig(cf)
 
             state = cls(time=time, grid=grid, config=config)
 
@@ -137,8 +133,8 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
     attribute returned by this method contains a factory function for
     initialization and a default validation that checks for NaN's.
     """
-    from simulation.module import ModuleState  # noqa prevent circular imports
-    from simulation.validation import ValidationError  # prevent circular imports
+    from nlisim.module import ModuleState  # noqa prevent circular imports
+    from nlisim.validation import ValidationError  # prevent circular imports
 
     def factory(self: 'ModuleState') -> np.ndarray:
         return self.global_state.grid.allocate_variable(dtype)

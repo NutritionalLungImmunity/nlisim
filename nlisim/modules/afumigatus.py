@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
 from enum import IntEnum
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Union
 
 import attr
 from h5py import Group
@@ -8,11 +8,12 @@ import numpy as np
 from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation
 
-from simulation.cell import CellData, CellList, CellType
-from simulation.coordinates import Point
-from simulation.grid import RectangularGrid
-from simulation.module import Module, ModuleState
-from simulation.state import get_class_path, State
+from nlisim.cell import CellData, CellList, CellType
+from nlisim.coordinates import Point
+from nlisim.grid import RectangularGrid
+from nlisim.module import Module, ModuleState
+from nlisim.random import rg
+from nlisim.state import get_class_path, State
 
 
 class AfumigatusCellData(CellData):
@@ -22,9 +23,11 @@ class AfumigatusCellData(CellData):
     class Status(IntEnum):
         RESTING_CONIDIA = 0
         SWELLING_CONIDIA = 1
+        GERMTUBE = 5
         HYPHAE = 2
         DYING = 3
         DEAD = 4
+        INTERNALIZED = 6
 
     class State(IntEnum):
         FREE = 0
@@ -42,6 +45,8 @@ class AfumigatusCellData(CellData):
         ('iron_pool', 'f8'),
         ('iron', 'b1'),
         ('iteration', 'i4'),
+        ('health', 'f8'),
+        ('mobile', 'b1'),
     ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
@@ -57,13 +62,15 @@ class AfumigatusCellData(CellData):
         **kwargs,
     ) -> np.record:
 
-        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * np.random.rand(3) - 1)
+        growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
         switched = False
         branchable = False
         iteration = 0
         iron = False
+        health = 100
+        mobile = True
 
         return CellData.create_cell_tuple(**kwargs) + (
             network,
@@ -76,6 +83,8 @@ class AfumigatusCellData(CellData):
             iron_pool,
             iron,
             iteration,
+            health,
+            mobile,
         )
 
     @classmethod
@@ -141,7 +150,7 @@ class AfumigatusCell(MutableMapping):
         raise Exception(f'Invalid adjacency matrix at index {self.index}')
 
     @property
-    def children(self) -> Iterable['AfumigatusCell']:
+    def children(self) -> Iterator['AfumigatusCell']:
         indices = self.tree.adjacency[self.index].nonzero()[1]
         for index in indices:
             if index != self.index:
@@ -232,7 +241,7 @@ class AfumigatusCellTreeList(object):
         growth = Point.from_array(growth)
 
         # get a random vector orthogonal to the growth vector
-        axis = Point.from_array(np.cross(growth, np.random.randn(3)))
+        axis = Point.from_array(np.cross(growth, rg.standard_normal(3)))
         axis = (np.pi / 4) * axis / axis.norm()
 
         # rotate the growth vector 45 degrees along the random axis
@@ -301,7 +310,7 @@ class AfumigatusCellTreeList(object):
         cells = self.cells.cell_data
         return self.cells.alive(
             cells['branchable']
-            & (np.random.rand(*cells.shape) < branch_probability)
+            & (rg.random(cells.shape) < branch_probability)
             & (cells['status'] == AfumigatusCellData.Status.HYPHAE)
         )
 
@@ -312,7 +321,7 @@ class AfumigatusCellTreeList(object):
         """
         #  TODO: implement a real iron uptake model
         cells = self.cells.cell_data
-        iron = np.random.uniform(size=len(self.cells))
+        iron = rg.random(len(self.cells))
         cells['iron_pool'] = np.add(cells['iron_pool'], iron)
 
     def age(self):
@@ -384,7 +393,10 @@ class AfumigatusCellTreeList(object):
         cells = AfumigatusCellList.load(global_state, composite_dataset, 'cells', metadata)
 
         adjacency = coo_matrix(
-            (composite_dataset['value'], (composite_dataset['row'], composite_dataset['col']),),
+            (
+                composite_dataset['value'],
+                (composite_dataset['row'], composite_dataset['col']),
+            ),
             shape=(cells.max_cells, cells.max_cells),
         ).todok()
 
@@ -399,6 +411,8 @@ def cell_list_factory(self: 'AfumigatusState'):
 @attr.s(kw_only=True)
 class AfumigatusState(ModuleState):
     tree: AfumigatusCellTreeList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    p_lodge: float = 0.5
+    ITER_TO_CHANGE_STATUS: int = 2
 
 
 class Afumigatus(Module):
@@ -407,6 +421,10 @@ class Afumigatus(Module):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
+
+        afumigatus.p_lodge = self.config.getfloat('p_lodge')
+        afumigatus.ITER_TO_CHANGE_STATUS = self.config.getint('ITER_TO_CHANGE_STATUS')
+
         point = Point(x=4, y=4, z=4)
         afumigatus.tree = AfumigatusCellTreeList.create_from_seed(
             grid=state.grid, point=point, status=AfumigatusCellData.Status.HYPHAE
@@ -415,12 +433,31 @@ class Afumigatus(Module):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        afumigatus: AfumigatusState = state.afumigatus
-        afumigatus.tree.absorb_iron()
-        afumigatus.tree.age()
-        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.elongate()
-        afumigatus.tree.cell_data['status'] = AfumigatusCellData.Status.HYPHAE
-        afumigatus.tree.branch(0.1)
+        # afumigatus: AfumigatusState = state.afumigatus
+        # grid = state.grid
+        # tissue = state.geometry.lung_tissue
+        #
+        # for index in afumigatus.tree.cells.alive():
+        #    cell = afumigatus.tree.cells[index]
+        #    vox = grid.get_voxel(cell['point'])
+        #
+        #    if cell['mobile']:
+        #        if vox.x > Voxel(x=grid.xv[-1], y=grid.yv[0], z=grid.zv[0]):
+        #            cell['status'] = AfumigatusCellData.Status.DEAD
+        #            cell['dead'] = True
+        #        if tissue[vox.z, vox.y, vox.x] == TissueTypes.EPITHELIUM:
+        #            if afumigatus.p_lodge > rg.random():
+        #                cell['mobile'] = False
+        #    if cell['iteration'] >= afumigatus.ITER_TO_CHANGE_STATUS:
+        #        if cell['status'] == AfumigatusCellData.Status.RESTING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #        elif cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['status'] = AfumigatusCellData.Status.GERMTUBE
+        #        elif cell['status'] == AfumigatusCellData.Status.INTERNALIZED:
+        #            if afumigatus.p_internal_swell > rg.random():
+        #                cell['status'] = AfumigatusCellData.Status.SWELLING_CONIDIA
+        #
+        #        if cell['status'] == AfumigatusCellData.Status.SWELLING_CONIDIA:
+        #            cell['iteration'] = 0
 
         return state
