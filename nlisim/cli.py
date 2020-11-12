@@ -7,6 +7,7 @@ import click_pathlib
 from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
+from nlisim.geometry.generator import generate_geometry
 from nlisim.postprocess import process_output
 from nlisim.solver import run_iterator
 
@@ -64,6 +65,33 @@ def postprocess(obj, postprocess_dir: Path) -> None:
     state_files = Path(obj['config']['state_output'].get('output_dir')).glob('simulation-*.hdf5')
 
     process_output(state_files, postprocess_dir)
+
+
+@main.command()
+@click.option(
+    '--config',
+    type=click.Path(exists=True),
+    default='geometry.json',
+    help='Path to a geometry config',
+    show_default=True,
+)
+@click.option(
+    '--output',
+    type=click.Path(),
+    default='geometry.hdf5',
+    help='Name of the output file. Support .vtk and .hdf5',
+    show_default=True,
+)
+@click.option(
+    '--preview',
+    is_flag=True,
+    default=False,
+    help='Preview geometry as VTK file',
+    show_default=True,
+)
+def generate(config, output, preview):
+    click.echo('generating geometry...')
+    generate_geometry(config, output, preview)
 
 
 if __name__ == '__main__':

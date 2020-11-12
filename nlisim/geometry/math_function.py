@@ -1,6 +1,6 @@
 import numpy as np
 
-from simulation.coordinates import Point
+from nlisim.coordinates import Point
 
 
 class Sphere:

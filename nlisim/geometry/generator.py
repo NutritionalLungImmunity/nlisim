@@ -8,10 +8,10 @@ import numpy as np
 from scipy import ndimage
 import vtk
 
-from simulation.coordinates import Point
-from simulation.diffusion import discrete_laplacian
-from simulation.geometry.math_function import Cylinder, Sphere
-from simulation.grid import RectangularGrid
+from nlisim.coordinates import Point
+from nlisim.diffusion import discrete_laplacian
+from nlisim.geometry.math_function import Cylinder, Sphere
+from nlisim.grid import RectangularGrid
 
 # tissue type
 SAC = 'sac'
@@ -55,6 +55,7 @@ class Geometry(object):
             raise Exception('Unknown tissue type')
 
     def construct_sphere(self, lungtissue, center: Point, r: float):
+        """Construct sphere within simulation space."""
         coords = np.ogrid[: lungtissue.shape[0], : lungtissue.shape[1], : lungtissue.shape[2]]
         distance = np.sqrt(
             (coords[0] - center.z) ** 2 + (coords[1] - center.y) ** 2 + (coords[2] - center.x) ** 2
@@ -64,6 +65,7 @@ class Geometry(object):
     def construct_cylinder(
         self, lungtissue, center: Point, length: float, direction: np.ndarray, r: float
     ):
+        """Construct cylinder within simulation space."""
         line = (direction < 1).astype(int)
         coords = np.ogrid[: lungtissue.shape[0], : lungtissue.shape[1], : lungtissue.shape[2]]
         distance = np.sqrt(
@@ -77,11 +79,11 @@ class Geometry(object):
         return mask
 
     def construct(self):
+        """Construct the simulation space with math functions."""
         tissue = self.geo
         fixed = self.fixed
-        print(tissue.shape)
 
-        print('constructing air duct')
+        print('constructing air duct...')
         # construct air duct
         for function in self.duct_f:
             if isinstance(function, Cylinder):
@@ -101,7 +103,7 @@ class Geometry(object):
                 tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
                 fixed[air_mask == 1] = 1
 
-        print('constructing alveolus')
+        print('constructing alveolus...')
         # construct sac
         for function in self.sac_f:
             if isinstance(function, Sphere):
@@ -111,7 +113,7 @@ class Geometry(object):
                 tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
                 fixed[epi_mask == 1] = 1
 
-        print('constructing surfactant layer and capillary')
+        print('constructing surfactant layer and capillary...')
         # construct surfactant and blood vessel
         epi_mask = np.where(tissue == EPITHELIUM, 2, 0)
         surf_mask = ndimage.filters.convolve(epi_mask, np.ones((3, 3, 3)))
@@ -143,7 +145,6 @@ class Geometry(object):
         f.close()
 
     def write_to_hdf5(self, filename):
-
         # surfactant layer laplacian
         surf_lapl = discrete_laplacian(self.grid, self.geo == SURF)
         # epithelium layer laplacian
