@@ -24,6 +24,7 @@ setup(
     name='nlisim',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={'nlisim.modules': ['geometry.hdf5']},
+    python_requires='>=3.8',
     install_requires=[
         'attrs',
         'click',
@@ -34,7 +35,6 @@ setup(
         'scipy',
         'tqdm',
         'vtk',
-        'dataclasses',
     ],
     entry_points={'console_scripts': ['nlisim = nlisim.cli:main']},
     setup_requires=['setuptools_scm'],
