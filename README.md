@@ -12,15 +12,6 @@ pipenv install --dev
 See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
 you can run `pipenv shell` to enter the newly created environment.
 
-## Downloading initialization data
-
-For now, running the simulation requires the existence of a pregenerated HDF5
-file containing information about the simulation domain.  This file can be
-downloaded from
-[Girder](https://data.nutritionallungimmunity.org/api/v1/file/5ebd86cec1b2cfe0661e681f/download).
-This file is expected to be found as `geometry.hdf5 ` in the directory you
-are running the simulation from.
-
 ## Running
 
 ### Run with Python virtual environment
@@ -48,7 +39,6 @@ mkdir -p output
 docker run \
     --rm \
     --mount type=bind,source="$(pwd)/config.ini.example",destination=/opt/nlisim/config.ini,readonly \
-    --mount type=bind,source="$(pwd)/geometry.hdf5",destination=/opt/nlisim/geometry.hdf5,readonly \
     --mount type=bind,source="$(pwd)/output/",destination=/opt/nlisim/output/ \
     nutritionallungimmunity/nlisim run 50
 ```
