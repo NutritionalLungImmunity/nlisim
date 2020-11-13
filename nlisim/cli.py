@@ -38,6 +38,7 @@ def run(obj, target_time: float) -> None:
 
     with tqdm(
         desc='Running simulation',
+        unit='hour',
         total=target_time,
     ) as pbar:
         for state, _ in run_iterator(config, target_time):

@@ -21,7 +21,7 @@ program called `nlisim ` available.  Try running `nlisim --help` to get
 more information.  To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.
 
-Now run simulation up to 50 timesteps using the first example config:
+Now run simulation up to 50 hours using the first example config:
 ```bash
 nlisim --config config.ini.example run 50
 ```
@@ -32,7 +32,7 @@ As an alternative to local installation, the simulation may be run within a Dock
 will download the simulation code from
 [the latest published version](https://hub.docker.com/repository/docker/nutritionallungimmunity/nlisim).
 
-To run the same simulation up to 50 timesteps using the first example config:
+To run the same simulation up to 50 hours using the first example config:
 
 ```bash
 mkdir -p output
@@ -44,7 +44,7 @@ docker run \
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
-the simulation state at 1 second intervals through the full simulation.
+the simulation state at 1 hour intervals through the full simulation.
 
 Note, since the application requires read access to files, 
 [Docker must mount](https://docs.docker.com/storage/bind-mounts/#use-a-read-only-bind-mount) 
