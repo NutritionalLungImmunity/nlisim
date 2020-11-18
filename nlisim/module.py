@@ -118,12 +118,9 @@ class ModuleState(object):
         return value
 
 
-class Module(object):
+class ModuleModel(object):
     name: str = ''
     """A unique name for this module used for namespacing"""
-
-    defaults: Dict[str, str] = {}
-    """Default values for all config options"""
 
     StateClass: Type[ModuleState] = ModuleState
     """Container for extra state required by this module."""
@@ -133,8 +130,18 @@ class Module(object):
             config.add_section(self.section)
 
         self.config = config[self.section]
-        values = dict(self.defaults, **self.config)
+        values = dict(**self.config)
         self.config.update(values)
+
+    @property
+    def time_step(self) -> float:
+        """Return the period over which the module is updated."""
+        assert 'time_step' in self.config.keys(), (
+            f'Module {self.name} has no time step configured! '
+            f'Configuration file must have a time_step field under section [{self.name}] '
+            'Enter zero or negative values for modules which do not update.'
+        )
+        return float(self.config['time_step'])
 
     @property
     def section(self):
@@ -156,5 +163,5 @@ class Module(object):
         return state
 
     def finalize(self, state: State) -> State:
-        """Run after the last timestep."""
+        """Run after the last time step."""
         return state

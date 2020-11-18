@@ -5,7 +5,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 from nlisim.state import State
@@ -269,28 +269,9 @@ class FungusState(ModuleState):
     health: float = 100.0
 
 
-class Fungus(Module):
+class Fungus(ModuleModel):
     name = 'fungus'
     StateClass = FungusState
-
-    # defaults config opt
-    defaults = {
-        'init_num': '10',
-        'p_lodge': '0.1',
-        'p_internal_swell': '0.05',
-        'iron_min': '10',
-        'iron_max': '20',
-        'iron_absorb': '1',
-        'spacing': '0.1',
-        'iron_min_grow': '5',
-        'p_branch': '0.2',
-        'p_internalize': '0.1',
-        'health': '100.0',
-        'rest_time': '1',
-        'swell_time': '1',
-        'grow_time': '1',
-        # ...
-    }
 
     def initialize(self, state: State):
         fungus: FungusState = state.fungus
@@ -311,7 +292,7 @@ class Fungus(Module):
         self.swell_time = self.config.getint('swell_time')
         self.grow_time = self.config.getint('grow_time')
 
-        fungus.health = self.config.getfloat('health')
+        fungus.health = self.config.getfloat('init_health')
 
         cells = fungus.cells
         cells.initialize_spores(tissue, self.init_num)

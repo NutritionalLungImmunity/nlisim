@@ -6,7 +6,7 @@ While not required, it is recommended you use
 [pipenv](https://github.com/pypa/pipenv) to create an isolated environment for
 running and developing.  To do so, run
 ```bash
-    pipenv install --dev
+pipenv install --dev
 ```
 
 See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
@@ -23,25 +23,50 @@ are running the simulation from.
 
 ## Running
 
+### Run with Python virtual environment
+
 With the simulation package installed, you should have a new command-line
-program called `simulation ` available.  Try running `simulation --help` to get
+program called `nlisim ` available.  Try running `nlisim --help` to get
 more information.  To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.
 
-Now run simulation up to 50 seconds using the first example config.
+Now run simulation up to 50 hours using the first example config:
 ```bash
-    nlisim --config config.ini.example run 50
+nlisim --config config.ini.example run 50
+```
+
+### Run with Docker
+
+As an alternative to local installation, the simulation may be run within a Docker container. This
+will download the simulation code from
+[the latest published version](https://hub.docker.com/repository/docker/nutritionallungimmunity/nlisim).
+
+To run the same simulation up to 50 hours using the first example config:
+
+```bash
+mkdir -p output
+docker run \
+    --rm \
+    --mount type=bind,source="$(pwd)/config.ini.example",destination=/opt/nlisim/config.ini,readonly \
+    --mount type=bind,source="$(pwd)/geometry.hdf5",destination=/opt/nlisim/geometry.hdf5,readonly \
+    --mount type=bind,source="$(pwd)/output/",destination=/opt/nlisim/output/ \
+    nutritionallungimmunity/nlisim run 50
 ```
 
 You should now have files like `output/simulation-000001.000.hdf5` containing
-the simulation state at 1 second intervals through the full simulation.
+the simulation state at 1 hour intervals through the full simulation.
+
+Note, since the application requires read access to files, 
+[Docker must mount](https://docs.docker.com/storage/bind-mounts/#use-a-read-only-bind-mount) 
+them within the container; this example uses `--mount` to 
+[prevent nonexistent host paths from being accidentally created](https://github.com/moby/moby/issues/13121).
 
 ## Testing
 
 There is a basic test suite included in the package using [tox](https://tox.readthedocs.io/en/latest/)
 as a test runner.  Try running the tests now with
 ```bash
-    tox
+tox
 ```
 
 This will install the simulation code into a new isolated environment and run
@@ -155,28 +180,25 @@ An extension module is registered with the simulation by providing a subclass
 of `nlisim.module.Module`.  Features are added by overriding attributes on
 this class.  The following is small example demonstrating some of the features:
 ```python
-    import attr
+import attr
 
-    from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 
 
-    class HelloWorld(Module):
-        name = 'hello_world'
-        defaults = {
-            'target_string': 'World'
-        }
+class HelloWorld(ModuleModel):
+    name = 'hello_world'
 
-        @attr.s(kw_only=True, auto_attribs=True)
-        class StateClass(ModuleState):
-            target: str = attr.ib(default='')
+    @attr.s(kw_only=True, auto_attribs=True)
+    class StateClass(ModuleState):
+        target: str = attr.ib(default='')
 
-        def initialize(self, state):
-            state.hello_world.target = self.config.get('target_string')
-            return state
+    def initialize(self, state):
+        state.hello_world.target = self.config.get('target_string')
+        return state
 
-        def advance(self, state, previous_time):
-            print(f'Hello {state.hello_world.target}!')
-            return state
+    def advance(self, state, previous_time):
+        print(f'Hello {state.hello_world.target}!')
+        return state
 ```
 
 When enabled, this module will
@@ -195,19 +217,19 @@ To visualize the output of the simulation, please add the variable names to the 
 [visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
-                        {
-                            "module":"afumigatus",
-                            "variable":"tree",
-                            "vtk_type":"POLY_DATA",
-                            "attributes":["iron_pool", "iteration"]
-                        },
-                        {
-                            "module":"geometry",
-                            "variable":"lung_tissue",
-                            "vtk_type":"STRUCTURED_POINTS",
-                            "attributes":[]
-                        }
-                    ]
+    {
+        "module":"afumigatus",
+        "variable":"tree",
+        "vtk_type":"POLY_DATA",
+        "attributes":["iron_pool", "iteration"]
+    },
+    {
+        "module":"geometry",
+        "variable":"lung_tissue",
+        "vtk_type":"STRUCTURED_POINTS",
+        "attributes":[]
+    }
+]
 ```
 
 For example, to visualize the aspergillus and the alveolar geometry, the variable `afumigatus.tree` with attributes `iron_pool` and `iteration` and the variable `geometry.lung_tissue` are added to the list, followed by their [VTK dataset formats](https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf).

@@ -6,7 +6,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
@@ -254,21 +254,9 @@ class NeutrophilState(ModuleState):
     age_limit: int
 
 
-class Neutrophil(Module):
+class Neutrophil(ModuleModel):
     name = 'neutrophil'
-    defaults = {
-        'cells': '',
-        'neutropenic': 'False',
-        'rec_rate_ph': '6',
-        'rec_r': '2',
-        'n_absorb': '0.2',
-        'n_n': '100',
-        'n_det': '15',
-        'granule_count': '10',
-        'n_kill': '0.05',
-        'time_n': '1',
-        'age_limit': '36',
-    }
+
     StateClass = NeutrophilState
 
     def initialize(self, state: State):

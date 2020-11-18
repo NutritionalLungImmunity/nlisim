@@ -6,12 +6,11 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 from nlisim.state import State
-
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -286,19 +285,9 @@ class EpitheliumState(ModuleState):
     p_internalization: float
 
 
-class Epithelium(Module):
+class Epithelium(ModuleModel):
     name = 'epithelium'
 
-    defaults = {
-        'init_health': '100',
-        'e_kill': '10',
-        'cyto_rate': '5',
-        's_det': '1',
-        'h_det': '1',
-        'time_e': '1',
-        'max_conidia_in_phag': '50',
-        'p_internalization': '0.3',
-    }
     StateClass = EpitheliumState
 
     def initialize(self, state: State):
