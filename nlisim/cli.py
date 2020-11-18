@@ -7,7 +7,6 @@ import click_pathlib
 from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
-from nlisim.geometry.generator import generate_geometry
 from nlisim.postprocess import process_output
 from nlisim.solver import run_iterator
 
@@ -78,8 +77,8 @@ def postprocess(obj, postprocess_dir: Path) -> None:
 @click.option(
     '--output',
     type=click.Path(),
-    default='geometry.hdf5',
-    help='Name of the output file. Support .vtk and .hdf5',
+    default='geometry',
+    help='Name of the output file.',
     show_default=True,
 )
 @click.option(
@@ -89,9 +88,25 @@ def postprocess(obj, postprocess_dir: Path) -> None:
     help='Preview geometry as VTK file',
     show_default=True,
 )
-def generate(config, output, preview):
+@click.option(
+    '--simple',
+    is_flag=True,
+    default=True,
+    help='Run generator in simple mode. No surfactant layer and pore.',
+    show_default=True,
+)
+@click.option(
+    '--lapl',
+    is_flag=True,
+    default=False,
+    help='Generate laplacian metric for diffusion.',
+    show_default=True,
+)
+def generate(config, output, preview, simple, lapl):
+    from nlisim.geometry.generator import generate_geometry
+
     click.echo('generating geometry...')
-    generate_geometry(config, output, preview)
+    generate_geometry(config, output, preview, simple, lapl)
 
 
 if __name__ == '__main__':

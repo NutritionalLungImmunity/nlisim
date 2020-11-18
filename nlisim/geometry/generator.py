@@ -31,8 +31,9 @@ SpacingType = Tuple[float, float, float]
 
 
 class Geometry(object):
-    def __init__(self, shape: ShapeType, space: SpacingType, scale: int):
+    def __init__(self, shape: ShapeType, space: SpacingType, scale: int, randomness: int):
         self.scale = scale
+        self.randomness = randomness
         self.shape = (shape[0] * scale, shape[1] * scale, shape[2] * scale)
         self.space = space
         self.grid = RectangularGrid.construct_uniform(self.shape, self.space)
@@ -78,49 +79,84 @@ class Geometry(object):
         mask[domin[0] :, domin[1] :, domin[2] :] = 0
         return mask
 
-    def construct(self):
-        """Construct the simulation space with math functions."""
+    def construct_air_duct(self, random_mask):
+        print('constructing air duct...')
         tissue = self.geo
         fixed = self.fixed
-
-        print('constructing air duct...')
         # construct air duct
         for function in self.duct_f:
             if isinstance(function, Cylinder):
 
                 air_mask = self.construct_cylinder(
-                    tissue, function.center, function.length, function.direction, function.radius
-                )
-
-                epi_mask = self.construct_cylinder(
                     tissue,
                     function.center,
                     function.length,
                     function.direction,
-                    function.radius + 1,
+                    function.radius + random_mask
                 )
-                tissue[np.logical_and(epi_mask == 1, fixed == 0)] = EPITHELIUM
                 tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
-                fixed[air_mask == 1] = 1
 
+        # blur the noise to maintain the continuousness of the air
+        blur_mask = np.where(tissue == AIR, 1, 0)
+        blur_air_mask = ndimage.filters.convolve(blur_mask, np.ones((3, 3, 3)))
+        tissue[blur_air_mask > 13] = AIR
+        tissue[blur_air_mask <= 13] = REGULAR_TISSUE
+        fixed[tissue == AIR] = 1
+
+        # construct epithelium layer
+        air_mask = np.where(tissue == AIR, 1, 0)
+        epithelium_mask = ndimage.filters.convolve(air_mask, np.ones((3, 3, 3)))
+        tissue[np.logical_and(epithelium_mask > 0, tissue == REGULAR_TISSUE)] = EPITHELIUM
+
+    def construct_alveolus(self, random_mask):
+        tissue = self.geo
+        fixed = self.fixed
         print('constructing alveolus...')
         # construct sac
         for function in self.sac_f:
             if isinstance(function, Sphere):
-                air_mask = self.construct_sphere(tissue, function.center, function.radius)
-                epi_mask = self.construct_sphere(tissue, function.center, function.radius + 1)
-                tissue[np.logical_and(epi_mask == 1, fixed == 0)] = EPITHELIUM
-                tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
-                fixed[epi_mask == 1] = 1
+                air_mask = self.construct_sphere(tissue, function.center, function.radius + random_mask)
+                blur_air_mask = ndimage.filters.convolve(air_mask, np.ones((3, 3, 3)))
+                fixed_air_mask = np.logical_and(blur_air_mask > 13, fixed == 0)
+                tissue[fixed_air_mask] = AIR
+                tissue[
+                    np.logical_and(
+                        np.logical_and(blur_air_mask <= 13, fixed == 0),
+                        tissue == AIR
+                    )
+                ] = REGULAR_TISSUE
+                fixed[fixed_air_mask] = 1
 
-        print('constructing surfactant layer and capillary...')
-        # construct surfactant and blood vessel
+                # construct epithelium layer
+                epithelium_mask = ndimage.filters.convolve(fixed_air_mask, np.ones((3, 3, 3)))
+                fixed_epithelium_mask = np.logical_and(epithelium_mask > 0, fixed == 0)
+                tissue[fixed_epithelium_mask] = EPITHELIUM
+                fixed[fixed_epithelium_mask] = 1
+
+
+    def construct(self, simple):
+        """Construct the simulation space with math functions."""
+        tissue = self.geo
+        fixed = self.fixed
+
+        random_mask = np.random.normal(
+            0,
+            self.randomness,
+            self.shape
+        )
+
+        self.construct_air_duct(random_mask)
+        self.construct_alveolus(random_mask)
+
         epi_mask = np.where(tissue == EPITHELIUM, 2, 0)
         surf_mask = ndimage.filters.convolve(epi_mask, np.ones((3, 3, 3)))
-        tissue[np.logical_and(tissue == AIR, surf_mask > 0)] = SURF
+        print('constructing surfactant layer and capillary...')
+        # construct surfactant and blood vessel
+        if not simple:
+            tissue[np.logical_and(tissue == AIR, surf_mask > 0)] = SURF
         tissue[np.logical_and(tissue == REGULAR_TISSUE, surf_mask > 0)] = BLOOD
 
-    def write_to_vtk(self, filename='geometry.vtk'):
+    def write_to_vtk(self, filename):
         zbin, ybin, xbin = self.shape
 
         f = open(filename, 'w')
@@ -144,28 +180,28 @@ class Geometry(object):
         f.write(b)
         f.close()
 
-    def write_to_hdf5(self, filename):
-        # surfactant layer laplacian
-        surf_lapl = discrete_laplacian(self.grid, self.geo == SURF)
-        # epithelium layer laplacian
-        epi_lapl = discrete_laplacian(self.grid, self.geo == EPITHELIUM)
-        # capillary layer laplacian
-        blood_lapl = discrete_laplacian(self.grid, self.geo == BLOOD)
-
-        d = {'surf_lapl': surf_lapl, 'epi_lapl': epi_lapl, 'blood_lapl': blood_lapl}
-
+    def write_to_hdf5(self, filename, laplacian):
         # Write data to HDF5
         with h5py.File(filename, 'w') as data_file:
             data_file.create_dataset('geometry', data=self.geo)
 
-            # embed laplacian matrix for all layers
-            matrices = data_file.create_group('lapl_matrices')
-            for name, lapl in d.items():
-                matrix = matrices.create_group(name)
-                matrix.create_dataset('data', data=lapl.data)
-                matrix.create_dataset('indptr', data=lapl.indptr)
-                matrix.create_dataset('indices', data=lapl.indices)
-                matrix.attrs['shape'] = lapl.shape
+            if laplacian:
+                # embed laplacian matrix for all layers
+                # surfactant layer laplacian
+                surf_lapl = discrete_laplacian(self.grid, self.geo == SURF)
+                # epithelium layer laplacian
+                epi_lapl = discrete_laplacian(self.grid, self.geo == EPITHELIUM)
+                # capillary layer laplacian
+                blood_lapl = discrete_laplacian(self.grid, self.geo == BLOOD)
+
+                d = {'surf_lapl': surf_lapl, 'epi_lapl': epi_lapl, 'blood_lapl': blood_lapl}
+                matrices = data_file.create_group('lapl_matrices')
+                for name, lapl in d.items():
+                    matrix = matrices.create_group(name)
+                    matrix.create_dataset('data', data=lapl.data)
+                    matrix.create_dataset('indptr', data=lapl.indptr)
+                    matrix.create_dataset('indices', data=lapl.indices)
+                    matrix.attrs['shape'] = lapl.shape
 
     def preview(self):
         zbin, ybin, xbin = self.shape
@@ -234,17 +270,18 @@ class Geometry(object):
         iren.Start()
 
 
-def generate_geometry(config, output, preview):
+def generate_geometry(config, output, preview, simple, lapl):
     start_time = time.time()
 
     with open(config) as f:
         data = json.load(f)
 
         scale = data['scaling']
+        randomness = data['randomness']
         shape = (data['shape']['zbin'], data['shape']['ybin'], data['shape']['xbin'])
         space = (data['space']['dz'], data['space']['dy'], data['space']['dx'])
 
-        g = Geometry(shape, space, scale)
+        g = Geometry(shape, space, scale, randomness)
 
         for function in data['function']:
 
@@ -263,9 +300,9 @@ def generate_geometry(config, output, preview):
                 g.add(f)
 
         # g.scaling(data["scaling"])
-        g.construct()
-        g.write_to_hdf5(output)
-        g.write_to_vtk()
+        g.construct(simple)
+        g.write_to_hdf5(output + ".hdf5", lapl)
+        g.write_to_vtk(output + ".vtk")
     print(f'--- {(time.time() - start_time)} seconds ---')
     if preview:
         g.preview()
