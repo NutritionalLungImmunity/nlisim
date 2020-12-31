@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim API documentation</title>
 <meta name="description" content="A multiscale simulation framework of *Aspergillus fumigatus* …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -30,36 +30,45 @@
 <a href="https://github.com/pypa/pipenv">pipenv</a> to create an isolated environment for
 running and developing.
 To do so, run</p>
-<pre><code class="bash">    pipenv install --dev
+<pre><code class="language-bash">pipenv install --dev
 </code></pre>
 <p>See <a href="https://pipenv.kennethreitz.org/">pipenv</a> for details.
 Once this is done,
 you can run <code>pipenv shell</code> to enter the newly created environment.</p>
-<h2 id="downloading-initialization-data">Downloading initialization data</h2>
-<p>For now, running the simulation requires the existence of a pregenerated HDF5
-file containing information about the simulation domain.
-This file can be
-downloaded from
-<a href="https://data.nutritionallungimmunity.org/api/v1/file/5ebd86cec1b2cfe0661e681f/download">Girder</a>.
-This file is expected to be found as <code>geometry.hdf5 </code> in the directory you
-are running the simulation from.</p>
 <h2 id="running">Running</h2>
+<h3 id="run-with-python-virtual-environment">Run with Python virtual environment</h3>
 <p>With the simulation package installed, you should have a new command-line
-program called <code>simulation </code> available.
-Try running <code>simulation --help</code> to get
+program called <code><a title="nlisim" href="#nlisim">nlisim</a> </code> available.
+Try running <code>nlisim --help</code> to get
 more information.
 To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.</p>
-<p>Now run simulation up to 50 seconds using the first example config.</p>
-<pre><code class="bash">    nlisim --config config.ini.example run 50
+<p>Now run simulation up to 50 hours using the first example config:</p>
+<pre><code class="language-bash">nlisim --config config.ini.example run 50
+</code></pre>
+<h3 id="run-with-docker">Run with Docker</h3>
+<p>As an alternative to local installation, the simulation may be run within a Docker container. This
+will download the simulation code from
+<a href="https://hub.docker.com/repository/docker/nutritionallungimmunity/nlisim">the latest published version</a>.</p>
+<p>To run the same simulation up to 50 hours using the first example config:</p>
+<pre><code class="language-bash">mkdir -p output
+docker run \
+    --rm \
+    --mount type=bind,source=&quot;$(pwd)/config.ini.example&quot;,destination=/opt/nlisim/config.ini,readonly \
+    --mount type=bind,source=&quot;$(pwd)/output/&quot;,destination=/opt/nlisim/output/ \
+    nutritionallungimmunity/nlisim run 50
 </code></pre>
 <p>You should now have files like <code>output/simulation-000001.000.hdf5</code> containing
-the simulation state at 1 second intervals through the full simulation.</p>
+the simulation state at 1 hour intervals through the full simulation.</p>
+<p>Note, since the application requires read access to files,
+<a href="https://docs.docker.com/storage/bind-mounts/#use-a-read-only-bind-mount">Docker must mount</a>
+them within the container; this example uses <code>--mount</code> to
+<a href="https://github.com/moby/moby/issues/13121">prevent nonexistent host paths from being accidentally created</a>.</p>
 <h2 id="testing">Testing</h2>
 <p>There is a basic test suite included in the package using <a href="https://tox.readthedocs.io/en/latest/">tox</a>
 as a test runner.
 Try running the tests now with</p>
-<pre><code class="bash">    tox
+<pre><code class="language-bash">tox
 </code></pre>
 <p>This will install the simulation code into a new isolated environment and run
 all of the tests.
@@ -178,32 +187,29 @@ attrs documentation to learn more about how to work with the state object.</p>
 <li>iteration (advancing the state in time)</li>
 </ul>
 <p>An extension module is registered with the simulation by providing a subclass
-of <code><a title="nlisim.module.Module" href="module.html#nlisim.module.Module">Module</a></code>.
+of <code>nlisim.module.Module</code>.
 Features are added by overriding attributes on
 this class.
 The following is small example demonstrating some of the features:</p>
-<pre><code class="python">    import attr
+<pre><code class="language-python">import attr
 
-    from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 
 
-    class HelloWorld(Module):
-        name = 'hello_world'
-        defaults = {
-            'target_string': 'World'
-        }
+class HelloWorld(ModuleModel):
+    name = 'hello_world'
 
-        @attr.s(kw_only=True, auto_attribs=True)
-        class StateClass(ModuleState):
-            target: str = attr.ib(default='')
+    @attr.s(kw_only=True, auto_attribs=True)
+    class StateClass(ModuleState):
+        target: str = attr.ib(default='')
 
-        def initialize(self, state):
-            state.hello_world.target = self.config.get('target_string')
-            return state
+    def initialize(self, state):
+        state.hello_world.target = self.config.get('target_string')
+        return state
 
-        def advance(self, state, previous_time):
-            print(f'Hello {state.hello_world.target}!')
-            return state
+    def advance(self, state, previous_time):
+        print(f'Hello {state.hello_world.target}!')
+        return state
 </code></pre>
 <p>When enabled, this module will</p>
 <ul>
@@ -216,22 +222,22 @@ config file</li>
 </ul>
 <h1 id="visualization-config">Visualization Config</h1>
 <p>To visualize the output of the simulation, please add the variable names to the list <code>visual_variables</code> in the config file, under the <code>[visualization]</code> section:</p>
-<pre><code class="ini">[visualization]
+<pre><code class="language-ini">[visualization]
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
-                        {
-                            &quot;module&quot;:&quot;afumigatus&quot;,
-                            &quot;variable&quot;:&quot;tree&quot;,
-                            &quot;vtk_type&quot;:&quot;POLY_DATA&quot;,
-                            &quot;attributes&quot;:[&quot;iron_pool&quot;, &quot;iteration&quot;]
-                        },
-                        {
-                            &quot;module&quot;:&quot;geometry&quot;,
-                            &quot;variable&quot;:&quot;lung_tissue&quot;,
-                            &quot;vtk_type&quot;:&quot;STRUCTURED_POINTS&quot;,
-                            &quot;attributes&quot;:[]
-                        }
-                    ]
+    {
+        &quot;module&quot;:&quot;afumigatus&quot;,
+        &quot;variable&quot;:&quot;tree&quot;,
+        &quot;vtk_type&quot;:&quot;POLY_DATA&quot;,
+        &quot;attributes&quot;:[&quot;iron_pool&quot;, &quot;iteration&quot;]
+    },
+    {
+        &quot;module&quot;:&quot;geometry&quot;,
+        &quot;variable&quot;:&quot;lung_tissue&quot;,
+        &quot;vtk_type&quot;:&quot;STRUCTURED_POINTS&quot;,
+        &quot;attributes&quot;:[]
+    }
+]
 </code></pre>
 <p>For example, to visualize the aspergillus and the alveolar geometry, the variable <code>afumigatus.tree</code> with attributes <code>iron_pool</code> and <code>iteration</code> and the variable <code>geometry.lung_tissue</code> are added to the list, followed by their <a href="https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf">VTK dataset formats</a>.</p>
 <ul>
@@ -326,8 +332,11 @@ A multiscale simulation framework of *Aspergillus fumigatus*.
 <ul>
 <li><a href="#introduction">Introduction</a><ul>
 <li><a href="#installing">Installing</a></li>
-<li><a href="#downloading-initialization-data">Downloading initialization data</a></li>
-<li><a href="#running">Running</a></li>
+<li><a href="#running">Running</a><ul>
+<li><a href="#run-with-python-virtual-environment">Run with Python virtual environment</a></li>
+<li><a href="#run-with-docker">Run with Docker</a></li>
+</ul>
+</li>
 <li><a href="#testing">Testing</a></li>
 </ul>
 </li>
@@ -360,7 +369,7 @@ A multiscale simulation framework of *Aspergillus fumigatus*.
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>

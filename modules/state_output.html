@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim.modules.state_output API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -30,18 +30,18 @@
 <pre><code class="python">from pathlib import Path
 import shutil
 
-import attr
+from attr import attrib, attrs
 
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
-@attr.s(kw_only=True)
+@attrs(kw_only=True)
 class StateOutputState(ModuleState):
-    last_save: float = attr.ib(default=0)
+    last_save: float = attrib(default=0)
 
 
-class StateOutput(Module):
+class StateOutput(ModuleModel):
     &#34;&#34;&#34;
     After time steps, serialize the simulation state to an HDF5 file.
 
@@ -49,7 +49,7 @@ class StateOutput(Module):
     &#34;&#34;&#34;
 
     name = &#39;state_output&#39;
-    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;output_dir&#39;: &#39;output&#39;}
+
     StateClass = StateOutputState
 
     @property
@@ -65,22 +65,30 @@ class StateOutput(Module):
 
         state.state_output.last_save = now
 
+    @staticmethod
+    def _clear_directory(directory: Path) -&gt; None:
+        &#34;&#34;&#34;Clear the contents of a directory, without removing the directory itself.&#34;&#34;&#34;
+        for file in directory.iterdir():
+            if file.is_file():
+                file.unlink()
+            elif file.is_dir():
+                shutil.rmtree(file)
+
     def initialize(self, state: State) -&gt; State:
         output_dir = self._output_dir
         if output_dir.exists():
+            # Since output_dir may be a Docker mount point, don&#39;t remove the directory itself.
             print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True)
+            self._clear_directory(output_dir)
+        else:
+            output_dir.mkdir(parents=True)
 
         # Initial time is typically 0, but it can be read from state
         self._write_output(state)
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        save_interval = self.config.getfloat(&#39;save_interval&#39;)
-        now = state.time
-        if now - state.state_output.last_save &gt; save_interval - 1e-8:
-            self._write_output(state)
+        self._write_output(state)
         return state</code></pre>
 </details>
 </section>
@@ -104,7 +112,7 @@ class StateOutput(Module):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class StateOutput(Module):
+<pre><code class="python">class StateOutput(ModuleModel):
     &#34;&#34;&#34;
     After time steps, serialize the simulation state to an HDF5 file.
 
@@ -112,7 +120,7 @@ class StateOutput(Module):
     &#34;&#34;&#34;
 
     name = &#39;state_output&#39;
-    defaults = {&#39;save_interval&#39;: &#39;1&#39;, &#39;output_dir&#39;: &#39;output&#39;}
+
     StateClass = StateOutputState
 
     @property
@@ -128,40 +136,48 @@ class StateOutput(Module):
 
         state.state_output.last_save = now
 
+    @staticmethod
+    def _clear_directory(directory: Path) -&gt; None:
+        &#34;&#34;&#34;Clear the contents of a directory, without removing the directory itself.&#34;&#34;&#34;
+        for file in directory.iterdir():
+            if file.is_file():
+                file.unlink()
+            elif file.is_dir():
+                shutil.rmtree(file)
+
     def initialize(self, state: State) -&gt; State:
         output_dir = self._output_dir
         if output_dir.exists():
+            # Since output_dir may be a Docker mount point, don&#39;t remove the directory itself.
             print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True)
+            self._clear_directory(output_dir)
+        else:
+            output_dir.mkdir(parents=True)
 
         # Initial time is typically 0, but it can be read from state
         self._write_output(state)
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        save_interval = self.config.getfloat(&#39;save_interval&#39;)
-        now = state.time
-        if now - state.state_output.last_save &gt; save_interval - 1e-8:
-            self._write_output(state)
+        self._write_output(state)
         return state</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
-<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>
@@ -182,7 +198,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class StateOutputState(ModuleState):
-    last_save: float = attr.ib(default=0)</code></pre>
+    last_save: float = attrib(default=0)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -238,7 +254,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>

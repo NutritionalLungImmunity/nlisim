@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim.modules.afumigatus API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -40,9 +40,9 @@ from scipy.spatial.transform import Rotation
 from nlisim.cell import CellData, CellList, CellType
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
-from nlisim.state import get_class_path, State
+from nlisim.state import State, get_class_path
 
 
 class AfumigatusCellData(CellData):
@@ -354,7 +354,7 @@ class AfumigatusCellTreeList(object):
         cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)
 
     def age(self):
-        &#34;&#34;&#34;Add 1 to iteration each timestep.&#34;&#34;&#34;
+        &#34;&#34;&#34;Add 1 to iteration each time step.&#34;&#34;&#34;
         cells = self.cells.cell_data
         cells[&#39;iteration&#39;] += 1
 
@@ -444,7 +444,7 @@ class AfumigatusState(ModuleState):
     ITER_TO_CHANGE_STATUS: int = 2
 
 
-class Afumigatus(Module):
+class Afumigatus(ModuleModel):
     name = &#39;afumigatus&#39;
     StateClass = AfumigatusState
 
@@ -528,7 +528,7 @@ class Afumigatus(Module):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Afumigatus(Module):
+<pre><code class="python">class Afumigatus(ModuleModel):
     name = &#39;afumigatus&#39;
     StateClass = AfumigatusState
 
@@ -577,20 +577,20 @@ class Afumigatus(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
-<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>
@@ -744,7 +744,7 @@ def record(self) -&gt; CellType:
 <h3>Methods</h3>
 <dl>
 <dt id="nlisim.modules.afumigatus.AfumigatusCell.add_child"><code class="name flex">
-<span>def <span class="ident">add_child</span></span>(<span>self, cell: Union[Any, _ForwardRef('<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>')])</span>
+<span>def <span class="ident">add_child</span></span>(<span>self, cell: Union[Any, ForwardRef('<a title="nlisim.modules.afumigatus.AfumigatusCell" href="#nlisim.modules.afumigatus.AfumigatusCell">AfumigatusCell</a>')])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -796,7 +796,7 @@ implementation of <code>create_cell</code> to construct a single record containi
 the additional fields.</p>
 <p>For example, the following derived class adds an addition floating point value
 associated with each cell.</p>
-<pre><code class="python">class DerivedCell(CellData):
+<pre><code class="language-python">class DerivedCell(CellData):
     FIELDS = CellData.FIELDS + [
         ('iron_content', 'f8')
     ]
@@ -1210,7 +1210,7 @@ low-level array.</p>
         cells[&#39;iron_pool&#39;] = np.add(cells[&#39;iron_pool&#39;], iron)
 
     def age(self):
-        &#34;&#34;&#34;Add 1 to iteration each timestep.&#34;&#34;&#34;
+        &#34;&#34;&#34;Add 1 to iteration each time step.&#34;&#34;&#34;
         cells = self.cells.cell_data
         cells[&#39;iteration&#39;] += 1
 
@@ -1461,13 +1461,13 @@ def roots(self) -&gt; List[CellType]:
 <span>def <span class="ident">age</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Add 1 to iteration each timestep.</p></div>
+<div class="desc"><p>Add 1 to iteration each time step.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def age(self):
-    &#34;&#34;&#34;Add 1 to iteration each timestep.&#34;&#34;&#34;
+    &#34;&#34;&#34;Add 1 to iteration each time step.&#34;&#34;&#34;
     cells = self.cells.cell_data
     cells[&#39;iteration&#39;] += 1</code></pre>
 </details>
@@ -1817,7 +1817,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>

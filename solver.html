@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim.solver API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -27,13 +27,15 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from enum import Enum
-from math import ceil
+<pre><code class="python">from dataclasses import dataclass, field
+from enum import Enum
+from queue import PriorityQueue
 from typing import Iterator, Tuple
 
 import attr
 
 from nlisim.config import SimulationConfig
+from nlisim.module import ModuleModel
 from nlisim.state import State
 from nlisim.validation import context as validation_context
 
@@ -59,19 +61,47 @@ def initialize(state: State) -&gt; State:
 
 def advance(state: State, target_time: float) -&gt; Iterator[State]:
     &#34;&#34;&#34;Advance a simulation to the given target time.&#34;&#34;&#34;
-    dt = state.config.getfloat(&#39;simulation&#39;, &#39;time_step&#39;)
-    n_steps = ceil((target_time - state.time) / dt)
     initial_time = state.time
 
-    for i in range(n_steps):
-        previous_time = state.time
-        state.time = min(initial_time + (i + 1) * dt, target_time)
+    @dataclass(order=True)
+    class ModuleUpdateEvent:
+        event_time: float
+        previous_update: float
+        module: ModuleModel = field(compare=False)
 
-        for m in state.config.modules:
-            with validation_context(m.name):
-                state = m.advance(state, previous_time)
-                attr.validate(state)
+    # Create and fill a queue of modules to run. This allows for modules to
+    # operate on disparate time scales. Modules which do not have a time step
+    # set will not be run.
+    queue: PriorityQueue[ModuleUpdateEvent] = PriorityQueue()
+    for module in state.config.modules:
+        if module.time_step is not None and module.time_step &gt; 0:
+            queue.put(
+                ModuleUpdateEvent(
+                    event_time=initial_time, previous_update=initial_time, module=module
+                )
+            )
 
+    # run the simulation until we meet or surpass the desired time
+    # while-loop conditional is on previous time so that all pending
+    # modules are run on final iteration
+    previous_time: float = initial_time
+    while previous_time &lt; target_time and not queue.empty():
+        update_event = queue.get()
+
+        m: ModuleModel = update_event.module
+        previous_time = update_event.previous_update
+        state.time = update_event.event_time
+
+        with validation_context(m.name):
+            state = m.advance(state, previous_time)
+            attr.validate(state)
+
+        # reinsert module with updated time
+        queue.put(
+            ModuleUpdateEvent(
+                event_time=state.time + m.time_step, previous_update=state.time, module=m
+            )
+        )
         yield state
 
 
@@ -104,11 +134,11 @@ def run_iterator(config: SimulationConfig, target_time: float) -&gt; Iterator[Tu
     yield finalize(state), Status.finalize
 
 
-def run(config: SimulationConfig, target_time: float) -&gt; State:
-    &#34;&#34;&#34;Run a simulation to the target time and return the result.&#34;&#34;&#34;
-    for state_iteration, _ in run_iterator(config, target_time):
-        state = state_iteration
-    return state</code></pre>
+# def run(config: SimulationConfig, target_time: float) -&gt; State:
+#     &#34;&#34;&#34;Run a simulation to the target time and return the result.&#34;&#34;&#34;
+#     for state_iteration, _ in run_iterator(config, target_time):
+#         state = state_iteration
+#     return state</code></pre>
 </details>
 </section>
 <section>
@@ -129,19 +159,47 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
 </summary>
 <pre><code class="python">def advance(state: State, target_time: float) -&gt; Iterator[State]:
     &#34;&#34;&#34;Advance a simulation to the given target time.&#34;&#34;&#34;
-    dt = state.config.getfloat(&#39;simulation&#39;, &#39;time_step&#39;)
-    n_steps = ceil((target_time - state.time) / dt)
     initial_time = state.time
 
-    for i in range(n_steps):
-        previous_time = state.time
-        state.time = min(initial_time + (i + 1) * dt, target_time)
+    @dataclass(order=True)
+    class ModuleUpdateEvent:
+        event_time: float
+        previous_update: float
+        module: ModuleModel = field(compare=False)
 
-        for m in state.config.modules:
-            with validation_context(m.name):
-                state = m.advance(state, previous_time)
-                attr.validate(state)
+    # Create and fill a queue of modules to run. This allows for modules to
+    # operate on disparate time scales. Modules which do not have a time step
+    # set will not be run.
+    queue: PriorityQueue[ModuleUpdateEvent] = PriorityQueue()
+    for module in state.config.modules:
+        if module.time_step is not None and module.time_step &gt; 0:
+            queue.put(
+                ModuleUpdateEvent(
+                    event_time=initial_time, previous_update=initial_time, module=module
+                )
+            )
 
+    # run the simulation until we meet or surpass the desired time
+    # while-loop conditional is on previous time so that all pending
+    # modules are run on final iteration
+    previous_time: float = initial_time
+    while previous_time &lt; target_time and not queue.empty():
+        update_event = queue.get()
+
+        m: ModuleModel = update_event.module
+        previous_time = update_event.previous_update
+        state.time = update_event.event_time
+
+        with validation_context(m.name):
+            state = m.advance(state, previous_time)
+            attr.validate(state)
+
+        # reinsert module with updated time
+        queue.put(
+            ModuleUpdateEvent(
+                event_time=state.time + m.time_step, previous_update=state.time, module=m
+            )
+        )
         yield state</code></pre>
 </details>
 </dd>
@@ -181,22 +239,6 @@ def run(config: SimulationConfig, target_time: float) -&gt; State:
     # could fail on a module&#39;s private state before it can initialize itself
     with validation_context(&#39;global initialization&#39;):
         attr.validate(state)
-    return state</code></pre>
-</details>
-</dd>
-<dt id="nlisim.solver.run"><code class="name flex">
-<span>def <span class="ident">run</span></span>(<span>config: <a title="nlisim.config.SimulationConfig" href="config.html#nlisim.config.SimulationConfig">SimulationConfig</a>, target_time: float) ‑> <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Run a simulation to the target time and return the result.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def run(config: SimulationConfig, target_time: float) -&gt; State:
-    &#34;&#34;&#34;Run a simulation to the target time and return the result.&#34;&#34;&#34;
-    for state_iteration, _ in run_iterator(config, target_time):
-        state = state_iteration
     return state</code></pre>
 </details>
 </dd>
@@ -297,7 +339,6 @@ will:
 <li><code><a title="nlisim.solver.advance" href="#nlisim.solver.advance">advance</a></code></li>
 <li><code><a title="nlisim.solver.finalize" href="#nlisim.solver.finalize">finalize</a></code></li>
 <li><code><a title="nlisim.solver.initialize" href="#nlisim.solver.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.solver.run" href="#nlisim.solver.run">run</a></code></li>
 <li><code><a title="nlisim.solver.run_iterator" href="#nlisim.solver.run_iterator">run_iterator</a></code></li>
 </ul>
 </li>
@@ -317,7 +358,7 @@ will:
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>

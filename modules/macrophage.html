@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim.modules.macrophage API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -33,7 +33,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
 from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
@@ -316,22 +316,8 @@ class MacrophageState(ModuleState):
     rm: float
 
 
-class Macrophage(Module):
+class Macrophage(ModuleModel):
     name = &#39;macrophage&#39;
-    defaults = {
-        &#39;cells&#39;: &#39;&#39;,
-        &#39;rec_r&#39;: &#39;1.0&#39;,
-        &#39;p_rec_r&#39;: &#39;1.0&#39;,
-        &#39;m_abs&#39;: &#39;0.1 &#39;,
-        &#39;m_n&#39;: &#39;10.0 &#39;,
-        &#39;kill&#39;: &#39;10.0&#39;,
-        &#39;m_det&#39;: &#39;15&#39;,
-        &#39;rec_rate_ph&#39;: &#39;2&#39;,
-        &#39;time_m&#39;: &#39;1&#39;,
-        &#39;max_conidia_in_phag&#39;: &#39;50&#39;,
-        &#39;p_internalization&#39;: &#39;0.3&#39;,
-        &#39;rm&#39;: &#39;0.05&#39;,
-    }
     StateClass = MacrophageState
 
     def initialize(self, state: State):
@@ -349,7 +335,6 @@ class Macrophage(Module):
         macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
         macrophage.rm = self.config.getfloat(&#39;rm&#39;)
         macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
-
         macrophage.cells = MacrophageCellList(grid=grid)
 
         return state
@@ -431,22 +416,8 @@ class Macrophage(Module):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Macrophage(Module):
+<pre><code class="python">class Macrophage(ModuleModel):
     name = &#39;macrophage&#39;
-    defaults = {
-        &#39;cells&#39;: &#39;&#39;,
-        &#39;rec_r&#39;: &#39;1.0&#39;,
-        &#39;p_rec_r&#39;: &#39;1.0&#39;,
-        &#39;m_abs&#39;: &#39;0.1 &#39;,
-        &#39;m_n&#39;: &#39;10.0 &#39;,
-        &#39;kill&#39;: &#39;10.0&#39;,
-        &#39;m_det&#39;: &#39;15&#39;,
-        &#39;rec_rate_ph&#39;: &#39;2&#39;,
-        &#39;time_m&#39;: &#39;1&#39;,
-        &#39;max_conidia_in_phag&#39;: &#39;50&#39;,
-        &#39;p_internalization&#39;: &#39;0.3&#39;,
-        &#39;rm&#39;: &#39;0.05&#39;,
-    }
     StateClass = MacrophageState
 
     def initialize(self, state: State):
@@ -464,7 +435,6 @@ class Macrophage(Module):
         macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
         macrophage.rm = self.config.getfloat(&#39;rm&#39;)
         macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
-
         macrophage.cells = MacrophageCellList(grid=grid)
 
         return state
@@ -512,20 +482,20 @@ class Macrophage(Module):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.Module.advance" href="../module.html#nlisim.module.Module.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
-<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>
@@ -552,7 +522,7 @@ implementation of <code>create_cell</code> to construct a single record containi
 the additional fields.</p>
 <p>For example, the following derived class adds an addition floating point value
 associated with each cell.</p>
-<pre><code class="python">class DerivedCell(CellData):
+<pre><code class="language-python">class DerivedCell(CellData):
     FIELDS = CellData.FIELDS + [
         ('iron_content', 'f8')
     ]
@@ -1415,7 +1385,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>

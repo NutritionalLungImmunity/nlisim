@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>nlisim.modules.molecules API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -35,7 +35,7 @@ from scipy.ndimage import convolve
 
 # from nlisim.coordinates import Voxel
 # from nlisim.grid import RectangularGrid
-from nlisim.module import Module, ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.geometry import GeometryState, TissueTypes
 from nlisim.molecule import MoleculeGrid, MoleculeTypes
 from nlisim.state import State
@@ -54,7 +54,7 @@ class MoleculesState(ModuleState):
     iron_max: float
 
 
-class Molecules(Module):
+class Molecules(ModuleModel):
     name = &#39;molecules&#39;
     StateClass = MoleculesState
 
@@ -128,24 +128,23 @@ class Molecules(Module):
         # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-        for _ in range(3):
-            molecules.grid.incr()
-            self.convolution_diffusion(
-                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-            )
+        molecules.grid.incr()
+        self.convolution_diffusion(
+            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+        )
 
-            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
     def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
         if len(molecule.shape) != 3:
-            raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+            raise ValueError(f&#39;Expecting a 3d array. Got dim = {len(molecule.shape)}&#39;)
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
 
@@ -271,7 +270,7 @@ class Molecules(Module):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Molecules(Module):
+<pre><code class="python">class Molecules(ModuleModel):
     name = &#39;molecules&#39;
     StateClass = MoleculesState
 
@@ -345,24 +344,23 @@ class Molecules(Module):
         # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-        for _ in range(3):
-            molecules.grid.incr()
-            self.convolution_diffusion(
-                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-            )
+        molecules.grid.incr()
+        self.convolution_diffusion(
+            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+        )
 
-            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
     @classmethod
     def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
         if len(molecule.shape) != 3:
-            raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+            raise ValueError(f&#39;Expecting a 3d array. Got dim = {len(molecule.shape)}&#39;)
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
 
@@ -373,11 +371,88 @@ class Molecules(Module):
 
     @classmethod
     def degrade(cls, molecule: np.ndarray, evap: float):
-        molecule *= 1 - evap</code></pre>
+        molecule *= 1 - evap
+
+    # @classmethod
+    # def degrade(cls, molecule: np.ndarray, evap: float):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+
+    #     for index in np.argwhere(molecule &gt; 0):
+    #         z = index[0]
+    #         y = index[1]
+    #         x = index[2]
+
+    #         molecule[z, y, x] = molecule[z, y, x] * (1 - evap)
+
+    #     return
+
+    # @classmethod
+    # def diffuse_iron(cls, iron: np.ndarray, grid: RectangularGrid, tissue, iron_max):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     for index in np.argwhere(tissue == TissueTypes.BLOOD.value):
+    #         iron[index[0], index[1], index[2]]
+    #      = min([iron[index[0], index[1], index[2]], iron_max])
+
+    #     temp = np.zeros(iron.shape)
+
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
+
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
+
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
+
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
+
+    #     iron[:] = temp[:]
+
+    #     return
+
+    # @classmethod
+    # def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
+    #     # TODO These 2 functions should be implemented for all moleculess
+    #     # the rest of the behavior (uptake, secretion, etc.) should be
+    #     # handled in the cell specific module.
+    #     temp = np.zeros(molecule.shape)
+
+    #     x_r = [-1, 0, 1]
+    #     y_r = [-1, 0, 1]
+    #     z_r = [-1, 0, 1]
+
+    #     for index in np.argwhere(temp == 0):
+    #         for x in x_r:
+    #             for y in y_r:
+    #                 for z in z_r:
+    #                     zk = index[0] + z
+    #                     yj = index[1] + y
+    #                     xi = index[2] + x
+
+    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                         temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
+
+    #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
+    #             temp[index[0], index[1], index[2]] = 0
+
+    #     molecule[:] = temp[:]
+
+    #     return</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
@@ -393,7 +468,7 @@ class Molecules(Module):
 <pre><code class="python">@classmethod
 def convolution_diffusion(cls, molecule: np.ndarray, tissue: np.ndarray, threshold=None):
     if len(molecule.shape) != 3:
-        raise ValueError(f&#39;Expecting a 3d array. Get dim = {len(molecule.shape)}&#39;)
+        raise ValueError(f&#39;Expecting a 3d array. Got dim = {len(molecule.shape)}&#39;)
     weights = np.full((3, 3, 3), 1 / 27)
     molecule[:] = convolve(molecule, weights, mode=&#39;constant&#39;)
 
@@ -452,17 +527,16 @@ def degrade(cls, molecule: np.ndarray, evap: float):
     # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
     # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-    for _ in range(3):
-        molecules.grid.incr()
-        self.convolution_diffusion(
-            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-        )
+    molecules.grid.incr()
+    self.convolution_diffusion(
+        molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+    )
 
-        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+    self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+    self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+    self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+    self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
     return state</code></pre>
 </details>
@@ -470,15 +544,15 @@ def degrade(cls, molecule: np.ndarray, evap: float):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.module.Module" href="../module.html#nlisim.module.Module">Module</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.Module.StateClass" href="../module.html#nlisim.module.Module.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.Module.construct" href="../module.html#nlisim.module.Module.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.Module.defaults" href="../module.html#nlisim.module.Module.defaults">defaults</a></code></li>
-<li><code><a title="nlisim.module.Module.finalize" href="../module.html#nlisim.module.Module.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.Module.initialize" href="../module.html#nlisim.module.Module.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.module.Module.name" href="../module.html#nlisim.module.Module.name">name</a></code></li>
-<li><code><a title="nlisim.module.Module.section" href="../module.html#nlisim.module.Module.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>
@@ -589,7 +663,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>
