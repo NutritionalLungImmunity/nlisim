@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Set, Type, Union, cast
 
 import attr
 from h5py import Group
@@ -181,6 +181,12 @@ class CellList(object):
         if isinstance(index, str):
             raise TypeError('Expected an integer index, did you mean `cells.cell_data[key]`?')
         return self.cell_data[index]
+
+    # Trick mypy into recognizing this class as iterable:
+    #   https://github.com/python/mypy/issues/2220
+    def __iter__(self) -> Iterator[CellType]:
+        for index in range(len(self)):
+            yield self[index]
 
     @property
     def cell_data(self) -> CellData:
