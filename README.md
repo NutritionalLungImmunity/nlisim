@@ -23,7 +23,7 @@ There is an example configuration in the repository to get you started.
 
 Now run simulation up to 50 hours using the first example config:
 ```bash
-nlisim --config config.ini.example run 50
+nlisim --config config.ini run 50
 ```
 
 ### Run with Docker
