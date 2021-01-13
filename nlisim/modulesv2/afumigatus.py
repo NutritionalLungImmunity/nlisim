@@ -1,5 +1,8 @@
 from enum import auto, IntEnum, unique
 
+from nlisim.modulesv2.iron import IronState
+from nlisim.random import rg
+
 import attr
 from attr import attrib, attrs
 import numpy as np
@@ -13,7 +16,7 @@ from nlisim.state import State
 
 # TODO: naming
 @unique
-class AFumigatusForm(IntEnum):
+class FungalForm(IntEnum):
     RESTING_CONIDIA = 0
     SWELLING_CONIDIA = auto()
     GERM_TUBE = auto()
@@ -26,7 +29,7 @@ class AFumigatusForm(IntEnum):
 # TODO: naming
 @unique
 class NetworkSpecies(IntEnum):
-    hapX = 0       # gene
+    hapX = 0  # gene
     sreA = auto()  # gene
     HapX = auto()  # protein
     SreA = auto()  # protein
@@ -76,7 +79,7 @@ class AfumigatusCellData(CellData):
         ('next_septa', np.int64),
         ('previous_septa', np.int64),
         ('bn_iteration', np.int64),
-        ]
+    ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
     dtype = np.dtype(FIELDS, align=True)  # type: ignore
@@ -86,11 +89,14 @@ class AfumigatusCellData(CellData):
         initializer = {
             'iron_pool'           : kwargs.get('iron_pool', 0),
             'state'               : kwargs.get('state', AFumigatusState.FREE),
-            'status'              : kwargs.get('status', AFumigatusForm.RESTING_CONIDIA),
+            'status'              : kwargs.get('status', FungalForm.RESTING_CONIDIA),
             'is_root'             : kwargs.get('is_root', True),
-            'root'                : kwargs.get('root', np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
-            'tip'                 : kwargs.get('tip', np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
-            'vec'                 : kwargs.get('vec', np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),  # dx, dy, dz
+            'root'                : kwargs.get('root',
+                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
+            'tip'                 : kwargs.get('tip',
+                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
+            'vec'                 : kwargs.get('vec',  # dx, dy, dz
+                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
             'growable'            : kwargs.get('growable', True),
             'branchable'          : kwargs.get('branchable', False),
             'activation_iteration': kwargs.get('activation_iteration', 0),
@@ -100,7 +106,7 @@ class AfumigatusCellData(CellData):
             'next_branch'         : kwargs.get('next_branch', -1),
             'next_septa'          : kwargs.get('next_septa', -1),
             'previous_septa'      : kwargs.get('previous_septa', -1),
-            }
+        }
 
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + \
@@ -133,7 +139,8 @@ class AfumigatusCellData(CellData):
                                         # NetworkSpecies.TAFCBI:False TODO: I'm assuming ?
                                         # There was an extra in the source material
                                         }
-        return np.asarray([initAfumigatusBooleanSpecies[species] for species in NetworkSpecies], dtype=np.bool)
+        return np.asarray([initAfumigatusBooleanSpecies[species]
+                           for species in NetworkSpecies], dtype=np.bool)
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -152,6 +159,8 @@ class AfumigatusState(ModuleState):
     pr_ma_phag: float
     pr_branch: float
     steps_to_bn_eval: int
+    hyphae_volume: float
+    kd_lip: float
 
 
 class Afumigatus(ModuleModel):
@@ -166,6 +175,8 @@ class Afumigatus(ModuleModel):
 
         afumigatus.pr_branch = self.config.getfloat('pr_branch')
         afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')
+        afumigatus.hyphae_volume = self.config.getint('hyphae_volume')
+        afumigatus.kd_lip = self.config.getint('kd_lip')
 
         return state
 
@@ -185,7 +196,7 @@ class Afumigatus(ModuleModel):
             cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
             vox: Voxel = grid.get_voxel(cell['point'])
 
-            if cell['state'] == AFumigatusForm.RESTING_CONIDIA:
+            if cell['state'] == FungalForm.RESTING_CONIDIA:
                 continue
 
             nearby_macrophage_indices = macrophage.cells.get_cells_in_voxel(vox)
@@ -194,8 +205,19 @@ class Afumigatus(ModuleModel):
                 if individual_macrophage.lifecycle not in {MacrophageLifecycle.APOPTOTIC,
                                                            MacrophageLifecycle.NECROTIC,
                                                            MacrophageLifecycle.DEAD}:
-                    pr_interact = afumigatus.pr_ma_hyphae if cell.form == AFumigatusForm.HYPHAE \
+                    pr_interact = afumigatus.pr_ma_hyphae if cell.form == FungalForm.HYPHAE \
                         else afumigatus.pr_ma_phag
+                    if rg.random() < pr_interact:
+                        Phagocyte.int_aspergillus(interactable, self, self.status != Afumigatus.HYPHAE)
+                        if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+                            self.status = Afumigatus.DYING
+                            if self.next_septa is not None:
+                                self.next_septa.is_root = True
+                            if self.next_branch is not None:
+                                self.next_branch.is_root = True
+                        else:
+                            if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+                                interactable.engaged = True
 
             # elif itype is Macrophage:
             #     if interactable.engaged:
@@ -223,3 +245,69 @@ class Afumigatus(ModuleModel):
         #     return True
 
         return state
+
+    def process_boolean_network(self,
+                                state: State,
+                                boolean_network: np.ndarray,
+                                bn_iteration: np.ndarray,
+                                steps_to_eval: int):
+
+        bn_iteration += 1
+        bn_iteration %= steps_to_eval
+
+        boolean_network_active: np.ndarray = boolean_network[bn_iteration == 0, :]
+        temp: np.ndarray = np.zeros(shape=boolean_network_active.shape, dtype=np.bool)
+
+        # TODO: verify array shape
+        temp[:, NetworkSpecies.hapX] = ~boolean_network_active[:, NetworkSpecies.SreA]
+        temp[:, NetworkSpecies.sreA] = ~boolean_network_active[:, NetworkSpecies.HapX]
+        temp[:, NetworkSpecies.HapX] = boolean_network_active[:, NetworkSpecies.hapX] & \
+                                       ~boolean_network_active[:, NetworkSpecies.LIP]
+        temp[:, NetworkSpecies.SreA] = boolean_network_active[:, NetworkSpecies.sreA] & \
+                                       boolean_network_active[:, NetworkSpecies.LIP]
+        temp[:, NetworkSpecies.RIA] = ~boolean_network_active[:, NetworkSpecies.SreA]
+        temp[:, NetworkSpecies.EstB] = ~boolean_network_active[:, NetworkSpecies.SreA]
+        temp[:, NetworkSpecies.MirB] = boolean_network_active[:, NetworkSpecies.HapX] & \
+                                       ~boolean_network_active[:, NetworkSpecies.SreA]
+        temp[:, NetworkSpecies.SidA] = boolean_network_active[:, NetworkSpecies.HapX] & \
+                                       ~boolean_network_active[:, NetworkSpecies.SreA]
+        temp[:, NetworkSpecies.TAFC] = boolean_network_active[:, NetworkSpecies.SidA]
+        temp[:, NetworkSpecies.ICP] = ~boolean_network_active[:, NetworkSpecies.HapX] & \
+                                      (boolean_network_active[:, NetworkSpecies.VAC] |
+                                       boolean_network_active[:, NetworkSpecies.FC1fe])
+        temp[:, NetworkSpecies.LIP] = (boolean_network_active[:, NetworkSpecies.Fe] &
+                                       boolean_network_active[:, NetworkSpecies.RIA]) | \
+                                      self._lip_activation(state=state,
+                                                           shape=temp.shape)
+        temp[:, NetworkSpecies.CccA] = ~boolean_network_active[:, NetworkSpecies.HapX]
+        temp[:, NetworkSpecies.FC0fe] = boolean_network_active[:, NetworkSpecies.SidA]
+        temp[:, NetworkSpecies.FC1fe] = boolean_network_active[:, NetworkSpecies.LIP] & \
+                                        boolean_network_active[:, NetworkSpecies.FC0fe]
+        temp[:, NetworkSpecies.VAC] = boolean_network_active[:, NetworkSpecies.LIP] & \
+                                      boolean_network_active[:, NetworkSpecies.CccA]
+        temp[:, NetworkSpecies.ROS] = (boolean_network_active[:, NetworkSpecies.O] &
+                                       ~(boolean_network_active[:, NetworkSpecies.SOD2_3] &
+                                         boolean_network_active[:, NetworkSpecies.ThP] &
+                                         boolean_network_active[:, NetworkSpecies.Cat1_2])) | \
+                                      (boolean_network_active[:, NetworkSpecies.ROS] &
+                                       ~(boolean_network_active[:, NetworkSpecies.SOD2_3] &
+                                         (boolean_network_active[:, NetworkSpecies.ThP] |
+                                          boolean_network_active[:, NetworkSpecies.Cat1_2])))
+        temp[:, NetworkSpecies.Yap1] = boolean_network_active[:, NetworkSpecies.ROS]
+        temp[:, NetworkSpecies.SOD2_3] = boolean_network_active[:, NetworkSpecies.Yap1]
+        temp[:, NetworkSpecies.Cat1_2] = boolean_network_active[:, NetworkSpecies.Yap1] & \
+                                         ~boolean_network_active[:, NetworkSpecies.HapX]
+        temp[:, NetworkSpecies.ThP] = boolean_network_active[:, NetworkSpecies.Yap1]
+        temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
+        temp[:, NetworkSpecies.O] = 0
+
+        # noinspection PyUnusedLocal
+        boolean_network_active = temp
+
+    def _lip_activation(self, state: State, shape) -> np.ndarray:
+        afumigatus: AfumigatusState = state.afumigatus
+        iron: IronState = state.iron
+
+        molar_concentration = iron.grid / afumigatus.hyphae_volume
+        activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
+        return np.random.rand(*shape) < activation
