@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, cast, Dict, Iterable, Iterator, List, Set, Type, Union
 
 import attr
-from h5py._debian_h5py_serial import Group
+from h5py import Group
 import numpy as np
 
 from nlisim.coordinates import Point, Voxel

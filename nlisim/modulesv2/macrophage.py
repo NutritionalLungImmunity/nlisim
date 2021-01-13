@@ -5,7 +5,8 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleModel, ModuleState
+from nlisim.module import ModuleState
+from nlisim.modulesv2.phagocyte import PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.state import State
 
 MAX_CONIDIA = 100
@@ -33,25 +34,6 @@ class MacrophageNetworkSpecies(IntEnum):
     Fpn = auto()
     TFBI = auto()
     Bglucan = auto()
-
-
-@unique
-class PhagocyteStatus(IntEnum):
-    INACTIVE = 0
-    INACTIVATING = auto()
-    RESTING = auto()
-    ACTIVATING = auto()
-    ACTIVE = auto()
-    APOPTOTIC = auto()
-    NECROTIC = auto()
-    DEAD = auto()
-    ANERGIC = auto()
-
-
-@unique
-class PhagocyteState(IntEnum):
-    FREE = 0
-    INTERACTING = auto()
 
 
 class MacrophageCellData(CellData):
@@ -120,7 +102,7 @@ def cell_list_factory(self: 'MacrophageState'):
 class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
 
-class Macrophage(ModuleModel):
+class MacrophageModel(PhagocyteModel):
     name = 'macrophage'
     StateClass = MacrophageState
 
@@ -135,3 +117,5 @@ class Macrophage(ModuleModel):
         macrophage: MacrophageState = state.macrophage
 
         return state
+
+
