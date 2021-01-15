@@ -1,7 +1,5 @@
 from enum import auto, IntEnum, unique
-
-from nlisim.modulesv2.iron import IronState
-from nlisim.random import rg
+from queue import SimpleQueue
 
 import attr
 from attr import attrib, attrs
@@ -10,7 +8,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Voxel
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modulesv2.iron import IronState
 from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageLifecycle, MacrophageState
+from nlisim.random import rg
 from nlisim.state import State
 
 
@@ -79,7 +79,7 @@ class AfumigatusCellData(CellData):
         ('next_septa', np.int64),
         ('previous_septa', np.int64),
         ('bn_iteration', np.int64),
-    ]
+        ]
 
     FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
     dtype = np.dtype(FIELDS, align=True)  # type: ignore
@@ -106,7 +106,7 @@ class AfumigatusCellData(CellData):
             'next_branch'         : kwargs.get('next_branch', -1),
             'next_septa'          : kwargs.get('next_septa', -1),
             'previous_septa'      : kwargs.get('previous_septa', -1),
-        }
+            }
 
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + \
@@ -161,6 +161,9 @@ class AfumigatusState(ModuleState):
     steps_to_bn_eval: int
     hyphae_volume: float
     kd_lip: float
+    iter_to_swelling: float
+    iter_to_germinate: float
+    pr_aspergillus_change: float
 
 
 class Afumigatus(ModuleModel):
@@ -178,6 +181,10 @@ class Afumigatus(ModuleModel):
         afumigatus.hyphae_volume = self.config.getint('hyphae_volume')
         afumigatus.kd_lip = self.config.getint('kd_lip')
 
+        afumigatus.iter_to_swelling = self.config.getint('iter_to_swelling')
+        afumigatus.pr_aspergillus_change = self.config.getfloat('pr_aspergillus_change')
+        afumigatus.iter_to_germinate = self.config.getint('iter_to_germinate')
+
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
@@ -185,6 +192,40 @@ class Afumigatus(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         grid = state.grid
         tissue = state.geometry.lung_tissue
+
+        # update live cells
+        for cell_index in afumigatus.cells.alive():
+            cell: AfumigatusCellData = afumigatus.cells[cell_index]
+
+            cell['activation_iteration'] += 1
+
+            # resting conidia become swelling conidia after a number of iterations
+            # (with some probability)
+            if (cell['status'] == FungalForm.RESTING_CONIDIA and
+                    cell['activation_iteration'] >= afumigatus.iter_to_swelling and
+                    rg.random() < afumigatus.pr_aspergillus_change):
+                cell['status'] = FungalForm.SWELLING_CONIDIA
+                cell['activation_iteration'] = 0
+            elif (cell['status'] == FungalForm.SWELLING_CONIDIA and
+                  cell['activation_iteration'] >= afumigatus.iter_to_germinate):
+                cell['status'] = FungalForm.GERM_TUBE
+                cell['activation_iteration'] = 0
+            elif cell['status'] == FungalForm.DYING:
+                # TODO: Henrique said something about the DYING state not being necessary. First glance in code
+                #  suggests that this update only removes the cells from live counts
+                cell['status'] = FungalForm.DEAD
+
+            # TODO: this looks redundant/unnecessary
+            if cell['next_septa'] == -1:
+                cell['growable'] = True
+
+            # TODO: verify this, 1 turn on internalizing then free?
+            if cell['state'] in {AFumigatusState.INTERNALIZING, AFumigatusState.RELEASING}:
+                cell['state'] = AFumigatusState.FREE
+
+            # self.diffuse_iron()
+            # if self.next_branch is None:
+            #     self.growable = True
 
         # itype = type(interactable)
         # if itype is Afumigatus:
@@ -251,7 +292,6 @@ class Afumigatus(ModuleModel):
                                 boolean_network: np.ndarray,
                                 bn_iteration: np.ndarray,
                                 steps_to_eval: int):
-
         bn_iteration += 1
         bn_iteration %= steps_to_eval
 
@@ -311,3 +351,43 @@ class Afumigatus(ModuleModel):
         molar_concentration = iron.grid / afumigatus.hyphae_volume
         activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
         return np.random.rand(*shape) < activation
+
+    def diffuse_iron(self, root_cell_index: int, afumigatus: AfumigatusState) -> None:
+        """
+        Evenly distributes iron amongst fungal cells in a tree
+
+        Parameters
+        ----------
+        root_cell_index : int
+            index of tree root, function is a noop on non-root cells
+        afumigatus : AfumigatusState
+            state class for fungus
+        Returns
+        -------
+
+        """
+        if not afumigatus.cells[root_cell_index]['is_root']:
+            return
+
+        tree_cells = set()
+        total_iron: float = 0.0
+
+        # walk along the tree, collecting iron
+        q = SimpleQueue()
+        q.put(root_cell_index)
+        while not q.empty():
+            next_cell_index = q.get()
+            tree_cells.add(next_cell_index)
+
+            next_cell = afumigatus.cells[next_cell_index]
+            total_iron += next_cell['iron']
+
+            if next_cell['next_branch'] >= 0:
+                q.put(next_cell['next_branch'])
+            if next_cell['next_septa'] >= 0:
+                q.put(next_cell['next_septa'])
+
+        # distribute the iron evenly
+        iron_per_cell: float = total_iron / len(tree_cells)
+        for tree_cell_index in tree_cells:
+            afumigatus.cells[tree_cell_index]['iron'] = iron_per_cell
