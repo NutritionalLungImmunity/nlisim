@@ -60,23 +60,17 @@ class AntiTNFa(MoleculeModel):
         tnf_a: TNFaState = state.tnfa
 
         # AntiTNFa / TNFa reaction
-        # TODO: reacted_quantity was previously 'v', check validity of name
-        reacted_quantity = self.michaelianKinetics(substrate1=anti_tnf_a.grid,
-                                                   substrate2=tnf_a.grid,
-                                                   km=anti_tnf_a.k_m,
-                                                   h=anti_tnf_a.react_time_unit,
-                                                   voxel_volume=voxel_volume)
+        reacted_quantity = self.michaelian_kinetics(substrate=anti_tnf_a.grid,
+                                                    enzyme=tnf_a.grid,
+                                                    km=anti_tnf_a.k_m,
+                                                    h=anti_tnf_a.react_time_unit,
+                                                    voxel_volume=voxel_volume)
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
         anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
         tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)
 
         # Degradation of AntiTNFa
-        # TODO: I still don't get this, looks to be run at each time step? plus "Constants"
-        # if AntiTNFa.choose is None or self.id == AntiTNFa.choose:
-        #     Constants.ANTI_TNFA_SYSTEM_CONCENTRATION = Constants.ANTI_TNFA_SYSTEM_CONCENTRATION * p
-        #     AntiTNFa.choose = self.id
         anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
-        # TODO: verify, orig code put this into ~3 steps.
         anti_tnf_a.grid *= self.turnover_rate(x_mol=anti_tnf_a.grid,
                                               x_system_mol=anti_tnf_a.system_amount_per_voxel,
                                               turnover_rate=molecules.turnover_rate,

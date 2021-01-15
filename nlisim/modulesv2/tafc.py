@@ -54,16 +54,16 @@ class TAFC(MoleculeModel):
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = self.michaelianKinetics(substrate1=transferrin.grid["TfFe2"],
-                                         substrate2=tafc.grid["TAFC"],
+        dfe2dt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe2"],
+                                          enzyme=tafc.grid["TAFC"],
+                                          km=tafc.k_m_tf_tafc,
+                                          h=state.simulation.time_step_size / 60,
+                                          voxel_volume=voxel_volume)
+        dfedt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe"],
+                                         enzyme=tafc.grid["TAFC"],
                                          km=tafc.k_m_tf_tafc,
                                          h=state.simulation.time_step_size / 60,
                                          voxel_volume=voxel_volume)
-        dfedt = self.michaelianKinetics(substrate1=transferrin.grid["TfFe"],
-                                        substrate2=tafc.grid["TAFC"],
-                                        km=tafc.k_m_tf_tafc,
-                                        h=state.simulation.time_step_size / 60,
-                                        voxel_volume=voxel_volume)
 
         # - enforce bounds from TAFC quantity
         rel = tafc.grid['TAFC'] / (dfe2dt + dfedt)

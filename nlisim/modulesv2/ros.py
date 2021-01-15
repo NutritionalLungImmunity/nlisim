@@ -53,6 +53,6 @@ class ROS(MoleculeModel):
         #         self.inc(0)
         #     return True
 
-        # Degrade ROS (does not degrade) TODO: verify
+        # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
 
         return state
