@@ -8,21 +8,21 @@ from nlisim.module import ModuleModel
 class MoleculeModel(ModuleModel):
 
     @staticmethod
-    def michaelianKinetics(*,
-                           substrate1: np.ndarray,
-                           substrate2: np.ndarray,
-                           km: float,
-                           h: float,
-                           k_cat: float = 1.0,
-                           voxel_volume: float) -> np.ndarray:
+    def michaelian_kinetics(*,
+                            substrate: np.ndarray,
+                            enzyme: np.ndarray,
+                            km: float,
+                            h: float,
+                            k_cat: float = 1.0,
+                            voxel_volume: float) -> np.ndarray:
+        substrate = substrate / voxel_volume  # transform into M
+        enzyme = enzyme / voxel_volume
 
-        substrate1 = substrate1 / voxel_volume  # transform into M
-        substrate2 = substrate2 / voxel_volume
-        enzyme = np.minimum(substrate1, substrate2)
-        substrate = np.maximum(substrate1, substrate2)
+        # enzyme = np.minimum(substrate1, substrate2)
+        # substrate = np.maximum(substrate1, substrate2)
 
-        # TODO: comment below attached to return, verify this is ok
-        # (*voxel_volume) transform back into mol
+        # TODO: replace with h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)
+        # by multiplying by voxel_volume/voxel_volume and removing the conversions to M
         return h * k_cat * enzyme * substrate * voxel_volume / (substrate + km)
 
     @staticmethod
@@ -31,17 +31,13 @@ class MoleculeModel(ModuleModel):
                       x_system_mol: float,
                       turnover_rate: float,
                       rel_cyt_bind_unit_t: float):
-        # TODO: ask about this
-        # if x_mol == 0 and x_system_mol == 0:
-        #     return 0
-
         # NOTE: in formula, voxel_volume cancels. So I cancelled it.
         y = ((x_mol - x_system_mol) * math.exp(-turnover_rate * rel_cyt_bind_unit_t) + x_system_mol)
 
         with np.errstate(divide='ignore'):
             retval = y / x_mol
         # zero out problem divides
-        retval[x_mol == 0] = 0
+        retval[x_mol == 0] = 0.0
         # alternate method: np.nan_to_num(retval, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
         # enforce bounds

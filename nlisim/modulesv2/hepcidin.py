@@ -30,8 +30,7 @@ class Hepcidin(MoleculeModel):
         voxel_volume = geometry.voxel_volume
 
         # config file values
-        # TODO: find a name for this which is not horrible
-        hepcidin.hepcidin_qtty = self.config.getfloat('hepcidin_qtty')
+        # TODO: ? where did this come from hepcidin.hepcidin_qtty = self.config.getfloat('hepcidin_qtty')
 
         # computed values (none)
 

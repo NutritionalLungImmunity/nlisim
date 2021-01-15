@@ -46,7 +46,7 @@ class MacrophageCellData(CellData):
         ('fpn', np.bool),
         ('fpn_iteration', np.int64),
         ('tf', np.bool),
-        ('max_move_step', np.object),  # TODO: figure out what this is
+        ('max_move_step', np.float),  # TODO: double check, might be int
         ('tnfa', np.bool),
         ('engaged', np.bool),
         ]

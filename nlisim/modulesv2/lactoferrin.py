@@ -79,16 +79,16 @@ class Lactoferrin(MoleculeModel):
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin
-        dfe2dt = self.michaelianKinetics(substrate1=transferrin.grid['TfFe2'],
-                                         substrate2=lactoferrin.grid["Lactoferrin"],
+        dfe2dt = self.michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
+                                          enzyme=lactoferrin.grid["Lactoferrin"],
+                                          km=lactoferrin.k_m_tf_lac,
+                                          h=state.simulation.time_step_size / 60,
+                                          voxel_volume=voxel_volume)
+        dfedt = self.michaelian_kinetics(substrate=transferrin.grid['TfFe'],
+                                         enzyme=lactoferrin.grid['Lactoferrin'],
                                          km=lactoferrin.k_m_tf_lac,
                                          h=state.simulation.time_step_size / 60,
                                          voxel_volume=voxel_volume)
-        dfedt = self.michaelianKinetics(substrate1=transferrin.grid['TfFe'],
-                                        substrate2=lactoferrin.grid['Lactoferrin'],
-                                        km=lactoferrin.k_m_tf_lac,
-                                        h=state.simulation.time_step_size / 60,
-                                        voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin quantity
         mask = (dfe2dt + dfedt) > lactoferrin.grid['Lactoferrin']
         rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt)
@@ -96,16 +96,16 @@ class Lactoferrin(MoleculeModel):
         dfedt[mask] = (dfedt * rel)[mask]
 
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin+Fe
-        dfe2dt_fe = self.michaelianKinetics(substrate1=transferrin.grid['TfFe2'],
-                                            substrate2=lactoferrin.grid['LactoferrinFe'],
+        dfe2dt_fe = self.michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
+                                             enzyme=lactoferrin.grid['LactoferrinFe'],
+                                             km=lactoferrin.k_m_tf_lac,
+                                             h=state.simulation.time_step_size / 60,
+                                             voxel_volume=voxel_volume)
+        dfedt_fe = self.michaelian_kinetics(substrate=transferrin.grid['TfFe'],
+                                            enzyme=lactoferrin.grid['LactoferrinFe'],
                                             km=lactoferrin.k_m_tf_lac,
                                             h=state.simulation.time_step_size / 60,
                                             voxel_volume=voxel_volume)
-        dfedt_fe = self.michaelianKinetics(substrate1=transferrin.grid['TfFe'],
-                                           substrate2=lactoferrin.grid['LactoferrinFe'],
-                                           km=lactoferrin.k_m_tf_lac,
-                                           h=state.simulation.time_step_size / 60,
-                                           voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin+Fe quantity
         mask = (dfe2dt_fe + dfedt_fe) > lactoferrin.grid['LactoferrinFe']
         rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe)
@@ -174,8 +174,8 @@ class Lactoferrin(MoleculeModel):
         # this reduces the number of operations slightly:
         rel_TfFe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
 
-        rel_TfFe = np.maximum(0.0, rel_TfFe)  # one root of the polynomial is at ~0.99897 and goes neg after
-        # TODO: rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof?
+        np.maximum(0.0, rel_TfFe, out=rel_TfFe)  # one root of the polynomial is at ~0.99897 and goes neg after
+        # rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof?
         rel_TfFe[total_iron == 0] = 0.0
         rel_TfFe[total_binding_site == 0] = 0.0
         return rel_TfFe

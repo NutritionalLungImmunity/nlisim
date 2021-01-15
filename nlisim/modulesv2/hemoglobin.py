@@ -43,13 +43,6 @@ class Hemoglobin(MoleculeModel):
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
 
-        # TODO: Commented by Henrique, verify
-        # elif itype is Macrophage:
-        #     # v = Constants.MA_HEME_IMPORT_RATE * self.values[0]
-        #     # self.dec(v)
-        #     # interactable.inc_iron_pool(4*v)
-        #     # return True
-        #     return False
 
         # TODO: move to cell
         # elif itype is Afumigatus:

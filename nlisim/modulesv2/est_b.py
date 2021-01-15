@@ -65,27 +65,23 @@ class EstB(MoleculeModel):
         estb.iron_buffer = 0
 
         # interact with TAFC
-        v1 = self.michaelianKinetics(substrate1=tafc.grid[:, :, :, 0],
-                                     substrate2=estb.grid,
-                                     km=estb.k_m,
-                                     k_cat=estb.kcat,
-                                     h=state.simulation.time_step_size / 60,
-                                     voxel_volume=voxel_volume)
-        v2 = self.michaelianKinetics(substrate1=tafc.grid[:, :, :, 1],
-                                     substrate2=estb.grid,
-                                     km=estb.k_m,
-                                     k_cat=estb.kcat,
-                                     h=state.simulation.time_step_size / 60,
-                                     voxel_volume=voxel_volume)
+        v1 = self.michaelian_kinetics(substrate=tafc.grid[:, :, :, 0],
+                                      enzyme=estb.grid,
+                                      km=estb.k_m,
+                                      k_cat=estb.kcat,
+                                      h=state.simulation.time_step_size / 60,
+                                      voxel_volume=voxel_volume)
+        v2 = self.michaelian_kinetics(substrate=tafc.grid[:, :, :, 1],
+                                      enzyme=estb.grid,
+                                      km=estb.k_m,
+                                      k_cat=estb.kcat,
+                                      h=state.simulation.time_step_size / 60,
+                                      voxel_volume=voxel_volume)
         tafc.grid[:, :, :, 0] -= v1
         tafc.grid[:, :, :, 1] -= v2
         estb.iron_buffer += v2
 
         # Degrade EstB
-        # TODO: I still don't understand this
-        # if EstB.choose is None or self.id == EstB.choose:
-        #     Constants.ESTB_SYSTEM_CONCENTRATION = Constants.ESTB_SYSTEM_CONCENTRATION * Constants.ESTB_HALF_LIFE
-        #     EstB.choose = self.id
         estb.grid *= estb.half_life_multiplier
         estb.grid *= self.turnover_rate(x_mol=estb.grid,
                                         x_system_mol=estb.system_amount_per_voxel,

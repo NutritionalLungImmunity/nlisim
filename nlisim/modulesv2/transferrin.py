@@ -99,7 +99,8 @@ class Transferrin(MoleculeModel):
         transferrin.grid['TfFe'] += tffe_qtty
         transferrin.grid['TfFe2'] += tffe2_qtty
         iron.grid -= potential_reactive_quantity
-        # TODO: ask Henrique why there is no transferrin+Fe -> transferrin+2Fe reaction
+        # Note: asked Henrique why there is no transferrin+Fe -> transferrin+2Fe reaction
+        # answer was that this should already be accounted for
 
         # Degrade transferrin: done in liver
 

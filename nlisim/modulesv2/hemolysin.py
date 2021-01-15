@@ -30,8 +30,8 @@ class Hemolysin(MoleculeModel):
         voxel_volume = geometry.voxel_volume
 
         # config file values
-        # TODO: find a name for this which is not horrible
         hemolysin.hemolysin_qtty = self.config.getfloat('hemolysin_qtty')
+        # constant from setting rate of secretion rate to 1
 
         # computed values (none)
 
