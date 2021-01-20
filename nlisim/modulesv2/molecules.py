@@ -1,17 +1,18 @@
 import math
 
-import attr
+from attr import attrs
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
     turnover_rate: float
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
     turnover_rate: float
+
 
 class Molecules(ModuleModel):
     name = 'molecules'
