@@ -1,11 +1,12 @@
 import attr
+from attr import attrib, attrs
 import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -17,9 +18,9 @@ def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
                            ('TfFe2', np.float)])
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class TransferrinState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     k_m_tf_tafc: float
     threshold: float
     p1: float
