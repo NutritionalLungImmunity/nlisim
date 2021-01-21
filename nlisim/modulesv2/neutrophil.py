@@ -32,11 +32,6 @@ class NeutrophilCellData(PhagocyteCellData):
         ('tnfa', np.bool),
         ('engaged', np.bool),
         ('status_iteration', np.uint),
-        # XXX
-        ('fpn', np.bool),
-        ('fpn_iteration', np.int64),
-        ('tf', np.bool),  # TODO: descriptive name, transferrin?
-
         ]
 
     dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
@@ -58,13 +53,6 @@ class NeutrophilCellData(PhagocyteCellData):
                                            False),
             'status_iteration': kwargs.get('status_iteration',
                                            0),
-            # XXX
-            'fpn'             : kwargs.get('fpn',
-                                           True),
-            'fpn_iteration'   : kwargs.get('fpn_iteration',
-                                           0),
-            'tf'              : kwargs.get('tf',
-                                           False),
             }
 
         # ensure that these come in the correct order
