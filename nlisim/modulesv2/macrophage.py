@@ -1,23 +1,19 @@
 import attr
+from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
 from nlisim.modulesv2.afumigatus import AfumigatusState
 from nlisim.modulesv2.afumigatus import FungalState
-from nlisim.modulesv2.phagocyte import PhagocyteModel, PhagocyteState, PhagocyteStatus
+from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
-MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
-
-class MacrophageCellData(CellData):
+class MacrophageCellData(PhagocyteCellData):
     MACROPHAGE_FIELDS = [
-        ('phagosome', (np.int32, MAX_CONIDIA)),
-        ('has_conidia', np.bool),
         ('status', np.uint8),
         ('state', np.uint8),
         ('fpn', np.bool),
@@ -30,15 +26,13 @@ class MacrophageCellData(CellData):
         ('status_iteration', np.uint)
         ]
 
-    dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
+    # TODO: this implementation of inheritance is not so slick, redo with super?
+    dtype = np.dtype(CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS,
+                     align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'phagosome'       : kwargs.get('phagosome',
-                                           -1 * np.ones(MAX_CONIDIA, dtype=np.int)),
-            'has_conidia'     : kwargs.get('has_conidia',
-                                           False),
             'status'          : kwargs.get('status',
                                            PhagocyteStatus.RESTING),
             'state'           : kwargs.get('state',
@@ -62,11 +56,11 @@ class MacrophageCellData(CellData):
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + \
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + \
                [initializer[key] for key, tyype in MacrophageCellData.MACROPHAGE_FIELDS]
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
+@attrs(kw_only=True, frozen=True, repr=False)
 class MacrophageCellList(CellList):
     CellDataClass = MacrophageCellData
 
@@ -76,9 +70,8 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 
 
 @attr.s(kw_only=True)
-class MacrophageState(ModuleState):
+class MacrophageState(PhagocyteState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    max_conidia: int
     move_rate_rest: float
     move_rate_act: float
     iter_to_rest: int

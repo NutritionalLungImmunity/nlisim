@@ -9,7 +9,8 @@ from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Voxel
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
+from nlisim.modulesv2.macrophage import PhagoCyteCellData, MacrophageState, PhagocyteStatus
+from nlisim.modulesv2.phagocyte import internalize_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
 
@@ -227,7 +228,7 @@ class Afumigatus(ModuleModel):
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
-                macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
+                macrophage_cell: PhagoCyteCellData = macrophage.cells[macrophage_index]
 
                 # Only healthy macrophages can internalize
                 if macrophage_cell['status'] in {PhagocyteStatus.APOPTOTIC, PhagocyteStatus.NECROTIC,
@@ -274,8 +275,7 @@ class Afumigatus(ModuleModel):
 def fungus_macrophage_interaction(afumigatus: AfumigatusState,
                                   afumigatus_cell: AfumigatusCellData,
                                   macrophage: MacrophageState,
-                                  macrophage_cell: MacrophageCellData):
-
+                                  macrophage_cell: PhagoCyteCellData):
     probability_of_interaction = afumigatus.pr_ma_hyphae \
         if afumigatus_cell.form == FungalForm.HYPHAE \
         else afumigatus.pr_ma_phag
@@ -371,54 +371,54 @@ def process_boolean_network(state: State,
     bn_iteration += 1
     bn_iteration %= steps_to_eval
 
-    boolean_network_active: np.ndarray = boolean_network[bn_iteration == 0, :]
-    temp: np.ndarray = np.zeros(shape=boolean_network_active.shape, dtype=np.bool)
+    active_bool_net: np.ndarray = boolean_network[bn_iteration == 0, :]
+    temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=np.bool)
 
     # TODO: verify array shape
-    temp[:, NetworkSpecies.hapX] = ~boolean_network_active[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.sreA] = ~boolean_network_active[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.HapX] = boolean_network_active[:, NetworkSpecies.hapX] & \
-                                   ~boolean_network_active[:, NetworkSpecies.LIP]
-    temp[:, NetworkSpecies.SreA] = boolean_network_active[:, NetworkSpecies.sreA] & \
-                                   boolean_network_active[:, NetworkSpecies.LIP]
-    temp[:, NetworkSpecies.RIA] = ~boolean_network_active[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.EstB] = ~boolean_network_active[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.MirB] = boolean_network_active[:, NetworkSpecies.HapX] & \
-                                   ~boolean_network_active[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.SidA] = boolean_network_active[:, NetworkSpecies.HapX] & \
-                                   ~boolean_network_active[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.TAFC] = boolean_network_active[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.ICP] = ~boolean_network_active[:, NetworkSpecies.HapX] & \
-                                  (boolean_network_active[:, NetworkSpecies.VAC] |
-                                   boolean_network_active[:, NetworkSpecies.FC1fe])
-    temp[:, NetworkSpecies.LIP] = (boolean_network_active[:, NetworkSpecies.Fe] &
-                                   boolean_network_active[:, NetworkSpecies.RIA]) | \
+    temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.sreA] = ~active_bool_net[:, NetworkSpecies.HapX]
+    temp[:, NetworkSpecies.HapX] = active_bool_net[:, NetworkSpecies.hapX] & \
+                                   ~active_bool_net[:, NetworkSpecies.LIP]
+    temp[:, NetworkSpecies.SreA] = active_bool_net[:, NetworkSpecies.sreA] & \
+                                   active_bool_net[:, NetworkSpecies.LIP]
+    temp[:, NetworkSpecies.RIA] = ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.EstB] = ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.MirB] = active_bool_net[:, NetworkSpecies.HapX] & \
+                                   ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.SidA] = active_bool_net[:, NetworkSpecies.HapX] & \
+                                   ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.TAFC] = active_bool_net[:, NetworkSpecies.SidA]
+    temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] & \
+                                  (active_bool_net[:, NetworkSpecies.VAC] |
+                                   active_bool_net[:, NetworkSpecies.FC1fe])
+    temp[:, NetworkSpecies.LIP] = (active_bool_net[:, NetworkSpecies.Fe] &
+                                   active_bool_net[:, NetworkSpecies.RIA]) | \
                                   lip_activation(state=state,
                                                  shape=temp.shape)
-    temp[:, NetworkSpecies.CccA] = ~boolean_network_active[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.FC0fe] = boolean_network_active[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.FC1fe] = boolean_network_active[:, NetworkSpecies.LIP] & \
-                                    boolean_network_active[:, NetworkSpecies.FC0fe]
-    temp[:, NetworkSpecies.VAC] = boolean_network_active[:, NetworkSpecies.LIP] & \
-                                  boolean_network_active[:, NetworkSpecies.CccA]
-    temp[:, NetworkSpecies.ROS] = (boolean_network_active[:, NetworkSpecies.O] &
-                                   ~(boolean_network_active[:, NetworkSpecies.SOD2_3] &
-                                     boolean_network_active[:, NetworkSpecies.ThP] &
-                                     boolean_network_active[:, NetworkSpecies.Cat1_2])) | \
-                                  (boolean_network_active[:, NetworkSpecies.ROS] &
-                                   ~(boolean_network_active[:, NetworkSpecies.SOD2_3] &
-                                     (boolean_network_active[:, NetworkSpecies.ThP] |
-                                      boolean_network_active[:, NetworkSpecies.Cat1_2])))
-    temp[:, NetworkSpecies.Yap1] = boolean_network_active[:, NetworkSpecies.ROS]
-    temp[:, NetworkSpecies.SOD2_3] = boolean_network_active[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Cat1_2] = boolean_network_active[:, NetworkSpecies.Yap1] & \
-                                     ~boolean_network_active[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.ThP] = boolean_network_active[:, NetworkSpecies.Yap1]
+    temp[:, NetworkSpecies.CccA] = ~active_bool_net[:, NetworkSpecies.HapX]
+    temp[:, NetworkSpecies.FC0fe] = active_bool_net[:, NetworkSpecies.SidA]
+    temp[:, NetworkSpecies.FC1fe] = active_bool_net[:, NetworkSpecies.LIP] & \
+                                    active_bool_net[:, NetworkSpecies.FC0fe]
+    temp[:, NetworkSpecies.VAC] = active_bool_net[:, NetworkSpecies.LIP] & \
+                                  active_bool_net[:, NetworkSpecies.CccA]
+    temp[:, NetworkSpecies.ROS] = (active_bool_net[:, NetworkSpecies.O] &
+                                   ~(active_bool_net[:, NetworkSpecies.SOD2_3] &
+                                     active_bool_net[:, NetworkSpecies.ThP] &
+                                     active_bool_net[:, NetworkSpecies.Cat1_2])) | \
+                                  (active_bool_net[:, NetworkSpecies.ROS] &
+                                   ~(active_bool_net[:, NetworkSpecies.SOD2_3] &
+                                     (active_bool_net[:, NetworkSpecies.ThP] |
+                                      active_bool_net[:, NetworkSpecies.Cat1_2])))
+    temp[:, NetworkSpecies.Yap1] = active_bool_net[:, NetworkSpecies.ROS]
+    temp[:, NetworkSpecies.SOD2_3] = active_bool_net[:, NetworkSpecies.Yap1]
+    temp[:, NetworkSpecies.Cat1_2] = active_bool_net[:, NetworkSpecies.Yap1] & \
+                                     ~active_bool_net[:, NetworkSpecies.HapX]
+    temp[:, NetworkSpecies.ThP] = active_bool_net[:, NetworkSpecies.Yap1]
     temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
     temp[:, NetworkSpecies.O] = 0
 
     # noinspection PyUnusedLocal
-    boolean_network_active = temp
+    active_bool_net = temp
 
 
 def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
@@ -460,54 +460,6 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
     iron_per_cell: float = total_iron / len(tree_cells)
     for tree_cell_index in tree_cells:
         afumigatus.cells[tree_cell_index]['iron'] = iron_per_cell
-
-
-def internalize_aspergillus(macrophage_cell: MacrophageCellData,
-                            aspergillus_cell: AfumigatusCellData,
-                            macrophage: MacrophageState,
-                            phagocytize: bool = False):
-    """
-    Possibly have a macrophage phagocytize a fungal cell
-
-    Parameters
-    ----------
-    macrophage_cell : MacrophageCellData
-    aspergillus_cell : AfumigatusCellData
-    phagocytize : bool
-
-    Returns
-    -------
-
-    """
-
-    # We cannot internalize an already internalized fungal cell
-    if aspergillus_cell['state'] != FungalState.FREE:
-        return
-
-    # deal with conidia
-    if (aspergillus_cell['status'] in {FungalForm.RESTING_CONIDIA,
-                                       FungalForm.SWELLING_CONIDIA,
-                                       FungalForm.STERILE_CONIDIA} or phagocytize):
-        if (macrophage_cell['status'] not in {PhagocyteStatus.NECROTIC,
-                                              PhagocyteStatus.APOPTOTIC,
-                                              PhagocyteStatus.DEAD}):
-            # check to see if we have room before we add in another cell to the phagosome
-            num_cells_in_phagosome = np.sum(macrophage_cell['phagosome'] >= 0)
-            if num_cells_in_phagosome < macrophage.max_conidia:
-                macrophage_cell['has_conidia'] = True
-                aspergillus_cell['state'] = FungalState.INTERNALIZING
-                # place the fungal cell in the phagosome,
-                # sorting makes sure that an 'empty' i.e. -1 slot is first
-                macrophage_cell['phagosome'].sort()
-                macrophage_cell['phagosome'][0] = aspergillus_cell['id']
-
-    # TODO: what is going on here? is the if too loose?
-    if aspergillus_cell['status'] != FungalForm.RESTING_CONIDIA:
-        macrophage_cell['state'] = PhagocyteStatus.INTERACTING
-        if macrophage_cell['status'] != PhagocyteStatus.ACTIVE:
-            macrophage_cell['status'] = PhagocyteStatus.ACTIVATING
-        else:
-            macrophage_cell['status_iteration'] = 0
 
 
 def lip_activation(state: State, shape) -> np.ndarray:
