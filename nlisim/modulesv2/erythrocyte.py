@@ -1,5 +1,5 @@
 import attr
-from attr import attrs
+from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
@@ -16,6 +16,7 @@ from nlisim.state import State
 from nlisim.util import activation_function
 
 
+# note: treating these a bit more like molecules than cells. hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape,
                     dtype=[('count', np.int),
@@ -25,7 +26,7 @@ def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
 
 @attrs(kw_only=True)
 class ErythrocyteState(ModuleState):
-    cells: np.ndarray = attr.ib(default=attr.Factory(cell_grid_factory, takes_self=True))
+    cells: np.ndarray = attrib(default=attr.Factory(cell_grid_factory, takes_self=True))
     kd_hemo: float
     max_erythrocyte_voxel: int
     hemoglobin_concentration: float
@@ -95,9 +96,9 @@ class ErythrocyteModel(PhagocyteModel):
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
                 # TODO: what's the 4 all about?
-                macrophage_cell['total_iron'] += 4 * \
-                                                 erythrocyte.hemoglobin_concentration * \
-                                                 erythrocytes_to_hemorrhage[z, y, x] / num_local_macrophages
+                macrophage_cell['iron_pool'] += 4 * \
+                                                erythrocyte.hemoglobin_concentration * \
+                                                erythrocytes_to_hemorrhage[z, y, x] / num_local_macrophages
         erythrocyte.cells['count'] -= erythrocytes_to_hemorrhage
 
         # interact with fungus

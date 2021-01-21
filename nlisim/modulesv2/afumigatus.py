@@ -220,9 +220,10 @@ class Afumigatus(ModuleModel):
             # TODO: this should never be reached?! Make sure that we release iron when we kill the fungal cell
             #  release cell's iron pool back to voxel
             if afumigatus_cell['status'] in {FungalForm.DYING, FungalForm.DEAD}:
-                # TODO: zyx, or xyz
+                # TODO: verify zyx (vs xyz)
                 iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
                 afumigatus_cell['iron_pool'] = 0.0
+                afumigatus_cell['dead'] = True
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):

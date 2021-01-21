@@ -26,7 +26,7 @@ class MacrophageCellData(CellData):
         ('max_move_step', np.float),  # TODO: double check, might be int
         ('tnfa', np.bool),
         ('engaged', np.bool),
-        ('total_iron', np.float),
+        ('iron_pool', np.float),
         ('status_iteration', np.uint)
         ]
 
@@ -50,12 +50,12 @@ class MacrophageCellData(CellData):
             'tf'              : kwargs.get('tf',
                                            False),
             'max_move_step'   : kwargs.get('max_move_step',
-                                           1.0),  # TODO: resonable default?
+                                           1.0),  # TODO: reasonable default?
             'tnfa'            : kwargs.get('tnfa',
                                            False),
             'engaged'         : kwargs.get('engaged',
                                            False),
-            'total_iron'      : kwargs.get('total_iron',
+            'iron_pool'       : kwargs.get('iron_pool',
                                            0.0),
             'status_iteration': kwargs.get('status_iteration',
                                            0)
@@ -121,6 +121,7 @@ class MacrophageModel(PhagocyteModel):
             num_cells_in_phagosome = np.sum(macrophage_cell['phagosome'] >= 0)
 
             if macrophage_cell['status'] == PhagocyteStatus.NECROTIC:
+                # TODO: what about APOPTOTIC?
                 for fungal_cell_index in macrophage_cell['phagosome']:
                     if fungal_cell_index == -1:
                         continue
@@ -183,6 +184,7 @@ class MacrophageModel(PhagocyteModel):
                     rg() < macrophage.ma_half_life and \
                     len(macrophage.cells.alive()) > macrophage.min_ma:
                 macrophage_cell['status'] = PhagocyteStatus.DEAD
+                macrophage_cell['dead'] = True
 
             if not macrophage_cell['fpn']:
                 if macrophage_cell['fpn_iteration'] >= macrophage.iter_to_change_state:

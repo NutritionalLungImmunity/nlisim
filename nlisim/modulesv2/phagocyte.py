@@ -1,11 +1,9 @@
 from enum import auto, IntEnum, unique
 
 from nlisim.module import ModuleModel
-from nlisim.modulesv2.afumigatus import FungalForm
 
 
 class PhagocyteModel(ModuleModel):
-
     pass
 
 
