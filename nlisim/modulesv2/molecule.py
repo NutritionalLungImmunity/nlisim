@@ -1,11 +1,17 @@
 import math
 
 import numpy as np
+import scipy.ndimage
 
 from nlisim.module import ModuleModel
 
 
 class MoleculeModel(ModuleModel):
+
+    @staticmethod
+    def diffuse(grid: np.ndarray, diffusion_constant: float):
+        # TODO: verify
+        grid += diffusion_constant * scipy.ndimage.laplace(grid)
 
     @staticmethod
     def michaelian_kinetics(*,
@@ -15,8 +21,8 @@ class MoleculeModel(ModuleModel):
                             h: float,
                             k_cat: float = 1.0,
                             voxel_volume: float) -> np.ndarray:
-        substrate = substrate / voxel_volume  # transform into M
-        enzyme = enzyme / voxel_volume
+        substrate /= voxel_volume  # transform into M
+        enzyme /= voxel_volume
 
         # enzyme = np.minimum(substrate1, substrate2)
         # substrate = np.maximum(substrate1, substrate2)
@@ -35,12 +41,11 @@ class MoleculeModel(ModuleModel):
         y = ((x_mol - x_system_mol) * math.exp(-turnover_rate * rel_cyt_bind_unit_t) + x_system_mol)
 
         with np.errstate(divide='ignore'):
-            retval = y / x_mol
+            result = y / x_mol
         # zero out problem divides
-        retval[x_mol == 0] = 0.0
-        # alternate method: np.nan_to_num(retval, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        result[x_mol == 0] = 0.0
 
         # enforce bounds
-        np.minimum(retval, 1.0, out=retval)
-        np.maximum(retval, 0.0, out=retval)
-        return retval
+        np.minimum(result, 1.0, out=result)
+        np.maximum(result, 0.0, out=result)
+        return result

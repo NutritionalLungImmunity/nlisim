@@ -1,15 +1,17 @@
 from enum import auto, IntEnum, unique
 from queue import SimpleQueue
+import random
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
-from nlisim.coordinates import Voxel
+from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.macrophage import PhagoCyteCellData, MacrophageState, PhagocyteStatus
+from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 from nlisim.modulesv2.phagocyte import internalize_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
@@ -51,7 +53,7 @@ class NetworkSpecies(IntEnum):
     Cat1_2 = auto()
     ThP = auto()
     Fe = auto()
-    O = auto()
+    Oxygen = auto()
 
 
 # TODO: naming
@@ -88,72 +90,72 @@ class AfumigatusCellData(CellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs) -> np.record:
         initializer = {
-            'iron_pool'           : kwargs.get('iron_pool',
+            'iron_pool':            kwargs.get('iron_pool',
                                                0),
-            'state'               : kwargs.get('state',
+            'state':                kwargs.get('state',
                                                FungalState.FREE),
-            'status'              : kwargs.get('status',
+            'status':               kwargs.get('status',
                                                FungalForm.RESTING_CONIDIA),
-            'is_root'             : kwargs.get('is_root',
+            'is_root':              kwargs.get('is_root',
                                                True),
-            'root'                : kwargs.get('root',
+            'root':                 kwargs.get('root',
                                                np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
-            'tip'                 : kwargs.get('tip',
+            'tip':                  kwargs.get('tip',
                                                np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
-            'vec'                 : kwargs.get('vec',  # dx, dy, dz
+            'vec':                  kwargs.get('vec',  # dx, dy, dz
                                                np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
-            'growable'            : kwargs.get('growable',
+            'growable':             kwargs.get('growable',
                                                True),
-            'branchable'          : kwargs.get('branchable',
+            'branchable':           kwargs.get('branchable',
                                                False),
             'activation_iteration': kwargs.get('activation_iteration',
                                                0),
-            'growth_iteration'    : kwargs.get('growth_iteration',
+            'growth_iteration':     kwargs.get('growth_iteration',
                                                0),
-            'boolean_network'     : kwargs.get('boolean_network',
+            'boolean_network':      kwargs.get('boolean_network',
                                                cls.initial_boolean_network()),
-            'bn_iteration'        : kwargs.get('bn_iteration',
+            'bn_iteration':         kwargs.get('bn_iteration',
                                                0),
-            'next_branch'         : kwargs.get('next_branch',
+            'next_branch':          kwargs.get('next_branch',
                                                -1),
-            'next_septa'          : kwargs.get('next_septa',
+            'next_septa':           kwargs.get('next_septa',
                                                -1),
-            'previous_septa'      : kwargs.get('previous_septa',
+            'previous_septa':       kwargs.get('previous_septa',
                                                -1),
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, tyype in AfumigatusCellData.AFUMIGATUS_FIELDS]
+        return CellData.create_cell_tuple(**kwargs) + [initializer[key] for key, tyype in
+                                                       AfumigatusCellData.AFUMIGATUS_FIELDS]
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        initAfumigatusBooleanSpecies = {NetworkSpecies.hapX  : True,
-                                        NetworkSpecies.sreA  : False,
-                                        NetworkSpecies.HapX  : True,
-                                        NetworkSpecies.SreA  : False,
-                                        NetworkSpecies.RIA   : True,
-                                        NetworkSpecies.EstB  : True,
-                                        NetworkSpecies.MirB  : True,
-                                        NetworkSpecies.SidA  : True,
-                                        NetworkSpecies.TAFC  : True,
-                                        NetworkSpecies.ICP   : False,
-                                        NetworkSpecies.LIP   : False,
-                                        NetworkSpecies.CccA  : False,
-                                        NetworkSpecies.FC0fe : True,
-                                        NetworkSpecies.FC1fe : False,
-                                        NetworkSpecies.VAC   : False,
-                                        NetworkSpecies.ROS   : False,
-                                        NetworkSpecies.Yap1  : False,
-                                        NetworkSpecies.SOD2_3: False,
-                                        NetworkSpecies.Cat1_2: False,
-                                        NetworkSpecies.ThP   : False,
-                                        NetworkSpecies.Fe    : False,
-                                        NetworkSpecies.O     : False,
-                                        # NetworkSpecies.TAFCBI:False TODO: I'm assuming ?
-                                        # There was an extra in the source material
-                                        }
-        return np.asarray([initAfumigatusBooleanSpecies[species]
+        init_afumigatus_boolean_species = {NetworkSpecies.hapX:   True,
+                                           NetworkSpecies.sreA:   False,
+                                           NetworkSpecies.HapX:   True,
+                                           NetworkSpecies.SreA:   False,
+                                           NetworkSpecies.RIA:    True,
+                                           NetworkSpecies.EstB:   True,
+                                           NetworkSpecies.MirB:   True,
+                                           NetworkSpecies.SidA:   True,
+                                           NetworkSpecies.TAFC:   True,
+                                           NetworkSpecies.ICP:    False,
+                                           NetworkSpecies.LIP:    False,
+                                           NetworkSpecies.CccA:   False,
+                                           NetworkSpecies.FC0fe:  True,
+                                           NetworkSpecies.FC1fe:  False,
+                                           NetworkSpecies.VAC:    False,
+                                           NetworkSpecies.ROS:    False,
+                                           NetworkSpecies.Yap1:   False,
+                                           NetworkSpecies.SOD2_3: False,
+                                           NetworkSpecies.Cat1_2: False,
+                                           NetworkSpecies.ThP:    False,
+                                           NetworkSpecies.Fe:     False,
+                                           NetworkSpecies.Oxygen: False,
+                                           # NetworkSpecies.TAFCBI:False TODO: I'm assuming ?
+                                           # There was an extra in the source material
+                                           }
+        return np.asarray([init_afumigatus_boolean_species[species]
                            for species in NetworkSpecies], dtype=np.bool)
 
 
@@ -178,6 +180,8 @@ class AfumigatusState(ModuleState):
     iter_to_swelling: float
     iter_to_germinate: float
     pr_aspergillus_change: float
+    init_iron: float
+    conidia_vol: float
 
 
 class Afumigatus(ModuleModel):
@@ -186,18 +190,37 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
+        geometry: GeometryState = state.geometry
 
         afumigatus.pr_ma_hyphae = self.config.getfloat('pr_ma_hyphae')
         afumigatus.pr_ma_phag = self.config.getfloat('pr_ma_phag')
 
         afumigatus.pr_branch = self.config.getfloat('pr_branch')
         afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')
+
+        afumigatus.conidia_vol = self.config.getfloat('conidia_vol')
         afumigatus.hyphae_volume = self.config.getint('hyphae_volume')
         afumigatus.kd_lip = self.config.getint('kd_lip')
 
         afumigatus.iter_to_swelling = self.config.getint('iter_to_swelling')
         afumigatus.pr_aspergillus_change = self.config.getfloat('pr_aspergillus_change')
         afumigatus.iter_to_germinate = self.config.getint('iter_to_germinate')
+
+        # computed values
+        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
+
+        # place cells for initial infection
+        # TODO: 'smart' placement should be checked
+        # current iniitial positions: any air voxel which is in a Moore neighborhood of an epithelial voxel
+        # https://en.wikipedia.org/wiki/Moore_neighborhood
+        epithelium_mask = geometry.lung_tissue == TissueType.EPITHELIUM
+        epithelium_mask |= np.roll(epithelium_mask, 1, axis=0) | np.roll(epithelium_mask, -1, axis=0)
+        epithelium_mask |= np.roll(epithelium_mask, 1, axis=1) | np.roll(epithelium_mask, -1, axis=1)
+        epithelium_mask |= np.roll(epithelium_mask, 1, axis=2) | np.roll(epithelium_mask, -1, axis=2)
+        locations = list(zip(*np.where(np.logical_and(epithelium_mask, geometry.lung_tissue == TissueType.AIR))))
+        for z, y, x in random.sample(locations, self.config.getint('init_infection_num')):
+            afumigatus.cells.append(AfumigatusCellData.create_cell(point=Point(x=x, y=y, z=z),
+                                                                   iron_pool=afumigatus.init_iron))
 
         return state
 
@@ -228,7 +251,7 @@ class Afumigatus(ModuleModel):
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
-                macrophage_cell: PhagoCyteCellData = macrophage.cells[macrophage_index]
+                macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
 
                 # Only healthy macrophages can internalize
                 if macrophage_cell['status'] in {PhagocyteStatus.APOPTOTIC, PhagocyteStatus.NECROTIC,
@@ -275,9 +298,9 @@ class Afumigatus(ModuleModel):
 def fungus_macrophage_interaction(afumigatus: AfumigatusState,
                                   afumigatus_cell: AfumigatusCellData,
                                   macrophage: MacrophageState,
-                                  macrophage_cell: PhagoCyteCellData):
+                                  macrophage_cell: MacrophageCellData):
     probability_of_interaction = afumigatus.pr_ma_hyphae \
-        if afumigatus_cell.form == FungalForm.HYPHAE \
+        if afumigatus_cell['status'] == FungalForm.HYPHAE \
         else afumigatus.pr_ma_phag
 
     if rg.random() < probability_of_interaction:
@@ -377,31 +400,23 @@ def process_boolean_network(state: State,
     # TODO: verify array shape
     temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
     temp[:, NetworkSpecies.sreA] = ~active_bool_net[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.HapX] = active_bool_net[:, NetworkSpecies.hapX] & \
-                                   ~active_bool_net[:, NetworkSpecies.LIP]
-    temp[:, NetworkSpecies.SreA] = active_bool_net[:, NetworkSpecies.sreA] & \
-                                   active_bool_net[:, NetworkSpecies.LIP]
+    temp[:, NetworkSpecies.HapX] = active_bool_net[:, NetworkSpecies.hapX] & ~active_bool_net[:, NetworkSpecies.LIP]
+    temp[:, NetworkSpecies.SreA] = active_bool_net[:, NetworkSpecies.sreA] & active_bool_net[:, NetworkSpecies.LIP]
     temp[:, NetworkSpecies.RIA] = ~active_bool_net[:, NetworkSpecies.SreA]
     temp[:, NetworkSpecies.EstB] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.MirB] = active_bool_net[:, NetworkSpecies.HapX] & \
-                                   ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.SidA] = active_bool_net[:, NetworkSpecies.HapX] & \
-                                   ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.MirB] = active_bool_net[:, NetworkSpecies.HapX] & ~active_bool_net[:, NetworkSpecies.SreA]
+    temp[:, NetworkSpecies.SidA] = active_bool_net[:, NetworkSpecies.HapX] & ~active_bool_net[:, NetworkSpecies.SreA]
     temp[:, NetworkSpecies.TAFC] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] & \
-                                  (active_bool_net[:, NetworkSpecies.VAC] |
-                                   active_bool_net[:, NetworkSpecies.FC1fe])
-    temp[:, NetworkSpecies.LIP] = (active_bool_net[:, NetworkSpecies.Fe] &
-                                   active_bool_net[:, NetworkSpecies.RIA]) | \
+    temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] & (active_bool_net[:, NetworkSpecies.VAC] |
+                                                                              active_bool_net[:, NetworkSpecies.FC1fe])
+    temp[:, NetworkSpecies.LIP] = (active_bool_net[:, NetworkSpecies.Fe] & active_bool_net[:, NetworkSpecies.RIA]) | \
                                   lip_activation(state=state,
                                                  shape=temp.shape)
     temp[:, NetworkSpecies.CccA] = ~active_bool_net[:, NetworkSpecies.HapX]
     temp[:, NetworkSpecies.FC0fe] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.FC1fe] = active_bool_net[:, NetworkSpecies.LIP] & \
-                                    active_bool_net[:, NetworkSpecies.FC0fe]
-    temp[:, NetworkSpecies.VAC] = active_bool_net[:, NetworkSpecies.LIP] & \
-                                  active_bool_net[:, NetworkSpecies.CccA]
-    temp[:, NetworkSpecies.ROS] = (active_bool_net[:, NetworkSpecies.O] &
+    temp[:, NetworkSpecies.FC1fe] = active_bool_net[:, NetworkSpecies.LIP] & active_bool_net[:, NetworkSpecies.FC0fe]
+    temp[:, NetworkSpecies.VAC] = active_bool_net[:, NetworkSpecies.LIP] & active_bool_net[:, NetworkSpecies.CccA]
+    temp[:, NetworkSpecies.ROS] = (active_bool_net[:, NetworkSpecies.Oxygen] &
                                    ~(active_bool_net[:, NetworkSpecies.SOD2_3] &
                                      active_bool_net[:, NetworkSpecies.ThP] &
                                      active_bool_net[:, NetworkSpecies.Cat1_2])) | \
@@ -411,11 +426,10 @@ def process_boolean_network(state: State,
                                       active_bool_net[:, NetworkSpecies.Cat1_2])))
     temp[:, NetworkSpecies.Yap1] = active_bool_net[:, NetworkSpecies.ROS]
     temp[:, NetworkSpecies.SOD2_3] = active_bool_net[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Cat1_2] = active_bool_net[:, NetworkSpecies.Yap1] & \
-                                     ~active_bool_net[:, NetworkSpecies.HapX]
+    temp[:, NetworkSpecies.Cat1_2] = active_bool_net[:, NetworkSpecies.Yap1] & ~active_bool_net[:, NetworkSpecies.HapX]
     temp[:, NetworkSpecies.ThP] = active_bool_net[:, NetworkSpecies.Yap1]
     temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
-    temp[:, NetworkSpecies.O] = 0
+    temp[:, NetworkSpecies.Oxygen] = 0
 
     # noinspection PyUnusedLocal
     active_bool_net = temp

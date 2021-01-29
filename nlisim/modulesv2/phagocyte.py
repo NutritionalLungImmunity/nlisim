@@ -21,7 +21,7 @@ class PhagocyteCellData(CellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'phagosome'  : kwargs.get('phagosome',
+            'phagosome':   kwargs.get('phagosome',
                                       -1 * np.ones(MAX_CONIDIA, dtype=np.int)),
             'has_conidia': kwargs.get('has_conidia',
                                       False),
@@ -29,7 +29,7 @@ class PhagocyteCellData(CellData):
 
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, tyype in PhagocyteCellData.MACROPHAGE_FIELDS]
+               [initializer[key] for key, _ in PhagocyteCellData.PHAGOCYTE_FIELDS]
 
 
 @attrs(kw_only=True)
@@ -45,7 +45,7 @@ class PhagocyteModel(ModuleModel):
 @unique
 class PhagocyteState(IntEnum):
     FREE = 0
-    INTERACTING = auto() # TODO: is this dead code?
+    INTERACTING = auto()  # TODO: is this dead code?
 
 
 # TODO: name

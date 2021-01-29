@@ -1,11 +1,14 @@
+import random
+
 import attr
 from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusState
-from nlisim.modulesv2.afumigatus import FungalState
+from nlisim.modulesv2.afumigatus import AfumigatusState, FungalState
+from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
@@ -33,23 +36,23 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status'          : kwargs.get('status',
+            'status':           kwargs.get('status',
                                            PhagocyteStatus.RESTING),
-            'state'           : kwargs.get('state',
+            'state':            kwargs.get('state',
                                            PhagocyteState.FREE),
-            'fpn'             : kwargs.get('fpn',
+            'fpn':              kwargs.get('fpn',
                                            True),
-            'fpn_iteration'   : kwargs.get('fpn_iteration',
+            'fpn_iteration':    kwargs.get('fpn_iteration',
                                            0),
-            'tf'              : kwargs.get('tf',
+            'tf':               kwargs.get('tf',
                                            False),
-            'max_move_step'   : kwargs.get('max_move_step',
+            'max_move_step':    kwargs.get('max_move_step',
                                            1.0),  # TODO: reasonable default?
-            'tnfa'            : kwargs.get('tnfa',
+            'tnfa':             kwargs.get('tnfa',
                                            False),
-            'engaged'         : kwargs.get('engaged',
+            'engaged':          kwargs.get('engaged',
                                            False),
-            'iron_pool'       : kwargs.get('iron_pool',
+            'iron_pool':        kwargs.get('iron_pool',
                                            0.0),
             'status_iteration': kwargs.get('status_iteration',
                                            0)
@@ -81,6 +84,7 @@ class MacrophageState(PhagocyteState):
     ma_vol: float
     ma_half_life: float
     min_ma: int
+    init_num_macrophages: int
 
 
 class MacrophageModel(PhagocyteModel):
@@ -90,6 +94,7 @@ class MacrophageModel(PhagocyteModel):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
 
         macrophage.max_conidia = self.config.getint('max_conidia')
         macrophage.move_rate_act = self.config.getfloat('move_rate_act')
@@ -101,6 +106,18 @@ class MacrophageModel(PhagocyteModel):
         macrophage.ma_vol = self.config.getfloat('ma_vol')
         macrophage.ma_half_life = self.config.getfloat('ma_half_life')
         macrophage.min_ma = self.config.getint('min_ma')
+
+        macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')
+
+        # initialize cells, placing them randomly TODO: can we do anything more specific?
+        z_range = geometry.lung_tissue.shape[0]
+        y_range = geometry.lung_tissue.shape[1]
+        x_range = geometry.lung_tissue.shape[2]
+        for _ in range(macrophage.init_num_macrophages):
+            z = random.randint(0, z_range - 1)
+            y = random.randint(0, y_range - 1)
+            x = random.randint(0, x_range - 1)
+            macrophage.cells.append(MacrophageCellData.create_cell(point=Point(x=x, y=y, z=z)))
 
         return state
 

@@ -1,10 +1,12 @@
 import attr
+from attr import attrib, attrs
 import numpy as np
 
 from nlisim.module import ModuleState
+from nlisim.modulesv2.afumigatus import AfumigatusState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -12,9 +14,9 @@ def molecule_grid_factory(self: 'HemoglobinState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class HemoglobinState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     uptake_rate: float
     ma_heme_import_rate: float
 
@@ -42,12 +44,15 @@ class Hemoglobin(MoleculeModel):
         """Advance the state by a single time step."""
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
+        afumigatus: AfumigatusState = state.afumigatus
+
+        # interact with afumigatus
 
 
         # TODO: move to cell
         # elif itype is Afumigatus:
         #     if (
-        #             interactable.status == Afumigatus.HYPHAE or interactable.status == Afumigatus.GERM_TUBE):  # and interactable.boolean_network[Afumigatus.LIP] == 1:
+        #             interactable.status == Afumigatus.HYPHAE or interactable.status == Afumigatus.GERM_TUBE):
         #         v = Constants.HEMOGLOBIN_UPTAKE_RATE * self.values[0]
         #         self.decrease(v)
         #         interactable.inc_iron_pool(4 * v)

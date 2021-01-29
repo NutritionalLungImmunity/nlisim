@@ -3,11 +3,11 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
-from nlisim.coordinates import Voxel
+from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, FungalForm
 from nlisim.modulesv2.erythrocyte import ErythrocyteState
-from nlisim.modulesv2.geometry import GeometryState
+from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.hemoglobin import HemoglobinState
 from nlisim.modulesv2.hemolysin import HemolysinState
 from nlisim.modulesv2.il6 import IL6State
@@ -23,20 +23,11 @@ from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
-MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
-
-
 class PneumocyteCellData(PhagocyteCellData):
     PNEUMOCYTE_FIELDS = [
         ('status', np.uint8),
         ('iteration', np.uint),
         ('tnfa', np.bool),
-        # XXX
-        ('state', np.uint8),
-        ('iron_pool', np.float),
-        ('max_move_step', np.float),  # TODO: double check, might be int
-        ('engaged', np.bool),
-        ('status_iteration', np.uint),
         ]
 
     dtype = np.dtype(CellData.FIELDS + PNEUMOCYTE_FIELDS, align=True)  # type: ignore
@@ -44,28 +35,17 @@ class PneumocyteCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status'          : kwargs.get('status',
-                                           PhagocyteStatus.RESTING),
-            'iteration'       : kwargs.get('iteration',
-                                           0),
-            'tnfa'            : kwargs.get('tnfa',
-                                           False),
-            # XXX
-            'state'           : kwargs.get('state',
-                                           PhagocyteState.FREE),
-            'iron_pool'       : kwargs.get('iron_pool',
-                                           0.0),
-            'max_move_step'   : kwargs.get('max_move_step',
-                                           1.0),  # TODO: reasonable default?
-            'engaged'         : kwargs.get('engaged',
-                                           False),
-            'status_iteration': kwargs.get('status_iteration',
-                                           0),
+            'status':    kwargs.get('status',
+                                    PhagocyteStatus.RESTING),
+            'iteration': kwargs.get('iteration',
+                                    0),
+            'tnfa':      kwargs.get('tnfa',
+                                    False),
             }
 
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, tyype in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+               [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -94,6 +74,7 @@ class PneumocyteModel(PhagocyteModel):
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
         grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
         pneumocyte.iter_to_rest = self.config.getint('iter_to_rest')
@@ -102,6 +83,11 @@ class PneumocyteModel(PhagocyteModel):
         pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
         pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
         pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
+
+        # initialize cells, placing one per epithelial voxel
+        # TODO: Any changes due to ongoing conversation with Henrique
+        for z, y, x in zip(*np.where(geometry.lung_tissue == TissueType.EPITHELIUM)):
+            pneumocyte.cells.append(PneumocyteCellData.create_cell(point=Point(x=x, y=y, z=z)))
 
         return state
 

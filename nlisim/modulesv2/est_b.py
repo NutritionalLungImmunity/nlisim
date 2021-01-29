@@ -1,14 +1,15 @@
 import math
 
 import attr
+from attr import attrib, attrs
 import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.iron import IronState
+from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.tafc import TAFCState
-from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.state import State
 
 
@@ -16,10 +17,10 @@ def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class EstBState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    iron_buffer: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float
     half_life_multiplier: float
     k_m: float
@@ -87,5 +88,8 @@ class EstB(MoleculeModel):
                                         x_system_mol=estb.system_amount_per_voxel,
                                         turnover_rate=molecules.turnover_rate,
                                         rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+
+        # Diffusion of EstB
+        self.diffuse(estb.grid, molecules.diffusion_constant_timestep)
 
         return state

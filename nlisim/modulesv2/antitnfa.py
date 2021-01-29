@@ -75,4 +75,8 @@ class AntiTNFa(MoleculeModel):
                                               x_system_mol=anti_tnf_a.system_amount_per_voxel,
                                               turnover_rate=molecules.turnover_rate,
                                               rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+
+        # Diffusion of AntiTNFa
+        self.diffuse(anti_tnf_a.grid, molecules.diffusion_constant_timestep)
+
         return state
