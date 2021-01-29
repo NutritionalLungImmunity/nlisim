@@ -1,21 +1,25 @@
 import attr
+from attr import attrib, attrs
 import numpy as np
 
+from nlisim.coordinates import Voxel
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
+from nlisim.util import activation_function
 
 
 def molecule_grid_factory(self: 'HepcidinState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class HepcidinState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    hepcidin_qtty: float
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    kd_hep: float
 
 
 class Hepcidin(MoleculeModel):
@@ -30,7 +34,7 @@ class Hepcidin(MoleculeModel):
         voxel_volume = geometry.voxel_volume
 
         # config file values
-        # TODO: ? where did this come from hepcidin.hepcidin_qtty = self.config.getfloat('hepcidin_qtty')
+        hepcidin.kd_hep = self.config.getfloat('kd_hep')
 
         # computed values (none)
 
@@ -40,12 +44,21 @@ class Hepcidin(MoleculeModel):
         """Advance the state by a single time step."""
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        geometry: GeometryState = state.geometry
 
-        # TODO: move to cell
-        # elif itype is Afumigatus:
-        #     if interactable.status == Afumigatus.HYPHAE:
-        #         self.inc(Constants.HEPCIDIN_QTTY)
-        #     return True
+        # interaction with macrophages
+        activated_voxels = \
+            zip(*np.where(activation_function(x=hepcidin.grid,
+                                              kd=hepcidin.kd_hep,
+                                              h=state.simulation.time_step_size / 60,
+                                              volume=geometry.voxel_volume) >
+                          np.random.random(hepcidin.grid.shape)))
+        for z, y, x in activated_voxels:
+            for macrophage_cell_index in macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z)):
+                macrophage_cell = macrophage.cells[macrophage_cell_index]
+                macrophage_cell['fpn'] = False
+                macrophage_cell['fpn_iteration'] = 0
 
         # Degrading Hepcidin is done by the "liver"
 

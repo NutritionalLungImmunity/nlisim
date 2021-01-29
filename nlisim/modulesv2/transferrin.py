@@ -1,3 +1,5 @@
+import math
+
 import attr
 from attr import attrib, attrs
 import numpy as np
@@ -26,6 +28,17 @@ class TransferrinState(ModuleState):
     p1: float
     p2: float
     p3: float
+    threshold_log_hep: float
+    threshold_hep: float
+    default_apotf_rel_concentration: float
+    default_tffe_rel_concentration: float
+    default_tffe2_rel_concentration: float
+    default_tf_concentration: float
+    default_apotf_concentration: float
+    default_tffe_concentration: float
+    default_tffe2_concentration: float
+    tf_intercept: float
+    tf_slope: float
 
 
 class Transferrin(MoleculeModel):
@@ -40,14 +53,35 @@ class Transferrin(MoleculeModel):
         voxel_volume = geometry.voxel_volume
 
         # config file values
-        # TODO: discussion of sharing/duplication of config values? these are copies of lactoferrin values
         transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
         transferrin.p1 = self.config.getfloat('p1')
         transferrin.p2 = self.config.getfloat('p2')
         transferrin.p3 = self.config.getfloat('p3')
+        transferrin.threshold_log_hep = self.config.getfloat('threshold_log_hep')
+
+        transferrin.tf_intercept = self.config.getfloat('tf_intercept')
+        transferrin.tf_slope = self.config.getfloat('tf_slope')
+
+        transferrin.default_apotf_rel_concentration = self.config.getfloat('default_apotf_rel_concentration')
+        transferrin.default_tffe_rel_concentration = self.config.getfloat('default_tffe_rel_concentration')
+        transferrin.default_tffe2_rel_concentration = self.config.getfloat('default_tffe2_rel_concentration')
 
         # computed values
         transferrin.threshold = transferrin.k_m_tf_tafc * voxel_volume / 1.0e6
+        transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
+        transferrin.default_tf_concentration = (transferrin.tf_intercept +
+                                                transferrin.tf_slope * transferrin.threshold_log_hep) * voxel_volume
+        transferrin.default_apotf_concentration = transferrin.default_apotf_rel_concentration \
+                                                  * transferrin.default_tf_concentration
+        transferrin.default_tffe_concentration = transferrin.default_tffe_rel_concentration \
+                                                 * transferrin.default_tf_concentration
+        transferrin.default_tffe2_concentration = transferrin.default_tffe2_rel_concentration \
+                                                  * transferrin.default_tf_concentration
+
+        # initialize the molecular field
+        transferrin.grid['Tf'] = transferrin.default_apotf_concentration
+        transferrin.grid['TfFe'] = transferrin.default_tffe_concentration
+        transferrin.grid['TfFe2'] = transferrin.default_tffe2_concentration
 
         return state
 

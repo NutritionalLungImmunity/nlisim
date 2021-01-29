@@ -1,5 +1,6 @@
 import attr
 import numpy as np
+from attr import attrib, attrs
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
@@ -12,9 +13,9 @@ def molecule_grid_factory(self: 'HemolysinState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class HemolysinState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     hemolysin_qtty: float
 
 

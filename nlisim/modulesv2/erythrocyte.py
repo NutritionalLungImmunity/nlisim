@@ -6,7 +6,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.afumigatus import AfumigatusState, FungalForm
-from nlisim.modulesv2.geometry import GeometryState
+from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.hemoglobin import HemoglobinState
 from nlisim.modulesv2.hemolysin import HemolysinState
 from nlisim.modulesv2.macrophage import MacrophageState
@@ -39,12 +39,16 @@ class ErythrocyteModel(PhagocyteModel):
 
     def initialize(self, state: State):
         erythrocyte: ErythrocyteState = state.erythrocyte
-        grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
         erythrocyte.max_erythrocyte_voxel = self.config.getint('max_erythrocyte_voxel')
         erythrocyte.hemoglobin_concentration = self.config.getfloat('hemoglobin_concentration')
         erythrocyte.pr_ma_phag_eryt = self.config.getfloat('pr_ma_phag_eryt')
+
+        # initialize cells
+        # TODO: discuss
+        erythrocyte.cells[geometry.lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
 
         return state
 
@@ -84,21 +88,23 @@ class ErythrocyteModel(PhagocyteModel):
         erythrocyte.cells['count'] -= num
 
         # interact with Macrophage
-        erythrocytes_to_hemorrhage = erythrocyte.cells['hemorrhage'] * \
-                                     np.random.poisson(erythrocyte.pr_ma_phag_eryt * erythrocyte.cells['count'],
-                                                       shape)
+        erythrocytes_to_hemorrhage = \
+            erythrocyte.cells['hemorrhage'] * \
+            np.random.poisson(erythrocyte.pr_ma_phag_eryt * erythrocyte.cells['count'],
+                              shape)
         # TODO: python for loop, possible performance issue
         zs, ys, xs = np.where(erythrocytes_to_hemorrhage > 0)
         for z, y, x in zip(zs, ys, xs):
             # TODO: make sure that these macrophages are alive!
-            local_macrophages = erythrocyte.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z))
+            local_macrophages = macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z))
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
                 # TODO: what's the 4 all about?
-                macrophage_cell['iron_pool'] += 4 * \
-                                                erythrocyte.hemoglobin_concentration * \
-                                                erythrocytes_to_hemorrhage[z, y, x] / num_local_macrophages
+                macrophage_cell['iron_pool'] += \
+                    4 * \
+                    erythrocyte.hemoglobin_concentration * \
+                    erythrocytes_to_hemorrhage[z, y, x] / num_local_macrophages
         erythrocyte.cells['count'] -= erythrocytes_to_hemorrhage
 
         # interact with fungus

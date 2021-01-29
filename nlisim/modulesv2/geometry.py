@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 from pathlib import Path
 
 import attr
@@ -11,13 +11,13 @@ from nlisim.validation import ValidationError
 
 
 # I am not quite sure if we should put the definition of the lung tissue types here
-class TissueTypes(Enum):
+class TissueType(IntEnum):
     AIR = 0
     BLOOD = 1
     OTHER = 2
     EPITHELIUM = 3
-    SURFACTANT = 4
-    PORE = 5
+    SURFACTANT = 4  # unused 1/28/2021
+    PORE = 5  # unused 1/28/2021
 
     @classmethod
     def validate(cls, value: np.ndarray):
@@ -27,13 +27,13 @@ class TissueTypes(Enum):
 
 @attr.s(kw_only=True, repr=False)
 class GeometryState(ModuleState):
-    lung_tissue = grid_variable(np.dtype('int'))
+    lung_tissue: np.ndarray = grid_variable(np.dtype('int'))
     voxel_volume: float
     time_step_size: float
 
     @lung_tissue.validator
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -> None:
-        if not TissueTypes.validate(value):
+        if not TissueType.validate(value):
             raise ValidationError('input illegal')
 
     def __repr__(self):

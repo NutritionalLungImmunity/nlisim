@@ -12,6 +12,7 @@ class MoleculesState(ModuleState):
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
     turnover_rate: float
+    diffusion_constant_timestep: float
 
 
 class Molecules(ModuleModel):
@@ -29,6 +30,9 @@ class Molecules(ModuleModel):
         # TODO: original comments as below. Is the param 0.2? i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
         molecules.turnover_rate = 1 - math.log(1.2) / int(30 / state.simulation.time_step_size)
+        # TODO: is this a 2 hour constant? i.e. 4*30 min
+        molecules.diffusion_constant_timestep = self.config.getfloat('diffusion_constant') * \
+                                                state.simulation.time_step_size / (4 * 30)
 
         return state
 
