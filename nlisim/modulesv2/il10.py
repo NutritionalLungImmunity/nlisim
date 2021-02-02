@@ -3,11 +3,17 @@ import math
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus
+from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'IL10State') -> np.ndarray:
@@ -50,23 +56,34 @@ class IL10(MoleculeModel):
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
         il10: IL10State = state.il10
+        macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
+        geometry: GeometryState = state.geometry
+        grid: RectangularGrid = state.grid
 
-        # TODO: move to cell
-        # elif itype is Macrophage:  # or type(interactable) is Neutrophil:
-        #     if interactable.status == Phagocyte.ACTIVE and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.MA_IL10_QTTY, 0)
-        #     if interactable.status != Phagocyte.DEAD and interactable.status != Phagocyte.APOPTOTIC and interactable.status != Phagocyte.NECROTIC:
-        #         if Util.activation_function(self.get(0), Constants.Kd_IL10, Constants.STD_UNIT_T) > random():
-        #             interactable.status = Phagocyte.INACTIVATING if interactable.status != Phagocyte.INACTIVE else Phagocyte.INACTIVE
-        #             interactable.interation = 0
-        #     return True
-        
+        # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
+        for macrophage_cell in macrophage.cells:
+            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+
+            if macrophage_cell['status'] in PhagocyteStatus.ACTIVE:
+                il10.grid[tuple(macrophage_cell_voxel)] += il10.macrophage_secretion_rate_unit_t
+
+            if macrophage_cell['status'] not in {PhagocyteStatus.DEAD,
+                                                 PhagocyteStatus.APOPTOTIC,
+                                                 PhagocyteStatus.NECROTIC}:
+                if activation_function(x=il10.grid[tuple(macrophage_cell_voxel)],
+                                       kd=il10.k_d,
+                                       h=state.simulation.time_step_size / 60,
+                                       volume=geometry.voxel_volume) < rg():
+                    if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
+                        macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
+                    macrophage_cell['status_iteration'] = 0  # TODO: ask about this, why is it reset each time?
+
         # Degrade IL10
         il10.grid *= il10.half_life_multiplier
-        il10.grid *= self.turnover_rate(x_mol=np.ones(shape=il10.grid.shape, dtype=np.float),
-                                        x_system_mol=0.0,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        il10.grid *= turnover_rate(x_mol=np.ones(shape=il10.grid.shape, dtype=np.float64),
+                                   x_system_mol=0.0,
+                                   turnover_rate=molecules.turnover_rate,
+                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

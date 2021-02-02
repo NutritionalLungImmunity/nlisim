@@ -69,12 +69,12 @@ class AfumigatusCellData(CellData):
         ('iron_pool', np.float64),
         ('state', np.uint8),
         ('status', np.uint8),
-        ('is_root', np.bool),
+        ('is_root', bool),
         ('root', np.float64, 3),
         ('tip', np.float64, 3),
         ('vec', np.float64, 3),
-        ('growable', np.bool),
-        ('branchable', np.bool),
+        ('growable', bool),
+        ('branchable', bool),
         ('activation_iteration', np.int64),
         ('growth_iteration', np.int64),
         ('boolean_network', 'b1', len(NetworkSpecies)),
@@ -99,11 +99,11 @@ class AfumigatusCellData(CellData):
             'is_root':              kwargs.get('is_root',
                                                True),
             'root':                 kwargs.get('root',
-                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
+                                               np.zeros(3, dtype=np.float64)),
             'tip':                  kwargs.get('tip',
-                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
+                                               np.zeros(3, dtype=np.float64)),
             'vec':                  kwargs.get('vec',  # dx, dy, dz
-                                               np.ndarray([0.0, 0.0, 0.0], dtype=np.float64)),
+                                               np.zeros(3, dtype=np.float64)),
             'growable':             kwargs.get('growable',
                                                True),
             'branchable':           kwargs.get('branchable',
@@ -125,7 +125,7 @@ class AfumigatusCellData(CellData):
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + [initializer[key] for key, tyype in
+        return CellData.create_cell_tuple(**kwargs) + [initializer[key] for key, _ in
                                                        AfumigatusCellData.AFUMIGATUS_FIELDS]
 
     @classmethod
@@ -152,11 +152,9 @@ class AfumigatusCellData(CellData):
                                            NetworkSpecies.ThP:    False,
                                            NetworkSpecies.Fe:     False,
                                            NetworkSpecies.Oxygen: False,
-                                           # NetworkSpecies.TAFCBI:False TODO: I'm assuming ?
-                                           # There was an extra in the source material
                                            }
         return np.asarray([init_afumigatus_boolean_species[species]
-                           for species in NetworkSpecies], dtype=np.bool)
+                           for species in NetworkSpecies], dtype=bool)
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -211,7 +209,7 @@ class Afumigatus(ModuleModel):
 
         # place cells for initial infection
         # TODO: 'smart' placement should be checked
-        # current iniitial positions: any air voxel which is in a Moore neighborhood of an epithelial voxel
+        # current initial positions: any air voxel which is in a Moore neighborhood of an epithelial voxel
         # https://en.wikipedia.org/wiki/Moore_neighborhood
         epithelium_mask = geometry.lung_tissue == TissueType.EPITHELIUM
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=0) | np.roll(epithelium_mask, -1, axis=0)
@@ -229,7 +227,6 @@ class Afumigatus(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         iron: IronState = state.iron
         grid = state.grid
-        tissue = state.geometry.lung_tissue
 
         # update live cells
         for afumigatus_index in afumigatus.cells.alive():
@@ -278,7 +275,8 @@ class Afumigatus(ModuleModel):
     #                                              x_tip=self.x_tip + self.dx, y_tip=self.y_tip + self.dy,
     #                                              z_tip=self.z_tip + self.dz,
     #                                              dx=self.dx, dy=self.dy, dz=self.dz, growth_iteration=0,
-    #                                              iron_pool=0, status=Afumigatus.HYPHAE, state=self.state, is_root=False)
+    #                                              iron_pool=0, status=Afumigatus.HYPHAE, state=self.state,
+    #                                              is_root=False)
     #                 self.next_septa.previous_septa = self
     #                 self.next_septa.iron_pool = self.iron_pool
     #                 septa = self.next_septa
@@ -395,7 +393,7 @@ def process_boolean_network(state: State,
     bn_iteration %= steps_to_eval
 
     active_bool_net: np.ndarray = boolean_network[bn_iteration == 0, :]
-    temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=np.bool)
+    temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=bool)
 
     # TODO: verify array shape
     temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
@@ -409,9 +407,10 @@ def process_boolean_network(state: State,
     temp[:, NetworkSpecies.TAFC] = active_bool_net[:, NetworkSpecies.SidA]
     temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] & (active_bool_net[:, NetworkSpecies.VAC] |
                                                                               active_bool_net[:, NetworkSpecies.FC1fe])
-    temp[:, NetworkSpecies.LIP] = (active_bool_net[:, NetworkSpecies.Fe] & active_bool_net[:, NetworkSpecies.RIA]) | \
-                                  lip_activation(state=state,
-                                                 shape=temp.shape)
+    temp[:, NetworkSpecies.LIP] = \
+        (active_bool_net[:, NetworkSpecies.Fe] & active_bool_net[:, NetworkSpecies.RIA]) | \
+        lip_activation(state=state,
+                       shape=temp.shape)
     temp[:, NetworkSpecies.CccA] = ~active_bool_net[:, NetworkSpecies.HapX]
     temp[:, NetworkSpecies.FC0fe] = active_bool_net[:, NetworkSpecies.SidA]
     temp[:, NetworkSpecies.FC1fe] = active_bool_net[:, NetworkSpecies.LIP] & active_bool_net[:, NetworkSpecies.FC0fe]

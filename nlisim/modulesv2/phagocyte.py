@@ -12,7 +12,7 @@ MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an a
 
 class PhagocyteCellData(CellData):
     PHAGOCYTE_FIELDS = [
-        ('phagosome', (np.int32, MAX_CONIDIA)),
+        ('phagosome', (np.int64, MAX_CONIDIA)),
         ('has_conidia', np.bool),
         ]
 
@@ -22,7 +22,7 @@ class PhagocyteCellData(CellData):
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
             'phagosome':   kwargs.get('phagosome',
-                                      -1 * np.ones(MAX_CONIDIA, dtype=np.int)),
+                                      -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
             'has_conidia': kwargs.get('has_conidia',
                                       False),
             }

@@ -3,11 +3,17 @@ import math
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.neutrophil import NeutrophilState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus
 from nlisim.state import State
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'IL6State') -> np.ndarray:
@@ -59,24 +65,29 @@ class IL6(MoleculeModel):
         """Advance the state by a single time step."""
         il6: IL6State = state.il6
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
+        grid: RectangularGrid = state.grid
 
-        # TODO: move to cell
-        # elif itype is Macrophage:
-        #     if interactable.status == Phagocyte.ACTIVE:  # and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.MA_IL6_QTTY, 0)
-        #     return True
+        # active Macrophages secrete il6
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell = macrophage.cells[macrophage_cell_index]
+            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+                il6.grid[tuple(macrophage_cell_voxel)] += il6.macrophage_secretion_rate_unit_t
 
-        # TODO: move to cell
-        # elif itype is Neutrophil:
-        #     if interactable.status == Phagocyte.ACTIVE:  # and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.N_IL6_QTTY, 0)
-        #     return True
+        # active Neutrophils secrete il6
+        for neutrophil_cell_index in neutrophil.cells.alive():
+            neutrophil_cell = macrophage.cells[neutrophil_cell_index]
+            if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
+                neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
+                il6.grid[tuple(neutrophil_cell_voxel)] += il6.neutrophil_secretion_rate_unit_t
 
         # Degrade IL6
         il6.grid *= il6.half_life_multiplier
-        il6.grid *= self.turnover_rate(x_mol=np.ones(shape=il6.grid.shape, dtype=np.float),
-                                       x_system_mol=0.0,
-                                       turnover_rate=molecules.turnover_rate,
-                                       rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        il6.grid *= turnover_rate(x_mol=np.ones(shape=il6.grid.shape, dtype=np.float64),
+                                  x_system_mol=0.0,
+                                  turnover_rate=molecules.turnover_rate,
+                                  rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

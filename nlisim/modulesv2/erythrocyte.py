@@ -19,9 +19,9 @@ from nlisim.util import activation_function
 # note: treating these a bit more like molecules than cells. hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('count', np.int),
-                           ('hemoglobin', np.float),
-                           ('hemorrhage', np.bool)])
+                    dtype=[('count', np.int64),
+                           ('hemoglobin', np.float64),
+                           ('hemorrhage', bool)])
 
 
 @attrs(kw_only=True)

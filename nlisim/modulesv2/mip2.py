@@ -85,7 +85,7 @@ class MIP2(MoleculeModel):
 
         # Degrade MIP2
         mip2.grid *= mip2.half_life_multiplier
-        mip2.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float),
+        mip2.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
                                        x_system_mol=0.0,
                                        turnover_rate=molecules.turnover_rate,
                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
