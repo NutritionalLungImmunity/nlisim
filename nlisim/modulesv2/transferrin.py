@@ -15,9 +15,9 @@ from nlisim.state import State
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
     # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
     return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('Tf', np.float),
-                           ('TfFe', np.float),
-                           ('TfFe2', np.float)])
+                    dtype=[('Tf', np.float64),
+                           ('TfFe', np.float64),
+                           ('TfFe2', np.float64)])
 
 
 @attrs(kw_only=True, repr=False)

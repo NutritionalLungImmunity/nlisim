@@ -2,12 +2,15 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, FungalForm
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'HemoglobinState') -> np.ndarray:
@@ -45,23 +48,21 @@ class Hemoglobin(MoleculeModel):
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
+        grid: RectangularGrid = state.grid
 
-        # interact with afumigatus
-
-
-        # TODO: move to cell
-        # elif itype is Afumigatus:
-        #     if (
-        #             interactable.status == Afumigatus.HYPHAE or interactable.status == Afumigatus.GERM_TUBE):
-        #         v = Constants.HEMOGLOBIN_UPTAKE_RATE * self.values[0]
-        #         self.decrease(v)
-        #         interactable.inc_iron_pool(4 * v)
-        #     return True
+        # afumigatus uptakes iron from hemoglobin
+        for afumigatus_cell_index in afumigatus.cells.alive():
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
+            if afumigatus_cell['status'] in {FungalForm.HYPHAE, FungalForm.GERM_TUBE}:
+                afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
+                fungal_absorbed_hemoglobin = hemoglobin.uptake_rate * hemoglobin.grid[tuple(afumigatus_cell_voxel)]
+                hemoglobin.grid[tuple(afumigatus_cell_voxel)] -= fungal_absorbed_hemoglobin
+                afumigatus_cell['iron_pool'] += 4 * fungal_absorbed_hemoglobin
 
         # Degrade Hemoglobin
-        hemoglobin.grid *= self.turnover_rate(x_mol=hemoglobin.grid,
-                                              x_system_mol=0.0,
-                                              turnover_rate=molecules.turnover_rate,
-                                              rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        hemoglobin.grid *= turnover_rate(x_mol=hemoglobin.grid,
+                                         x_system_mol=0.0,
+                                         turnover_rate=molecules.turnover_rate,
+                                         rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

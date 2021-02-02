@@ -7,7 +7,6 @@ from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -30,8 +29,8 @@ class Hepcidin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         hepcidin: HepcidinState = state.hepcidin
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        # geometry: GeometryState = state.geometry
+        # voxel_volume = geometry.voxel_volume
 
         # config file values
         hepcidin.kd_hep = self.config.getfloat('kd_hep')
@@ -43,7 +42,6 @@ class Hepcidin(MoleculeModel):
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
         hepcidin: HepcidinState = state.hepcidin
-        molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
 

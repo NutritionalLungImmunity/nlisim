@@ -208,6 +208,8 @@ class CellList(object):
 
         return cls(grid=grid, cell_data=cell_data)
 
+    # TODO: this is inconsistent with iterating over the whole CellList, why does this give indices
+    #  while the other gives the records
     def alive(self, sample: Iterable = None) -> np.ndarray:
         """Get a list of indices containing cells that are alive.
 

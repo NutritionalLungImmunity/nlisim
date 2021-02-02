@@ -1,21 +1,26 @@
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.transferrin import TransferrinState
+from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
+from nlisim.modulesv2.transferrin import TransferrinState
 from nlisim.state import State
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
     # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
     return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('Lactoferrin', np.float),
-                           ('LactoferrinFe', np.float),
-                           ('LactoferrinFe2', np.float)])
+                    dtype=[('Lactoferrin', np.float64),
+                           ('LactoferrinFe', np.float64),
+                           ('LactoferrinFe2', np.float64)])
 
 
 @attr.s(kw_only=True, repr=False)
@@ -25,6 +30,9 @@ class LactoferrinState(ModuleState):
     p1: float
     p2: float
     p3: float
+    ma_iron_import_rate: float
+    iron_imp_exp_t: float
+    rel_iron_imp_exp_unit_t: float
 
 
 class Lactoferrin(MoleculeModel):
@@ -43,9 +51,12 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.p1 = self.config.getfloat('p1')
         lactoferrin.p2 = self.config.getfloat('p2')
         lactoferrin.p3 = self.config.getfloat('p3')
+        lactoferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate')
+        lactoferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
 
         # computed values
         lactoferrin.threshold = lactoferrin.k_m_tf_lac * voxel_volume / 1.0e6
+        lactoferrin.rel_iron_imp_exp_unit_t = state.simulation.time_step_size / lactoferrin.iron_imp_exp_t
 
         return state
 
@@ -55,21 +66,35 @@ class Lactoferrin(MoleculeModel):
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
+        grid: RectangularGrid = state.grid
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
 
-        # TODO: move to cell
-        # elif itype is Macrophage:  # ADD UPTAKE
-        #     qttyFe2 = self.get("LactoferrinFe2") * Constants.MA_IRON_IMPORT_RATE * Constants.REL_IRON_IMP_EXP_UNIT_T
-        #     qttyFe = self.get("LactoferrinFe") * Constants.MA_IRON_IMPORT_RATE * Constants.REL_IRON_IMP_EXP_UNIT_T
-        #
-        #     qttyFe2 = qttyFe2 if qttyFe2 < self.get("LactoferrinFe2") else self.get("LactoferrinFe2")
-        #     qttyFe = qttyFe if qttyFe < self.get("LactoferrinFe") else self.get("LactoferrinFe")
-        #
-        #     self.decrease(qttyFe2, "LactoferrinFe2")
-        #     self.decrease(qttyFe, "LactoferrinFe")
-        #     interactable.inc_iron_pool(2 * qttyFe2 + qttyFe)
-        #     return True
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+
+            qtty_fe2 = lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] * \
+                       np.minimum(lactoferrin.ma_iron_import_rate *
+                                  lactoferrin.rel_iron_imp_exp_unit_t,
+                                  1.0)
+
+            qtty_fe = lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] * \
+                      np.minimum(lactoferrin.ma_iron_import_rate *
+                                 lactoferrin.rel_iron_imp_exp_unit_t,
+                                 1.0)
+
+            lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
+            lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] -= qtty_fe
+            macrophage_cell['iron_pool'] += 2 * qtty_fe2 + qtty_fe
+
+        for neutrophil_cell_index in neutrophil.cells.alive():
+            neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
+            neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
+
+            XXX
 
         # TODO: move to cell
         # elif itype is Neutrophil:
@@ -145,10 +170,10 @@ class Lactoferrin(MoleculeModel):
         iron.grid -= potential_reactive_quantity
 
         # Degrade Lactoferrin
-        lactoferrin.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float),
-                                               x_system_mol=0.0,
-                                               turnover_rate=molecules.turnover_rate,
-                                               rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        lactoferrin.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+                                          x_system_mol=0.0,
+                                          turnover_rate=molecules.turnover_rate,
+                                          rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state
 
@@ -172,10 +197,10 @@ class Lactoferrin(MoleculeModel):
         #            p2 * rel_total_iron * rel_total_iron + \
         #            p3 * rel_total_iron
         # this reduces the number of operations slightly:
-        rel_TfFe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
+        rel_tf_fe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
 
-        np.maximum(0.0, rel_TfFe, out=rel_TfFe)  # one root of the polynomial is at ~0.99897 and goes neg after
+        np.maximum(0.0, rel_tf_fe, out=rel_tf_fe)  # one root of the polynomial is at ~0.99897 and goes neg after
         # rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof?
-        rel_TfFe[total_iron == 0] = 0.0
-        rel_TfFe[total_binding_site == 0] = 0.0
-        return rel_TfFe
+        rel_tf_fe[total_iron == 0] = 0.0
+        rel_tf_fe[total_binding_site == 0] = 0.0
+        return rel_tf_fe

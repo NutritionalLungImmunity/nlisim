@@ -11,6 +11,7 @@ from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.tafc import TAFCState
 from nlisim.state import State
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
@@ -84,10 +85,10 @@ class EstB(MoleculeModel):
 
         # Degrade EstB
         estb.grid *= estb.half_life_multiplier
-        estb.grid *= self.turnover_rate(x_mol=estb.grid,
-                                        x_system_mol=estb.system_amount_per_voxel,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        estb.grid *= turnover_rate(x_mol=estb.grid,
+                                   x_system_mol=estb.system_amount_per_voxel,
+                                   turnover_rate=molecules.turnover_rate,
+                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         # Diffusion of EstB
         self.diffuse(estb.grid, molecules.diffusion_constant_timestep)

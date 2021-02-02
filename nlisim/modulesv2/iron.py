@@ -1,12 +1,14 @@
-import math
-
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus
 from nlisim.state import State
 
 
@@ -17,6 +19,7 @@ def molecule_grid_factory(self: 'IronState') -> np.ndarray:
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
     grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+
 
 class Iron(MoleculeModel):
     """Iron"""
@@ -39,13 +42,18 @@ class Iron(MoleculeModel):
         """Advance the state by a single time step."""
         iron: IronState = state.iron
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        geometry: GeometryState = state.geometry
+        grid: RectangularGrid = state.grid
 
-        # TODO: move to cell
-        # elif itype is Macrophage:
-        #     if interactable.status == Macrophage.NECROTIC or interactable.status == Macrophage.APOPTOTIC or interactable.status == Macrophage.DEAD:
-        #         self.inc(interactable.iron_pool, "Iron")
-        #         interactable.inc_iron_pool(-interactable.iron_pool)
-        #     return True
+        # dead macrophages contribute their iron to the environment
+        for macrophage_cell in macrophage.cells:
+            if macrophage_cell['status'] in {PhagocyteStatus.NECROTIC,
+                                             PhagocyteStatus.APOPTOTIC,
+                                             PhagocyteStatus.DEAD}:
+                macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+                iron.grid[tuple(macrophage_cell_voxel)] += macrophage_cell['iron_pool']
+                macrophage_cell['iron_pool'] = 0.0
 
         # Degrade Iron
         # *no operation* (turnover done by liver, if at all)
