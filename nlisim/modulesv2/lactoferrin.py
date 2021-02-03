@@ -10,6 +10,7 @@ from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus, PhagocyteState
 from nlisim.modulesv2.transferrin import TransferrinState
 from nlisim.state import State
 from nlisim.util import turnover_rate
@@ -33,6 +34,7 @@ class LactoferrinState(ModuleState):
     ma_iron_import_rate: float
     iron_imp_exp_t: float
     rel_iron_imp_exp_unit_t: float
+    lac_qtty: float
 
 
 class Lactoferrin(MoleculeModel):
@@ -53,6 +55,7 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.p3 = self.config.getfloat('p3')
         lactoferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate')
         lactoferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
+        lactoferrin.lac_qtty = self.config.getfloat('lac_qtty')
 
         # computed values
         lactoferrin.threshold = lactoferrin.k_m_tf_lac * voxel_volume / 1.0e6
@@ -72,35 +75,35 @@ class Lactoferrin(MoleculeModel):
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
 
+        # macrophages uptake iron from lactoferrin
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
-            qtty_fe2 = lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] * \
-                       np.minimum(lactoferrin.ma_iron_import_rate *
-                                  lactoferrin.rel_iron_imp_exp_unit_t,
-                                  1.0)
+            qtty_fe2 = \
+                lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] * \
+                np.minimum(lactoferrin.ma_iron_import_rate *
+                           lactoferrin.rel_iron_imp_exp_unit_t,
+                           1.0)
 
-            qtty_fe = lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] * \
-                      np.minimum(lactoferrin.ma_iron_import_rate *
-                                 lactoferrin.rel_iron_imp_exp_unit_t,
-                                 1.0)
+            qtty_fe = \
+                lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] * \
+                np.minimum(lactoferrin.ma_iron_import_rate *
+                           lactoferrin.rel_iron_imp_exp_unit_t,
+                           1.0)
 
             lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
             lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] -= qtty_fe
             macrophage_cell['iron_pool'] += 2 * qtty_fe2 + qtty_fe
 
+        # active and interacting neutrophils secrete lactoferrin
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
-            XXX
-
-        # TODO: move to cell
-        # elif itype is Neutrophil:
-        #     if interactable.status == Neutrophil.ACTIVE and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.LAC_QTTY, "Lactoferrin")
-        #     return True
+            if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE and \
+                    neutrophil_cell['state'] == PhagocyteState.INTERACTING:
+                lactoferrin.grid['Lactoferrin'][tuple(neutrophil_cell_voxel)] += lactoferrin.lac_qtty
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin
@@ -156,13 +159,14 @@ class Lactoferrin(MoleculeModel):
         # interaction with iron
         lactoferrin_fe_capacity = 2 * lactoferrin.grid["Lactoferrin"] + lactoferrin.grid["LactoferrinFe"]
         potential_reactive_quantity = np.minimum(iron.grid, lactoferrin_fe_capacity)
-        rel_TfFe = self.iron_tf_reaction(potential_reactive_quantity,
-                                         lactoferrin.grid["Lactoferrin"],
-                                         lactoferrin.grid["LactoferrinFe"],
-                                         p1=lactoferrin.p1,
-                                         p2=lactoferrin.p2,
-                                         p3=lactoferrin.p3)
-        tffe_qtty = rel_TfFe * potential_reactive_quantity
+        rel_tf_fe = \
+            self.iron_tf_reaction(potential_reactive_quantity,
+                                  lactoferrin.grid["Lactoferrin"],
+                                  lactoferrin.grid["LactoferrinFe"],
+                                  p1=lactoferrin.p1,
+                                  p2=lactoferrin.p2,
+                                  p3=lactoferrin.p3)
+        tffe_qtty = rel_tf_fe * potential_reactive_quantity
         tffe2_qtty = (potential_reactive_quantity - tffe_qtty) / 2
         lactoferrin.grid['Lactoferrin'] -= tffe_qtty + tffe2_qtty
         lactoferrin.grid['LactoferrinFe'] += tffe_qtty
@@ -180,13 +184,13 @@ class Lactoferrin(MoleculeModel):
     # TODO: duplicated with code in transferrin
     @staticmethod
     def iron_tf_reaction(iron: np.ndarray,
-                         Tf: np.ndarray,
-                         TfFe: np.ndarray,
+                         tf: np.ndarray,
+                         tf_fe: np.ndarray,
                          p1: float,
                          p2: float,
                          p3: float) -> np.ndarray:
-        total_binding_site = 2 * (Tf + TfFe)  # That is right 2*(Tf + TfFe)!
-        total_iron = iron + TfFe  # it does not count TfFe2
+        total_binding_site = 2 * (tf + tf_fe)  # That is right 2*(Tf + TfFe)!
+        total_iron = iron + tf_fe  # it does not count TfFe2
 
         with np.seterr(divide='ignore'):
             rel_total_iron = total_iron / total_binding_site
