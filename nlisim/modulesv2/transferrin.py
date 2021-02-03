@@ -10,6 +10,7 @@ from nlisim.modulesv2.iron import IronState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
+from nlisim.util import iron_tf_reaction
 
 
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
@@ -122,12 +123,12 @@ class Transferrin(MoleculeModel):
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.grid['Tf'] + transferrin.grid['TfFe']
         potential_reactive_quantity = np.minimum(iron.grid, transferrin_fe_capacity)
-        rel_TfFe = self.iron_tf_reaction(potential_reactive_quantity,
-                                         transferrin.grid["Tf"],
-                                         transferrin.grid["TfFe"],
-                                         p1=transferrin.p1,
-                                         p2=transferrin.p2,
-                                         p3=transferrin.p3)
+        rel_TfFe = iron_tf_reaction(potential_reactive_quantity,
+                                    transferrin.grid["Tf"],
+                                    transferrin.grid["TfFe"],
+                                    p1=transferrin.p1,
+                                    p2=transferrin.p2,
+                                    p3=transferrin.p3)
         tffe_qtty = rel_TfFe * potential_reactive_quantity
         tffe2_qtty = (potential_reactive_quantity - tffe_qtty) / 2
         transferrin.grid['Tf'] -= tffe_qtty + tffe2_qtty
@@ -140,31 +141,3 @@ class Transferrin(MoleculeModel):
         # Degrade transferrin: done in liver
 
         return state
-
-    # TODO: duplicated with code in lactoferrin
-    @staticmethod
-    def iron_tf_reaction(iron: np.ndarray,
-                         Tf: np.ndarray,
-                         TfFe: np.ndarray,
-                         p1: float,
-                         p2: float,
-                         p3: float) -> np.ndarray:
-        total_binding_site = 2 * (Tf + TfFe)  # That is right 2*(Tf + TfFe)!
-        total_iron = iron + TfFe  # it does not count TfFe2
-
-        with np.seterr(divide='ignore'):
-            rel_total_iron = total_iron / total_binding_site
-            np.nan_to_num(rel_total_iron, nan=0.0, posinf=0.0, neginf=0.0)
-            rel_total_iron = np.maximum(np.minimum(rel_total_iron, 1.0), 0.0)
-
-        # rel_TfFe = p1 * rel_total_iron * rel_total_iron * rel_total_iron + \
-        #            p2 * rel_total_iron * rel_total_iron + \
-        #            p3 * rel_total_iron
-        # this reduces the number of operations slightly:
-        rel_TfFe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
-
-        rel_TfFe = np.maximum(0.0, rel_TfFe)  # one root of the polynomial is at ~0.99897 and goes neg after
-        # TODO: rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof?
-        rel_TfFe[total_iron == 0] = 0.0
-        rel_TfFe[total_binding_site == 0] = 0.0
-        return rel_TfFe
