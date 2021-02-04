@@ -6,8 +6,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusState, FungalState
+from nlisim.modulesv2.afumigatus import AfumigatusState, AfumigatusCellState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
@@ -19,13 +18,13 @@ class MacrophageCellData(PhagocyteCellData):
     MACROPHAGE_FIELDS = [
         ('status', np.uint8),
         ('state', np.uint8),
-        ('fpn', np.bool),
+        ('fpn', bool),
         ('fpn_iteration', np.int64),
-        ('tf', np.bool),  # TODO: descriptive name, transferrin?
-        ('max_move_step', np.float),  # TODO: double check, might be int
-        ('tnfa', np.bool),
-        ('engaged', np.bool),
-        ('iron_pool', np.float),
+        ('tf', bool),  # TODO: descriptive name, transferrin?
+        ('max_move_step', np.float64),  # TODO: double check, might be int
+        ('tnfa', bool),
+        ('engaged', bool),
+        ('iron_pool', np.float64),
         ('status_iteration', np.uint)
         ]
 
@@ -59,8 +58,9 @@ class MacrophageCellData(PhagocyteCellData):
             }
 
         # ensure that these come in the correct order
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, tyype in MacrophageCellData.MACROPHAGE_FIELDS]
+        return \
+            PhagocyteCellData.create_cell_tuple(**kwargs) + \
+            [initializer[key] for key, _ in MacrophageCellData.MACROPHAGE_FIELDS]
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -93,7 +93,6 @@ class MacrophageModel(PhagocyteModel):
 
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
         geometry: GeometryState = state.geometry
 
         macrophage.max_conidia = self.config.getint('max_conidia')
@@ -135,7 +134,7 @@ class MacrophageModel(PhagocyteModel):
                 for fungal_cell_index in macrophage_cell['phagosome']:
                     if fungal_cell_index == -1:
                         continue
-                    afumigatus.cells[fungal_cell_index]['state'] = FungalState.RELEASING
+                    afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
 
             elif num_cells_in_phagosome > macrophage.max_conidia:
                 # TODO: how do we get here?

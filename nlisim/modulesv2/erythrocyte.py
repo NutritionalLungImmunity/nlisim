@@ -5,7 +5,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusState, FungalForm
+from nlisim.modulesv2.afumigatus import AfumigatusState, AfumigatusCellStatus
 from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.hemoglobin import HemoglobinState
 from nlisim.modulesv2.hemolysin import HemolysinState
@@ -110,7 +110,7 @@ class ErythrocyteModel(PhagocyteModel):
         # interact with fungus
         for fungal_cell_index in afumigatus.cells.alive():
             fungal_cell = afumigatus.cells[fungal_cell_index]
-            if fungal_cell['status'] == FungalForm.HYPHAE:
+            if fungal_cell['status'] == AfumigatusCellStatus.HYPHAE:
                 fungal_voxel: Voxel = grid.get_voxel(fungal_cell['point'])
                 erythrocyte.cells['hemorrhage'][fungal_voxel.z, fungal_voxel.y, fungal_voxel.x] = True
 

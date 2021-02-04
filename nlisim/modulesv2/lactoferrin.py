@@ -17,7 +17,6 @@ from nlisim.util import iron_tf_reaction, turnover_rate
 
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
-    # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
     return np.zeros(shape=self.global_state.grid.shape,
                     dtype=[('Lactoferrin', np.float64),
                            ('LactoferrinFe', np.float64),
@@ -160,9 +159,9 @@ class Lactoferrin(MoleculeModel):
         lactoferrin_fe_capacity = 2 * lactoferrin.grid["Lactoferrin"] + lactoferrin.grid["LactoferrinFe"]
         potential_reactive_quantity = np.minimum(iron.grid, lactoferrin_fe_capacity)
         rel_tf_fe = \
-            iron_tf_reaction(potential_reactive_quantity,
-                             lactoferrin.grid["Lactoferrin"],
-                             lactoferrin.grid["LactoferrinFe"],
+            iron_tf_reaction(iron=potential_reactive_quantity,
+                             tf=lactoferrin.grid["Lactoferrin"],
+                             tf_fe=lactoferrin.grid["LactoferrinFe"],
                              p1=lactoferrin.p1,
                              p2=lactoferrin.p2,
                              p3=lactoferrin.p3)
@@ -176,7 +175,7 @@ class Lactoferrin(MoleculeModel):
         # Degrade Lactoferrin
         lactoferrin.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
                                           x_system_mol=0.0,
-                                          turnover_rate=molecules.turnover_rate,
+                                          base_turnover_rate=molecules.turnover_rate,
                                           rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

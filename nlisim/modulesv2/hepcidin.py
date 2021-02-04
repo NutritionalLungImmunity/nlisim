@@ -29,8 +29,6 @@ class Hepcidin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         hepcidin: HepcidinState = state.hepcidin
-        # geometry: GeometryState = state.geometry
-        # voxel_volume = geometry.voxel_volume
 
         # config file values
         hepcidin.kd_hep = self.config.getfloat('kd_hep')

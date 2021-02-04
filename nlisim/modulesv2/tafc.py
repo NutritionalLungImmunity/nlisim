@@ -1,30 +1,38 @@
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
+    AfumigatusState, NetworkSpecies
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.iron import IronState
+from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.transferrin import TransferrinState
-from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.state import State
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
     # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
     return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('TAFC', np.float),
-                           ('TAFCBI', np.float)])
+                    dtype=[('TAFC', np.float64),
+                           ('TAFCBI', np.float64)])
 
 
 @attr.s(kw_only=True, repr=False)
 class TAFCState(ModuleState):
     grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     k_m_tf_tafc: float
+    tafc_up: float
     threshold: float
+    tafc_qtty: float
 
 
 class TAFC(MoleculeModel):
+    # noinspection SpellCheckingInspection
     """TAFC: (T)ri(A)cetyl(F)usarinine C"""
 
     name = 'tafc'
@@ -37,6 +45,8 @@ class TAFC(MoleculeModel):
 
         # config file values
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
+        tafc.tafc_up = self.config.getfloat('tafc_up')
+        tafc.tafc_qtty = self.config.getfloat('tafc_qtty')
 
         # computed values
         tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
@@ -49,6 +59,8 @@ class TAFC(MoleculeModel):
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         molecules: MoleculesState = state.molecules
+        afumigatus: AfumigatusState = state.afumigatus
+        grid: RectangularGrid = state.grid
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
 
@@ -66,9 +78,11 @@ class TAFC(MoleculeModel):
                                          voxel_volume=voxel_volume)
 
         # - enforce bounds from TAFC quantity
-        rel = tafc.grid['TAFC'] / (dfe2dt + dfedt)
-        np.nan_to_num(rel, nan=0.0)
-        np.maximum(rel, 1.0, out=rel)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            total_change = dfe2dt + dfedt
+            rel = tafc.grid['TAFC'] / total_change
+            rel[total_change == 0] = 0.0
+            np.maximum(rel, 1.0, out=rel)
         dfe2dt = dfe2dt * rel
         dfedt = dfedt * rel
 
@@ -84,34 +98,42 @@ class TAFC(MoleculeModel):
         tafc.grid['TAFC'] -= dfe2dt + dfedt
         tafc.grid['TAFCBI'] += dfe2dt + dfedt
 
-        # TODO: move to cell
-        # elif itype is Afumigatus:
-        #     if interactable.state == Afumigatus.FREE and interactable.status != Afumigatus.DYING and interactable.status != Afumigatus.DEAD:
-        #         if interactable.boolean_network[Afumigatus.MirB] == 1 and interactable.boolean_network[
-        #             Afumigatus.EstB] == 1:
-        #             qtty = self.get("TAFCBI") * Constants.TAFC_UP
-        #             qtty = qtty if qtty < self.get("TAFCBI") else self.get("TAFCBI")
-        #
-        #             self.decrease(qtty, "TAFCBI")
-        #             interactable.inc_iron_pool(qtty)
-        #         if interactable.boolean_network[Afumigatus.TAFC] == 1 and \
-        #                 (interactable.status == Afumigatus.SWELLING_CONIDIA or \
-        #                  interactable.status == Afumigatus.HYPHAE or
-        #                  interactable.status == Afumigatus.GERM_TUBE):  # SECRETE TAFC
-        #             self.inc(Constants.TAFC_QTTY, "TAFC")
-        #     return True
-
-
         # interaction with iron, all available iron is bound to TAFC
         potential_reactive_quantity = np.minimum(iron.grid, tafc.grid['TAFC'])
         tafc.grid['TAFC'] -= potential_reactive_quantity
         tafc.grid['TAFCBI'] += potential_reactive_quantity
         iron.grid -= potential_reactive_quantity
 
+        # interaction with fungus
+        for afumigatus_cell_index in afumigatus.cells.alive():
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
+
+            if afumigatus_cell['state'] != AfumigatusCellState.FREE or \
+                    afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
+                continue
+
+            afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
+            afumigatus_bool_net: np.ndarray = afumigatus_cell['boolean_network']
+
+            # uptake iron from TAFCBI
+            if afumigatus_bool_net[NetworkSpecies.MirB] & afumigatus_bool_net[NetworkSpecies.EstB]:
+                qtty = tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
+                # TODO: can't be bigger, unless tafc.tafc_up > 1. Am I missing something?
+                # qtty = qtty if qtty < self.get("TAFCBI", x, y, z) else self.get("TAFCBI", x, y, z)
+                tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)] -= qtty
+                afumigatus_cell['iron_pool'] += qtty
+
+            # secrete TAFC
+            if afumigatus_bool_net[NetworkSpecies.TAFC] and \
+                    afumigatus_cell['status'] in {AfumigatusCellStatus.SWELLING_CONIDIA,
+                                                  AfumigatusCellStatus.HYPHAE,
+                                                  AfumigatusCellStatus.GERM_TUBE}:
+                tafc.grid['TAFC'][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+
         # Degrade TAFC
-        tafc.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float),
-                                        x_system_mol=0.0,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tafc.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+                                   x_system_mol=0.0,
+                                   base_turnover_rate=molecules.turnover_rate,
+                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

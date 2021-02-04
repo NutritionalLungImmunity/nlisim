@@ -3,8 +3,8 @@ import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -39,18 +39,14 @@ class ROS(MoleculeModel):
         ros: ROSState = state.ros
         molecules: MoleculesState = state.molecules
 
-        # TODO: move to cell
-        # elif type(interactable) is Afumigatus:
-        #     # if interactable.state == Afumigatus.FREE and not (
-        #     #         interactable.status == Afumigatus.DYING or interactable.status == Afumigatus.DEAD):
-        #     #     if Util.hillProbability(self.get()) > random():
-        #     #         interactable.status = Afumigatus.DYING
-        #     return True
+        # TODO: code below adds zero, omitting until we have a non-trivial model
 
-        # TODO: move to cell
         # elif type(interactable) is Macrophage:
-        #     if interactable.status == Macrophage.ACTIVE:
-        #         self.inc(0)
+        #     assert isinstance(interactable, Macrophage)
+        #     macrophage: Macrophage = interactable
+        #
+        #     if macrophage.status == Macrophage.ACTIVE:
+        #         self.increase(0, x, y, z)
         #     return True
 
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)

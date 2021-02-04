@@ -29,6 +29,7 @@ class TissueType(IntEnum):
 class GeometryState(ModuleState):
     lung_tissue: np.ndarray = grid_variable(np.dtype('int'))
     voxel_volume: float
+    space_volume: float
     time_step_size: float
 
     @lung_tissue.validator
@@ -48,6 +49,7 @@ class Geometry(ModuleModel):
         geometry: GeometryState = state.geometry
 
         geometry.voxel_volume = self.config.getfloat('voxel_volume')
+        geometry.space_volume = geometry.voxel_volume * np.product(geometry.global_state.grid.shape)
 
         # The geometry data file is included next to this one
         path = Path(__file__).parent / 'geometry.hdf5'

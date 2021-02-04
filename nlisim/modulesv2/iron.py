@@ -56,6 +56,6 @@ class Iron(MoleculeModel):
                 macrophage_cell['iron_pool'] = 0.0
 
         # Degrade Iron
-        # *no operation* (turnover done by liver, if at all)
+        # turnover done by liver, if at all (2/4/2021: not currently)
 
         return state

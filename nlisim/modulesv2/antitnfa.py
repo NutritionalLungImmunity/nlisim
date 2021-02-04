@@ -74,7 +74,7 @@ class AntiTNFa(MoleculeModel):
         anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
         anti_tnf_a.grid *= turnover_rate(x_mol=anti_tnf_a.grid,
                                          x_system_mol=anti_tnf_a.system_amount_per_voxel,
-                                         turnover_rate=molecules.turnover_rate,
+                                         base_turnover_rate=molecules.turnover_rate,
                                          rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         # Diffusion of AntiTNFa

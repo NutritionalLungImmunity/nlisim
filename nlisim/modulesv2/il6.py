@@ -6,7 +6,6 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
@@ -27,10 +26,10 @@ class IL6State(ModuleState):
     half_life_multiplier: float
     macrophage_secretion_rate: float
     neutrophil_secretion_rate: float
-    epithelial_secretion_rate: float
+    pneumocyte_secretion_rate: float
     macrophage_secretion_rate_unit_t: float
     neutrophil_secretion_rate_unit_t: float
-    epithelial_secretion_rate_unit_t: float
+    pneumocyte_secretion_rate_unit_t: float
     k_d: float
 
 
@@ -42,14 +41,12 @@ class IL6(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         il6: IL6State = state.il6
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         il6.half_life = self.config.getfloat('half_life')
         il6.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
         il6.neutrophil_secretion_rate = self.config.getfloat('neutrophil_secretion_rate')
-        il6.epithelial_secretion_rate = self.config.getfloat('epithelial_secretion_rate')
+        il6.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
         il6.k_d = self.config.getfloat('k_d')
 
         # computed values
@@ -57,7 +54,7 @@ class IL6(MoleculeModel):
         # time unit conversions
         il6.macrophage_secretion_rate_unit_t = il6.macrophage_secretion_rate * 60 * state.simulation.time_step_size
         il6.neutrophil_secretion_rate_unit_t = il6.neutrophil_secretion_rate * 60 * state.simulation.time_step_size
-        il6.epithelial_secretion_rate_unit_t = il6.epithelial_secretion_rate * 60 * state.simulation.time_step_size
+        il6.pneumocyte_secretion_rate_unit_t = il6.pneumocyte_secretion_rate * 60 * state.simulation.time_step_size
 
         return state
 
@@ -83,11 +80,13 @@ class IL6(MoleculeModel):
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
                 il6.grid[tuple(neutrophil_cell_voxel)] += il6.neutrophil_secretion_rate_unit_t
 
+        # TODO: were pneumocytes also going to secrete IL6?
+
         # Degrade IL6
         il6.grid *= il6.half_life_multiplier
         il6.grid *= turnover_rate(x_mol=np.ones(shape=il6.grid.shape, dtype=np.float64),
                                   x_system_mol=0.0,
-                                  turnover_rate=molecules.turnover_rate,
+                                  base_turnover_rate=molecules.turnover_rate,
                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state
