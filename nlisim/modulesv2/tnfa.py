@@ -3,10 +3,18 @@ import math
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.geometry import GeometryState
+from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus
+from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'TNFaState') -> np.ndarray:
@@ -54,43 +62,56 @@ class TNFa(MoleculeModel):
         """Advance the state by a single time step."""
         tnfa: TNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        neutrophil: NeutrophilState = state.neutrophil
+        geometry: GeometryState = state.geometry
+        grid: RectangularGrid = state.grid
+
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+
+            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                tnfa.grid[tuple(macrophage_cell_voxel)] += tnfa.macrophage_secretion_rate_unit_t
+
+            if macrophage_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
+                if activation_function(x=tnfa.grid[tuple(macrophage_cell_voxel)],
+                                       kd=tnfa.k_d,
+                                       h=state.simulation.time_step_size / 60,
+                                       volume=geometry.voxel_volume) > rg():
+                    if macrophage_cell['status'] == PhagocyteStatus.RESTING:
+                        macrophage_cell['status'] = PhagocyteStatus.ACTIVATING
+                    else:
+                        macrophage_cell['status'] = PhagocyteStatus.ACTIVE
+                    # Note: multiple activations will reset the 'clock'
+                    macrophage_cell['status_iteration'] = 0
+                    macrophage_cell['tnfa'] = True
+
+        for neutrophil_cell_index in neutrophil.cells.alive():
+            neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
+            neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
+
+            if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
+                tnfa.grid[tuple(neutrophil_cell_voxel)] += tnfa.neutrophil_secretion_rate_unit_t
+
+            if neutrophil_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
+                if activation_function(x=tnfa.grid[tuple(neutrophil_cell_voxel)],
+                                       kd=tnfa.k_d,
+                                       h=state.simulation.time_step_size / 60,
+                                       volume=geometry.voxel_volume) > rg():
+                    if neutrophil_cell['status'] == PhagocyteStatus.RESTING:
+                        neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
+                    else:
+                        neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
+                    # Note: multiple activations will reset the 'clock'
+                    neutrophil_cell['status_iteration'] = 0
+                    neutrophil_cell['tnfa'] = True
 
         # Degrade TNFa
         tnfa.grid *= tnfa.half_life_multiplier
-        tnfa.grid *= self.turnover_rate(x_mol=1,
-                                        x_system_mol=0,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
-
-        # TODO: move these interactions to the cells
-        # elif itype is Macrophage:
-        #     if interactable.status == Phagocyte.ACTIVE:  # and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.MA_TNF_QTTY, 0)
-        #     if interactable.status == Phagocyte.RESTING or interactable.status == Phagocyte.ACTIVE:
-        #         if Util.activation_function(self.get(0), Constants.Kd_TNF, Constants.STD_UNIT_T) > random():
-        #             interactable.status = Phagocyte.ACTIVATING \
-        #                 if interactable.status == Phagocyte.RESTING else Phagocyte.ACTIVE
-        #             interactable.iteration = 0
-        #             interactable.tnfa = True
-        #     return True
-
-        # TODO: move these interactions to the cells
-        # elif itype is Neutrophil:
-        #     if interactable.status == Phagocyte.ACTIVE:  # and interactable.state == Neutrophil.INTERACTING:
-        #         self.inc(Constants.N_TNF_QTTY, 0)
-        #     if interactable.status == Phagocyte.RESTING or interactable.status == Phagocyte.ACTIVE:
-        #         if Util.activation_function(self.get(0), Constants.Kd_TNF, Constants.STD_UNIT_T) > random():
-        #             interactable.status = Phagocyte.ACTIVATING \
-        #                 if interactable.status == Phagocyte.RESTING else Phagocyte.ACTIVE
-        #             interactable.iteration = 0
-        #             interactable.tnfa = True
-        #     return True
-
-        # Degrade TNFA
-        tnfa.grid *= tnfa.half_life_multiplier
-        tnfa.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float),
-                                        x_system_mol=0.0,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tnfa.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+                                   x_system_mol=0.0,
+                                   base_turnover_rate=molecules.turnover_rate,
+                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

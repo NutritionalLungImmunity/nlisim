@@ -5,8 +5,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, FungalForm
-from nlisim.modulesv2.geometry import GeometryState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
@@ -32,8 +31,6 @@ class Hemoglobin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         hemoglobin: HemoglobinState = state.hemoglobin
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         hemoglobin.uptake_rate = self.config.getfloat('uptake_rate')
@@ -53,7 +50,7 @@ class Hemoglobin(MoleculeModel):
         # afumigatus uptakes iron from hemoglobin
         for afumigatus_cell_index in afumigatus.cells.alive():
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            if afumigatus_cell['status'] in {FungalForm.HYPHAE, FungalForm.GERM_TUBE}:
+            if afumigatus_cell['status'] in {AfumigatusCellStatus.HYPHAE, AfumigatusCellStatus.GERM_TUBE}:
                 afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
                 fungal_absorbed_hemoglobin = hemoglobin.uptake_rate * hemoglobin.grid[tuple(afumigatus_cell_voxel)]
                 hemoglobin.grid[tuple(afumigatus_cell_voxel)] -= fungal_absorbed_hemoglobin
@@ -62,7 +59,7 @@ class Hemoglobin(MoleculeModel):
         # Degrade Hemoglobin
         hemoglobin.grid *= turnover_rate(x_mol=hemoglobin.grid,
                                          x_system_mol=0.0,
-                                         turnover_rate=molecules.turnover_rate,
+                                         base_turnover_rate=molecules.turnover_rate,
                                          rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

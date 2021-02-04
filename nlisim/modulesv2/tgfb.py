@@ -3,11 +3,17 @@ import math
 import attr
 import numpy as np
 
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.phagocyte import PhagocyteStatus
+from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'TGFBState') -> np.ndarray:
@@ -32,8 +38,6 @@ class TGFB(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         tgfb: TGFBState = state.tgfb
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         tgfb.half_life = self.config.getfloat('half_life')
@@ -51,23 +55,37 @@ class TGFB(MoleculeModel):
         """Advance the state by a single time step."""
         tgfb: TGFBState = state.tgfb
         molecules: MoleculesState = state.molecules
+        macrophage: MacrophageState = state.macrophage
+        geometry: GeometryState = state.geometry
+        grid: RectangularGrid = state.grid
 
-        # TODO: move to cell
-        # elif itype is Macrophage:
-        #     if interactable.status == Phagocyte.INACTIVE:
-        #         self.inc(Constants.MA_TGF_QTTY, 0)
-        #         if Util.activation_function(self.get(0), Constants.Kd_TGF, Constants.STD_UNIT_T) > random():
-        #             interactable.iteration = 0
-        #     elif interactable.status != Phagocyte.APOPTOTIC and interactable.status != Phagocyte.NECROTIC and interactable.status != Phagocyte.DEAD:
-        #         if Util.activation_function(self.get(0), Constants.Kd_TGF, Constants.STD_UNIT_T) > random():
-        #             interactable.status = Phagocyte.INACTIVATING
-        #     return True
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+
+            if macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
+                tgfb.grid[tuple(macrophage_cell_voxel)] += tgfb.macrophage_secretion_rate_unit_t
+                if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                                       kd=tgfb.k_d,
+                                       h=state.simulation.time_step_size / 60,
+                                       volume=geometry.voxel_volume) > rg():
+                    macrophage_cell['status_iteration'] = 0
+
+            elif macrophage_cell['status'] not in {PhagocyteStatus.APOPTOTIC,
+                                                   PhagocyteStatus.NECROTIC,
+                                                   PhagocyteStatus.DEAD}:
+                if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                                       kd=tgfb.k_d,
+                                       h=state.simulation.time_step_size / 60,
+                                       volume=geometry.voxel_volume) > rg():
+                    macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
+                    macrophage_cell['status_iteration'] = 0  # Previously, was no reset of the status iteration
 
         # Degrade TGFB
         tgfb.grid *= tgfb.half_life_multiplier
-        tgfb.grid *= self.turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                        x_system_mol=0.0,
-                                        turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tgfb.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+                                   x_system_mol=0.0,
+                                   base_turnover_rate=molecules.turnover_rate,
+                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

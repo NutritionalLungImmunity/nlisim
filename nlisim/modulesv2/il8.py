@@ -10,7 +10,7 @@ from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.neutrophil import NeutrophilState
+from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
 from nlisim.modulesv2.phagocyte import PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
@@ -28,10 +28,10 @@ class IL8State(ModuleState):
     half_life_multiplier: float
     macrophage_secretion_rate: float
     neutrophil_secretion_rate: float
-    epithelial_secretion_rate: float
+    pneumocyte_secretion_rate: float
     macrophage_secretion_rate_unit_t: float
     neutrophil_secretion_rate_unit_t: float
-    epithelial_secretion_rate_unit_t: float
+    pneumocyte_secretion_rate_unit_t: float
     k_d: float
 
 
@@ -43,14 +43,12 @@ class IL8(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         il8: IL8State = state.il8
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         il8.half_life = self.config.getfloat('half_life')
         il8.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
         il8.neutrophil_secretion_rate = self.config.getfloat('neutrophil_secretion_rate')
-        il8.epithelial_secretion_rate = self.config.getfloat('epithelial_secretion_rate')
+        il8.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
         il8.k_d = self.config.getfloat('k_d')
 
         # computed values
@@ -58,7 +56,7 @@ class IL8(MoleculeModel):
         # time unit conversions
         il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * 60 * state.simulation.time_step_size
         il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * 60 * state.simulation.time_step_size
-        il8.epithelial_secretion_rate_unit_t = il8.epithelial_secretion_rate * 60 * state.simulation.time_step_size
+        il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate * 60 * state.simulation.time_step_size
 
         return state
 
@@ -66,14 +64,13 @@ class IL8(MoleculeModel):
         """Advance the state by a single time step."""
         il8: IL8State = state.il8
         molecules: MoleculesState = state.molecules
-        macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         geometry: GeometryState = state.geometry
         grid: RectangularGrid = state.grid
 
         # IL8 activates neutrophils
         for neutrophil_cell_index in neutrophil.cells.alive():
-            neutrophil_cell = macrophage.cells[neutrophil_cell_index]
+            neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING or PhagocyteStatus.ACTIVE}:
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
                 if activation_function(x=il8.grid[tuple(neutrophil_cell_voxel)],
@@ -83,11 +80,13 @@ class IL8(MoleculeModel):
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0
 
+        # TODO: were macrophages and pneumocytes also going to secrete IL8?
+
         # Degrade IL8
         il8.grid *= il8.half_life_multiplier
         il8.grid *= turnover_rate(x_mol=np.ones(shape=il8.grid.shape, dtype=np.float64),
                                   x_system_mol=0.0,
-                                  turnover_rate=molecules.turnover_rate,
+                                  base_turnover_rate=molecules.turnover_rate,
                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         return state

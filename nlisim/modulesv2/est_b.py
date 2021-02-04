@@ -87,7 +87,7 @@ class EstB(MoleculeModel):
         estb.grid *= estb.half_life_multiplier
         estb.grid *= turnover_rate(x_mol=estb.grid,
                                    x_system_mol=estb.system_amount_per_voxel,
-                                   turnover_rate=molecules.turnover_rate,
+                                   base_turnover_rate=molecules.turnover_rate,
                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
         # Diffusion of EstB

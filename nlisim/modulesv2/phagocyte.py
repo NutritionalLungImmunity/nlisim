@@ -5,7 +5,7 @@ import numpy as np
 
 from nlisim.cell import CellData
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, FungalForm, FungalState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusCellState
 
 MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
@@ -13,7 +13,7 @@ MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an a
 class PhagocyteCellData(CellData):
     PHAGOCYTE_FIELDS = [
         ('phagosome', (np.int64, MAX_CONIDIA)),
-        ('has_conidia', np.bool),
+        ('has_conidia', bool),
         ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -82,13 +82,13 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
     """
 
     # We cannot internalize an already internalized fungal cell
-    if aspergillus_cell['state'] != FungalState.FREE:
+    if aspergillus_cell['state'] != AfumigatusCellState.FREE:
         return
 
     # deal with conidia
-    if (aspergillus_cell['status'] in {FungalForm.RESTING_CONIDIA,
-                                       FungalForm.SWELLING_CONIDIA,
-                                       FungalForm.STERILE_CONIDIA} or phagocytize):
+    if (aspergillus_cell['status'] in {AfumigatusCellStatus.RESTING_CONIDIA,
+                                       AfumigatusCellStatus.SWELLING_CONIDIA,
+                                       AfumigatusCellStatus.STERILE_CONIDIA} or phagocytize):
         if (phagocyte_cell['status'] not in {PhagocyteStatus.NECROTIC,
                                              PhagocyteStatus.APOPTOTIC,
                                              PhagocyteStatus.DEAD}):
@@ -96,14 +96,14 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
             num_cells_in_phagosome = np.sum(phagocyte_cell['phagosome'] >= 0)
             if num_cells_in_phagosome < phagocyte.max_conidia:
                 phagocyte_cell['has_conidia'] = True
-                aspergillus_cell['state'] = FungalState.INTERNALIZING
+                aspergillus_cell['state'] = AfumigatusCellState.INTERNALIZING
                 # place the fungal cell in the phagosome,
                 # sorting makes sure that an 'empty' i.e. -1 slot is first
                 phagocyte_cell['phagosome'].sort()
                 phagocyte_cell['phagosome'][0] = aspergillus_cell['id']
 
     # TODO: what is going on here? is the if too loose?
-    if aspergillus_cell['status'] != FungalForm.RESTING_CONIDIA:
+    if aspergillus_cell['status'] != AfumigatusCellStatus.RESTING_CONIDIA:
         phagocyte_cell['state'] = PhagocyteStatus.INTERACTING
         if phagocyte_cell['status'] != PhagocyteStatus.ACTIVE:
             phagocyte_cell['status'] = PhagocyteStatus.ACTIVATING

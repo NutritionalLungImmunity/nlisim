@@ -5,8 +5,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, FungalForm
-from nlisim.modulesv2.afumigatus import FungalState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus, AfumigatusCellState
 from nlisim.modulesv2.erythrocyte import ErythrocyteState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.hemoglobin import HemoglobinState
@@ -20,17 +19,17 @@ from nlisim.modulesv2.ros import ROSState
 from nlisim.random import rg
 from nlisim.state import State
 
-MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
+MAX_CONIDIA = 100  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
 
 class NeutrophilCellData(PhagocyteCellData):
     NEUTROPHIL_FIELDS = [
         ('status', np.uint8),
         ('state', np.uint8),
-        ('iron_pool', np.float),
-        ('max_move_step', np.float),  # TODO: double check, might be int
-        ('tnfa', np.bool),
-        ('engaged', np.bool),
+        ('iron_pool', np.float64),
+        ('max_move_step', np.float64),  # TODO: double check, might be int
+        ('tnfa', bool),
+        ('engaged', bool),
         ('status_iteration', np.uint),
         ]
 
@@ -39,17 +38,17 @@ class NeutrophilCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status'          : kwargs.get('status',
+            'status':           kwargs.get('status',
                                            PhagocyteStatus.RESTING),
-            'state'           : kwargs.get('state',
+            'state':            kwargs.get('state',
                                            PhagocyteState.FREE),
-            'iron_pool'       : kwargs.get('iron_pool',
+            'iron_pool':        kwargs.get('iron_pool',
                                            0.0),
-            'max_move_step'   : kwargs.get('max_move_step',
+            'max_move_step':    kwargs.get('max_move_step',
                                            1.0),  # TODO: reasonable default?
-            'tnfa'            : kwargs.get('tnfa',
+            'tnfa':             kwargs.get('tnfa',
                                            False),
-            'engaged'         : kwargs.get('engaged',
+            'engaged':          kwargs.get('engaged',
                                            False),
             'status_iteration': kwargs.get('status_iteration',
                                            0),
@@ -115,7 +114,7 @@ class NeutrophilModel(PhagocyteModel):
                 for fungal_cell_index in neutrophil_cell['phagosome']:
                     if fungal_cell_index == -1:
                         continue
-                    afumigatus.cells[fungal_cell_index]['state'] = FungalState.RELEASING
+                    afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
 
             elif rg() < neutrophil.half_life:
                 neutrophil_cell['status'] = PhagocyteStatus.APOPTOTIC
@@ -159,17 +158,17 @@ class NeutrophilModel(PhagocyteModel):
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
                     if aspergillus_cell['dead']: continue
 
-                    if aspergillus_cell['status'] in {FungalForm.HYPHAE, FungalForm.GERM_TUBE}:
+                    if aspergillus_cell['status'] in {AfumigatusCellStatus.HYPHAE, AfumigatusCellStatus.GERM_TUBE}:
                         # possibly internalize the fungal cell
                         if rg() < neutrophil.pr_n_hyphae:
                             internalize_aspergillus(phagocyte_cell=neutrophil_cell,
                                                     aspergillus_cell=aspergillus_cell,
                                                     phagocyte=neutrophil)
-                            aspergillus_cell['status'] = FungalForm.DYING
+                            aspergillus_cell['status'] = AfumigatusCellStatus.DYING
                         else:
                             neutrophil_cell['engaged'] = True
 
-                    elif aspergillus_cell['status'] == FungalForm.SWELLING_CONIDIA:
+                    elif aspergillus_cell['status'] == AfumigatusCellStatus.SWELLING_CONIDIA:
                         if rg() < neutrophil.pr_n_phag:
                             internalize_aspergillus(phagocyte_cell=neutrophil_cell,
                                                     aspergillus_cell=aspergillus_cell,
@@ -191,15 +190,6 @@ class NeutrophilModel(PhagocyteModel):
                         neutrophil_cell['iron_pool'] = 0.0  # TODO: verify, Henrique's code looks odd
                         neutrophil_cell['status'] = PhagocyteStatus.DEAD
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVE
-
-            # interact with ROS
-
-            # TODO: INTERACTING is commented out most places in the original code and this just does a +0. Want to
-            #  confer before deleting, but this looks vestigial.
-            # elif itype is ROS and interactable.state == Neutrophil.INTERACTING:
-            #     if self.status == Neutrophil.ACTIVE:
-            #         interactable.inc(0)
-            #     return True
 
         return state
 

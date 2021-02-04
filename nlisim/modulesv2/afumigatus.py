@@ -17,9 +17,8 @@ from nlisim.random import rg
 from nlisim.state import State
 
 
-# TODO: naming
 @unique
-class FungalForm(IntEnum):
+class AfumigatusCellStatus(IntEnum):
     RESTING_CONIDIA = 0
     SWELLING_CONIDIA = auto()
     GERM_TUBE = auto()
@@ -29,7 +28,6 @@ class FungalForm(IntEnum):
     STERILE_CONIDIA = auto()
 
 
-# TODO: naming
 @unique
 class NetworkSpecies(IntEnum):
     hapX = 0  # gene
@@ -56,9 +54,8 @@ class NetworkSpecies(IntEnum):
     Oxygen = auto()
 
 
-# TODO: naming
 @unique
-class FungalState(IntEnum):
+class AfumigatusCellState(IntEnum):
     FREE = 0
     INTERNALIZING = auto()
     RELEASING = auto()
@@ -93,9 +90,9 @@ class AfumigatusCellData(CellData):
             'iron_pool':            kwargs.get('iron_pool',
                                                0),
             'state':                kwargs.get('state',
-                                               FungalState.FREE),
+                                               AfumigatusCellState.FREE),
             'status':               kwargs.get('status',
-                                               FungalForm.RESTING_CONIDIA),
+                                               AfumigatusCellStatus.RESTING_CONIDIA),
             'is_root':              kwargs.get('is_root',
                                                True),
             'root':                 kwargs.get('root',
@@ -240,7 +237,7 @@ class Afumigatus(ModuleModel):
 
             # TODO: this should never be reached?! Make sure that we release iron when we kill the fungal cell
             #  release cell's iron pool back to voxel
-            if afumigatus_cell['status'] in {FungalForm.DYING, FungalForm.DEAD}:
+            if afumigatus_cell['status'] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
                 # TODO: verify zyx (vs xyz)
                 iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
                 afumigatus_cell['iron_pool'] = 0.0
@@ -298,19 +295,19 @@ def fungus_macrophage_interaction(afumigatus: AfumigatusState,
                                   macrophage: MacrophageState,
                                   macrophage_cell: MacrophageCellData):
     probability_of_interaction = afumigatus.pr_ma_hyphae \
-        if afumigatus_cell['status'] == FungalForm.HYPHAE \
+        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE \
         else afumigatus.pr_ma_phag
 
     if rg.random() < probability_of_interaction:
         internalize_aspergillus(macrophage_cell,
                                 afumigatus_cell,
                                 macrophage,
-                                phagocytize=afumigatus_cell['status'] != FungalForm.HYPHAE)
+                                phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE)
 
         # unlink the fungal cell from its tree
-        if afumigatus_cell['status'] == FungalForm.HYPHAE and \
+        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
                 macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-            afumigatus_cell['status'] = FungalForm.DYING
+            afumigatus_cell['status'] = AfumigatusCellStatus.DYING
             if afumigatus_cell['next_septa'] != -1:
                 afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
             if afumigatus_cell['next_branch'] != -1:
@@ -329,9 +326,9 @@ def fungus_macrophage_interaction(afumigatus: AfumigatusState,
                 else:
                     assert False, "The fungal tree structure must be screwed up somehow"
 
-        if afumigatus_cell['status'] == FungalForm.HYPHAE and \
+        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
                 macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-            afumigatus_cell['status'] = FungalForm.DYING
+            afumigatus_cell['status'] = AfumigatusCellStatus.DYING
             # TODO: careful cell tree deletion
             if afumigatus_cell['next_septa'] == -1:
                 afumigatus_cell['next_septa']['is_root'] = True
@@ -353,29 +350,29 @@ def cell_self_update(afumigatus: AfumigatusState,
 
     # resting conidia become swelling conidia after a number of iterations
     # (with some probability)
-    if (afumigatus_cell['status'] == FungalForm.RESTING_CONIDIA and
+    if (afumigatus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA and
             afumigatus_cell['activation_iteration'] >= afumigatus.iter_to_swelling and
             rg.random() < afumigatus.pr_aspergillus_change):
-        afumigatus_cell['status'] = FungalForm.SWELLING_CONIDIA
+        afumigatus_cell['status'] = AfumigatusCellStatus.SWELLING_CONIDIA
         afumigatus_cell['activation_iteration'] = 0
 
-    elif (afumigatus_cell['status'] == FungalForm.SWELLING_CONIDIA and
+    elif (afumigatus_cell['status'] == AfumigatusCellStatus.SWELLING_CONIDIA and
           afumigatus_cell['activation_iteration'] >= afumigatus.iter_to_germinate):
-        afumigatus_cell['status'] = FungalForm.GERM_TUBE
+        afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
 
-    elif afumigatus_cell['status'] == FungalForm.DYING:
+    elif afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
         # TODO: Henrique said something about the DYING state not being necessary. First glance in code
         #  suggests that this update only removes the cells from live counts
-        afumigatus_cell['status'] = FungalForm.DEAD
+        afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
 
     # TODO: this looks redundant/unnecessary. well, as long as we are careful about pruning the tree
     if afumigatus_cell['next_septa'] == -1:
         afumigatus_cell['growable'] = True
 
     # TODO: verify this, 1 turn on internalizing then free?
-    if afumigatus_cell['state'] in {FungalState.INTERNALIZING, FungalState.RELEASING}:
-        afumigatus_cell['state'] = FungalState.FREE
+    if afumigatus_cell['state'] in {AfumigatusCellState.INTERNALIZING, AfumigatusCellState.RELEASING}:
+        afumigatus_cell['state'] = AfumigatusCellState.FREE
 
     # Note: called for every cell, but a no-op on non-root cells.
     diffuse_iron(afumigatus_index, afumigatus)

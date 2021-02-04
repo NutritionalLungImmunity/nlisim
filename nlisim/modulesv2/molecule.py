@@ -19,12 +19,7 @@ class MoleculeModel(ModuleModel):
                             h: float,
                             k_cat: float = 1.0,
                             voxel_volume: float) -> np.ndarray:
-        substrate /= voxel_volume  # transform into M
-        enzyme /= voxel_volume
-
-        # enzyme = np.minimum(substrate1, substrate2)
-        # substrate = np.maximum(substrate1, substrate2)
-
-        # TODO: replace with h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)
-        # by multiplying by voxel_volume/voxel_volume and removing the conversions to M
-        return h * k_cat * enzyme * substrate * voxel_volume / (substrate + km)
+        # Note: was originally h*k_cat*enzyme*substrate/(substrate+km), but with
+        # enzyme /= voxel_volume and substrate /= voxel_volume.
+        # This is algebraically equivalent and reduces the number of operations.
+        return h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)

@@ -5,29 +5,23 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, FungalForm
-from nlisim.modulesv2.erythrocyte import ErythrocyteState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
 from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.hemoglobin import HemoglobinState
-from nlisim.modulesv2.hemolysin import HemolysinState
 from nlisim.modulesv2.il6 import IL6State
 from nlisim.modulesv2.il8 import IL8State
-from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.macrophage import MacrophageState
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, \
     PhagocyteStatus
-from nlisim.modulesv2.ros import ROSState
 from nlisim.modulesv2.tnfa import TNFaState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
+
 class PneumocyteCellData(PhagocyteCellData):
     PNEUMOCYTE_FIELDS = [
         ('status', np.uint8),
         ('iteration', np.uint),
-        ('tnfa', np.bool),
+        ('tnfa', bool),
         ]
 
     dtype = np.dtype(CellData.FIELDS + PNEUMOCYTE_FIELDS, align=True)  # type: ignore
@@ -44,8 +38,9 @@ class PneumocyteCellData(PhagocyteCellData):
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+        return \
+            CellData.create_cell_tuple(**kwargs) + \
+            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -73,7 +68,6 @@ class PneumocyteModel(PhagocyteModel):
 
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
-        grid: RectangularGrid = state.grid
         geometry: GeometryState = state.geometry
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
@@ -93,14 +87,7 @@ class PneumocyteModel(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         pneumocyte: PneumocyteState = state.pneumocyte
-        erythrocyte: ErythrocyteState = state.erythrocyte
-        molecules: MoleculesState = state.molecules
-        hemoglobin: HemoglobinState = state.hemoglobin
-        hemolysin: HemolysinState = state.hemolysin
-        macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
-        iron: IronState = state.iron
-        ros: ROSState = state.ros
         il6: IL6State = state.il6
         il8: IL8State = state.il8
         tnfa: TNFaState = state.tnfa
@@ -138,7 +125,8 @@ class PneumocyteModel(PhagocyteModel):
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
 
                     # skip resting conidia
-                    if aspergillus_cell['status'] == FungalForm.RESTING_CONIDIA: continue
+                    if aspergillus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA:
+                        continue
 
                     if pneumocyte_cell['status'] != PhagocyteStatus.ACTIVE:
                         if rg() < pneumocyte.pr_p_int:
