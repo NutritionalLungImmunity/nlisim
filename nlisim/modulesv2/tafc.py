@@ -45,10 +45,10 @@ class TAFC(MoleculeModel):
 
         # config file values
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
-        tafc.tafc_up = self.config.getfloat('tafc_up')
-        tafc.tafc_qtty = self.config.getfloat('tafc_qtty')
 
         # computed values
+        tafc.tafc_qtty = self.config.getfloat('tafc_qtty') * 15 # TODO: unit_t
+        tafc.tafc_up = self.config.getfloat('tafc_up') / voxel_volume / 15
         tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
 
         return state

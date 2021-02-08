@@ -1,3 +1,4 @@
+import math
 import random
 
 import attr
@@ -6,7 +7,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point
-from nlisim.modulesv2.afumigatus import AfumigatusState, AfumigatusCellState
+from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
@@ -78,6 +79,7 @@ class MacrophageState(PhagocyteState):
     move_rate_rest: float
     move_rate_act: float
     iter_to_rest: int
+    time_to_change_state: float
     iter_to_change_state: int
     ma_internal_iron: float
     kd_ma_iron: float
@@ -94,19 +96,26 @@ class MacrophageModel(PhagocyteModel):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
+        time_step_size: float = state.simulation.time_step_size
 
         macrophage.max_conidia = self.config.getint('max_conidia')
-        macrophage.move_rate_act = self.config.getfloat('move_rate_act')
-        macrophage.move_rate_rest = self.config.getfloat('move_rate_rest')
         macrophage.iter_to_rest = self.config.getint('iter_to_rest')
-        macrophage.iter_to_change_state = self.config.getint('iter_to_change_state')
+        macrophage.time_to_change_state = self.config.getint('time_to_change_state')
         macrophage.ma_internal_iron = self.config.getfloat('ma_internal_iron')
         macrophage.kd_ma_iron = self.config.getfloat('kd_ma_iron')
         macrophage.ma_vol = self.config.getfloat('ma_vol')
-        macrophage.ma_half_life = self.config.getfloat('ma_half_life')
         macrophage.min_ma = self.config.getint('min_ma')
 
         macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')
+
+        # computed values
+        macrophage.move_rate_act = self.config.getfloat('move_rate_act') / time_step_size / 40  # TODO: 40?
+        macrophage.move_rate_rest = self.config.getfloat('move_rate_rest') / time_step_size / 40
+
+        macrophage.iter_to_change_state = int(macrophage.time_to_change_state * (60 / time_step_size))  # 4
+
+        macrophage.ma_half_life = - math.log(0.5) / (
+                self.config.getfloat('ma_half_life') * (60 / time_step_size))
 
         # initialize cells, placing them randomly TODO: can we do anything more specific?
         z_range = geometry.lung_tissue.shape[0]

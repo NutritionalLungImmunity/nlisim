@@ -52,13 +52,13 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.p1 = self.config.getfloat('p1')
         lactoferrin.p2 = self.config.getfloat('p2')
         lactoferrin.p3 = self.config.getfloat('p3')
-        lactoferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate')
         lactoferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
-        lactoferrin.lac_qtty = self.config.getfloat('lac_qtty')
 
         # computed values
+        lactoferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate') / voxel_volume
         lactoferrin.threshold = lactoferrin.k_m_tf_lac * voxel_volume / 1.0e6
         lactoferrin.rel_iron_imp_exp_unit_t = state.simulation.time_step_size / lactoferrin.iron_imp_exp_t
+        lactoferrin.lac_qtty = self.config.getfloat('lac_qtty') / 15
 
         return state
 
@@ -135,7 +135,9 @@ class Lactoferrin(MoleculeModel):
                                             voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin+Fe quantity
         mask = (dfe2dt_fe + dfedt_fe) > lactoferrin.grid['LactoferrinFe']
-        rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe)
+            np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         dfe2dt_fe[mask] = (dfe2dt_fe * rel)[mask]
         dfedt_fe[mask] = (dfedt_fe * rel)[mask]
 

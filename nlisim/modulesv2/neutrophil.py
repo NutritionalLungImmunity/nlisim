@@ -1,3 +1,5 @@
+import math
+
 import attr
 from attr import attrib, attrs
 import numpy as np
@@ -5,7 +7,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus, AfumigatusCellState
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, AfumigatusState
 from nlisim.modulesv2.erythrocyte import ErythrocyteState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.hemoglobin import HemoglobinState
@@ -72,6 +74,7 @@ def cell_list_factory(self: 'NeutrophilState') -> NeutrophilCellList:
 class NeutrophilState(PhagocyteState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
     half_life: float
+    time_to_change_state: float
     iter_to_change_state: int
     pr_n_hyphae: float
     pr_n_phag: float
@@ -84,12 +87,27 @@ class NeutrophilModel(PhagocyteModel):
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
+        voxel_volume = geometry.voxel_volume
+        time_step_size: float = state.simulation.time_step_size
 
-        neutrophil.half_life = self.config.getfloat('half_life')  # TODO: not a real half life
-        neutrophil.iter_to_change_state = self.config.getint('iter_to_change_state')
-        neutrophil.pr_n_hyphae = self.config.getfloat('pr_n_hyphae')
-        neutrophil.pr_n_phag = self.config.getfloat('pr_n_phag')
+        neutrophil.time_to_change_state = self.config.getfloat('time_to_change_state')
         neutrophil.max_conidia = self.config.getint('max_conidia')
+
+        # computed values
+        # TODO: not a real half life
+        neutrophil.half_life = - math.log(0.5) / (
+                self.config.getfloat('half_life') * (60 / time_step_size))
+
+        neutrophil.iter_to_change_state = int(neutrophil.time_to_change_state * 60 / time_step_size)
+
+        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
+        neutrophil.pr_n_hyphae = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
+                voxel_volume * self.config.getfloat('pr_n_hyphae')))  # TODO: -exp1m
+
+        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
+        neutrophil.pr_n_phag = 1 - math.exp(
+            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_n_phag')))  # TODO: -exp1m
 
         return state
 

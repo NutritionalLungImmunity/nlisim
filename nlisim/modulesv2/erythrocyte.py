@@ -1,3 +1,5 @@
+import math
+
 import attr
 from attr import attrib, attrs
 import numpy as np
@@ -5,7 +7,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusState, AfumigatusCellStatus
+from nlisim.modulesv2.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.hemoglobin import HemoglobinState
 from nlisim.modulesv2.hemolysin import HemolysinState
@@ -40,15 +42,19 @@ class ErythrocyteModel(PhagocyteModel):
     def initialize(self, state: State):
         erythrocyte: ErythrocyteState = state.erythrocyte
         geometry: GeometryState = state.geometry
+        voxel_volume = geometry.voxel_volume
+        time_step_size: float = state.simulation.time_step_size
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
         erythrocyte.max_erythrocyte_voxel = self.config.getint('max_erythrocyte_voxel')
         erythrocyte.hemoglobin_concentration = self.config.getfloat('hemoglobin_concentration')
-        erythrocyte.pr_ma_phag_eryt = self.config.getfloat('pr_ma_phag_eryt')
 
         # initialize cells
         # TODO: discuss
         erythrocyte.cells[geometry.lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
+        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
+        erythrocyte.pr_ma_phag_eryt = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
+                voxel_volume * self.config.getfloat('pr_ma_phag_eryt'))) # TODO: -expm1?
 
         return state
 

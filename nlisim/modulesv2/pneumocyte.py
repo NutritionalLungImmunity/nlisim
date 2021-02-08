@@ -5,7 +5,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
+from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusState
 from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.il6 import IL6State
 from nlisim.modulesv2.il8 import IL8State
@@ -56,6 +56,7 @@ def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
 class PneumocyteState(PhagocyteState):
     cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
     iter_to_rest: int
+    time_to_change_state: float
     iter_to_change_state: int
     p_il6_qtty: float
     p_il8_qtty: float
@@ -69,14 +70,18 @@ class PneumocyteModel(PhagocyteModel):
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
         geometry: GeometryState = state.geometry
+        time_step_size: float = state.simulation.time_step_size
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
-        pneumocyte.iter_to_rest = self.config.getint('iter_to_rest')
+        pneumocyte.time_to_rest = self.config.getint('time_to_rest')
         pneumocyte.iter_to_change_state = self.config.getint('iter_to_change_state')
 
         pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
         pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
         pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
+
+        # computed values
+        pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
