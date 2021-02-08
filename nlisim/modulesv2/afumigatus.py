@@ -1,4 +1,5 @@
 from enum import auto, IntEnum, unique
+import math
 from queue import SimpleQueue
 import random
 
@@ -167,16 +168,22 @@ def cell_list_factory(self: 'AfumigatusState') -> AfumigatusCellList:
 class AfumigatusState(ModuleState):
     cells: AfumigatusCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
     pr_ma_hyphae: float
+    pr_ma_hyphae_param: float
     pr_ma_phag: float
     pr_branch: float
     steps_to_bn_eval: int
     hyphae_volume: float
     kd_lip: float
-    iter_to_swelling: float
-    iter_to_germinate: float
+    time_to_swelling: float
+    iter_to_swelling: int
+    time_to_germinate: float
+    iter_to_germinate: int
     pr_aspergillus_change: float
     init_iron: float
     conidia_vol: float
+    rel_n_hyphae_int_unit_t: float
+    phag_afnt_t: float
+    aspergillus_change_half_life: float
 
 
 class Afumigatus(ModuleModel):
@@ -186,9 +193,11 @@ class Afumigatus(ModuleModel):
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
         geometry: GeometryState = state.geometry
+        voxel_volume = geometry.voxel_volume
+        time_step_size: float = state.simulation.time_step_size
 
-        afumigatus.pr_ma_hyphae = self.config.getfloat('pr_ma_hyphae')
-        afumigatus.pr_ma_phag = self.config.getfloat('pr_ma_phag')
+        afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
+        afumigatus.pr_ma_phag_param = self.config.getfloat('pr_ma_phag_param')
 
         afumigatus.pr_branch = self.config.getfloat('pr_branch')
         afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')
@@ -197,12 +206,32 @@ class Afumigatus(ModuleModel):
         afumigatus.hyphae_volume = self.config.getint('hyphae_volume')
         afumigatus.kd_lip = self.config.getint('kd_lip')
 
-        afumigatus.iter_to_swelling = self.config.getint('iter_to_swelling')
-        afumigatus.pr_aspergillus_change = self.config.getfloat('pr_aspergillus_change')
-        afumigatus.iter_to_germinate = self.config.getint('iter_to_germinate')
+        afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')
+        afumigatus.time_to_germinate = self.config.getfloat('time_to_germinate')
+        afumigatus.aspergillus_change_half_life = self.config.getfloat('aspergillus_change_half_life')
+
+        afumigatus.phag_afnt_t = self.config.getfloat('phag_afnt_t')
 
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
+
+        afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
+        afumigatus.rel_phag_afnt_unit_t = time_step_size / afumigatus.phag_afnt_t
+
+        afumigatus.pr_ma_hyphae = 1 - math.exp(- afumigatus.rel_n_hyphae_int_unit_t /
+                                               (voxel_volume * afumigatus.pr_ma_hyphae_param))
+        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)  # kd ~10x neut. (ref 71)
+        #  and below
+        afumigatus.pr_ma_phag = 1 - math.exp(- afumigatus.rel_phag_afnt_unit_t /
+                                             (voxel_volume * afumigatus.pr_ma_phag))
+        # pr_ma_phag = 1 - math.exp(-(
+        #            1 / voxel_vol) * rel_phag_afnt_unit_t / 1.32489230813214e+10)
+        # 30 min --> 1 - exp(-cells*t/kd) --> kd = 1.32489230813214e+10
+
+        afumigatus.iter_to_swelling = int(afumigatus.time_to_swelling * (60 / time_step_size) - 2)  # TODO: -2?
+        afumigatus.iter_to_germinate = int(afumigatus.time_to_germinate * (60 / time_step_size) - 2)  # TODO: -2?
+        afumigatus.pr_aspergillus_change = -math.log(0.5) / (
+                    afumigatus.aspergillus_change_half_life * (60 / time_step_size))
 
         # place cells for initial infection
         # TODO: 'smart' placement should be checked

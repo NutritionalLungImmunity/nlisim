@@ -64,24 +64,24 @@ class EstB(MoleculeModel):
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer
-        estb.iron_buffer = 0
+        estb.iron_buffer.fill(0.0)
 
         # interact with TAFC
-        v1 = self.michaelian_kinetics(substrate=tafc.grid[:, :, :, 0],
+        v1 = self.michaelian_kinetics(substrate=tafc.grid["TAFC"],
                                       enzyme=estb.grid,
                                       km=estb.k_m,
                                       k_cat=estb.kcat,
                                       h=state.simulation.time_step_size / 60,
                                       voxel_volume=voxel_volume)
-        v2 = self.michaelian_kinetics(substrate=tafc.grid[:, :, :, 1],
+        v2 = self.michaelian_kinetics(substrate=tafc.grid["TAFCBI"],
                                       enzyme=estb.grid,
                                       km=estb.k_m,
                                       k_cat=estb.kcat,
                                       h=state.simulation.time_step_size / 60,
                                       voxel_volume=voxel_volume)
-        tafc.grid[:, :, :, 0] -= v1
-        tafc.grid[:, :, :, 1] -= v2
-        estb.iron_buffer += v2
+        tafc.grid["TAFC"] -= v1
+        tafc.grid["TAFCBI"] -= v2
+        estb.iron_buffer += v2 # set equal to zero previously
 
         # Degrade EstB
         estb.grid *= estb.half_life_multiplier
