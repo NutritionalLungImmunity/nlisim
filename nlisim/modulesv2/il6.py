@@ -6,11 +6,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.neutrophil import NeutrophilState
-from nlisim.modulesv2.phagocyte import PhagocyteStatus
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -60,6 +57,10 @@ class IL6(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        from nlisim.modulesv2.macrophage import MacrophageState
+        from nlisim.modulesv2.neutrophil import NeutrophilState
+        from nlisim.modulesv2.phagocyte import PhagocyteStatus
+
         il6: IL6State = state.il6
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage

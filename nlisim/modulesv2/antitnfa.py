@@ -7,7 +7,6 @@ from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.tnfa import TNFaState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -54,6 +53,8 @@ class AntiTNFa(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advances the state by a single time step."""
+        from nlisim.modulesv2.tnfa import TNFaState
+
         anti_tnf_a: AntiTNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules
         geometry: GeometryState = state.geometry

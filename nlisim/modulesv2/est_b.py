@@ -6,10 +6,8 @@ import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.iron import IronState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.tafc import TAFCState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -55,6 +53,9 @@ class EstB(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        from nlisim.modulesv2.iron import IronState
+        from nlisim.modulesv2.tafc import TAFCState
+
         estb: EstBState = state.estb
         iron: IronState = state.iron
         tafc: TAFCState = state.tafc
@@ -81,7 +82,7 @@ class EstB(MoleculeModel):
                                       voxel_volume=voxel_volume)
         tafc.grid["TAFC"] -= v1
         tafc.grid["TAFCBI"] -= v2
-        estb.iron_buffer += v2 # set equal to zero previously
+        estb.iron_buffer += v2  # set equal to zero previously
 
         # Degrade EstB
         estb.grid *= estb.half_life_multiplier

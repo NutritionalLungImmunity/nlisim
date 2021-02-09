@@ -5,7 +5,6 @@ import numpy as np
 
 from nlisim.cell import CellData
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusCellState
 
 MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
@@ -63,7 +62,7 @@ class PhagocyteStatus(IntEnum):
 
 
 def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
-                            aspergillus_cell: AfumigatusCellData,
+                            aspergillus_cell: 'AfumigatusCellData',
                             phagocyte: PhagocyteState,
                             phagocytize: bool = False):
     """
@@ -80,6 +79,7 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
     -------
 
     """
+    from nlisim.modulesv2.afumigatus import AfumigatusCellStatus, AfumigatusCellState
 
     # We cannot internalize an already internalized fungal cell
     if aspergillus_cell['state'] != AfumigatusCellState.FREE:

@@ -7,7 +7,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point
-from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
+from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
@@ -74,7 +74,7 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 
 
 @attr.s(kw_only=True)
-class MacrophageState(PhagocyteState):
+class MacrophageState(ModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     move_rate_rest: float
     move_rate_act: float
@@ -89,7 +89,7 @@ class MacrophageState(PhagocyteState):
     init_num_macrophages: int
 
 
-class MacrophageModel(PhagocyteModel):
+class Macrophage(PhagocyteModel):
     name = 'macrophage'
     StateClass = MacrophageState
 
@@ -130,6 +130,8 @@ class MacrophageModel(PhagocyteModel):
         return state
 
     def advance(self, state: State, previous_time: float):
+        from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
+
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
 

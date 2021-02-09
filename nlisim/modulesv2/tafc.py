@@ -4,13 +4,9 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
-    AfumigatusState, NetworkSpecies
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.iron import IronState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.transferrin import TransferrinState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -47,7 +43,7 @@ class TAFC(MoleculeModel):
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
 
         # computed values
-        tafc.tafc_qtty = self.config.getfloat('tafc_qtty') * 15 # TODO: unit_t
+        tafc.tafc_qtty = self.config.getfloat('tafc_qtty') * 15  # TODO: unit_t
         tafc.tafc_up = self.config.getfloat('tafc_up') / voxel_volume / 15
         tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
 
@@ -55,6 +51,11 @@ class TAFC(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        from nlisim.modulesv2.iron import IronState
+        from nlisim.modulesv2.transferrin import TransferrinState
+        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
+            AfumigatusState, NetworkSpecies
+
         tafc: TAFCState = state.tafc
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron

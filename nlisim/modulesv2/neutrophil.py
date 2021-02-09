@@ -7,17 +7,10 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, AfumigatusState
-from nlisim.modulesv2.erythrocyte import ErythrocyteState
+from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.hemoglobin import HemoglobinState
-from nlisim.modulesv2.hemolysin import HemolysinState
-from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.modulesv2.phagocyte import internalize_aspergillus, PhagocyteCellData, PhagocyteModel, PhagocyteState, \
     PhagocyteStatus
-from nlisim.modulesv2.ros import ROSState
 from nlisim.random import rg
 from nlisim.state import State
 
@@ -71,7 +64,7 @@ def cell_list_factory(self: 'NeutrophilState') -> NeutrophilCellList:
 
 
 @attrs(kw_only=True)
-class NeutrophilState(PhagocyteState):
+class NeutrophilState(ModuleState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
     half_life: float
     time_to_change_state: float
@@ -80,7 +73,7 @@ class NeutrophilState(PhagocyteState):
     pr_n_phag: float
 
 
-class NeutrophilModel(PhagocyteModel):
+class Neutrophil(PhagocyteModel):
     name = 'neutrophil'
     StateClass = NeutrophilState
 
@@ -112,16 +105,16 @@ class NeutrophilModel(PhagocyteModel):
         return state
 
     def advance(self, state: State, previous_time: float):
+        """Advance the state by a single time step."""
+        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
+            AfumigatusState
+        from nlisim.modulesv2.iron import IronState
+        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
+
         neutrophil: NeutrophilState = state.neutrophil
-        erythrocyte: ErythrocyteState = state.erythrocyte
-        molecules: MoleculesState = state.molecules
-        hemoglobin: HemoglobinState = state.hemoglobin
-        hemolysin: HemolysinState = state.hemolysin
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
         iron: IronState = state.iron
-        ros: ROSState = state.ros
-        geometry: GeometryState = state.geometry
         grid: RectangularGrid = state.grid
 
         for neutrophil_cell_index in neutrophil.cells.alive():
