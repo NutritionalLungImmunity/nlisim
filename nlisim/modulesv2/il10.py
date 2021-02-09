@@ -7,8 +7,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -36,8 +35,6 @@ class IL10(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         il10: IL10State = state.il10
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         il10.half_life = self.config.getfloat('half_life')
@@ -45,9 +42,9 @@ class IL10(MoleculeModel):
         il10.k_d = self.config.getfloat('k_d')
 
         # computed values
-        il10.half_life_multiplier = 1 + math.log(0.5) / (il10.half_life / state.simulation.time_step_size)
+        il10.half_life_multiplier = 1 + math.log(0.5) / (il10.half_life / self.time_step)
         # time unit conversions
-        il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * 60 * state.simulation.time_step_size
+        il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * 60 * self.time_step
 
         return state
 
@@ -74,7 +71,7 @@ class IL10(MoleculeModel):
                                                  PhagocyteStatus.NECROTIC}:
                 if activation_function(x=il10.grid[tuple(macrophage_cell_voxel)],
                                        kd=il10.k_d,
-                                       h=state.simulation.time_step_size / 60,
+                                       h=self.time_step / 60,
                                        volume=geometry.voxel_volume) < rg():
                     if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVATING

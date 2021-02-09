@@ -66,7 +66,7 @@ class PneumocyteModel(PhagocyteModel):
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
         geometry: GeometryState = state.geometry
-        time_step_size: float = state.simulation.time_step_size
+        time_step_size: float = self.time_step
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')
@@ -154,7 +154,7 @@ class PneumocyteModel(PhagocyteModel):
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE and \
                     rg() < activation_function(x=tnfa.grid,
                                                kd=tnfa.k_d,
-                                               h=state.simulation.time_step_size / 60,
+                                               h=self.time_step / 60,
                                                volume=geometry.voxel_volume):
                 pneumocyte_cell['iteration'] = 0
                 pneumocyte_cell['tnfa'] = True

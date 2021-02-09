@@ -7,8 +7,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -49,11 +48,11 @@ class IL8(MoleculeModel):
         il8.k_d = self.config.getfloat('k_d')
 
         # computed values
-        il8.half_life_multiplier = 1 + math.log(0.5) / (il8.half_life / state.simulation.time_step_size)
+        il8.half_life_multiplier = 1 + math.log(0.5) / (il8.half_life / self.time_step)
         # time unit conversions
-        il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * 60 * state.simulation.time_step_size
-        il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * 60 * state.simulation.time_step_size
-        il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate * 60 * state.simulation.time_step_size
+        il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * 60 * self.time_step
+        il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * 60 * self.time_step
+        il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate * 60 * self.time_step
 
         return state
 
@@ -75,7 +74,7 @@ class IL8(MoleculeModel):
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
                 if activation_function(x=il8.grid[tuple(neutrophil_cell_voxel)],
                                        kd=il8.k_d,
-                                       h=state.simulation.time_step_size / 60,
+                                       h=self.time_step / 60,
                                        volume=geometry.voxel_volume) < rg():
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0

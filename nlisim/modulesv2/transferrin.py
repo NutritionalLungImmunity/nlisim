@@ -8,7 +8,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculeModel
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -84,7 +84,7 @@ class Transferrin(MoleculeModel):
         transferrin.default_tffe2_concentration = \
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
 
-        transferrin.rel_iron_imp_exp_unit_t = state.simulation.time_step_size / transferrin.iron_imp_exp_t
+        transferrin.rel_iron_imp_exp_unit_t = self.time_step / transferrin.iron_imp_exp_t
         # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
         #  Adjust comments in config?
         transferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate') / voxel_volume

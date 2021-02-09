@@ -6,8 +6,7 @@ import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -46,7 +45,7 @@ class EstB(MoleculeModel):
         estb.system_concentration = self.config.getfloat('system_concentration')
 
         # computed values
-        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / state.simulation.time_step_size)
+        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         return state
@@ -72,13 +71,13 @@ class EstB(MoleculeModel):
                                       enzyme=estb.grid,
                                       km=estb.k_m,
                                       k_cat=estb.kcat,
-                                      h=state.simulation.time_step_size / 60,
+                                      h=self.time_step / 60,
                                       voxel_volume=voxel_volume)
         v2 = self.michaelian_kinetics(substrate=tafc.grid["TAFCBI"],
                                       enzyme=estb.grid,
                                       km=estb.k_m,
                                       k_cat=estb.kcat,
-                                      h=state.simulation.time_step_size / 60,
+                                      h=self.time_step / 60,
                                       voxel_volume=voxel_volume)
         tafc.grid["TAFC"] -= v1
         tafc.grid["TAFCBI"] -= v2

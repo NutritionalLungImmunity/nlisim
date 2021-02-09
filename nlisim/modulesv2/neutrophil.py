@@ -82,7 +82,7 @@ class Neutrophil(PhagocyteModel):
         grid: RectangularGrid = state.grid
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
-        time_step_size: float = state.simulation.time_step_size
+        time_step_size: float = self.time_step
 
         neutrophil.time_to_change_state = self.config.getfloat('time_to_change_state')
         neutrophil.max_conidia = self.config.getint('max_conidia')
@@ -96,11 +96,11 @@ class Neutrophil(PhagocyteModel):
 
         rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
         neutrophil.pr_n_hyphae = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
-                voxel_volume * self.config.getfloat('pr_n_hyphae')))  # TODO: -exp1m
+                voxel_volume * self.config.getfloat('pr_n_hyphae_param')))  # TODO: -exp1m
 
         rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
         neutrophil.pr_n_phag = 1 - math.exp(
-            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_n_phag')))  # TODO: -exp1m
+            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_n_phag_param')))  # TODO: -exp1m
 
         return state
 

@@ -5,8 +5,7 @@ import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -44,7 +43,7 @@ class AntiTNFa(MoleculeModel):
 
         # computed values
         anti_tnf_a.system_amount_per_voxel = anti_tnf_a.system_concentration * voxel_volume
-        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (anti_tnf_a.half_life / state.simulation.time_step_size)
+        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (anti_tnf_a.half_life / self.time_step)
 
         # initialize concentration field
         anti_tnf_a.grid = anti_tnf_a.system_amount_per_voxel

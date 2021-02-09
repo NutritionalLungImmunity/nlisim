@@ -122,8 +122,8 @@ class AfumigatusCellData(CellData):
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + [initializer[key] for key, _ in
-                                                       AfumigatusCellData.AFUMIGATUS_FIELDS]
+        return CellData.create_cell_tuple(**kwargs) + tuple([initializer[key] for key, *_ in
+                                                             AfumigatusCellData.AFUMIGATUS_FIELDS])
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
@@ -195,7 +195,7 @@ class Afumigatus(ModuleModel):
         afumigatus: AfumigatusState = state.afumigatus
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
-        time_step_size: float = state.simulation.time_step_size
+        time_step_size: float = self.time_step
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
         afumigatus.pr_ma_phag_param = self.config.getfloat('pr_ma_phag_param')
@@ -204,8 +204,8 @@ class Afumigatus(ModuleModel):
         afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')
 
         afumigatus.conidia_vol = self.config.getfloat('conidia_vol')
-        afumigatus.hyphae_volume = self.config.getint('hyphae_volume')
-        afumigatus.kd_lip = self.config.getint('kd_lip')
+        afumigatus.hyphae_volume = self.config.getfloat('hyphae_volume')
+        afumigatus.kd_lip = self.config.getfloat('kd_lip')
 
         afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')
         afumigatus.time_to_germinate = self.config.getfloat('time_to_germinate')
@@ -224,7 +224,7 @@ class Afumigatus(ModuleModel):
         # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)  # kd ~10x neut. (ref 71)
         #  and below
         afumigatus.pr_ma_phag = 1 - math.exp(- afumigatus.rel_phag_afnt_unit_t /
-                                             (voxel_volume * afumigatus.pr_ma_phag))
+                                             (voxel_volume * self.config.getfloat('pr_ma_phag_param')))
         # pr_ma_phag = 1 - math.exp(-(
         #            1 / voxel_vol) * rel_phag_afnt_unit_t / 1.32489230813214e+10)
         # 30 min --> 1 - exp(-cells*t/kd) --> kd = 1.32489230813214e+10
@@ -243,7 +243,7 @@ class Afumigatus(ModuleModel):
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=1) | np.roll(epithelium_mask, -1, axis=1)
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=2) | np.roll(epithelium_mask, -1, axis=2)
         locations = list(zip(*np.where(np.logical_and(epithelium_mask, geometry.lung_tissue == TissueType.AIR))))
-        for z, y, x in random.sample(locations, self.config.getint('init_infection_num')):
+        for z, y, x in random.choices(locations, k=self.config.getint('init_infection_num')):
             afumigatus.cells.append(AfumigatusCellData.create_cell(point=Point(x=x, y=y, z=z),
                                                                    iron_pool=afumigatus.init_iron))
 

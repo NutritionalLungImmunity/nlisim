@@ -61,7 +61,7 @@ class MacrophageCellData(PhagocyteCellData):
         # ensure that these come in the correct order
         return \
             PhagocyteCellData.create_cell_tuple(**kwargs) + \
-            [initializer[key] for key, _ in MacrophageCellData.MACROPHAGE_FIELDS]
+            tuple([initializer[key] for key, *_ in MacrophageCellData.MACROPHAGE_FIELDS])
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -96,7 +96,7 @@ class Macrophage(PhagocyteModel):
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
-        time_step_size: float = state.simulation.time_step_size
+        time_step_size: float = self.time_step
 
         macrophage.max_conidia = self.config.getint('max_conidia')
         macrophage.iter_to_rest = self.config.getint('iter_to_rest')
@@ -192,7 +192,7 @@ class Macrophage(PhagocyteModel):
                                                  PhagocyteStatus.APOPTOTIC}:
                 if rg() < activation_function(x=macrophage_cell['iron_pool'] - macrophage.ma_internal_iron,
                                               kd=macrophage.kd_ma_iron,
-                                              h=state.simulation.time_step_size / 60,
+                                              h=self.time_step / 60,
                                               volume=macrophage.ma_vol):
                     macrophage_cell['status'] = PhagocyteStatus.ANERGIC
                     macrophage_cell['status_iteration'] = 0

@@ -7,8 +7,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -49,11 +48,11 @@ class MIP2(MoleculeModel):
         mip2.k_d = self.config.getfloat('k_d')
 
         # computed values
-        mip2.half_life_multiplier = 1 + math.log(0.5) / (mip2.half_life / state.simulation.time_step_size)
+        mip2.half_life_multiplier = 1 + math.log(0.5) / (mip2.half_life / self.time_step)
         # time unit conversions
-        mip2.macrophage_secretion_rate_unit_t = mip2.macrophage_secretion_rate * 60 * state.simulation.time_step_size
-        mip2.neutrophil_secretion_rate_unit_t = mip2.neutrophil_secretion_rate * 60 * state.simulation.time_step_size
-        mip2.pneumocyte_secretion_rate_unit_t = mip2.pneumocyte_secretion_rate * 60 * state.simulation.time_step_size
+        mip2.macrophage_secretion_rate_unit_t = mip2.macrophage_secretion_rate * 60 * self.time_step
+        mip2.neutrophil_secretion_rate_unit_t = mip2.neutrophil_secretion_rate * 60 * self.time_step
+        mip2.pneumocyte_secretion_rate_unit_t = mip2.pneumocyte_secretion_rate * 60 * self.time_step
 
         return state
 
@@ -76,7 +75,7 @@ class MIP2(MoleculeModel):
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(x=mip2.grid,
                                                                 kd=mip2.k_d,
-                                                                h=state.simulation.time_step_size / 60,
+                                                                h=self.time_step / 60,
                                                                 volume=voxel_volume)
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
