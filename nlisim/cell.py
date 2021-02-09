@@ -76,7 +76,7 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
+    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs):
         """Create a tuple of fields attached to a single cell.
 
         The base class version of this method returns the fields associated with

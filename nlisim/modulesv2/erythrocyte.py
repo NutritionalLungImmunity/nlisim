@@ -43,7 +43,7 @@ class ErythrocyteModel(PhagocyteModel):
         erythrocyte: ErythrocyteState = state.erythrocyte
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
-        time_step_size: float = state.simulation.time_step_size
+        time_step_size: float = self.time_step
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
         erythrocyte.max_erythrocyte_voxel = self.config.getint('max_erythrocyte_voxel')
@@ -54,7 +54,7 @@ class ErythrocyteModel(PhagocyteModel):
         erythrocyte.cells[geometry.lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
         rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
         erythrocyte.pr_ma_phag_eryt = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
-                voxel_volume * self.config.getfloat('pr_ma_phag_eryt'))) # TODO: -expm1?
+                voxel_volume * self.config.getfloat('pr_ma_phag_eryt')))  # TODO: -expm1?
 
         return state
 
@@ -86,7 +86,7 @@ class ErythrocyteModel(PhagocyteModel):
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells['count'] * activation_function(x=hemolysin.grid,
                                                                kd=erythrocyte.kd_hemo,
-                                                               h=state.simulation.time_step_size / 60,
+                                                               h=self.time_step / 60,
                                                                volume=geometry.voxel_volume)
         num = np.minimum(np.random.poisson(avg, shape),
                          erythrocyte.cells['count'])

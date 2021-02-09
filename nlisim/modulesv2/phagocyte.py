@@ -28,7 +28,7 @@ class PhagocyteCellData(CellData):
 
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + \
-               [initializer[key] for key, _ in PhagocyteCellData.PHAGOCYTE_FIELDS]
+               tuple([initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS])
 
 
 @attrs(kw_only=True)

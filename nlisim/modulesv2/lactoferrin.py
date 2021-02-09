@@ -5,8 +5,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction, turnover_rate
 
@@ -52,7 +51,7 @@ class Lactoferrin(MoleculeModel):
         # computed values
         lactoferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate') / voxel_volume
         lactoferrin.threshold = lactoferrin.k_m_tf_lac * voxel_volume / 1.0e6
-        lactoferrin.rel_iron_imp_exp_unit_t = state.simulation.time_step_size / lactoferrin.iron_imp_exp_t
+        lactoferrin.rel_iron_imp_exp_unit_t = self.time_step / lactoferrin.iron_imp_exp_t
         lactoferrin.lac_qtty = self.config.getfloat('lac_qtty') / 15
 
         return state
@@ -110,12 +109,12 @@ class Lactoferrin(MoleculeModel):
         dfe2dt = self.michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
                                           enzyme=lactoferrin.grid["Lactoferrin"],
                                           km=lactoferrin.k_m_tf_lac,
-                                          h=state.simulation.time_step_size / 60,
+                                          h=self.time_step / 60,
                                           voxel_volume=voxel_volume)
         dfedt = self.michaelian_kinetics(substrate=transferrin.grid['TfFe'],
                                          enzyme=lactoferrin.grid['Lactoferrin'],
                                          km=lactoferrin.k_m_tf_lac,
-                                         h=state.simulation.time_step_size / 60,
+                                         h=self.time_step / 60,
                                          voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin quantity
         mask = (dfe2dt + dfedt) > lactoferrin.grid['Lactoferrin']
@@ -127,12 +126,12 @@ class Lactoferrin(MoleculeModel):
         dfe2dt_fe = self.michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
                                              enzyme=lactoferrin.grid['LactoferrinFe'],
                                              km=lactoferrin.k_m_tf_lac,
-                                             h=state.simulation.time_step_size / 60,
+                                             h=self.time_step / 60,
                                              voxel_volume=voxel_volume)
         dfedt_fe = self.michaelian_kinetics(substrate=transferrin.grid['TfFe'],
                                             enzyme=lactoferrin.grid['LactoferrinFe'],
                                             km=lactoferrin.k_m_tf_lac,
-                                            h=state.simulation.time_step_size / 60,
+                                            h=self.time_step / 60,
                                             voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin+Fe quantity
         mask = (dfe2dt_fe + dfedt_fe) > lactoferrin.grid['LactoferrinFe']

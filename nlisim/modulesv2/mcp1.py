@@ -6,8 +6,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -44,10 +43,10 @@ class MCP1(MoleculeModel):
         mcp1.k_d = self.config.getfloat('k_d')
 
         # computed values
-        mcp1.half_life_multiplier = 1 + math.log(0.5) / (mcp1.half_life / state.simulation.time_step_size)
+        mcp1.half_life_multiplier = 1 + math.log(0.5) / (mcp1.half_life / self.time_step)
         # time unit conversions
-        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * state.simulation.time_step_size
-        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * state.simulation.time_step_size
+        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * self.time_step
+        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * self.time_step
 
         return state
 

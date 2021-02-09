@@ -5,7 +5,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculeModel
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -48,7 +48,7 @@ class Hepcidin(MoleculeModel):
         activated_voxels = \
             zip(*np.where(activation_function(x=hepcidin.grid,
                                               kd=hepcidin.kd_hep,
-                                              h=state.simulation.time_step_size / 60,
+                                              h=self.time_step / 60,
                                               volume=geometry.voxel_volume) >
                           np.random.random(hepcidin.grid.shape)))
         for z, y, x in activated_voxels:

@@ -5,8 +5,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -70,12 +69,12 @@ class TAFC(MoleculeModel):
         dfe2dt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe2"],
                                           enzyme=tafc.grid["TAFC"],
                                           km=tafc.k_m_tf_tafc,
-                                          h=state.simulation.time_step_size / 60,
+                                          h=self.time_step / 60,
                                           voxel_volume=voxel_volume)
         dfedt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe"],
                                          enzyme=tafc.grid["TAFC"],
                                          km=tafc.k_m_tf_tafc,
-                                         h=state.simulation.time_step_size / 60,
+                                         h=self.time_step / 60,
                                          voxel_volume=voxel_volume)
 
         # - enforce bounds from TAFC quantity
