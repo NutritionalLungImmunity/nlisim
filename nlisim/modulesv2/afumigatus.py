@@ -12,7 +12,6 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modulesv2.geometry import GeometryState, TissueType
 from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 from nlisim.modulesv2.phagocyte import internalize_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
@@ -190,6 +189,8 @@ class Afumigatus(ModuleModel):
     name = 'afumigatus'
     StateClass = AfumigatusState
 
+    from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
+
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
         geometry: GeometryState = state.geometry
@@ -231,7 +232,7 @@ class Afumigatus(ModuleModel):
         afumigatus.iter_to_swelling = int(afumigatus.time_to_swelling * (60 / time_step_size) - 2)  # TODO: -2?
         afumigatus.iter_to_germinate = int(afumigatus.time_to_germinate * (60 / time_step_size) - 2)  # TODO: -2?
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
-                    afumigatus.aspergillus_change_half_life * (60 / time_step_size))
+                afumigatus.aspergillus_change_half_life * (60 / time_step_size))
 
         # place cells for initial infection
         # TODO: 'smart' placement should be checked
@@ -249,6 +250,8 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
+        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
+
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
         iron: IronState = state.iron
@@ -281,7 +284,7 @@ class Afumigatus(ModuleModel):
                                                  PhagocyteStatus.DEAD}:
                     continue
 
-                fungus_macrophage_interaction(afumigatus, afumigatus_cell, macrophage, macrophage_cell)
+                self.fungus_macrophage_interaction(afumigatus, afumigatus_cell, macrophage, macrophage_cell)
 
             # -----------
 
@@ -318,58 +321,59 @@ class Afumigatus(ModuleModel):
     #                 self.growth_iteration = self.growth_iteration + 1
     #     return septa
 
+    def fungus_macrophage_interaction(afumigatus: AfumigatusState,
+                                      afumigatus_cell: AfumigatusCellData,
+                                      macrophage: 'MacrophageState',
+                                      macrophage_cell: 'MacrophageCellData'):
+        from nlisim.modulesv2.macrophage import PhagocyteStatus
 
-def fungus_macrophage_interaction(afumigatus: AfumigatusState,
-                                  afumigatus_cell: AfumigatusCellData,
-                                  macrophage: MacrophageState,
-                                  macrophage_cell: MacrophageCellData):
-    probability_of_interaction = afumigatus.pr_ma_hyphae \
-        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE \
-        else afumigatus.pr_ma_phag
+        probability_of_interaction = afumigatus.pr_ma_hyphae \
+            if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE \
+            else afumigatus.pr_ma_phag
 
-    if rg.random() < probability_of_interaction:
-        internalize_aspergillus(macrophage_cell,
-                                afumigatus_cell,
-                                macrophage,
-                                phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE)
+        if rg.random() < probability_of_interaction:
+            internalize_aspergillus(macrophage_cell,
+                                    afumigatus_cell,
+                                    macrophage,
+                                    phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE)
 
-        # unlink the fungal cell from its tree
-        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
-                macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-            afumigatus_cell['status'] = AfumigatusCellStatus.DYING
-            if afumigatus_cell['next_septa'] != -1:
-                afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
-            if afumigatus_cell['next_branch'] != -1:
-                afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
+            # unlink the fungal cell from its tree
+            if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
+                    macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                afumigatus_cell['status'] = AfumigatusCellStatus.DYING
+                if afumigatus_cell['next_septa'] != -1:
+                    afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
+                if afumigatus_cell['next_branch'] != -1:
+                    afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
 
-            # TODO: what if the cell isn't a root? adding this. Will these be growable after a
-            #  macrophage gets them? I haven't done anything with that.
-            # TODO: this really should be spun off into its own method
-            parent_id = afumigatus_cell['previous_septa']
-            if parent_id != -1:
-                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                if parent_cell['next_septa'] == afumigatus_cell:
-                    parent_cell['next_septa'] = -1
-                elif parent_cell['next_branch'] == afumigatus_cell:
-                    parent_cell['next_branch'] = -1
-                else:
-                    assert False, "The fungal tree structure must be screwed up somehow"
+                # TODO: what if the cell isn't a root? adding this. Will these be growable after a
+                #  macrophage gets them? I haven't done anything with that.
+                # TODO: this really should be spun off into its own method
+                parent_id = afumigatus_cell['previous_septa']
+                if parent_id != -1:
+                    parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+                    if parent_cell['next_septa'] == afumigatus_cell:
+                        parent_cell['next_septa'] = -1
+                    elif parent_cell['next_branch'] == afumigatus_cell:
+                        parent_cell['next_branch'] = -1
+                    else:
+                        assert False, "The fungal tree structure must be screwed up somehow"
 
-        if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
-                macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-            afumigatus_cell['status'] = AfumigatusCellStatus.DYING
-            # TODO: careful cell tree deletion
-            if afumigatus_cell['next_septa'] == -1:
-                afumigatus_cell['next_septa']['is_root'] = True
-                afumigatus_cell['next_septa']['previous_septa'] = -1
-            if afumigatus_cell['next_branch'] == -1:
-                afumigatus_cell['next_branch']['is_root'] = True
-                afumigatus_cell['next_branch']['previous_septa'] = -1
+            if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE and \
+                    macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                afumigatus_cell['status'] = AfumigatusCellStatus.DYING
+                # TODO: careful cell tree deletion
+                if afumigatus_cell['next_septa'] == -1:
+                    afumigatus_cell['next_septa']['is_root'] = True
+                    afumigatus_cell['next_septa']['previous_septa'] = -1
+                if afumigatus_cell['next_branch'] == -1:
+                    afumigatus_cell['next_branch']['is_root'] = True
+                    afumigatus_cell['next_branch']['previous_septa'] = -1
 
-        # TODO: Ask about this dead code.
-        # else:
-        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-        #         interactable.engaged = True
+            # TODO: Ask about this dead code.
+            # else:
+            #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+            #         interactable.engaged = True
 
 
 def cell_self_update(afumigatus: AfumigatusState,

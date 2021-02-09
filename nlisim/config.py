@@ -4,7 +4,7 @@ from importlib import import_module
 from io import StringIO, TextIOBase
 from pathlib import PurePath
 import re
-from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
+from typing import List, Optional, TextIO, Type, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from nlisim.module import ModuleModel  # noqa
@@ -70,7 +70,7 @@ class SimulationConfig(ConfigParser):
         if path is None:
             path = repr(func)
 
-        if not issubclass(func, ModuleModel):
+        if func is None or not issubclass(func, ModuleModel):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')

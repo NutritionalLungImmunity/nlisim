@@ -2,9 +2,7 @@ import attr
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecule import MoleculeModel
-from nlisim.modulesv2.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -24,9 +22,9 @@ class ROS(MoleculeModel):
     StateClass = ROSState
 
     def initialize(self, state: State) -> State:
-        ros: ROSState = state.ros
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        # ros: ROSState = state.ros
+        # geometry: GeometryState = state.geometry
+        # voxel_volume = geometry.voxel_volume
 
         # config file values
 
@@ -36,8 +34,8 @@ class ROS(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        ros: ROSState = state.ros
-        molecules: MoleculesState = state.molecules
+        # ros: ROSState = state.ros
+        # molecules: MoleculesState = state.molecules
 
         # TODO: code below adds zero, omitting until we have a non-trivial model
 

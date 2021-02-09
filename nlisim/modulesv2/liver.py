@@ -5,12 +5,8 @@ import numpy as np
 
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.hepcidin import HepcidinState
-from nlisim.modulesv2.il6 import IL6State
-from nlisim.modulesv2.macrophage import MacrophageState
 from nlisim.modulesv2.molecule import MoleculeModel
 from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.transferrin import TransferrinState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -53,6 +49,11 @@ class Liver(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        from nlisim.modulesv2.hepcidin import HepcidinState
+        from nlisim.modulesv2.il6 import IL6State
+        from nlisim.modulesv2.macrophage import MacrophageState
+        from nlisim.modulesv2.transferrin import TransferrinState
+
         liver: LiverState = state.liver
         transferrin: TransferrinState = state.transferrin
         il6: IL6State = state.il6
