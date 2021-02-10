@@ -1,4 +1,5 @@
 from enum import auto, IntEnum, unique
+from typing import Union
 
 from attr import attrs
 import numpy as np
@@ -63,7 +64,8 @@ class PhagocyteStatus(IntEnum):
 
 def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
                             aspergillus_cell: 'AfumigatusCellData',
-                            phagocyte: PhagocyteState,
+                            aspergillus_cell_index: int,
+                            phagocyte: Union['PneumocyteCellData', 'NeutrophilCellData', 'MacrophageCellData'],
                             phagocytize: bool = False):
     """
     Possibly have a phagocyte phagocytize a fungal cell
@@ -100,7 +102,7 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
                 # place the fungal cell in the phagosome,
                 # sorting makes sure that an 'empty' i.e. -1 slot is first
                 phagocyte_cell['phagosome'].sort()
-                phagocyte_cell['phagosome'][0] = aspergillus_cell['id']
+                phagocyte_cell['phagosome'][0] = aspergillus_cell_index
 
     # TODO: what is going on here? is the if too loose?
     if aspergillus_cell['status'] != AfumigatusCellStatus.RESTING_CONIDIA:

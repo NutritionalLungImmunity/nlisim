@@ -131,9 +131,11 @@ class TAFC(MoleculeModel):
                 tafc.grid['TAFC'][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
 
         # Degrade TAFC
-        tafc.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+        trnvr_rt = turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
                                    x_system_mol=0.0,
                                    base_turnover_rate=molecules.turnover_rate,
                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tafc.grid['TAFC'] *= trnvr_rt
+        tafc.grid['TAFCBI'] *= trnvr_rt
 
         return state

@@ -5,9 +5,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
+from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, \
-    PhagocyteStatus
+from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -36,7 +36,7 @@ class PneumocyteCellData(PhagocyteCellData):
         # ensure that these come in the correct order
         return \
             CellData.create_cell_tuple(**kwargs) + \
-            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+            tuple([initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS])
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -49,8 +49,9 @@ def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
 
 
 @attrs(kw_only=True)
-class PneumocyteState(PhagocyteState):
+class PneumocyteState(ModuleState):
     cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
+    time_to_rest: float
     iter_to_rest: int
     time_to_change_state: float
     iter_to_change_state: int
@@ -59,7 +60,7 @@ class PneumocyteState(PhagocyteState):
     p_tnf_qtty: float
 
 
-class PneumocyteModel(PhagocyteModel):
+class Pneumocyte(PhagocyteModel):
     name = 'pneumocyte'
     StateClass = PneumocyteState
 
@@ -70,7 +71,7 @@ class PneumocyteModel(PhagocyteModel):
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')
-        pneumocyte.iter_to_change_state = self.config.getint('iter_to_change_state')
+        pneumocyte.time_to_change_state = self.config.getint('time_to_change_state')
 
         pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
         pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
@@ -78,6 +79,7 @@ class PneumocyteModel(PhagocyteModel):
 
         # computed values
         pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
+        pneumocyte.iter_to_change_state = int(pneumocyte.time_to_change_state * (60 / time_step_size))
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
@@ -136,7 +138,7 @@ class PneumocyteModel(PhagocyteModel):
                         continue
 
                     if pneumocyte_cell['status'] != PhagocyteStatus.ACTIVE:
-                        if rg() < pneumocyte.pr_p_int:
+                        if rg.uniform() < pneumocyte.pr_p_int:
                             pneumocyte_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
                         # TODO: I don't get this, looks like it zeros out the iteration when activating
@@ -152,7 +154,7 @@ class PneumocyteModel(PhagocyteModel):
 
             # interact with TNFa
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE and \
-                    rg() < activation_function(x=tnfa.grid,
+                    rg.uniform() < activation_function(x=tnfa.grid,
                                                kd=tnfa.k_d,
                                                h=self.time_step / 60,
                                                volume=geometry.voxel_volume):

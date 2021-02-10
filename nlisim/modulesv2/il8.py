@@ -75,7 +75,7 @@ class IL8(MoleculeModel):
                 if activation_function(x=il8.grid[tuple(neutrophil_cell_voxel)],
                                        kd=il8.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) < rg():
+                                       volume=geometry.voxel_volume) < rg.uniform():
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0
 

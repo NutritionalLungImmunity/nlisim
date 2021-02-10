@@ -284,7 +284,11 @@ class Afumigatus(ModuleModel):
                                                  PhagocyteStatus.DEAD}:
                     continue
 
-                self.fungus_macrophage_interaction(afumigatus, afumigatus_cell, macrophage, macrophage_cell)
+                self.fungus_macrophage_interaction(afumigatus,
+                                                   afumigatus_cell,
+                                                   afumigatus_index,
+                                                   macrophage,
+                                                   macrophage_cell)
 
             # -----------
 
@@ -321,8 +325,10 @@ class Afumigatus(ModuleModel):
     #                 self.growth_iteration = self.growth_iteration + 1
     #     return septa
 
-    def fungus_macrophage_interaction(afumigatus: AfumigatusState,
+    def fungus_macrophage_interaction(self,
+                                      afumigatus: AfumigatusState,
                                       afumigatus_cell: AfumigatusCellData,
+                                      afumigatus_cell_index: int,
                                       macrophage: 'MacrophageState',
                                       macrophage_cell: 'MacrophageCellData'):
         from nlisim.modulesv2.macrophage import PhagocyteStatus
@@ -334,6 +340,7 @@ class Afumigatus(ModuleModel):
         if rg.random() < probability_of_interaction:
             internalize_aspergillus(macrophage_cell,
                                     afumigatus_cell,
+                                    afumigatus_cell_index,
                                     macrophage,
                                     phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE)
 
@@ -492,7 +499,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
         tree_cells.add(next_cell_index)
 
         next_cell = afumigatus.cells[next_cell_index]
-        total_iron += next_cell['iron']
+        total_iron += next_cell['iron_pool']
 
         if next_cell['next_branch'] >= 0:
             q.put(next_cell['next_branch'])
@@ -502,7 +509,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
     # distribute the iron evenly
     iron_per_cell: float = total_iron / len(tree_cells)
     for tree_cell_index in tree_cells:
-        afumigatus.cells[tree_cell_index]['iron'] = iron_per_cell
+        afumigatus.cells[tree_cell_index]['iron_pool'] = iron_per_cell
 
 
 def lip_activation(state: State, shape) -> np.ndarray:

@@ -78,7 +78,7 @@ class TNFa(MoleculeModel):
                 if activation_function(x=tnfa.grid[tuple(macrophage_cell_voxel)],
                                        kd=tnfa.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg():
+                                       volume=geometry.voxel_volume) > rg.uniform():
                     if macrophage_cell['status'] == PhagocyteStatus.RESTING:
                         macrophage_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
@@ -98,7 +98,7 @@ class TNFa(MoleculeModel):
                 if activation_function(x=tnfa.grid[tuple(neutrophil_cell_voxel)],
                                        kd=tnfa.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg():
+                                       volume=geometry.voxel_volume) > rg.uniform():
                     if neutrophil_cell['status'] == PhagocyteStatus.RESTING:
                         neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:

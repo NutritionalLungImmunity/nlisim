@@ -127,7 +127,7 @@ class Neutrophil(PhagocyteModel):
                         continue
                     afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
 
-            elif rg() < neutrophil.half_life:
+            elif rg.uniform() < neutrophil.half_life:
                 neutrophil_cell['status'] = PhagocyteStatus.APOPTOTIC
 
             elif neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
@@ -171,18 +171,20 @@ class Neutrophil(PhagocyteModel):
 
                     if aspergillus_cell['status'] in {AfumigatusCellStatus.HYPHAE, AfumigatusCellStatus.GERM_TUBE}:
                         # possibly internalize the fungal cell
-                        if rg() < neutrophil.pr_n_hyphae:
+                        if rg.uniform() < neutrophil.pr_n_hyphae:
                             internalize_aspergillus(phagocyte_cell=neutrophil_cell,
                                                     aspergillus_cell=aspergillus_cell,
+                                                    aspergillus_cell_index=aspergillus_index,
                                                     phagocyte=neutrophil)
                             aspergillus_cell['status'] = AfumigatusCellStatus.DYING
                         else:
                             neutrophil_cell['engaged'] = True
 
                     elif aspergillus_cell['status'] == AfumigatusCellStatus.SWELLING_CONIDIA:
-                        if rg() < neutrophil.pr_n_phag:
+                        if rg.uniform() < neutrophil.pr_n_phag:
                             internalize_aspergillus(phagocyte_cell=neutrophil_cell,
                                                     aspergillus_cell=aspergillus_cell,
+                                                    aspergillus_cell_index=aspergillus_index,
                                                     phagocyte=neutrophil)
                         else:
                             pass

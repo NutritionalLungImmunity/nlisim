@@ -68,7 +68,7 @@ class TGFB(MoleculeModel):
                 if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
                                        kd=tgfb.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg():
+                                       volume=geometry.voxel_volume) > rg.uniform():
                     macrophage_cell['status_iteration'] = 0
 
             elif macrophage_cell['status'] not in {PhagocyteStatus.APOPTOTIC,
@@ -77,7 +77,7 @@ class TGFB(MoleculeModel):
                 if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
                                        kd=tgfb.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg():
+                                       volume=geometry.voxel_volume) > rg.uniform():
                     macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
                     macrophage_cell['status_iteration'] = 0  # Previously, was no reset of the status iteration
 

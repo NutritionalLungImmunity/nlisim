@@ -22,6 +22,7 @@ class MacrophageCellData(PhagocyteCellData):
         ('fpn', bool),
         ('fpn_iteration', np.int64),
         ('tf', bool),  # TODO: descriptive name, transferrin?
+        ('move_step', np.float64),
         ('max_move_step', np.float64),  # TODO: double check, might be int
         ('tnfa', bool),
         ('engaged', bool),
@@ -46,6 +47,8 @@ class MacrophageCellData(PhagocyteCellData):
                                            0),
             'tf':               kwargs.get('tf',
                                            False),
+            'move_step':        kwargs.get('move_step',
+                                           0.0),  # TODO: reasonable default?
             'max_move_step':    kwargs.get('max_move_step',
                                            1.0),  # TODO: reasonable default?
             'tnfa':             kwargs.get('tnfa',
@@ -190,10 +193,10 @@ class Macrophage(PhagocyteModel):
             if macrophage_cell['status'] not in {PhagocyteStatus.DEAD,
                                                  PhagocyteStatus.NECROTIC,
                                                  PhagocyteStatus.APOPTOTIC}:
-                if rg() < activation_function(x=macrophage_cell['iron_pool'] - macrophage.ma_internal_iron,
-                                              kd=macrophage.kd_ma_iron,
-                                              h=self.time_step / 60,
-                                              volume=macrophage.ma_vol):
+                if rg.uniform() < activation_function(x=macrophage_cell['iron_pool'] - macrophage.ma_internal_iron,
+                                                      kd=macrophage.kd_ma_iron,
+                                                      h=self.time_step / 60,
+                                                      volume=macrophage.ma_vol):
                     macrophage_cell['status'] = PhagocyteStatus.ANERGIC
                     macrophage_cell['status_iteration'] = 0
 
@@ -201,7 +204,7 @@ class Macrophage(PhagocyteModel):
 
             # TODO: this usage suggests 'half life' should be 'prob death', real half life is 1/prob
             if num_cells_in_phagosome == 0 and \
-                    rg() < macrophage.ma_half_life and \
+                    rg.uniform() < macrophage.ma_half_life and \
                     len(macrophage.cells.alive()) > macrophage.min_ma:
                 macrophage_cell['status'] = PhagocyteStatus.DEAD
                 macrophage_cell['dead'] = True

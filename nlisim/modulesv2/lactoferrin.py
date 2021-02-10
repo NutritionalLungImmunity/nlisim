@@ -118,7 +118,9 @@ class Lactoferrin(MoleculeModel):
                                          voxel_volume=voxel_volume)
         # - enforce bounds from lactoferrin quantity
         mask = (dfe2dt + dfedt) > lactoferrin.grid['Lactoferrin']
-        rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt)
+            np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         dfe2dt[mask] = (dfe2dt * rel)[mask]
         dfedt[mask] = (dfedt * rel)[mask]
 
@@ -175,9 +177,12 @@ class Lactoferrin(MoleculeModel):
         iron.grid -= potential_reactive_quantity
 
         # Degrade Lactoferrin
-        lactoferrin.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                          x_system_mol=0.0,
-                                          base_turnover_rate=molecules.turnover_rate,
-                                          rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        trnvr_rt = turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
+                                 x_system_mol=0.0,
+                                 base_turnover_rate=molecules.turnover_rate,
+                                 rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        lactoferrin.grid['Lactoferrin'] *= trnvr_rt
+        lactoferrin.grid['LactoferrinFe'] *= trnvr_rt
+        lactoferrin.grid['LactoferrinFe2'] *= trnvr_rt
 
         return state
