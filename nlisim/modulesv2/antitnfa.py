@@ -46,7 +46,7 @@ class AntiTNFa(MoleculeModel):
         anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (anti_tnf_a.half_life / self.time_step)
 
         # initialize concentration field
-        anti_tnf_a.grid = anti_tnf_a.system_amount_per_voxel
+        anti_tnf_a.grid.fill(anti_tnf_a.system_amount_per_voxel)
 
         return state
 

@@ -5,7 +5,7 @@ import numpy as np
 
 def activation_function(*, x, kd, h, volume, b=1):
     x = x / volume  # CONVERT MOL TO MOLAR
-    return h * (1 - b * math.exp(-(x / kd)))
+    return h * (1 - b * np.exp(-x / kd))
 
 
 def turnover_rate(*,
@@ -16,14 +16,13 @@ def turnover_rate(*,
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
     y = ((x_mol - x_system_mol) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system_mol)
 
-    with np.errstate(divide='ignore'):
+    with np.errstate(divide='ignore', invalid='ignore'):
         result = y / x_mol
     # zero out problem divides
-    result[x_mol == 0] = 0.0
+    result[x_mol == 0].fill(0.0)
 
     # enforce bounds
-    np.minimum(result, 1.0, out=result)
-    np.maximum(result, 0.0, out=result)
+    result = np.maximum(np.minimum(result, 1.0), 0.0)
     return result
 
 
@@ -44,8 +43,14 @@ def iron_tf_reaction(*,
 
     rel_tf_fe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
 
-    np.maximum(0.0, rel_tf_fe, out=rel_tf_fe)  # one root of the polynomial is at ~0.99897 and goes neg after
+    rel_tf_fe = np.maximum(0.0, rel_tf_fe)  # one root of the polynomial is at ~0.99897 and goes neg after
     # rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof it?
-    rel_tf_fe[total_iron == 0] = 0.0
-    rel_tf_fe[total_binding_site == 0] = 0.0
+
+    if np.isscalar(rel_tf_fe):
+        if total_iron == 0.0 or total_binding_site == 0.0:
+            rel_tf_fe = 0.0
+    else:
+        rel_tf_fe[total_iron == 0] = 0.0
+        rel_tf_fe[total_binding_site == 0] = 0.0
+
     return rel_tf_fe

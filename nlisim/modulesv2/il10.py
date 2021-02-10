@@ -50,7 +50,7 @@ class IL10(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.phagocyte import PhagocyteStatus
+        from nlisim.modulesv2.phagocyte import PhagocyteStatus, PhagocyteState
         from nlisim.modulesv2.macrophage import MacrophageState
 
         il10: IL10State = state.il10
@@ -63,7 +63,8 @@ class IL10(MoleculeModel):
         for macrophage_cell in macrophage.cells:
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
-            if macrophage_cell['status'] in PhagocyteStatus.ACTIVE:
+            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE and \
+                    macrophage_cell['state'] == PhagocyteState.INTERACTING:
                 il10.grid[tuple(macrophage_cell_voxel)] += il10.macrophage_secretion_rate_unit_t
 
             if macrophage_cell['status'] not in {PhagocyteStatus.DEAD,
@@ -72,7 +73,7 @@ class IL10(MoleculeModel):
                 if activation_function(x=il10.grid[tuple(macrophage_cell_voxel)],
                                        kd=il10.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) < rg():
+                                       volume=geometry.voxel_volume) < rg.uniform():
                     if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
                     macrophage_cell['status_iteration'] = 0  # TODO: ask about this, why is it reset each time?

@@ -16,8 +16,8 @@ class LiverState(ModuleState):
     hep_intercept: float
     log_hepcidin: float
     il6_threshold: float
-    threshhold_log_hep: float
-    threshhold_hep: float
+    threshold_log_hep: float
+    threshold_hep: float
 
 
 class Liver(MoleculeModel):
@@ -28,21 +28,19 @@ class Liver(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         liver: LiverState = state.liver
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
 
         # config file values
         # TODO: consider moving to hepcidin
         liver.hep_slope = self.config.getfloat('hep_slope')
         liver.hep_intercept = self.config.getfloat('hep_intercept')
         liver.il6_threshold = self.config.getfloat('il6_threshold')
-        liver.threshhold_log_hep = self.config.getfloat('threshhold_log_hep')
+        liver.threshold_log_hep = self.config.getfloat('threshold_log_hep')
 
         # default values
         liver.log_hepcidin = float('-inf')  # TODO: verify valid default value
 
         # computed values (none)
-        liver.threshold_hep = math.pow(10, liver.threshhold_log_hep)
+        liver.threshold_hep = math.pow(10, liver.threshold_log_hep)
 
         return state
 
@@ -50,7 +48,6 @@ class Liver(MoleculeModel):
         """Advance the state by a single time step."""
         from nlisim.modulesv2.hepcidin import HepcidinState
         from nlisim.modulesv2.il6 import IL6State
-        from nlisim.modulesv2.macrophage import MacrophageState
         from nlisim.modulesv2.transferrin import TransferrinState
 
         liver: LiverState = state.liver
@@ -58,7 +55,6 @@ class Liver(MoleculeModel):
         il6: IL6State = state.il6
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
-        macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
         voxel_volume = geometry.voxel_volume
 
@@ -89,8 +85,8 @@ class Liver(MoleculeModel):
             liver.log_hepcidin = float('-inf')
 
         # interact with hepcidin
-        system_concentration = liver.threshhold_hep \
-            if liver.log_hepcidin == float('-inf') or liver.log_hepcidin > liver.threshhold_log_hep else \
+        system_concentration = liver.threshold_hep \
+            if liver.log_hepcidin == float('-inf') or liver.log_hepcidin > liver.threshold_log_hep else \
             math.pow(10.0, liver.log_hepcidin)
         hepcidin.grid *= turnover_rate(x_mol=hepcidin.grid,
                                        x_system_mol=system_concentration * voxel_volume,

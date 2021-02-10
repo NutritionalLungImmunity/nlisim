@@ -40,7 +40,7 @@ class EstB(MoleculeModel):
 
         # config file values
         estb.half_life = self.config.getfloat('half_life')
-        estb.km = self.config.getfloat('km')
+        estb.k_m = self.config.getfloat('km')
         estb.kcat = self.config.getfloat('kcat')
         estb.system_concentration = self.config.getfloat('system_concentration')
 
