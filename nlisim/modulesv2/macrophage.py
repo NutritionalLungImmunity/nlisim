@@ -7,9 +7,9 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point
-from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteState, PhagocyteStatus
+from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteState, \
+    PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -27,7 +27,7 @@ class MacrophageCellData(PhagocyteCellData):
         ('tnfa', bool),
         ('engaged', bool),
         ('iron_pool', np.float64),
-        ('status_iteration', np.uint)
+        ('status_iteration', np.uint64)
         ]
 
     # TODO: this implementation of inheritance is not so slick, redo with super?
@@ -77,7 +77,7 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 
 
 @attr.s(kw_only=True)
-class MacrophageState(ModuleState):
+class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     move_rate_rest: float
     move_rate_act: float
@@ -88,8 +88,11 @@ class MacrophageState(ModuleState):
     kd_ma_iron: float
     ma_vol: float
     ma_half_life: float
+    max_ma: int
     min_ma: int
     init_num_macrophages: int
+    recruitment_rate: float
+    rec_bias: float
 
 
 class Macrophage(PhagocyteModel):
@@ -107,9 +110,13 @@ class Macrophage(PhagocyteModel):
         macrophage.ma_internal_iron = self.config.getfloat('ma_internal_iron')
         macrophage.kd_ma_iron = self.config.getfloat('kd_ma_iron')
         macrophage.ma_vol = self.config.getfloat('ma_vol')
+
+        macrophage.max_ma = self.config.getint('max_ma')
         macrophage.min_ma = self.config.getint('min_ma')
 
         macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')
+        macrophage.recruitment_rate = self.config.getfloat('recruitment_rate')
+        macrophage.rec_bias = self.config.getfloat('rec_bias')
 
         # computed values
         macrophage.move_rate_act = self.config.getfloat('move_rate_act') / time_step_size / 40  # TODO: 40?
@@ -128,79 +135,23 @@ class Macrophage(PhagocyteModel):
             z = random.randint(0, z_range - 1)
             y = random.randint(0, y_range - 1)
             x = random.randint(0, x_range - 1)
-            macrophage.cells.append(MacrophageCellData.create_cell(point=Point(x=x, y=y, z=z)))
+            self.create_macrophage(state, x, y, z)
 
         return state
 
     def advance(self, state: State, previous_time: float):
-        from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
-
+        """Advance the state by a single time step."""
         macrophage: MacrophageState = state.macrophage
-        afumigatus: AfumigatusState = state.afumigatus
+        geometry: GeometryState = state.geometry
+        voxel_volume: float = geometry.voxel_volume
+        space_volume: float = geometry.space_volume
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
 
             num_cells_in_phagosome = np.sum(macrophage_cell['phagosome'] >= 0)
 
-            if macrophage_cell['status'] == PhagocyteStatus.NECROTIC:
-                # TODO: what about APOPTOTIC?
-                for fungal_cell_index in macrophage_cell['phagosome']:
-                    if fungal_cell_index == -1:
-                        continue
-                    afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
-
-            elif num_cells_in_phagosome > macrophage.max_conidia:
-                # TODO: how do we get here?
-                macrophage_cell['status'] = PhagocyteStatus.NECROTIC
-
-            elif macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                if macrophage_cell['status_iteration'] >= macrophage.iter_to_rest:
-                    macrophage_cell['status_iteration'] = 0
-                    macrophage_cell['tnfa'] = False
-                    macrophage_cell['status'] = PhagocyteStatus.RESTING
-                else:
-                    macrophage_cell['status_iteration'] += 1
-
-            elif macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
-                if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
-                    macrophage_cell['status_iteration'] = 0
-                    macrophage_cell['status'] = PhagocyteStatus.RESTING
-                else:
-                    macrophage_cell['status_iteration'] += 1
-
-            elif macrophage_cell['status'] == PhagocyteStatus.ACTIVATING:
-                if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
-                    macrophage_cell['status_iteration'] = 0
-                    macrophage_cell['status'] = PhagocyteStatus.ACTIVE
-                else:
-                    macrophage_cell['status_iteration'] += 1
-
-            elif macrophage_cell['status'] == PhagocyteStatus.INACTIVATING:
-                if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
-                    macrophage_cell['status_iteration'] = 0
-                    macrophage_cell['status'] = PhagocyteStatus.INACTIVE
-                else:
-                    macrophage_cell['status_iteration'] += 1
-
-            elif macrophage_cell['status'] == PhagocyteStatus.ANERGIC:
-                if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
-                    macrophage_cell['status_iteration'] = 0
-                    macrophage_cell['status'] = PhagocyteStatus.RESTING
-                else:
-                    macrophage_cell['status_iteration'] += 1
-
-            if macrophage_cell['status'] not in {PhagocyteStatus.DEAD,
-                                                 PhagocyteStatus.NECROTIC,
-                                                 PhagocyteStatus.APOPTOTIC}:
-                if rg.uniform() < activation_function(x=macrophage_cell['iron_pool'] - macrophage.ma_internal_iron,
-                                                      kd=macrophage.kd_ma_iron,
-                                                      h=self.time_step / 60,
-                                                      volume=macrophage.ma_vol):
-                    macrophage_cell['status'] = PhagocyteStatus.ANERGIC
-                    macrophage_cell['status_iteration'] = 0
-
-            macrophage_cell['engaged'] = False  # TODO: find out what 'engaged' means
+            self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
             # TODO: this usage suggests 'half life' should be 'prob death', real half life is 1/prob
             if num_cells_in_phagosome == 0 and \
@@ -220,4 +171,135 @@ class Macrophage(PhagocyteModel):
             # TODO: -1 below was 'None'. this looks like something which needs to be reworked
             macrophage_cell['max_move_step'] = -1
 
+        # Recruitment
+        self.recruit_macrophages(state, space_volume, voxel_volume)
+
         return state
+
+    def recruit_macrophages(self, state: State, space_volume: float, voxel_volume: float) -> None:
+        """
+        Recruit macrophages based on MIP1b activation
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        space_volume : float
+        voxel_volume : float
+
+        Returns
+        -------
+        nothing
+        """
+        from nlisim.modulesv2.mip1b import MIP1BState
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+
+        # 1. compute number of macrophages to recruit
+        num_live_macrophages = len(macrophage.cells.alive())
+        avg = \
+            macrophage.recruitment_rate * np.sum(mip1b.grid) * \
+            (1 - num_live_macrophages / macrophage.max_ma) / (mip1b.k_d * space_volume)
+        number_to_recruit = max(np.random.poisson(avg) if avg > 0 else 0,
+                                macrophage.min_ma - num_live_macrophages)
+        # 2. get voxels for new macrophages, based on activation
+        if number_to_recruit > 0:
+            activation_voxels = zip(*np.where(rg.uniform(size=mip1b.grid.shape)
+                                              < activation_function(x=mip1b.grid,
+                                                                    kd=mip1b.k_d,
+                                                                    h=self.time_step / 60,
+                                                                    volume=voxel_volume,
+                                                                    b=macrophage.rec_bias)))
+            for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+                z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
+                self.create_macrophage(state, x, y, z)
+                # TODO: have placement fail due to overcrowding of cells
+
+    @staticmethod
+    def create_macrophage(state: State, x: float, y: float, z: float, **kwargs) -> None:
+        """
+        Create a new macrophage cell
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        x : float
+        y : float
+        z : float
+            coordinates of created macrophage
+        kwargs
+            parameters for macrophage, will give
+
+        Returns
+        -------
+        nothing
+        """
+        macrophage: MacrophageState = state.macrophage
+        if 'iron_pool' in kwargs:
+            macrophage.cells.append(MacrophageCellData.create_cell(point=Point(x=x, y=y, z=z),
+                                                                   **kwargs))
+        else:
+            macrophage.cells.append(MacrophageCellData.create_cell(point=Point(x=x, y=y, z=z),
+                                                                   iron_pool=macrophage.ma_internal_iron,
+                                                                   **kwargs))
+
+    def update_status(self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome) -> None:
+        """
+
+        Parameters
+        ----------
+        state : State
+        macrophage_cell : MacrophageCellData
+        num_cells_in_phagosome
+
+        Returns
+        -------
+        nothing
+        """
+        macrophage: MacrophageState = state.macrophage
+
+        if macrophage_cell['status'] == PhagocyteStatus.NECROTIC:
+            # TODO: what about APOPTOTIC?
+            self.release_phagosome(state, macrophage_cell)
+
+        elif num_cells_in_phagosome > macrophage.max_conidia:
+            # TODO: how do we get here?
+            macrophage_cell['status'] = PhagocyteStatus.NECROTIC
+
+        elif macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+            if macrophage_cell['status_iteration'] >= macrophage.iter_to_rest:
+                macrophage_cell['status_iteration'] = 0
+                macrophage_cell['tnfa'] = False
+                macrophage_cell['status'] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell['status_iteration'] += 1
+
+        elif macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
+            if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
+                macrophage_cell['status_iteration'] = 0
+                macrophage_cell['status'] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell['status_iteration'] += 1
+
+        elif macrophage_cell['status'] == PhagocyteStatus.ACTIVATING:
+            if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
+                macrophage_cell['status_iteration'] = 0
+                macrophage_cell['status'] = PhagocyteStatus.ACTIVE
+            else:
+                macrophage_cell['status_iteration'] += 1
+
+        elif macrophage_cell['status'] == PhagocyteStatus.INACTIVATING:
+            if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
+                macrophage_cell['status_iteration'] = 0
+                macrophage_cell['status'] = PhagocyteStatus.INACTIVE
+            else:
+                macrophage_cell['status_iteration'] += 1
+
+        elif macrophage_cell['status'] == PhagocyteStatus.ANERGIC:
+            if macrophage_cell['status_iteration'] >= macrophage.iter_to_change_state:
+                macrophage_cell['status_iteration'] = 0
+                macrophage_cell['status'] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell['status_iteration'] += 1

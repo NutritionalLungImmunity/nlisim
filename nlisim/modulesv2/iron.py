@@ -4,8 +4,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.modulesv2.molecules import MoleculeModel
 from nlisim.state import State
 
 
@@ -25,9 +24,9 @@ class Iron(MoleculeModel):
     StateClass = IronState
 
     def initialize(self, state: State) -> State:
-        iron: IronState = state.iron
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        # iron: IronState = state.iron
+        # geometry: GeometryState = state.geometry
+        # voxel_volume = geometry.voxel_volume
 
         # config file values
 
@@ -41,9 +40,7 @@ class Iron(MoleculeModel):
         from nlisim.modulesv2.phagocyte import PhagocyteStatus
 
         iron: IronState = state.iron
-        molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
-        geometry: GeometryState = state.geometry
         grid: RectangularGrid = state.grid
 
         # dead macrophages contribute their iron to the environment
