@@ -70,8 +70,8 @@ class ModuleState(object):
 
     @classmethod
     def save_attribute(
-        cls, group: Group, name: str, value: AttrValue, metadata: dict
-    ) -> Union[Dataset, Group]:
+            cls, group: Group, name: str, value: AttrValue, metadata: dict
+            ) -> Union[Dataset, Group]:
         """Save an attribute into an HDF5 group."""
         metadata = metadata or {}
         if isinstance(value, (float, int, str, bool, np.ndarray)):
@@ -90,7 +90,7 @@ class ModuleState(object):
                 compression='gzip',  # transparent compression
                 shuffle=True,  # improve compressiblity
                 fletcher32=True,  # checksum
-            )
+                )
 
         var = group.create_dataset(name=name, data=np.asarray(value), **kwargs)
 
@@ -107,8 +107,8 @@ class ModuleState(object):
 
     @classmethod
     def load_attribute(
-        cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
-    ) -> AttrValue:
+            cls, global_state: State, group: Group, name: str, metadata: Optional[dict] = None
+            ) -> AttrValue:
         """Load a raw value from an HDF5 file group."""
         dataset = group[name]
         if dataset.attrs.get('scalar', False):

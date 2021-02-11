@@ -113,7 +113,7 @@ class Transferrin(MoleculeModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
-            # TODO: what is going on with these mins? hard to believe that these constants will > 1
+            # TODO: what is going on with these min's? hard to believe that these constants will > 1
             qtty_fe2 = \
                 transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * \
                 min(1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t)

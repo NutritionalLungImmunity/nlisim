@@ -1,3 +1,5 @@
+import math
+
 import attr
 from attr import attrib, attrs
 import numpy as np
@@ -5,9 +7,8 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteStatus
+from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -49,7 +50,7 @@ def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
 
 
 @attrs(kw_only=True)
-class PneumocyteState(ModuleState):
+class PneumocyteState(PhagocyteModuleState):
     cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
     time_to_rest: float
     iter_to_rest: int
@@ -58,6 +59,7 @@ class PneumocyteState(ModuleState):
     p_il6_qtty: float
     p_il8_qtty: float
     p_tnf_qtty: float
+    pr_p_int: float
 
 
 class Pneumocyte(PhagocyteModel):
@@ -67,6 +69,7 @@ class Pneumocyte(PhagocyteModel):
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
         geometry: GeometryState = state.geometry
+        voxel_volume = geometry.voxel_volume
         time_step_size: float = self.time_step
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
@@ -80,6 +83,10 @@ class Pneumocyte(PhagocyteModel):
         # computed values
         pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
         pneumocyte.iter_to_change_state = int(pneumocyte.time_to_change_state * (60 / time_step_size))
+
+        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
+        pneumocyte.pr_p_int = 1 - math.exp(-rel_phag_afnt_unit_t /
+                                           (voxel_volume * self.config.getfloat('pr_p_int_param')))
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
@@ -155,9 +162,9 @@ class Pneumocyte(PhagocyteModel):
             # interact with TNFa
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE and \
                     rg.uniform() < activation_function(x=tnfa.grid,
-                                               kd=tnfa.k_d,
-                                               h=self.time_step / 60,
-                                               volume=geometry.voxel_volume):
+                                                       kd=tnfa.k_d,
+                                                       h=self.time_step / 60,
+                                                       volume=geometry.voxel_volume):
                 pneumocyte_cell['iteration'] = 0
                 pneumocyte_cell['tnfa'] = True
 

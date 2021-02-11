@@ -132,9 +132,9 @@ class TAFC(MoleculeModel):
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                   x_system_mol=0.0,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+                                 x_system_mol=0.0,
+                                 base_turnover_rate=molecules.turnover_rate,
+                                 rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
         tafc.grid['TAFC'] *= trnvr_rt
         tafc.grid['TAFCBI'] *= trnvr_rt
 

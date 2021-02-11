@@ -1,13 +1,13 @@
 from enum import auto, IntEnum, unique
-from typing import Union
 
 from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.state import State
 
-MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
+MAX_CONIDIA = 30  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
 
 class PhagocyteCellData(CellData):
@@ -28,17 +28,42 @@ class PhagocyteCellData(CellData):
             }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + \
-               tuple([initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS])
+        return \
+            CellData.create_cell_tuple(**kwargs) + \
+            tuple([initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS])
 
 
 @attrs(kw_only=True)
-class PhagocyteState(ModuleState):
+class PhagocyteModuleState(ModuleState):
     max_conidia: int
 
 
 class PhagocyteModel(ModuleModel):
-    pass
+
+    def release_phagosome(self, state: State, phagocyte_cell: PhagocyteCellData) -> None:
+        """
+        Release afumigatus cells in the phagosome
+
+        Parameters
+        ----------
+        state : State
+        global simulation state
+        phagocyte_cell : PhagocyteCellData
+
+
+        Returns
+        -------
+        Nothing
+        """
+        from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
+
+        afumigatus: AfumigatusState = state.afumigatus
+
+        for fungal_cell_index in phagocyte_cell['phagosome']:
+            if fungal_cell_index == -1:
+                continue
+            afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
+        phagocyte_cell['phagosome'].fill(-1)
 
 
 # TODO: name
@@ -62,24 +87,26 @@ class PhagocyteStatus(IntEnum):
     ANERGIC = auto()
 
 
+# noinspection PyUnresolvedReferences
 def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
                             aspergillus_cell: 'AfumigatusCellData',
                             aspergillus_cell_index: int,
-                            phagocyte: Union['PneumocyteCellData', 'NeutrophilCellData', 'MacrophageCellData'],
-                            phagocytize: bool = False):
+                            phagocyte: PhagocyteModuleState,
+                            phagocytize: bool = False) -> None:
     """
     Possibly have a phagocyte phagocytize a fungal cell
 
     Parameters
     ----------
-    phagocyte_cell : PhagoCyteCellData
+    phagocyte_cell : PhagocyteCellData
     aspergillus_cell : AfumigatusCellData
+    aspergillus_cell_index : int
     phagocyte : PhagocyteState
     phagocytize : bool
 
     Returns
     -------
-
+    Nothing
     """
     from nlisim.modulesv2.afumigatus import AfumigatusCellStatus, AfumigatusCellState
 
