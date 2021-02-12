@@ -2,7 +2,7 @@ import attr
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecules import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 
 
@@ -34,8 +34,8 @@ class ROS(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        # ros: ROSState = state.ros
-        # molecules: MoleculesState = state.molecules
+        ros: ROSState = state.ros
+        molecules: MoleculesState = state.molecules
 
         # TODO: code below adds zero, omitting until we have a non-trivial model
 
@@ -48,5 +48,8 @@ class ROS(MoleculeModel):
         #     return True
 
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
+
+        # Diffusion of ros
+        self.diffuse(ros.grid, molecules.diffusion_constant_timestep)
 
         return state

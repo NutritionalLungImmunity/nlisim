@@ -59,4 +59,6 @@ class Hepcidin(MoleculeModel):
 
         # Degrading Hepcidin is done by the "liver"
 
+        # hepcidin does not diffuse
+
         return state

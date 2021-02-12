@@ -59,4 +59,7 @@ class Hemolysin(MoleculeModel):
                                         base_turnover_rate=molecules.turnover_rate,
                                         rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
+        # Diffusion of Hemolysin
+        self.diffuse(hemolysin.grid, molecules.diffusion_constant_timestep)
+
         return state

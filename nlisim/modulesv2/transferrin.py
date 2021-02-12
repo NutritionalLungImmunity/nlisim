@@ -8,7 +8,7 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel
+from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -107,6 +107,7 @@ class Transferrin(MoleculeModel):
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
+        molecules: MoleculesState = state.molecules
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -174,5 +175,10 @@ class Transferrin(MoleculeModel):
         # answer was that this should already be accounted for
 
         # Degrade transferrin: done in liver
+
+        # Diffusion of transferrin
+        self.diffuse(transferrin.grid['Tf'], molecules.diffusion_constant_timestep)
+        self.diffuse(transferrin.grid['TfFe'], molecules.diffusion_constant_timestep)
+        self.diffuse(transferrin.grid['TfFe2'], molecules.diffusion_constant_timestep)
 
         return state

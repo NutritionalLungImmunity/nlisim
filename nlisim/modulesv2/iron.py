@@ -55,4 +55,6 @@ class Iron(MoleculeModel):
         # Degrade Iron
         # turnover done by liver, if at all (2/4/2021: not currently)
 
+        # iron does not diffuse
+
         return state
