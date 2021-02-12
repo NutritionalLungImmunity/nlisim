@@ -40,6 +40,43 @@ class PhagocyteModuleState(ModuleState):
 
 class PhagocyteModel(ModuleModel):
 
+    # def move(self, old_voxel, steps):
+    #     if steps < self.get_max_move_steps():
+    #         calc_drift_probability(old_voxel, self)
+    #         new_voxel = get_voxel(old_voxel, random())
+    #
+    #         old_voxel.remove_cell(self.id)
+    #         new_voxel.set_cell(self)
+    #         steps += 1
+    #
+    #         for _, a in self.phagosome.items():
+    #             a.x = new_voxel.x + random()
+    #             a.y = new_voxel.y + random()
+    #             a.z = new_voxel.z + random()
+    #
+    #         return self.move(new_voxel, steps)
+
+    # def calc_drift_probability(voxel, agent):
+    #     from edu.uchc.geometry.Voxel import Voxel
+    #     if agent.attracted_by() is None:
+    #         return
+    #
+    #     chemokine = voxel.molecules[agent.attracted_by()]
+    #     chemoattraction = chemokine.chemoattract(voxel.x, voxel.y, voxel.z)
+    #
+    #     voxel.p = chemoattraction + (0.0 if len(voxel.infectious_agent) > 0 else 0.0)
+    #
+    #     cum_p = voxel.p
+    #     for v in voxel.neighbors:
+    #         chemokine = v.molecules[agent.attracted_by()]
+    #         chemoattraction = chemokine.chemoattract(voxel.x, voxel.y, voxel.z)
+    #         v.p = (chemoattraction + (
+    #             0.0 if len(voxel.infectious_agent) > 0 else 0.0)) if v.tissue_type != Voxel.AIR else 0.0
+    #         cum_p = cum_p + v.p
+    #     voxel.p = voxel.p / cum_p
+    #     for v in voxel.neighbors:
+    #         v.p = v.p / cum_p
+
     def release_phagosome(self, state: State, phagocyte_cell: PhagocyteCellData) -> None:
         """
         Release afumigatus cells in the phagosome

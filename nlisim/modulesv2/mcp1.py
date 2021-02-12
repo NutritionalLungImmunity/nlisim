@@ -84,4 +84,7 @@ class MCP1(MoleculeModel):
                                    base_turnover_rate=molecules.turnover_rate,
                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
+        # Diffusion of MCP1
+        self.diffuse(mcp1.grid, molecules.diffusion_constant_timestep)
+
         return state

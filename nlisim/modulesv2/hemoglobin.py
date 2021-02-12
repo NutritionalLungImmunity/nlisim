@@ -62,4 +62,7 @@ class Hemoglobin(MoleculeModel):
                                          base_turnover_rate=molecules.turnover_rate,
                                          rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
+        # Diffusion of Hemoglobin
+        self.diffuse(hemoglobin.grid, molecules.diffusion_constant_timestep)
+
         return state

@@ -294,37 +294,6 @@ class Afumigatus(ModuleModel):
 
         return state
 
-    # TODO: originally called in voxel
-    # def elongate(self):
-    #     septa = None
-    #     if self.growable and self.boolean_network[Afumigatus.LIP] == 1:
-    #         if self.status == Afumigatus.HYPHAE:
-    #             if self.growth_iteration >= Constants.ITER_TO_GROW:
-    #                 self.growth_iteration = 0
-    #                 self.growable = False
-    #                 self.branchable = True
-    #                 self.iron_pool = self.iron_pool / 2.0
-    #                 self.next_septa = Afumigatus(x_root=self.x_tip, y_root=self.y_tip, z_root=self.z_tip,
-    #                                              x_tip=self.x_tip + self.dx, y_tip=self.y_tip + self.dy,
-    #                                              z_tip=self.z_tip + self.dz,
-    #                                              dx=self.dx, dy=self.dy, dz=self.dz, growth_iteration=0,
-    #                                              iron_pool=0, status=Afumigatus.HYPHAE, state=self.state,
-    #                                              is_root=False)
-    #                 self.next_septa.previous_septa = self
-    #                 self.next_septa.iron_pool = self.iron_pool
-    #                 septa = self.next_septa
-    #             else:
-    #                 self.growth_iteration = self.growth_iteration + 1
-    #         elif self.status == Afumigatus.GERM_TUBE:
-    #             if self.growth_iteration >= Constants.ITER_TO_GROW:
-    #                 self.status = Afumigatus.HYPHAE
-    #                 self.x_tip = self.x_root + self.dx
-    #                 self.y_tip = self.y_root + self.dy
-    #                 self.z_tip = self.z_root + self.dz
-    #             else:
-    #                 self.growth_iteration = self.growth_iteration + 1
-    #     return septa
-
     def fungus_macrophage_interaction(self,
                                       afumigatus: AfumigatusState,
                                       afumigatus_cell: AfumigatusCellData,

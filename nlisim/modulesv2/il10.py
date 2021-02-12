@@ -85,4 +85,7 @@ class IL10(MoleculeModel):
                                    base_turnover_rate=molecules.turnover_rate,
                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
+        # Diffusion of IL10
+        self.diffuse(il10.grid, molecules.diffusion_constant_timestep)
+
         return state

@@ -84,4 +84,7 @@ class MIP1B(MoleculeModel):
                                     base_turnover_rate=molecules.turnover_rate,
                                     rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
 
+        # Diffusion of MIP1b
+        self.diffuse(mip1b.grid, molecules.diffusion_constant_timestep)
+
         return state
