@@ -8,7 +8,7 @@ from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
@@ -67,18 +67,18 @@ class EstB(MoleculeModel):
         estb.iron_buffer.fill(0.0)
 
         # interact with TAFC
-        v1 = self.michaelian_kinetics(substrate=tafc.grid["TAFC"],
-                                      enzyme=estb.grid,
-                                      km=estb.k_m,
-                                      k_cat=estb.kcat,
-                                      h=self.time_step / 60,
-                                      voxel_volume=voxel_volume)
-        v2 = self.michaelian_kinetics(substrate=tafc.grid["TAFCBI"],
-                                      enzyme=estb.grid,
-                                      km=estb.k_m,
-                                      k_cat=estb.kcat,
-                                      h=self.time_step / 60,
-                                      voxel_volume=voxel_volume)
+        v1 = michaelian_kinetics(substrate=tafc.grid["TAFC"],
+                                 enzyme=estb.grid,
+                                 km=estb.k_m,
+                                 k_cat=estb.kcat,
+                                 h=self.time_step / 60,
+                                 voxel_volume=voxel_volume)
+        v2 = michaelian_kinetics(substrate=tafc.grid["TAFCBI"],
+                                 enzyme=estb.grid,
+                                 km=estb.k_m,
+                                 k_cat=estb.kcat,
+                                 h=self.time_step / 60,
+                                 voxel_volume=voxel_volume)
         tafc.grid["TAFC"] -= v1
         tafc.grid["TAFCBI"] -= v2
         estb.iron_buffer += v2  # set equal to zero previously

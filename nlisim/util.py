@@ -3,7 +3,12 @@ import math
 import numpy as np
 
 
-def activation_function(*, x, kd, h, volume, b=1):
+def activation_function(*,
+                        x,
+                        kd,
+                        h,
+                        volume,
+                        b=1):
     x = x / volume  # CONVERT MOL TO MOLAR
     return h * (1 - b * np.exp(-x / kd))
 
@@ -18,8 +23,11 @@ def turnover_rate(*,
 
     with np.errstate(divide='ignore', invalid='ignore'):
         result = y / x_mol
-    # zero out problem divides
-    result[x_mol == 0].fill(0.0)
+        # zero out problem divides
+        if np.isscalar(result) and x_mol == 0.0:
+            result = 0.0
+        else:
+            result[x_mol == 0].fill(0.0)
 
     # enforce bounds
     result = np.maximum(np.minimum(result, 1.0), 0.0)
@@ -54,3 +62,16 @@ def iron_tf_reaction(*,
         rel_tf_fe[total_binding_site == 0] = 0.0
 
     return rel_tf_fe
+
+
+def michaelian_kinetics(*,
+                        substrate: np.ndarray,
+                        enzyme: np.ndarray,
+                        km: float,
+                        h: float,
+                        k_cat: float = 1.0,
+                        voxel_volume: float) -> np.ndarray:
+    # Note: was originally h*k_cat*enzyme*substrate/(substrate+km), but with
+    # enzyme /= voxel_volume and substrate /= voxel_volume.
+    # This is algebraically equivalent and reduces the number of operations.
+    return h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)

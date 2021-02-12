@@ -7,7 +7,7 @@ from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'AntiTNFaState') -> np.ndarray:
@@ -61,11 +61,11 @@ class AntiTNFa(MoleculeModel):
         tnf_a: TNFaState = state.tnfa
 
         # AntiTNFa / TNFa reaction
-        reacted_quantity = self.michaelian_kinetics(substrate=anti_tnf_a.grid,
-                                                    enzyme=tnf_a.grid,
-                                                    km=anti_tnf_a.k_m,
-                                                    h=anti_tnf_a.react_time_unit,
-                                                    voxel_volume=voxel_volume)
+        reacted_quantity = michaelian_kinetics(substrate=anti_tnf_a.grid,
+                                               enzyme=tnf_a.grid,
+                                               km=anti_tnf_a.k_m,
+                                               h=anti_tnf_a.react_time_unit,
+                                               voxel_volume=voxel_volume)
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
         anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
         tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)

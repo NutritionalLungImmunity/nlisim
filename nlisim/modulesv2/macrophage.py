@@ -247,10 +247,12 @@ class Macrophage(PhagocyteModel):
 
     def update_status(self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome) -> None:
         """
+        Update the status of the cell, progressing between states after a certain number of ticks.
 
         Parameters
         ----------
         state : State
+            global simulation state
         macrophage_cell : MacrophageCellData
         num_cells_in_phagosome
 

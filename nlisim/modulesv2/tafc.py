@@ -7,7 +7,7 @@ from nlisim.module import ModuleState
 from nlisim.modulesv2.geometry import GeometryState
 from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
@@ -66,16 +66,16 @@ class TAFC(MoleculeModel):
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe2"],
-                                          enzyme=tafc.grid["TAFC"],
-                                          km=tafc.k_m_tf_tafc,
-                                          h=self.time_step / 60,
-                                          voxel_volume=voxel_volume)
-        dfedt = self.michaelian_kinetics(substrate=transferrin.grid["TfFe"],
-                                         enzyme=tafc.grid["TAFC"],
-                                         km=tafc.k_m_tf_tafc,
-                                         h=self.time_step / 60,
-                                         voxel_volume=voxel_volume)
+        dfe2dt = michaelian_kinetics(substrate=transferrin.grid["TfFe2"],
+                                     enzyme=tafc.grid["TAFC"],
+                                     km=tafc.k_m_tf_tafc,
+                                     h=self.time_step / 60,
+                                     voxel_volume=voxel_volume)
+        dfedt = michaelian_kinetics(substrate=transferrin.grid["TfFe"],
+                                    enzyme=tafc.grid["TAFC"],
+                                    km=tafc.k_m_tf_tafc,
+                                    h=self.time_step / 60,
+                                    voxel_volume=voxel_volume)
 
         # - enforce bounds from TAFC quantity
         with np.errstate(divide='ignore', invalid='ignore'):
