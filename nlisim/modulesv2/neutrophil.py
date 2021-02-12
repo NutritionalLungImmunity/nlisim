@@ -201,6 +201,19 @@ class Neutrophil(PhagocyteModel):
         return state
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
+        """
+        Update the status of the cell, progressing between states after a certain number of ticks.
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        neutrophil_cell : NeutrophilCellData
+
+        Returns
+        -------
+        nothing
+        """
         neutrophil: NeutrophilState = state.neutrophil
 
         if neutrophil_cell['status'] in {PhagocyteStatus.NECROTIC, PhagocyteStatus.APOPTOTIC}:
