@@ -1,13 +1,14 @@
 import math
 import random
+from typing import Tuple
 
 import attr
 from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
-from nlisim.coordinates import Point
-from nlisim.modulesv2.geometry import GeometryState
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteState, \
     PhagocyteStatus
 from nlisim.random import rg
@@ -93,6 +94,9 @@ class MacrophageState(PhagocyteModuleState):
     init_num_macrophages: int
     recruitment_rate: float
     rec_bias: float
+    drift_bias: float
+    ma_move_rate_act: float
+    ma_move_rate_rest: float
 
 
 class Macrophage(PhagocyteModel):
@@ -100,6 +104,8 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
+        from nlisim.modulesv2.geometry import GeometryState
+
         macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
         time_step_size: float = self.time_step
@@ -117,6 +123,10 @@ class Macrophage(PhagocyteModel):
         macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')
         macrophage.recruitment_rate = self.config.getfloat('recruitment_rate')
         macrophage.rec_bias = self.config.getfloat('rec_bias')
+
+        macrophage.drift_bias = self.config.getfloat('drift_bias')
+        macrophage.ma_move_rate_act= self.config.getfloat('ma_move_rate_act')
+        macrophage.ma_move_rate_rest= self.config.getfloat('ma_move_rate_rest')
 
         # computed values
         macrophage.move_rate_act = self.config.getfloat('move_rate_act') / time_step_size / 40  # TODO: 40?
@@ -142,9 +152,6 @@ class Macrophage(PhagocyteModel):
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         macrophage: MacrophageState = state.macrophage
-        geometry: GeometryState = state.geometry
-        voxel_volume: float = geometry.voxel_volume
-        space_volume: float = geometry.space_volume
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
@@ -167,16 +174,25 @@ class Macrophage(PhagocyteModel):
                 else:
                     macrophage_cell['fpn_iteration'] += 1
 
-            macrophage_cell['move_step'] = 0
+            # macrophage_cell['move_step'] = 0
             # TODO: -1 below was 'None'. this looks like something which needs to be reworked
-            macrophage_cell['max_move_step'] = -1
+            # macrophage_cell['max_move_step'] = -1
+
+            # Movement
+            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                max_move_step = macrophage.ma_move_rate_act
+            else:
+                max_move_step = macrophage.ma_move_rate_rest
+            move_step =
+            for _ in range(move_step):
+                self.single_step_move(state, macrophage_cell)
 
         # Recruitment
-        self.recruit_macrophages(state, space_volume, voxel_volume)
+        self.recruit_macrophages(state)
 
         return state
 
-    def recruit_macrophages(self, state: State, space_volume: float, voxel_volume: float) -> None:
+    def recruit_macrophages(self, state: State) -> None:
         """
         Recruit macrophages based on MIP1b activation
 
@@ -184,17 +200,19 @@ class Macrophage(PhagocyteModel):
         ----------
         state : State
             global simulation state
-        space_volume : float
-        voxel_volume : float
 
         Returns
         -------
         nothing
         """
         from nlisim.modulesv2.mip1b import MIP1BState
+        from nlisim.modulesv2.geometry import GeometryState
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
+        geometry: GeometryState = state.geometry
+        voxel_volume: float = geometry.voxel_volume
+        space_volume: float = geometry.space_volume
 
         # 1. compute number of macrophages to recruit
         num_live_macrophages = len(macrophage.cells.alive())
@@ -215,6 +233,54 @@ class Macrophage(PhagocyteModel):
                 z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
                 self.create_macrophage(state, x, y, z)
                 # TODO: have placement fail due to overcrowding of cells
+
+    def single_step_probabilistic_drift(self, state: State, cell: MacrophageCellData, voxel: Voxel) -> Voxel:
+        """
+        Calculate a 1-step voxel movement of a macrophage
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        cell : MacrophageCellData
+            a macrophage cell
+        voxel : Voxel
+            current voxel position of the macrophage
+
+        Returns
+        -------
+        Voxel
+            the new voxel position of the macrophage
+        """
+        # macrophages are attracted by MIP1b
+        from nlisim.modulesv2.mip1b import MIP1BState
+        from nlisim.modulesv2.geometry import GeometryState, TissueType
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
+        voxel_volume: float = geometry.voxel_volume
+
+        # macrophage has a non-zero probability of moving into non-air voxels
+        nearby_voxels: Tuple[Voxel] = tuple(grid.get_adjacent_voxels(voxel))
+        weights = np.array([activation_function(x=mip1b.grid[tuple(vxl)],
+                                                kd=mip1b.k_d,
+                                                h=self.time_step / 60,
+                                                volume=voxel_volume) + macrophage.drift_bias
+                            if geometry.lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
+                            for vxl in nearby_voxels], dtype=np.float64)
+
+        normalized_weights = weights / np.sum(weights)
+
+        # sample from distribution given by normalized weights
+        r = rg.uniform()
+        for vxl, weight in zip(nearby_voxels, normalized_weights):
+            if r <= weight:
+                return vxl
+            r -= weight
+
+        assert False, "Sum of normalized weights must be ==1.0, but somehow it isn't."
 
     @staticmethod
     def create_macrophage(state: State, x: float, y: float, z: float, **kwargs) -> None:

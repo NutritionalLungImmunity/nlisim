@@ -1,9 +1,12 @@
+from abc import abstractmethod
 from enum import auto, IntEnum, unique
 
 from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -56,35 +59,43 @@ class PhagocyteModel(ModuleModel):
     #
     #         return self.move(new_voxel, steps)
 
-    # def calc_drift_probability(voxel, agent):
-    #     from edu.uchc.geometry.Voxel import Voxel
-    #     if agent.attracted_by() is None:
-    #         return
-    #
-    #     chemokine = voxel.molecules[agent.attracted_by()]
-    #     chemoattraction = chemokine.chemoattract(voxel.x, voxel.y, voxel.z)
-    #
-    #     voxel.p = chemoattraction + (0.0 if len(voxel.infectious_agent) > 0 else 0.0)
-    #
-    #     cum_p = voxel.p
-    #     for v in voxel.neighbors:
-    #         chemokine = v.molecules[agent.attracted_by()]
-    #         chemoattraction = chemokine.chemoattract(voxel.x, voxel.y, voxel.z)
-    #         v.p = (chemoattraction + (
-    #             0.0 if len(voxel.infectious_agent) > 0 else 0.0)) if v.tissue_type != Voxel.AIR else 0.0
-    #         cum_p = cum_p + v.p
-    #     voxel.p = voxel.p / cum_p
-    #     for v in voxel.neighbors:
-    #         v.p = v.p / cum_p
+    def single_step_move(self, state: State, cell: PhagocyteCellData) -> None:
+        """
+        Move the phagocyte one step (voxel) probabilistically, depending on single_step_probabilistic_drift
 
-    def release_phagosome(self, state: State, phagocyte_cell: PhagocyteCellData) -> None:
+        Parameters
+        ----------
+        state : State
+            the global simulation state
+        cell : PhagocyteCellData
+            the cell to move
+
+        Returns
+        -------
+        nothing
+        """
+        grid: RectangularGrid = state.grid
+
+        # At this moment, there is no inter-voxel geometry, but I'm keeping the offset around
+        # just in case.
+        cell_point: Point = cell['point']
+        cell_voxel: Voxel = grid.get_voxel(cell['point'])
+        offset = cell_point - cell_voxel
+        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell['point'] = new_voxel + offset
+
+    @abstractmethod
+    def single_step_probabilistic_drift(self, state: State, cell: PhagocyteCellData, voxel: Voxel) -> Voxel: ...
+
+    @staticmethod
+    def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -> None:
         """
         Release afumigatus cells in the phagosome
 
         Parameters
         ----------
         state : State
-        global simulation state
+            global simulation state
         phagocyte_cell : PhagocyteCellData
 
 

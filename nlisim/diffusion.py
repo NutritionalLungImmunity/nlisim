@@ -28,7 +28,7 @@ def discrete_laplacian(
         voxel_index = grid.get_flattened_index(voxel)
         normalization = 0
 
-        for neighbor in grid.get_adjecent_voxels(voxel, corners=False):
+        for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
             nj = neighbor.y
             nk = neighbor.z

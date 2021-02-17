@@ -49,5 +49,5 @@ class MoleculeModel(ModuleModel):
 
     @staticmethod
     def diffuse(grid: np.ndarray, diffusion_constant: float):
-        # TODO: verify
+        # TODO: verify! One question is about how diffusion works in AIR cells.
         grid += diffusion_constant * scipy.ndimage.laplace(grid)

@@ -76,6 +76,7 @@ class NeutrophilState(PhagocyteModuleState):
     rec_bias: float
     max_n: float  # TODO: 0.5?
     n_frac: float
+    drift_bias: float
 
 
 class Neutrophil(PhagocyteModel):
@@ -95,6 +96,8 @@ class Neutrophil(PhagocyteModel):
         neutrophil.rec_bias = self.config.getfloat('rec_bias')
         neutrophil.max_n = self.config.getfloat('max_n')
         neutrophil.n_frac = self.config.getfloat('n_frac')
+
+        neutrophil.drift_bias = self.config.getfloat('drift_bias')
 
         # computed values
         # TODO: not a real half life
