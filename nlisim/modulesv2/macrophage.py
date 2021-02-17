@@ -183,7 +183,7 @@ class Macrophage(PhagocyteModel):
                 max_move_step = macrophage.ma_move_rate_act
             else:
                 max_move_step = macrophage.ma_move_rate_rest
-            move_step =
+            move_step : int = rg.poisson(max_move_step) # TODO: verify
             for _ in range(move_step):
                 self.single_step_move(state, macrophage_cell)
 
