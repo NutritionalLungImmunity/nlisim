@@ -1,13 +1,15 @@
 import math
+from typing import Tuple
 
 import attr
-from attr import attrib, attrs
 import numpy as np
+from attr import attrib, attrs
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modulesv2.geometry import GeometryState
+from nlisim.modulesv2.mip2 import MIP2State
 from nlisim.modulesv2.phagocyte import internalize_aspergillus, PhagocyteCellData, PhagocyteModel, \
     PhagocyteModuleState, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
@@ -26,28 +28,28 @@ class NeutrophilCellData(PhagocyteCellData):
         ('tnfa', bool),
         ('engaged', bool),
         ('status_iteration', np.uint),
-        ]
+    ]
 
     dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status':           kwargs.get('status',
+            'status'          : kwargs.get('status',
                                            PhagocyteStatus.RESTING),
-            'state':            kwargs.get('state',
+            'state'           : kwargs.get('state',
                                            PhagocyteState.FREE),
-            'iron_pool':        kwargs.get('iron_pool',
+            'iron_pool'       : kwargs.get('iron_pool',
                                            0.0),
-            'max_move_step':    kwargs.get('max_move_step',
+            'max_move_step'   : kwargs.get('max_move_step',
                                            1.0),  # TODO: reasonable default?
-            'tnfa':             kwargs.get('tnfa',
+            'tnfa'            : kwargs.get('tnfa',
                                            False),
-            'engaged':          kwargs.get('engaged',
+            'engaged'         : kwargs.get('engaged',
                                            False),
             'status_iteration': kwargs.get('status_iteration',
                                            0),
-            }
+        }
 
         # ensure that these come in the correct order
         return \
@@ -77,6 +79,8 @@ class NeutrophilState(PhagocyteModuleState):
     max_n: float  # TODO: 0.5?
     n_frac: float
     drift_bias: float
+    n_move_rate_act: float
+    n_move_rate_rest: float
 
 
 class Neutrophil(PhagocyteModel):
@@ -98,6 +102,8 @@ class Neutrophil(PhagocyteModel):
         neutrophil.n_frac = self.config.getfloat('n_frac')
 
         neutrophil.drift_bias = self.config.getfloat('drift_bias')
+        neutrophil.n_move_rate_act = self.config.getfloat('n_move_rate_act')
+        neutrophil.n_move_rate_rest = self.config.getfloat('n_move_rate_rest')
 
         # computed values
         # TODO: not a real half life
@@ -198,10 +204,66 @@ class Neutrophil(PhagocyteModel):
                         neutrophil_cell['status'] = PhagocyteStatus.DEAD
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVE
 
+            # Movement
+            if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
+                max_move_step = neutrophil.n_move_rate_act
+            else:
+                max_move_step = neutrophil.n_move_rate_rest
+            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+            for _ in range(move_step):
+                self.single_step_move(state, neutrophil_cell)
+
         # Recruitment
         self.recruit_neutrophils(state, space_volume, voxel_volume)
 
         return state
+
+    def single_step_probabilistic_drift(self, state: State, cell: NeutrophilCellData, voxel: Voxel) -> Voxel:
+        """
+        Calculate a 1-step voxel movement of a neutrophil
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        cell : NeutrophilCellData
+            a neutrophil cell
+        voxel : Voxel
+            current voxel position of the neutrophil
+
+        Returns
+        -------
+        Voxel
+            the new voxel position of the neutrophil
+        """
+        # neutrophils are attracted by MIP2
+        from nlisim.modulesv2.geometry import GeometryState, TissueType
+
+        neutrophil: NeutrophilState = state.neutrophil
+        mip2: MIP2State = state.mip1b
+        grid: RectangularGrid = state.grid
+        geometry: GeometryState = state.geometry
+        voxel_volume: float = geometry.voxel_volume
+
+        # neutrophil has a non-zero probability of moving into non-air voxels
+        nearby_voxels: Tuple[Voxel] = tuple(grid.get_adjacent_voxels(voxel))
+        weights = np.array([activation_function(x=mip2.grid[tuple(vxl)],
+                                                kd=mip2.k_d,
+                                                h=self.time_step / 60,
+                                                volume=voxel_volume) + neutrophil.drift_bias
+                            if geometry.lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
+                            for vxl in nearby_voxels], dtype=np.float64)
+
+        normalized_weights = weights / np.sum(weights)
+
+        # sample from distribution given by normalized weights
+        r = rg.uniform()
+        for vxl, weight in zip(nearby_voxels, normalized_weights):
+            if r <= weight:
+                return vxl
+            r -= weight
+
+        assert False, "Sum of normalized weights must be ==1.0, but somehow it isn't."
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """
