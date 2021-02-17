@@ -2,8 +2,8 @@ import math
 from typing import Tuple
 
 import attr
-import numpy as np
 from attr import attrib, attrs
+import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
@@ -28,28 +28,28 @@ class NeutrophilCellData(PhagocyteCellData):
         ('tnfa', bool),
         ('engaged', bool),
         ('status_iteration', np.uint),
-    ]
+        ]
 
     dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status'          : kwargs.get('status',
+            'status':           kwargs.get('status',
                                            PhagocyteStatus.RESTING),
-            'state'           : kwargs.get('state',
+            'state':            kwargs.get('state',
                                            PhagocyteState.FREE),
-            'iron_pool'       : kwargs.get('iron_pool',
+            'iron_pool':        kwargs.get('iron_pool',
                                            0.0),
-            'max_move_step'   : kwargs.get('max_move_step',
+            'max_move_step':    kwargs.get('max_move_step',
                                            1.0),  # TODO: reasonable default?
-            'tnfa'            : kwargs.get('tnfa',
+            'tnfa':             kwargs.get('tnfa',
                                            False),
-            'engaged'         : kwargs.get('engaged',
+            'engaged':          kwargs.get('engaged',
                                            False),
             'status_iteration': kwargs.get('status_iteration',
                                            0),
-        }
+            }
 
         # ensure that these come in the correct order
         return \
@@ -206,9 +206,9 @@ class Neutrophil(PhagocyteModel):
 
             # Movement
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                max_move_step = neutrophil.n_move_rate_act
+                max_move_step = neutrophil.n_move_rate_act * self.time_step
             else:
-                max_move_step = neutrophil.n_move_rate_rest
+                max_move_step = neutrophil.n_move_rate_rest * self.time_step
             move_step: int = rg.poisson(max_move_step)  # TODO: verify
             for _ in range(move_step):
                 self.single_step_move(state, neutrophil_cell)
