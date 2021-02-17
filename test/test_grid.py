@@ -94,7 +94,7 @@ def test_valid_voxel(grid: RectangularGrid, voxel, valid):
 )
 # fmt: on
 def test_get_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
-    assert set(grid.get_adjecent_voxels(voxel)) == neighbors
+    assert set(grid.get_adjacent_voxels(voxel)) == neighbors
 
 
 # fmt: off
@@ -121,7 +121,7 @@ def test_get_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
 )
 # fmt: on
 def test_get_corner_adjacent_voxels(grid: RectangularGrid, voxel, neighbors):
-    assert len(list(grid.get_adjecent_voxels(voxel, corners=True))) == neighbors
+    assert len(list(grid.get_adjacent_voxels(voxel, corners=True))) == neighbors
 
 
 @pytest.mark.parametrize(

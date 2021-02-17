@@ -239,7 +239,7 @@ class RectangularGrid(object):
             and (self.zv[0] <= point.z <= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
+    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
         """Return an iterator over all neighbors of a given voxel.
 
         Parameters
