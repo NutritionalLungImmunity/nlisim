@@ -119,8 +119,8 @@ class FungusCellList(CellList):
             if len(indices) > 0:
                 rg.shuffle(indices)
                 for i in range(init_num):
-                    # putting in some protection for the occasional time that we place the cell on the
-                    # boundary of the voxel-space
+                    # putting in some protection for the occasional time that we place the cell on
+                    # the boundary of the voxel-space
                     if indices[i][2] == grid.xv.shape[0] - 1:
                         x = grid.xv[indices[i][2]]
                     else:
