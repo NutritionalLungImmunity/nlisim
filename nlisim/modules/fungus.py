@@ -119,9 +119,22 @@ class FungusCellList(CellList):
             if len(indices) > 0:
                 rg.shuffle(indices)
                 for i in range(init_num):
-                    x = rg.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
-                    y = rg.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
-                    z = rg.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
+                    # putting in some protection for the occasional time that we place the cell on the
+                    # boundary of the voxel-space
+                    if indices[i][2] == grid.xv.shape[0] - 1:
+                        x = grid.xv[indices[i][2]]
+                    else:
+                        x = rg.uniform(grid.xv[indices[i][2]], grid.xv[indices[i][2] + 1])
+
+                    if indices[i][1] == grid.yv.shape[0] - 1:
+                        y = grid.yv[indices[i][1]]
+                    else:
+                        y = rg.uniform(grid.yv[indices[i][1]], grid.yv[indices[i][1] + 1])
+
+                    if indices[i][0] == grid.zv.shape[0] - 1:
+                        z = grid.zv[indices[i][0]]
+                    else:
+                        z = rg.uniform(grid.zv[indices[i][0]], grid.zv[indices[i][0] + 1])
 
                     point = Point(x=x, y=y, z=z)
                     points[i] = point
