@@ -135,7 +135,7 @@ class Geometry(object):
     def construct(self, simple):
         """Construct the simulation space with math functions."""
         tissue = self.geo
-        fixed = self.fixed
+        # fixed = self.fixed
 
         random_mask = np.random.normal(0, self.randomness, self.shape)
 
