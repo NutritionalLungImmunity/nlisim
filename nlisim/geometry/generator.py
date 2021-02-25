@@ -92,7 +92,7 @@ class Geometry(object):
                     function.center,
                     function.length,
                     function.direction,
-                    function.radius + random_mask
+                    function.radius + random_mask,
                 )
                 tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
 
@@ -115,15 +115,14 @@ class Geometry(object):
         # construct sac
         for function in self.sac_f:
             if isinstance(function, Sphere):
-                air_mask = self.construct_sphere(tissue, function.center, function.radius + random_mask)
+                air_mask = self.construct_sphere(
+                    tissue, function.center, function.radius + random_mask
+                )
                 blur_air_mask = ndimage.filters.convolve(air_mask, np.ones((3, 3, 3)))
                 fixed_air_mask = np.logical_and(blur_air_mask > 13, fixed == 0)
                 tissue[fixed_air_mask] = AIR
                 tissue[
-                    np.logical_and(
-                        np.logical_and(blur_air_mask <= 13, fixed == 0),
-                        tissue == AIR
-                    )
+                    np.logical_and(np.logical_and(blur_air_mask <= 13, fixed == 0), tissue == AIR)
                 ] = REGULAR_TISSUE
                 fixed[fixed_air_mask] = 1
 
@@ -133,17 +132,12 @@ class Geometry(object):
                 tissue[fixed_epithelium_mask] = EPITHELIUM
                 fixed[fixed_epithelium_mask] = 1
 
-
     def construct(self, simple):
         """Construct the simulation space with math functions."""
         tissue = self.geo
         fixed = self.fixed
 
-        random_mask = np.random.normal(
-            0,
-            self.randomness,
-            self.shape
-        )
+        random_mask = np.random.normal(0, self.randomness, self.shape)
 
         self.construct_air_duct(random_mask)
         self.construct_alveolus(random_mask)
@@ -301,8 +295,8 @@ def generate_geometry(config, output, preview, simple, lapl):
 
         # g.scaling(data["scaling"])
         g.construct(simple)
-        g.write_to_hdf5(output + ".hdf5", lapl)
-        g.write_to_vtk(output + ".vtk")
+        g.write_to_hdf5(output + '.hdf5', lapl)
+        g.write_to_vtk(output + '.vtk')
     print(f'--- {(time.time() - start_time)} seconds ---')
     if preview:
         g.preview()
