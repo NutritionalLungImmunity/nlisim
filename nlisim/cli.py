@@ -7,8 +7,6 @@ import click_pathlib
 from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
-from nlisim.postprocess import process_output
-from nlisim.solver import run_iterator
 
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
@@ -34,6 +32,9 @@ def main(ctx: click.Context, config_files: Tuple[Path]) -> None:
 @click.pass_obj
 def run(obj, target_time: float) -> None:
     """Run a simulation."""
+    # Don't import the solver module unless it's needed for this command
+    from nlisim.solver import run_iterator
+
     config = obj['config']
 
     with tqdm(
@@ -56,6 +57,9 @@ def run(obj, target_time: float) -> None:
 )
 @click.pass_obj
 def postprocess(obj, postprocess_dir: Path) -> None:
+    # Don't import the postprocess module unless it's needed for this command
+    from nlisim.postprocess import process_output
+
     if postprocess_dir.exists():
         click.echo(f'Postprocess output directory {postprocess_dir.resolve()} exists. Clearing it.')
         shutil.rmtree(postprocess_dir)
@@ -110,4 +114,4 @@ def generate(config, output, preview, simple, lapl):
 
 
 if __name__ == '__main__':
-    run()
+    main()
