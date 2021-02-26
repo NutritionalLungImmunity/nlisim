@@ -60,28 +60,27 @@ class Geometry(object):
         coords = np.ogrid[: lungtissue.shape[0], : lungtissue.shape[1], : lungtissue.shape[2]]
         distance = np.sqrt(
             (coords[0] - center.z) ** 2 + (coords[1] - center.y) ** 2 + (coords[2] - center.x) ** 2
-            )
+        )
         return 1 * (distance <= r)
 
-    def construct_cylinder(self,
-                           lung_tissue,
-                           center: Point,
-                           length: float,
-                           direction: np.ndarray,
-                           r: float):
+    def construct_cylinder(
+        self, lung_tissue, center: Point, length: float, direction: np.ndarray, r: float
+    ):
         """Construct cylinder within simulation space."""
-        coords = np.array(np.meshgrid(
-            *np.ogrid[: lung_tissue.shape[0], : lung_tissue.shape[1], : lung_tissue.shape[2]]
-            )).T
+        coords = np.array(
+            np.meshgrid(
+                *np.ogrid[: lung_tissue.shape[0], : lung_tissue.shape[1], : lung_tissue.shape[2]]
+            )
+        ).T
 
         # normalize direction, just in case
         direction = direction / np.linalg.norm(direction)
 
         relative_coords = coords - center
         distance_along_axis = relative_coords @ direction
-        distance_from_axis = np.linalg.norm(relative_coords - np.multiply.outer(relative_coords @ direction,
-                                                                                direction),
-                                            axis=3)
+        distance_from_axis = np.linalg.norm(
+            relative_coords - np.multiply.outer(relative_coords @ direction, direction), axis=3
+        )
         mask = np.logical_and(distance_from_axis <= r, distance_along_axis <= length / 2.0).T
         return mask
 
@@ -92,12 +91,13 @@ class Geometry(object):
         # construct air duct
         for function in self.duct_f:
             if isinstance(function, Cylinder):
-                air_mask = self.construct_cylinder(tissue,
-                                                   function.center,
-                                                   function.length,
-                                                   function.direction,
-                                                   function.radius + random_mask,
-                                                   )
+                air_mask = self.construct_cylinder(
+                    tissue,
+                    function.center,
+                    function.length,
+                    function.direction,
+                    function.radius + random_mask,
+                )
                 tissue[np.logical_and(air_mask == 1, fixed == 0)] = AIR
 
         # blur the noise to maintain the continuousness of the air
@@ -121,7 +121,7 @@ class Geometry(object):
             if isinstance(function, Sphere):
                 air_mask = self.construct_sphere(
                     tissue, function.center, function.radius + random_mask
-                    )
+                )
                 blur_air_mask = ndimage.filters.convolve(air_mask, np.ones((3, 3, 3)))
                 fixed_air_mask = np.logical_and(blur_air_mask > 13, fixed == 0)
                 tissue[fixed_air_mask] = AIR
@@ -293,7 +293,7 @@ def generate_geometry(config, output, preview, simple, lapl):
                     function['radius'],
                     function['length'],
                     function['type'],
-                    )
+                )
                 g.add(f)
 
         # g.scaling(data["scaling"])
