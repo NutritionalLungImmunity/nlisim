@@ -67,11 +67,7 @@ class Geometry(object):
         self, lung_tissue, center: Point, length: float, direction: np.ndarray, r: float
     ):
         """Construct cylinder within simulation space."""
-        coords = np.array(
-            np.meshgrid(
-                *np.ogrid[: lung_tissue.shape[0], : lung_tissue.shape[1], : lung_tissue.shape[2]]
-            )
-        ).T
+        coords = np.indices(lung_tissue.shape).T
 
         # normalize direction, just in case
         direction = direction / np.linalg.norm(direction)
