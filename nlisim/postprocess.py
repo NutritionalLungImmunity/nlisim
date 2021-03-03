@@ -77,11 +77,11 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
 def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
     volume = create_vtk_volume(state.grid, state.geometry)
     cells = {
-        'spore':      convert_cells_to_vtk(state.fungus.cells),
+        'spore': convert_cells_to_vtk(state.fungus.cells),
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
         'macrophage': convert_cells_to_vtk(state.macrophage.cells),
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-        }
+    }
 
     return volume, cells
 
