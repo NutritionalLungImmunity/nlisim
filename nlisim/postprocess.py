@@ -8,14 +8,17 @@ from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkStructuredPoints
 from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
-from nlisim.cell import CellList
+from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
 from nlisim.modules.geometry import GeometryState
 from nlisim.state import State
 
 
 def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
-    cell_data = cells.cell_data
+    cell_data: CellData = cells.cell_data
+    live_cells = cells.alive()
+    cell_data = cell_data[live_cells]
+
     fields = dict(cell_data.dtype.fields)
     fields.pop('point')
 
@@ -74,11 +77,11 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
 def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
     volume = create_vtk_volume(state.grid, state.geometry)
     cells = {
-        'spore': convert_cells_to_vtk(state.fungus.cells),
+        'spore':      convert_cells_to_vtk(state.fungus.cells),
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
         'macrophage': convert_cells_to_vtk(state.macrophage.cells),
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-    }
+        }
 
     return volume, cells
 
