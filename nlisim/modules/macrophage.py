@@ -302,7 +302,7 @@ class Macrophage(ModuleModel):
         macrophage.kill = self.config.getfloat('kill')
         macrophage.m_det = self.config.getint('m_det')  # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
-        macrophage.time_m = self.config.getfloat('time_step')
+        macrophage.time_m = self.config.getfloat('time_m')
         macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         macrophage.rm = self.config.getfloat('rm')
         macrophage.p_internalization = self.config.getfloat('p_internalization')

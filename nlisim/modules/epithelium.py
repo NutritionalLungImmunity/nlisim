@@ -300,7 +300,7 @@ class Epithelium(ModuleModel):
         epithelium.cyto_rate = self.config.getfloat('cyto_rate')
         epithelium.s_det = self.config.getint('s_det')
         epithelium.h_det = self.config.getint('h_det')
-        epithelium.time_e = self.config.getfloat('time_step')
+        epithelium.time_e = self.config.getfloat('time_e')
         epithelium.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat('p_internalization')

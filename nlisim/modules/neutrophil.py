@@ -271,7 +271,7 @@ class Neutrophil(ModuleModel):
         neutrophil.n_det = self.config.getint('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
-        neutrophil.time_n = self.config.getfloat('time_step')
+        neutrophil.time_n = self.config.getfloat('time_n')
         neutrophil.age_limit = self.config.getint('age_limit')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
