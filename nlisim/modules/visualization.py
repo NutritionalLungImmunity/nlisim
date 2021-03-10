@@ -1,3 +1,4 @@
+import csv
 from enum import Enum
 import json
 
@@ -5,8 +6,14 @@ import json
 import attr
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk
+
+# noinspection PyUnresolvedReferences
 from vtkmodules.vtkCommonCore import vtkPoints
+
+# noinspection PyUnresolvedReferences
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+
+# noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
@@ -68,8 +75,8 @@ class Visualization(ModuleModel):
 
         alive_cells = np.take(var.cell_data, var.alive())
         for attr_name in attr_names:
-            attr = alive_cells[attr_name]
-            scalars = numpy_to_vtk(num_array=attr)
+            cell_attr = alive_cells[attr_name]
+            scalars = numpy_to_vtk(num_array=cell_attr)
             scalars.SetName(attr_name)
             vol.GetPointData().AddArray(scalars)
 
@@ -114,19 +121,19 @@ class Visualization(ModuleModel):
             )
             if attr_names:
                 for attr_name in attr_names:
-                    attr = getattr(var, attr_name)
+                    var_attr = getattr(var, attr_name)
 
                     # composite data
-                    if attr.dtype.names:
-                        for name in attr.dtype.names:
+                    if var_attr.dtype.names:
+                        for name in var_attr.dtype.names:
                             file_name = filename.replace('<variable>', module_name + '-' + name)
                             Visualization.write_structured_points(
-                                attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                                var_attr[name], file_name, spacing[2], spacing[1], spacing[0]
                             )
                     else:
-                        file_name = filename.replace('<variable>', module_name + '-' + attr)
+                        file_name = filename.replace('<variable>', module_name + '-' + var_attr)
                         Visualization.write_structured_points(
-                            attr, file_name, spacing[2], spacing[1], spacing[0]
+                            var_attr, file_name, spacing[2], spacing[1], spacing[0]
                         )
 
             else:
@@ -154,50 +161,65 @@ class Visualization(ModuleModel):
     def advance(self, state: State, previous_time: float) -> State:
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
-        print_to_stdout = self.config.getboolean('print_to_stdout')
+        csv_output: bool = self.config.getboolean('csv_output')
         json_config = json.loads(variables)
         now = state.time
 
-        if print_to_stdout:
-            print(
-                '\t'.join(
-                    map(
-                        str,
-                        [
-                            len(state.neutrophil.cells.alive()),
-                            len(state.fungus.cells.alive()),
-                            len(state.macrophage.cells.alive()),
-                            len(
-                                state.fungus.cells.alive(
-                                    state.fungus.cells.cell_data['form']
-                                    == FungusCellData.Form.CONIDIA
-                                )
-                            ),
-                            np.sum(state.molecules.grid['iron']),
-                            np.std(state.molecules.grid['iron']),
-                            np.mean(state.molecules.grid['iron']),
-                        ],
-                    )
-                ),
-                end='\t',
-            )
+        if csv_output:
+            with open('data.csv', 'a') as file:
+                csvwriter = csv.writer(file)
 
-        i_f_tot = 0
-        cells = state.fungus.cells
-        for i in cells.alive():
-            i_f_tot += cells.cell_data[i]['iron']
+                cells = state.fungus.cells
+                i_f_tot = np.sum(cells.cell_data[cells.alive()]['iron'])
 
-        mask = np.argwhere(state.geometry.lung_tissue != TissueTypes.BLOOD.value)
-        i_level = 0
-        for [x, y, z] in mask:
-            i_level += state.molecules.grid['iron'][x, y, z]
+                i_level = np.sum(
+                    state.molecules.grid['iron'][
+                        state.geometry.lung_tissue != TissueTypes.BLOOD.value
+                    ]
+                )
 
-        if print_to_stdout:
-            print(str(i_level) + '\t' + str(i_f_tot))
+                csvwriter.writerow(
+                    [
+                        now,
+                        len(state.neutrophil.cells.alive()),
+                        len(state.fungus.cells.alive()),
+                        len(state.macrophage.cells.alive()),
+                        len(
+                            state.fungus.cells.alive(
+                                state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA
+                            )
+                        ),
+                        np.sum(state.molecules.grid['iron']),
+                        np.std(state.molecules.grid['iron']),
+                        np.mean(state.molecules.grid['iron']),
+                        i_f_tot,
+                        i_level,
+                    ]
+                )
 
         for variable in json_config:
             file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
             self.visualize(state, variable, file_name)
             state.visualization.last_visualize = now
+
+        return state
+
+    def initialize(self, state: State) -> State:
+        with open('data.csv', 'w') as file:
+            csvwriter = csv.writer(file)
+            csvwriter.writerow(
+                [
+                    "time",
+                    "Neutrophil",
+                    "Fungus",
+                    "Macrophage",
+                    "Conidia",
+                    "tot_Fe",
+                    "std_Fe",
+                    "mean_Fe",
+                    "fungus_Fe",
+                    "not_blood_Fe",
+                ]
+            )
 
         return state
