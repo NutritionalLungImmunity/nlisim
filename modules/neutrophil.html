@@ -81,7 +81,7 @@ class NeutrophilCellList(CellList):
         if num_reps &gt; 0:
             blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
             blood_index = np.transpose(blood_index)
-            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+            mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
             blood_index = np.transpose(blood_index)
             cyto_index = blood_index[mask]
             rg.shuffle(cyto_index)
@@ -300,7 +300,7 @@ class Neutrophil(ModuleModel):
         neutrophil.n_det = self.config.getint(&#39;n_det&#39;)
         neutrophil.granule_count = self.config.getint(&#39;granule_count&#39;)
         neutrophil.n_kill = self.config.getfloat(&#39;n_kill&#39;)
-        neutrophil.time_n = self.config.getfloat(&#39;time_step&#39;)
+        neutrophil.time_n = self.config.getfloat(&#39;time_n&#39;)
         neutrophil.age_limit = self.config.getint(&#39;age_limit&#39;)
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
@@ -405,7 +405,7 @@ class Neutrophil(ModuleModel):
         neutrophil.n_det = self.config.getint(&#39;n_det&#39;)
         neutrophil.granule_count = self.config.getint(&#39;granule_count&#39;)
         neutrophil.n_kill = self.config.getfloat(&#39;n_kill&#39;)
-        neutrophil.time_n = self.config.getfloat(&#39;time_step&#39;)
+        neutrophil.time_n = self.config.getfloat(&#39;time_n&#39;)
         neutrophil.age_limit = self.config.getint(&#39;age_limit&#39;)
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
@@ -613,7 +613,7 @@ low-level array.</p>
         if num_reps &gt; 0:
             blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
             blood_index = np.transpose(blood_index)
-            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+            mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
             blood_index = np.transpose(blood_index)
             cyto_index = blood_index[mask]
             rg.shuffle(cyto_index)
@@ -1049,7 +1049,7 @@ low-level array.</p>
     if num_reps &gt; 0:
         blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
         blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+        mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
         rg.shuffle(cyto_index)

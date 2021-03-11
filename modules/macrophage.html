@@ -114,7 +114,7 @@ class MacrophageCellList(CellList):
 
         blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
         blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+        mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
         rg.shuffle(cyto_index)
@@ -331,7 +331,7 @@ class Macrophage(ModuleModel):
         macrophage.kill = self.config.getfloat(&#39;kill&#39;)
         macrophage.m_det = self.config.getint(&#39;m_det&#39;)  # radius
         macrophage.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
-        macrophage.time_m = self.config.getfloat(&#39;time_step&#39;)
+        macrophage.time_m = self.config.getfloat(&#39;time_m&#39;)
         macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
         macrophage.rm = self.config.getfloat(&#39;rm&#39;)
         macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
@@ -431,7 +431,7 @@ class Macrophage(ModuleModel):
         macrophage.kill = self.config.getfloat(&#39;kill&#39;)
         macrophage.m_det = self.config.getint(&#39;m_det&#39;)  # radius
         macrophage.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
-        macrophage.time_m = self.config.getfloat(&#39;time_step&#39;)
+        macrophage.time_m = self.config.getfloat(&#39;time_m&#39;)
         macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
         macrophage.rm = self.config.getfloat(&#39;rm&#39;)
         macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
@@ -665,7 +665,7 @@ low-level array.</p>
 
         blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
         blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+        mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
         rg.shuffle(cyto_index)
@@ -1134,7 +1134,7 @@ low-level array.</p>
 
     blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
     blood_index = np.transpose(blood_index)
-    mask = cyto[blood_index[2], blood_index[1], blood_index[0]] &gt;= rec_r
+    mask = cyto[blood_index[0], blood_index[1], blood_index[2]] &gt;= rec_r
     blood_index = np.transpose(blood_index)
     cyto_index = blood_index[mask]
     rg.shuffle(cyto_index)

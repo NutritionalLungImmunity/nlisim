@@ -128,16 +128,17 @@ class Molecules(ModuleModel):
         # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-        molecules.grid.incr()
-        self.convolution_diffusion(
-            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-        )
+        for _ in range(3):
+            molecules.grid.incr()
+            self.convolution_diffusion(
+                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+            )
 
-        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
@@ -344,16 +345,17 @@ class Molecules(ModuleModel):
         # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-        molecules.grid.incr()
-        self.convolution_diffusion(
-            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-        )
+        for _ in range(3):
+            molecules.grid.incr()
+            self.convolution_diffusion(
+                molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+            )
 
-        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+            self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+            self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+            self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+            self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
         return state
 
@@ -527,16 +529,17 @@ def degrade(cls, molecule: np.ndarray, evap: float):
     # self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
     # self.diffuse(molecules.grid[&#39;n_cyto&#39;], state.grid, state.geometry.lung_tissue)
 
-    molecules.grid.incr()
-    self.convolution_diffusion(
-        molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
-    )
+    for _ in range(3):
+        molecules.grid.incr()
+        self.convolution_diffusion(
+            molecules.grid[&#39;iron&#39;], state.geometry.lung_tissue, molecules.iron_max
+        )
 
-    self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
-    self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;m_cyto&#39;], molecules.cyto_evap_m)
+        self.convolution_diffusion(molecules.grid[&#39;m_cyto&#39;], state.geometry.lung_tissue)
 
-    self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
-    self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
+        self.degrade(molecules.grid[&#39;n_cyto&#39;], molecules.cyto_evap_n)
+        self.convolution_diffusion(molecules.grid[&#39;n_cyto&#39;], state.geometry.lung_tissue)
 
     return state</code></pre>
 </details>
