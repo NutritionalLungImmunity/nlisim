@@ -85,7 +85,7 @@ class MacrophageCellList(CellList):
 
         blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
         blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+        mask = cyto[blood_index[0], blood_index[1], blood_index[2]] >= rec_r
         blood_index = np.transpose(blood_index)
         cyto_index = blood_index[mask]
         rg.shuffle(cyto_index)
