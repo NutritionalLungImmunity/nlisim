@@ -52,7 +52,7 @@ class NeutrophilCellList(CellList):
         if num_reps > 0:
             blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
             blood_index = np.transpose(blood_index)
-            mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
+            mask = cyto[blood_index[0], blood_index[1], blood_index[2]] >= rec_r
             blood_index = np.transpose(blood_index)
             cyto_index = blood_index[mask]
             rg.shuffle(cyto_index)
@@ -271,7 +271,7 @@ class Neutrophil(ModuleModel):
         neutrophil.n_det = self.config.getint('n_det')
         neutrophil.granule_count = self.config.getint('granule_count')
         neutrophil.n_kill = self.config.getfloat('n_kill')
-        neutrophil.time_n = self.config.getfloat('time_step')
+        neutrophil.time_n = self.config.getfloat('time_n')
         neutrophil.age_limit = self.config.getint('age_limit')
 
         neutrophil.cells = NeutrophilCellList(grid=grid)
