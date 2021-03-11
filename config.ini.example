@@ -1,4 +1,7 @@
 [simulation]
+# maximum time step duration
+time_step = 1
+
 # number of grid points in each direction
 nx = 20
 ny = 40
@@ -22,85 +25,91 @@ modules = nlisim.modules.geometry.Geometry
           nlisim.modules.neutrophil.Neutrophil
           nlisim.modules.state_output.StateOutput
 
-[state_output]
-# save the simulation state every 1 simulation hour
-time_step = 1
-output_dir = output
+
+[file_output]
+# save the simulation state every 1 simulation second
+save_interval = 1.0
+save_file_name = output/simulation-<time>.hdf5
 
 [geometry]
-# zero implies only initialization, does not advance in time
+# path of the imported geoemtry file
+geometry_path = geometry.hdf5
+preview_geometry = false
 time_step = 0
 
 [macrophage]
-time_step = 1
-rec_r = 5
+rec_r = 3
 p_rec_r = 1.0
 m_abs = 0.05
 Mn = 2.0
 kill = 2
 m_det = 1
-rec_rate_ph = 2
+rec_rate_ph = 6
+time_m = 1
+time_step = 1
 max_conidia_in_phag = 50
-p_internalization = 0.3
-rm = 0.05
+p_internalization = 0.15
+rm = 0.1
 
 [neutrophil]
 time_step = 1
-neutropenic = False
-rec_rate_ph = 6
-rec_r = 3
-n_absorb = 0.2
+neutropenic = false
+rec_rate_ph = 18
+rec_r = 5
+n_absorb = 0.05
 Nn = 2
 n_det = 1
-granule_count = 10
+granule_count = 100
 n_kill = 2
+time_n = 1
 age_limit = 36
 
 [fungus]
 time_step = 1
-init_num = 50
+init_num = 70
 init_health = 100
-ITER_TO_CHANGE_STATUS = 2
 p_lodge = 1
-p_internal_swell = 0.01
-iron_min = 0
-iron_max = 2.5
+p_internal_swell = 0.2
+iron_min = 2
+iron_max = 20
 iron_absorb = 1
-spacing = 1.67
-iron_min_grow = 0.25
-p_branch = 0.75
+spacing = 1.5
+iron_min_grow = 10
+p_branch = 0.35
 p_internalize = 0.3
 grow_time = 2
-rest_time = 2
+rest_time = 1
 swell_time = 5
+
 
 [epithelium]
 time_step = 1
-init_health = 100
 e_kill = 30
 cyto_rate = 100
 s_det = 1
 h_det = 1
 max_conidia_in_phag = 10
-p_internalization = 0.3
+time_e = 1
+p_internalization = 0.03
+init_health = 100
 
 [molecules]
-time_step = 0.333333
+time_step = 1
 diffusion_rate = 0.8
 cyto_evap_m = 0.2
 cyto_evap_n = 0.2
-iron_max = 100
+iron_max = 70
 # name: name of the molecule
 # init_val: inital concentration value at init_loc
 # init_loc: AIR, BLOOD, EPITHELIUM, SURFACTANT
 molecules = [
                 {
                     "name":"iron",
-                    "init_val":10,
-                    "init_loc":["BLOOD"],
-                    "diffusivity":1,
+                    "init_val":20,
+                    "init_loc":["BLOOD", "OTHER"],
+                    "diffusivity":0.8,
                     "source":"BLOOD",
-                    "incr":1
+                    "incr":12
                 },
                 {
                     "name":"m_cyto",
@@ -116,7 +125,7 @@ molecules = [
 
 [visualization]
 time_step = 1
-print_to_stdout = False
+csv_output = false
 # vtk_type: STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, UNSTRUCTURED_GRID, POLY_DATA
 visual_variables =  [
                         {
@@ -124,6 +133,12 @@ visual_variables =  [
                            "variable":"cells",
                            "vtk_type":"POLY_DATA",
                            "attributes":["iteration", "point"]
+                        },
+                        {
+                           "module":"geometry",
+                           "variable":"lung_tissue",
+                           "vtk_type":"STRUCTURED_POINTS",
+                           "attributes":[]
                         },
                         {
                            "module":"macrophage",
@@ -144,4 +159,5 @@ visual_variables =  [
                            "attributes":["iron", "form", "status", "point"]
                         }
                     ]
+visualize_interval = 1
 visualization_file_name = output/<variable>-<time>.vtk
