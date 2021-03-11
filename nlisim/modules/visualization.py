@@ -209,16 +209,16 @@ class Visualization(ModuleModel):
             csvwriter = csv.writer(file)
             csvwriter.writerow(
                 [
-                    "time",
-                    "Neutrophil",
-                    "Fungus",
-                    "Macrophage",
-                    "Conidia",
-                    "tot_Fe",
-                    "std_Fe",
-                    "mean_Fe",
-                    "fungus_Fe",
-                    "not_blood_Fe",
+                    'time',
+                    'Neutrophil',
+                    'Fungus',
+                    'Macrophage',
+                    'Conidia',
+                    'tot_Fe',
+                    'std_Fe',
+                    'mean_Fe',
+                    'fungus_Fe',
+                    'not_blood_Fe',
                 ]
             )
 
