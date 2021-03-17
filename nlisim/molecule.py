@@ -41,7 +41,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
-    _molecule_type: List[str] = attr.ib(init=False, factory=list)
+    _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
@@ -121,14 +121,9 @@ class MoleculeGrid(object):
 
         composite_group.attrs['type'] = 'MoleculeGrid'
         composite_group.attrs['class'] = get_class_path(self)
+        composite_group.attrs['molecule_type'] = self.types
         composite_group.create_dataset(name='concentrations', data=concentrations)
         composite_group.create_dataset(name='sources', data=sources)
-
-        # composite_group.create_dataset(name='molecule_list', data=concentrations.dtype.names)
-
-        # for name in concentrations.dtype.names:
-        #     composite_group.create_dataset(name=name, data=concentrations[name])
-        #     composite_group.create_dataset(name=name, data=sources[name])
 
         return composite_group
 
@@ -141,5 +136,11 @@ class MoleculeGrid(object):
 
         concentrations = composite_dataset['concentrations'][:]
         sources = composite_dataset['sources'][:]
+        molecule_type = composite_dataset.attrs['molecule_type']
 
-        return cls(grid=global_state.grid, concentrations=concentrations, sources=sources)
+        return cls(
+            grid=global_state.grid,
+            concentrations=concentrations,
+            sources=sources,
+            molecule_type=molecule_type,
+        )
