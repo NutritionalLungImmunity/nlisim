@@ -40,6 +40,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
 from nlisim.modules.geometry import GeometryState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -81,7 +82,7 @@ def convert_cells_to_vtk(cells: CellList) -&gt; vtkPolyData:
     return poly
 
 
-def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+def create_vtk_volume(grid: RectangularGrid) -&gt; vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -93,7 +94,11 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkS
     # a uniform grid, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
+    return vtk_grid
 
+
+def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
@@ -103,8 +108,22 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkS
     return vtk_grid
 
 
-def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_volume(state.grid, state.geometry)
+def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt; vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
+    point_data = vtk_grid.GetPointData()
+    for name in molecules.grid.concentrations.dtype.names:
+        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+        data.SetName(name)
+        point_data.AddArray(data)
+
+    return vtk_grid
+
+
+def generate_vtk_objects(
+    state: State,
+) -&gt; Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_vtk_geometry(state.grid, state.geometry)
+    molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
         &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
         &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
@@ -112,16 +131,20 @@ def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str
         &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
     }
 
-    return volume, cells
+    return volume, molecules, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):
-    volume, cells = generate_vtk_objects(state)
+    volume, molecules, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
     grid_writer.SetFileName(str(postprocess_step_dir / &#39;geometry_001.vti&#39;))
     grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    grid_writer.SetFileName(str(postprocess_step_dir / &#39;molecules_001.vti&#39;))
+    grid_writer.SetInputData(molecules)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
@@ -195,8 +218,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     return poly</code></pre>
 </details>
 </dd>
-<dt id="nlisim.postprocess.create_vtk_volume"><code class="name flex">
-<span>def <span class="ident">create_vtk_volume</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+<dt id="nlisim.postprocess.create_vtk_geometry"><code class="name flex">
+<span>def <span class="ident">create_vtk_geometry</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -204,7 +227,47 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+<pre><code class="python">def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
+    point_data = vtk_grid.GetPointData()
+
+    # transform color values to get around categorical interpolation issue in visualization
+    tissue = geometry.lung_tissue
+    tissue[tissue == 0] = 4
+    point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
+    return vtk_grid</code></pre>
+</details>
+</dd>
+<dt id="nlisim.postprocess.create_vtk_molecules"><code class="name flex">
+<span>def <span class="ident">create_vtk_molecules</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, molecules: <a title="nlisim.modules.molecules.MoleculesState" href="modules/molecules.html#nlisim.modules.molecules.MoleculesState">MoleculesState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt; vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
+    point_data = vtk_grid.GetPointData()
+    for name in molecules.grid.concentrations.dtype.names:
+        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+        data.SetName(name)
+        point_data.AddArray(data)
+
+    return vtk_grid</code></pre>
+</details>
+</dd>
+<dt id="nlisim.postprocess.create_vtk_volume"><code class="name flex">
+<span>def <span class="ident">create_vtk_volume</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_vtk_volume(grid: RectangularGrid) -&gt; vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -216,13 +279,6 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     # a uniform grid, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
-
-    point_data = vtk_grid.GetPointData()
-
-    # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue
-    tissue[tissue == 0] = 4
-    point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid</code></pre>
 </details>
 </dd>
@@ -236,12 +292,16 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def generate_vtk(state: State, postprocess_step_dir: Path):
-    volume, cells = generate_vtk_objects(state)
+    volume, molecules, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
     grid_writer.SetFileName(str(postprocess_step_dir / &#39;geometry_001.vti&#39;))
     grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    grid_writer.SetFileName(str(postprocess_step_dir / &#39;molecules_001.vti&#39;))
+    grid_writer.SetInputData(molecules)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
@@ -253,7 +313,7 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 </details>
 </dd>
 <dt id="nlisim.postprocess.generate_vtk_objects"><code class="name flex">
-<span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Tuple[vtkmodules.vtkCommonDataModel.vtkStructuredPoints, Dict[str, vtkmodules.vtkCommonDataModel.vtkPolyData]]</span>
+<span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Tuple[vtkmodules.vtkCommonDataModel.vtkStructuredPoints, vtkmodules.vtkCommonDataModel.vtkStructuredPoints, Dict[str, vtkmodules.vtkCommonDataModel.vtkPolyData]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -261,8 +321,11 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_vtk_objects(state: State) -&gt; Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_volume(state.grid, state.geometry)
+<pre><code class="python">def generate_vtk_objects(
+    state: State,
+) -&gt; Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_vtk_geometry(state.grid, state.geometry)
+    molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
         &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
         &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
@@ -270,7 +333,7 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
         &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
     }
 
-    return volume, cells</code></pre>
+    return volume, molecules, cells</code></pre>
 </details>
 </dd>
 <dt id="nlisim.postprocess.process_output"><code class="name flex">
@@ -310,6 +373,8 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="nlisim.postprocess.convert_cells_to_vtk" href="#nlisim.postprocess.convert_cells_to_vtk">convert_cells_to_vtk</a></code></li>
+<li><code><a title="nlisim.postprocess.create_vtk_geometry" href="#nlisim.postprocess.create_vtk_geometry">create_vtk_geometry</a></code></li>
+<li><code><a title="nlisim.postprocess.create_vtk_molecules" href="#nlisim.postprocess.create_vtk_molecules">create_vtk_molecules</a></code></li>
 <li><code><a title="nlisim.postprocess.create_vtk_volume" href="#nlisim.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_vtk" href="#nlisim.postprocess.generate_vtk">generate_vtk</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_vtk_objects" href="#nlisim.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>

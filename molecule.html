@@ -70,7 +70,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
-    _molecule_type: List[str] = attr.ib(init=False, factory=list)
+    _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
@@ -150,14 +150,9 @@ class MoleculeGrid(object):
 
         composite_group.attrs[&#39;type&#39;] = &#39;MoleculeGrid&#39;
         composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+        composite_group.attrs[&#39;molecule_type&#39;] = self.types
         composite_group.create_dataset(name=&#39;concentrations&#39;, data=concentrations)
         composite_group.create_dataset(name=&#39;sources&#39;, data=sources)
-
-        # composite_group.create_dataset(name=&#39;molecule_list&#39;, data=concentrations.dtype.names)
-
-        # for name in concentrations.dtype.names:
-        #     composite_group.create_dataset(name=name, data=concentrations[name])
-        #     composite_group.create_dataset(name=name, data=sources[name])
 
         return composite_group
 
@@ -170,8 +165,14 @@ class MoleculeGrid(object):
 
         concentrations = composite_dataset[&#39;concentrations&#39;][:]
         sources = composite_dataset[&#39;sources&#39;][:]
+        molecule_type = composite_dataset.attrs[&#39;molecule_type&#39;]
 
-        return cls(grid=global_state.grid, concentrations=concentrations, sources=sources)</code></pre>
+        return cls(
+            grid=global_state.grid,
+            concentrations=concentrations,
+            sources=sources,
+            molecule_type=molecule_type,
+        )</code></pre>
 </details>
 </section>
 <section>
@@ -185,7 +186,7 @@ class MoleculeGrid(object):
 <dl>
 <dt id="nlisim.molecule.MoleculeGrid"><code class="flex name class">
 <span>class <span class="ident">MoleculeGrid</span></span>
-<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, concentrations=NOTHING, sources=NOTHING)</span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, concentrations=NOTHING, sources=NOTHING, molecule_type: List[str] = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class contains a list of grids for each molecule type.</p>
@@ -200,7 +201,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
-    _molecule_type: List[str] = attr.ib(init=False, factory=list)
+    _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
@@ -280,14 +281,9 @@ class MoleculeGrid(object):
 
         composite_group.attrs[&#39;type&#39;] = &#39;MoleculeGrid&#39;
         composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+        composite_group.attrs[&#39;molecule_type&#39;] = self.types
         composite_group.create_dataset(name=&#39;concentrations&#39;, data=concentrations)
         composite_group.create_dataset(name=&#39;sources&#39;, data=sources)
-
-        # composite_group.create_dataset(name=&#39;molecule_list&#39;, data=concentrations.dtype.names)
-
-        # for name in concentrations.dtype.names:
-        #     composite_group.create_dataset(name=name, data=concentrations[name])
-        #     composite_group.create_dataset(name=name, data=sources[name])
 
         return composite_group
 
@@ -300,8 +296,14 @@ class MoleculeGrid(object):
 
         concentrations = composite_dataset[&#39;concentrations&#39;][:]
         sources = composite_dataset[&#39;sources&#39;][:]
+        molecule_type = composite_dataset.attrs[&#39;molecule_type&#39;]
 
-        return cls(grid=global_state.grid, concentrations=concentrations, sources=sources)</code></pre>
+        return cls(
+            grid=global_state.grid,
+            concentrations=concentrations,
+            sources=sources,
+            molecule_type=molecule_type,
+        )</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -330,8 +332,14 @@ def load(cls, global_state: State, group: Group, name: str, metadata: dict) -&gt
 
     concentrations = composite_dataset[&#39;concentrations&#39;][:]
     sources = composite_dataset[&#39;sources&#39;][:]
+    molecule_type = composite_dataset.attrs[&#39;molecule_type&#39;]
 
-    return cls(grid=global_state.grid, concentrations=concentrations, sources=sources)</code></pre>
+    return cls(
+        grid=global_state.grid,
+        concentrations=concentrations,
+        sources=sources,
+        molecule_type=molecule_type,
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -431,14 +439,9 @@ an HDF5 group.</p></div>
 
     composite_group.attrs[&#39;type&#39;] = &#39;MoleculeGrid&#39;
     composite_group.attrs[&#39;class&#39;] = get_class_path(self)
+    composite_group.attrs[&#39;molecule_type&#39;] = self.types
     composite_group.create_dataset(name=&#39;concentrations&#39;, data=concentrations)
     composite_group.create_dataset(name=&#39;sources&#39;, data=sources)
-
-    # composite_group.create_dataset(name=&#39;molecule_list&#39;, data=concentrations.dtype.names)
-
-    # for name in concentrations.dtype.names:
-    #     composite_group.create_dataset(name=name, data=concentrations[name])
-    #     composite_group.create_dataset(name=name, data=sources[name])
 
     return composite_group</code></pre>
 </details>
