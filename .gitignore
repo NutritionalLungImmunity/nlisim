@@ -1,6 +1,7 @@
 /docs
 /config.ini
 /output
+**.pkl
 **.hdf5
 
 # Created by https://www.gitignore.io/api/python
