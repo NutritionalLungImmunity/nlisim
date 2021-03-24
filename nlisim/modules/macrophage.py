@@ -171,21 +171,28 @@ class MacrophageCellList(CellList):
                     False
                 ), "This cell has no valid voxel to move to, including the one that it is in!"
 
-            # Here the voxel offset is the same as the point offset, if they are ever changed
-            # to be at different scale, this will need to be modified.
+            # Some nonsense here, b/c jump is happening at the voxel level, not the point level
             starting_cell_point = Point(x=cell['point'][2], y=cell['point'][1], z=cell['point'][0])
-            point = Point(
-                x=starting_cell_point.x + target_voxel_offset[0],
-                y=starting_cell_point.y + target_voxel_offset[1],
-                z=starting_cell_point.z + target_voxel_offset[2],
+            starting_cell_voxel = grid.get_voxel(starting_cell_point)
+            ending_cell_voxel = grid.get_voxel(
+                Point(
+                    x=grid.x[cell_voxel.x + target_voxel_offset[0]],
+                    y=grid.y[cell_voxel.y + target_voxel_offset[1]],
+                    z=grid.z[cell_voxel.z + target_voxel_offset[2]],
+                )
+            )
+            ending_cell_point = (
+                starting_cell_point
+                + grid.get_voxel_center(ending_cell_voxel)
+                - grid.get_voxel_center(starting_cell_voxel)
             )
 
-            cell['point'] = point
+            cell['point'] = ending_cell_point
             self.update_voxel_index([cell_index])
 
             for i in range(0, self.len_phagosome(cell_index)):
                 f_index = cell['phagosome'][i]
-                fungus[f_index]['point'] = point
+                fungus[f_index]['point'] = ending_cell_point
                 fungus.update_voxel_index([f_index])
 
     def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
