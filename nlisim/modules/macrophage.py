@@ -99,6 +99,14 @@ class MacrophageCellList(CellList):
                     y=grid.y[cyto_index[ii, 1]],
                     z=grid.z[cyto_index[ii, 0]],
                 )
+                # Do we really want these things to always be in the exact center of the voxel?
+                # No we do not. Should not have any effect on model, but maybe some on visualization.
+                perturbation = rg.multivariate_normal(
+                    mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
+                )
+                perturbation_magnitude = np.linalg.norm(perturbation)
+                perturbation /= max(1.0, perturbation_magnitude)
+                point += perturbation
                 self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
