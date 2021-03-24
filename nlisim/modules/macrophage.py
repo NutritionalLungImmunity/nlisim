@@ -1,3 +1,5 @@
+from random import shuffle, choice
+
 import attr
 import numpy as np
 import itertools
@@ -12,6 +14,8 @@ from nlisim.random import rg
 from nlisim.state import State
 
 MAX_CONIDIA = 100
+
+np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
 
 class MacrophageCellData(CellData):
@@ -149,42 +153,49 @@ class MacrophageCellList(CellList):
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
 
     def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
+
         for cell_index in self.alive():
             cell = self[cell_index]
-            vox = grid.get_voxel(cell['point'])
+            cell_voxel = grid.get_voxel(cell['point'])
 
-            p = np.zeros(shape=27)
-            vox_list = []
-            i = -1
+            valid_voxel_offsets = []
+            above_threshold_voxel_offsets = []
 
+            # iterate over nearby voxels, recording the cytokine levels
             for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3):
-                zk = vox.z + dz
-                yj = vox.y + dy
-                xi = vox.x + dx
-                if (
-                    grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
-                    and tissue[zk, yj, xi] != TissueTypes.AIR.value
-                ):
-                    vox_list.append([dx, dy, dz])
-                    i += 1
-                    if cyto[zk, yj, xi] >= rec_r:
-                        p[i] = cyto[zk, yj, xi]
+                zi = cell_voxel.z + dz
+                yj = cell_voxel.y + dy
+                xk = cell_voxel.x + dx
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    if tissue[zi, yj, xk] != TissueTypes.AIR.value:
+                        valid_voxel_offsets.append((dx, dy, dz))
+                        if cyto[zi, yj, xk] >= rec_r:
+                            above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))
 
-            indices = np.argwhere(p != 0)
-            num_vox_possible = len(indices)
-            if num_vox_possible == 1:
-                i = indices[0][0]
-            elif num_vox_possible > 1:
-                inds = np.argwhere(p == p[np.argmax(p)])
-                rg.shuffle(inds)
-                i = inds[0][0]
+            # pick a target for the move
+            if len(above_threshold_voxel_offsets) > 0:
+                # shuffle + sort (with _only_ 0-key, not lexicographic as tuples) ensures
+                # randomization when there are equal top cytokine levels
+                # note that numpy's shuffle will complain about ragged arrays
+                shuffle(above_threshold_voxel_offsets)
+                above_threshold_voxel_offsets = sorted(
+                    above_threshold_voxel_offsets, key=lambda x: x[0], reverse=True
+                )
+                _, target_voxel_offset = above_threshold_voxel_offsets[0]
+            elif len(valid_voxel_offsets) > 0:
+                target_voxel_offset = choice(valid_voxel_offsets)
             else:
-                i = rg.integers(len(vox_list))
+                assert (
+                    False
+                ), "This cell has no valid voxel to move to, including the one that it is in!"
 
+            # Here the voxel offset is the same as the point offset, if they are ever changed
+            # to be at different scale, this will need to be modified.
+            starting_cell_point = Point(x=cell['point'][2], y=cell['point'][1], z=cell['point'][0])
             point = Point(
-                x=grid.x[vox.x + vox_list[i][0]],
-                y=grid.y[vox.y + vox_list[i][1]],
-                z=grid.z[vox.z + vox_list[i][2]],
+                x=starting_cell_point.x + target_voxel_offset[0],
+                y=starting_cell_point.y + target_voxel_offset[1],
+                z=starting_cell_point.z + target_voxel_offset[2],
             )
 
             cell['point'] = point
