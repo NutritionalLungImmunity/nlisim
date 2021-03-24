@@ -1,5 +1,6 @@
 import attr
 import numpy as np
+import itertools
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
@@ -81,26 +82,22 @@ class MacrophageCellList(CellList):
         self[index]['phagosome'].fill(-1)
 
     def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
-        num_reps = rec_rate_ph  # number of macrophages recruited per time step
+        num_reps = rec_rate_ph  # maximum number of macrophages recruited per time step
 
-        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-        blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[0], blood_index[1], blood_index[2]] >= rec_r
-        blood_index = np.transpose(blood_index)
-        cyto_index = blood_index[mask]
-        rg.shuffle(cyto_index)
+        cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto >= rec_r))
+        if len(cyto_index) == 0:
+            # nowhere to place cells
+            return
 
-        for _ in range(0, num_reps):
-            if len(cyto_index) > 0:
-                ii = rg.integers(len(cyto_index))
+        for _ in range(num_reps):
+            if p_rec_r > rg.random():
+                ii = rg.integers(cyto_index.shape[0])
                 point = Point(
-                    x=grid.x[cyto_index[ii][2]],
-                    y=grid.y[cyto_index[ii][1]],
-                    z=grid.z[cyto_index[ii][0]],
+                    x=grid.x[cyto_index[ii, 2]],
+                    y=grid.y[cyto_index[ii, 1]],
+                    z=grid.z[cyto_index[ii, 0]],
                 )
-
-                if p_rec_r > rg.random():
-                    self.append(MacrophageCellData.create_cell(point=point))
+                self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
         for index in self.alive():
@@ -160,20 +157,18 @@ class MacrophageCellList(CellList):
             vox_list = []
             i = -1
 
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if (
-                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
-                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
-                        ):
-                            vox_list.append([x, y, z])
-                            i += 1
-                            if cyto[zk, yj, xi] >= rec_r:
-                                p[i] = cyto[zk, yj, xi]
+            for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3):
+                zk = vox.z + dz
+                yj = vox.y + dy
+                xi = vox.x + dx
+                if (
+                    grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
+                    and tissue[zk, yj, xi] != TissueTypes.AIR.value
+                ):
+                    vox_list.append([dx, dy, dz])
+                    i += 1
+                    if cyto[zk, yj, xi] >= rec_r:
+                        p[i] = cyto[zk, yj, xi]
 
             indices = np.argwhere(p != 0)
             num_vox_possible = len(indices)
