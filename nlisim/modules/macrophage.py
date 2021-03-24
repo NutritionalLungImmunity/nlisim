@@ -117,38 +117,20 @@ class MacrophageCellList(CellList):
 
             hyphae_count = 0
 
-            x_r = []
-            y_r = []
-            z_r = []
+            # Moore neighborhood
+            x_r = tuple(range(-1 * m_det, m_det + 1))
+            y_r = tuple(range(-1 * m_det, m_det + 1))
+            z_r = tuple(range(-1 * m_det, m_det + 1))
 
-            if m_det == 0:
-                index_arr = fungus.get_cells_in_voxel(vox)
-                for index in index_arr:
-                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
-                        hyphae_count += 1
-
-            else:
-                for num in range(0, m_det + 1):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for num in range(-1 * m_det, 0):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for x in x_r:
-                    for y in y_r:
-                        for z in z_r:
-                            zk = vox.z + z
-                            yj = vox.y + y
-                            xi = vox.x + x
-                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                                for index in index_arr:
-                                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
-                                        hyphae_count += 1
+            for x, y, z in itertools.product(x_r, y_r, z_r):
+                zk = vox.z + z
+                yj = vox.y + y
+                xi = vox.x + x
+                if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                    for index in index_arr:
+                        if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                            hyphae_count += 1
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
 
@@ -211,47 +193,25 @@ class MacrophageCellList(CellList):
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
 
-            x_r = []
-            y_r = []
-            z_r = []
+            # Moore neighborhood
+            x_r = tuple(range(-1 * m_det, m_det + 1))
+            y_r = tuple(range(-1 * m_det, m_det + 1))
+            z_r = tuple(range(-1 * m_det, m_det + 1))
 
-            if m_det == 0:
-                index_arr = fungus.get_cells_in_voxel(vox)
-                for index in index_arr:
-                    if (
-                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
-                        and not fungus[index]['internalized']
-                        and p_in > rg.random()
-                    ):
-                        fungus[index]['internalized'] = True
-                        self.append_to_phagosome(i, index, max_spores)
-            else:
-                for num in range(0, m_det + 1):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for num in range(-1 * m_det, 0):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for x in x_r:
-                    for y in y_r:
-                        for z in z_r:
-                            zk = vox.z + z
-                            yj = vox.y + y
-                            xi = vox.x + x
-                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                                for index in index_arr:
-                                    if (
-                                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
-                                        and not fungus[index]['internalized']
-                                        and p_in > rg.random()
-                                    ):
-                                        fungus[index]['internalized'] = True
-                                        self.append_to_phagosome(i, index, max_spores)
+            for x, y, z in itertools.product(x_r, y_r, z_r):
+                zi = vox.z + z
+                yj = vox.y + y
+                xk = vox.x + x
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    for index in index_arr:
+                        if (
+                            fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                            and not fungus[index]['internalized']
+                            and p_in > rg.random()
+                        ):
+                            fungus[index]['internalized'] = True
+                            self.append_to_phagosome(i, index, max_spores)
 
     def damage_conidia(self, kill, t, health, fungus):
         for i in self.alive():
