@@ -165,7 +165,7 @@ class MacrophageCellList(CellList):
                 target_voxel_offset = choice(valid_voxel_offsets)
             else:
                 raise AssertionError(
-                    "This cell has no valid voxel to move to, including the one that it is in!"
+                    'This cell has no valid voxel to move to, including the one that it is in!'
                 )
 
             # Some nonsense here, b/c jump is happening at the voxel level, not the point level
