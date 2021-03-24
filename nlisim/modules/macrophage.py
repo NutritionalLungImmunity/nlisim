@@ -1,8 +1,8 @@
-from random import shuffle, choice
+import itertools
+from random import choice, shuffle
 
 import attr
 import numpy as np
-import itertools
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
@@ -19,7 +19,6 @@ np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
 
 class MacrophageCellData(CellData):
-
     MACROPHAGE_FIELDS = [
         ('iteration', 'i4'),
         ('phagosome', (np.int32, (MAX_CONIDIA))),
@@ -32,7 +31,6 @@ class MacrophageCellData(CellData):
         cls,
         **kwargs,
     ) -> np.record:
-
         iteration = 0
         phagosome = np.empty(MAX_CONIDIA)
         phagosome.fill(-1)
@@ -135,7 +133,6 @@ class MacrophageCellList(CellList):
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
 
     def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
-
         for cell_index in self.alive():
             cell = self[cell_index]
             cell_voxel = grid.get_voxel(cell['point'])
@@ -167,9 +164,9 @@ class MacrophageCellList(CellList):
             elif len(valid_voxel_offsets) > 0:
                 target_voxel_offset = choice(valid_voxel_offsets)
             else:
-                assert (
-                    False
-                ), "This cell has no valid voxel to move to, including the one that it is in!"
+                raise AssertionError(
+                    "This cell has no valid voxel to move to, including the one that it is in!"
+                )
 
             # Some nonsense here, b/c jump is happening at the voxel level, not the point level
             starting_cell_point = Point(x=cell['point'][2], y=cell['point'][1], z=cell['point'][0])
