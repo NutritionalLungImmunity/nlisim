@@ -31,6 +31,7 @@ setup(
         'click-pathlib',
         'dataclasses;python_version<"3.8"',
         'h5py',
+        'importlib-metadata;python_version<"3.8"',
         'matplotlib',
         'numpy',
         'scipy',
