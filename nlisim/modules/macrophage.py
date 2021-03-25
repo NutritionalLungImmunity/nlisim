@@ -125,16 +125,14 @@ class MacrophageCellList(CellList):
             hyphae_count = 0
 
             # Moore neighborhood
-            x_r = tuple(range(-1 * m_det, m_det + 1))
-            y_r = tuple(range(-1 * m_det, m_det + 1))
-            z_r = tuple(range(-1 * m_det, m_det + 1))
+            neighborhood = tuple(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
 
-            for x, y, z in itertools.product(x_r, y_r, z_r):
-                zk = vox.z + z
-                yj = vox.y + y
-                xi = vox.x + x
-                if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
                             hyphae_count += 1

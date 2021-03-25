@@ -92,14 +92,12 @@ class NeutrophilCellList(CellList):
             hyphae_count = 0
 
             # Moore neighborhood
-            x_r = tuple(range(-1 * n_det, n_det + 1))
-            y_r = tuple(range(-1 * n_det, n_det + 1))
-            z_r = tuple(range(-1 * n_det, n_det + 1))
+            neighborhood = tuple(itertools.product(tuple(range(-1 * n_det, n_det + 1)), repeat=3))
 
-            for x, y, z in itertools.product(x_r, y_r, z_r):
-                zi = vox.z + z
-                yj = vox.y + y
-                xk = vox.x + x
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
                     index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
@@ -121,7 +119,7 @@ class NeutrophilCellList(CellList):
             above_threshold_voxel_offsets = []
 
             # iterate over nearby voxels, recording the cytokine levels
-            for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3):
+            for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
                 zi = cell_voxel.z + dz
                 yj = cell_voxel.y + dy
                 xk = cell_voxel.x + dx
@@ -178,10 +176,10 @@ class NeutrophilCellList(CellList):
             shuffle(neighborhood)
             neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
 
-            for x, y, z in neighborhood:
-                zi = vox.z + z
-                yj = vox.y + y
-                xk = vox.x + x
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
                     index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
                     if len(index_arr) > 0:
