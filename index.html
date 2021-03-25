@@ -255,7 +255,15 @@ visual_variables =  [
 A multiscale simulation framework of *Aspergillus fumigatus*.
 
 .. include:: ../README.md
-&#34;&#34;&#34;</code></pre>
+&#34;&#34;&#34;
+
+try:
+    from importlib.metadata import version  # type: ignore
+except ImportError:
+    from importlib_metadata import version  # type: ignore
+
+
+__version__ = version(&#39;nlisim&#39;)</code></pre>
 </details>
 </section>
 <section>
