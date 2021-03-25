@@ -8,14 +8,18 @@ from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkStructuredPoints
 from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
-from nlisim.cell import CellList
+from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
 from nlisim.modules.geometry import GeometryState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
 def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
-    cell_data = cells.cell_data
+    cell_data: CellData = cells.cell_data
+    live_cells = cells.alive()
+    cell_data = cell_data[live_cells]
+
     fields = dict(cell_data.dtype.fields)
     fields.pop('point')
 
@@ -49,7 +53,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     return poly
 
 
-def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -61,7 +65,11 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
     # a uniform grid, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
+    return vtk_grid
 
+
+def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
@@ -71,8 +79,22 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
     return vtk_grid
 
 
-def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_volume(state.grid, state.geometry)
+def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
+    point_data = vtk_grid.GetPointData()
+    for name in molecules.grid.concentrations.dtype.names:
+        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+        data.SetName(name)
+        point_data.AddArray(data)
+
+    return vtk_grid
+
+
+def generate_vtk_objects(
+    state: State,
+) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_vtk_geometry(state.grid, state.geometry)
+    molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
         'spore': convert_cells_to_vtk(state.fungus.cells),
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
@@ -80,16 +102,20 @@ def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, v
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
     }
 
-    return volume, cells
+    return volume, molecules, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):
-    volume, cells = generate_vtk_objects(state)
+    volume, molecules, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
     grid_writer.SetFileName(str(postprocess_step_dir / 'geometry_001.vti'))
     grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    grid_writer.SetFileName(str(postprocess_step_dir / 'molecules_001.vti'))
+    grid_writer.SetInputData(molecules)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
