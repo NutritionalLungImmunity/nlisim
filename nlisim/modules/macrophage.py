@@ -100,7 +100,8 @@ class MacrophageCellList(CellList):
                     z=grid.z[cyto_index[ii, 0]],
                 )
                 # Do we really want these things to always be in the exact center of the voxel?
-                # No we do not. Should not have any effect on model, but maybe some on visualization.
+                # No we do not. Should not have any effect on model, but maybe some on
+                # visualization.
                 perturbation = rg.multivariate_normal(
                     mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
                 )
@@ -149,7 +150,7 @@ class MacrophageCellList(CellList):
             above_threshold_voxel_offsets = []
 
             # iterate over nearby voxels, recording the cytokine levels
-            for dx, dy, dz in itertools.product([-1, 0, 1], repeat=3):
+            for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
                 zi = cell_voxel.z + dz
                 yj = cell_voxel.y + dy
                 xk = cell_voxel.x + dx
