@@ -536,8 +536,9 @@ def test_damage_hyphae_granuleless(
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
 
     assert fungus_list[0]['health'] == 50
-    assert fungus_list[1]['health'] == 50
-    assert fungus_list[2]['health'] == 100
+    # one should be 50, the other 100. It doesn't matter which is which
+    assert fungus_list[1]['health'] == 100 or fungus_list[2]['health'] == 100
+    assert fungus_list[1]['health'] == 50 or fungus_list[2]['health'] == 50
     assert neutrophil_list[0]['granule_count'] == 0
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
 

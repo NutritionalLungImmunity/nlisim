@@ -48,31 +48,34 @@ class NeutrophilCellList(CellList):
         num_reps = 0
         if not neutropenic:
             num_reps = rec_rate_ph  # number of neutrophils recruited per time step
-        elif neutropenic and time >= 48 and time <= 96:
+        elif neutropenic and 48 <= time <= 96:
+            # TODO: relate 3 to Algorithm S3.14 and rec_rate_ph or introduce neutropenic parameter
+            #  In S3.14: num_reps = 6 and int( (time-48)/ 8), both are 1/3 values here
             num_reps = int((time - 48) / 8) * 3
 
-        if num_reps > 0:
-            blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-            blood_index = np.transpose(blood_index)
-            mask = cyto[blood_index[0], blood_index[1], blood_index[2]] >= rec_r
-            blood_index = np.transpose(blood_index)
-            cyto_index = blood_index[mask]
-            rg.shuffle(cyto_index)
+        if num_reps <= 0:
+            return
 
-            for _ in range(0, num_reps):
-                if len(cyto_index) > 0:
-                    ii = rg.integers(len(cyto_index))
-                    point = Point(
-                        x=grid.x[cyto_index[ii][2]],
-                        y=grid.y[cyto_index[ii][1]],
-                        z=grid.z[cyto_index[ii][0]],
-                    )
+        cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto >= rec_r))
+        if len(cyto_index) <= 0:
+            # nowhere to place cells
+            return
 
-                    status = NeutrophilCellData.Status.NONGRANULATING
-                    gc = granule_count
-                    self.append(
-                        NeutrophilCellData.create_cell(point=point, status=status, granule_count=gc)
-                    )
+        for _ in range(num_reps):
+            ii = rg.integers(cyto_index.shape[0])
+            point = Point(
+                x=grid.x[cyto_index[ii, 2]],
+                y=grid.y[cyto_index[ii, 1]],
+                z=grid.z[cyto_index[ii, 0]],
+            )
+
+            self.append(
+                NeutrophilCellData.create_cell(
+                    point=point,
+                    status=NeutrophilCellData.Status.NONGRANULATING,
+                    granule_count=granule_count,
+                )
+            )
 
     def absorb_cytokines(self, n_absorb, cyto, grid):
         for index in self.alive():
@@ -169,19 +172,20 @@ class NeutrophilCellList(CellList):
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
 
-            # Moore neighborhood
-            x_r = tuple(range(-1 * n_det, n_det + 1))
-            y_r = tuple(range(-1 * n_det, n_det + 1))
-            z_r = tuple(range(-1 * n_det, n_det + 1))
+            # Moore neighborhood, but order partially randomized. Closest to furthest order, but
+            # the order of any set of points of equal distance is random
+            neighborhood = list(itertools.product(tuple(range(-1 * n_det, n_det + 1)), repeat=3))
+            shuffle(neighborhood)
+            neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
 
-            for x, y, z in itertools.product(x_r, y_r, z_r):
-                zk = vox.z + z
+            for x, y, z in neighborhood:
+                zi = vox.z + z
                 yj = vox.y + y
-                xi = vox.x + x
-                if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
+                xk = vox.x + x
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
                     if len(index_arr) > 0:
-                        iron[zk, yj, xi] = 0
+                        iron[zi, yj, xk] = 0
                     for index in index_arr:
                         if (
                             fungus[index]['form'] == FungusCellData.Form.HYPHAE
