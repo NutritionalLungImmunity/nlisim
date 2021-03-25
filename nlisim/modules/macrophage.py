@@ -205,15 +205,16 @@ class MacrophageCellList(CellList):
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
 
-            # Moore neighborhood
-            x_r = tuple(range(-1 * m_det, m_det + 1))
-            y_r = tuple(range(-1 * m_det, m_det + 1))
-            z_r = tuple(range(-1 * m_det, m_det + 1))
+            # Moore neighborhood, but order partially randomized. Closest to furthest order, but
+            # the order of any set of points of equal distance is random
+            neighborhood = list(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
+            shuffle(neighborhood)
+            neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
 
-            for x, y, z in itertools.product(x_r, y_r, z_r):
-                zi = vox.z + z
-                yj = vox.y + y
-                xk = vox.x + x
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
                     index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
