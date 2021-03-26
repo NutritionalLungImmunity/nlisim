@@ -73,7 +73,7 @@ def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkSt
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue
+    tissue = geometry.lung_tissue.copy()
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
