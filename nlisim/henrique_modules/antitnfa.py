@@ -4,8 +4,8 @@ import attr
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -52,7 +52,7 @@ class AntiTNFa(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advances the state by a single time step."""
-        from nlisim.modulesv2.tnfa import TNFaState
+        from nlisim.henrique_modules.tnfa import TNFaState
 
         anti_tnf_a: AntiTNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules

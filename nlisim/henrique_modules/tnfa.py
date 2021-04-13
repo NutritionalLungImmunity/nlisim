@@ -6,8 +6,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -56,9 +56,9 @@ class TNFa(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
-        from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
-        from nlisim.modulesv2.phagocyte import PhagocyteStatus
+        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.henrique_modules.neutrophil import NeutrophilCellData, NeutrophilState
+        from nlisim.henrique_modules.phagocyte import PhagocyteStatus
 
         tnfa: TNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules

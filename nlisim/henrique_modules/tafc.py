@@ -4,8 +4,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -50,9 +50,9 @@ class TAFC(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.iron import IronState
-        from nlisim.modulesv2.transferrin import TransferrinState
-        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
+        from nlisim.henrique_modules.iron import IronState
+        from nlisim.henrique_modules.transferrin import TransferrinState
+        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
             AfumigatusState, NetworkSpecies
 
         tafc: TAFCState = state.tafc

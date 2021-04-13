@@ -10,9 +10,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.iron import IronState
-from nlisim.modulesv2.phagocyte import internalize_aspergillus
+from nlisim.henrique_modules.geometry import GeometryState, TissueType
+from nlisim.henrique_modules.iron import IronState
+from nlisim.henrique_modules.phagocyte import internalize_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
 
@@ -189,7 +189,7 @@ class Afumigatus(ModuleModel):
     name = 'afumigatus'
     StateClass = AfumigatusState
 
-    from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
+    from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
@@ -250,7 +250,7 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
+        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
@@ -270,7 +270,6 @@ class Afumigatus(ModuleModel):
             # TODO: this should never be reached?! Make sure that we release iron when we kill the fungal cell
             #  release cell's iron pool back to voxel
             if afumigatus_cell['status'] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
-                # TODO: verify zyx (vs xyz)
                 iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
                 afumigatus_cell['iron_pool'] = 0.0
                 afumigatus_cell['dead'] = True
@@ -300,7 +299,7 @@ class Afumigatus(ModuleModel):
                                       afumigatus_cell_index: int,
                                       macrophage: 'MacrophageState',
                                       macrophage_cell: 'MacrophageCellData'):
-        from nlisim.modulesv2.macrophage import PhagocyteStatus
+        from nlisim.henrique_modules.macrophage import PhagocyteStatus
 
         probability_of_interaction = afumigatus.pr_ma_hyphae \
             if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE \

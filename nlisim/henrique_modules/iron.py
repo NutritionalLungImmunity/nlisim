@@ -4,7 +4,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecules import MoleculeModel
+from nlisim.henrique_modules.molecules import MoleculeModel
 from nlisim.state import State
 
 
@@ -36,8 +36,8 @@ class Iron(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.macrophage import MacrophageState
-        from nlisim.modulesv2.phagocyte import PhagocyteStatus
+        from nlisim.henrique_modules.macrophage import MacrophageState
+        from nlisim.henrique_modules.phagocyte import PhagocyteStatus
 
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage

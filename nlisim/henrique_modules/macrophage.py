@@ -9,7 +9,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteState, \
+from nlisim.henrique_modules.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteState, \
     PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
@@ -104,7 +104,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        from nlisim.modulesv2.geometry import GeometryState
+        from nlisim.henrique_modules.geometry import GeometryState
 
         macrophage: MacrophageState = state.macrophage
         geometry: GeometryState = state.geometry
@@ -205,8 +205,8 @@ class Macrophage(PhagocyteModel):
         -------
         nothing
         """
-        from nlisim.modulesv2.mip1b import MIP1BState
-        from nlisim.modulesv2.geometry import GeometryState
+        from nlisim.henrique_modules.mip1b import MIP1BState
+        from nlisim.henrique_modules.geometry import GeometryState
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
@@ -253,8 +253,8 @@ class Macrophage(PhagocyteModel):
             the new voxel position of the macrophage
         """
         # macrophages are attracted by MIP1b
-        from nlisim.modulesv2.mip1b import MIP1BState
-        from nlisim.modulesv2.geometry import GeometryState, TissueType
+        from nlisim.henrique_modules.mip1b import MIP1BState
+        from nlisim.henrique_modules.geometry import GeometryState, TissueType
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b

@@ -5,8 +5,8 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -52,8 +52,8 @@ class EstB(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.iron import IronState
-        from nlisim.modulesv2.tafc import TAFCState
+        from nlisim.henrique_modules.iron import IronState
+        from nlisim.henrique_modules.tafc import TAFCState
 
         estb: EstBState = state.estb
         iron: IronState = state.iron

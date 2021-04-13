@@ -4,8 +4,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction, michaelian_kinetics, turnover_rate
 
@@ -58,11 +58,11 @@ class Lactoferrin(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.neutrophil import NeutrophilCellData, NeutrophilState
-        from nlisim.modulesv2.phagocyte import PhagocyteState, PhagocyteStatus
-        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
-        from nlisim.modulesv2.transferrin import TransferrinState
-        from nlisim.modulesv2.iron import IronState
+        from nlisim.henrique_modules.neutrophil import NeutrophilCellData, NeutrophilState
+        from nlisim.henrique_modules.phagocyte import PhagocyteState, PhagocyteStatus
+        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.henrique_modules.transferrin import TransferrinState
+        from nlisim.henrique_modules.iron import IronState
 
         lactoferrin: LactoferrinState = state.lactoferrin
         transferrin: TransferrinState = state.transferrin

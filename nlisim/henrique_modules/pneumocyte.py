@@ -7,8 +7,8 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteStatus
+from nlisim.henrique_modules.geometry import GeometryState, TissueType
+from nlisim.henrique_modules.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -97,10 +97,10 @@ class Pneumocyte(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.il6 import IL6State
-        from nlisim.modulesv2.il8 import IL8State
-        from nlisim.modulesv2.tnfa import TNFaState
-        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusState
+        from nlisim.henrique_modules.il6 import IL6State
+        from nlisim.henrique_modules.il8 import IL8State
+        from nlisim.henrique_modules.tnfa import TNFaState
+        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusState
 
         pneumocyte: PneumocyteState = state.pneumocyte
         afumigatus: AfumigatusState = state.afumigatus
