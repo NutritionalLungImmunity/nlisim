@@ -92,7 +92,7 @@ def test_recruit_new(macrophage_list, tissue, grid: RectangularGrid, cyto):
     vox = grid.get_voxel(macrophage_list[-1]['point'])
 
     assert len(macrophage_list) == 2
-    assert vox.x == 1 and vox.y == 2 and vox.z == 3
+    assert vox.x == 3 and vox.y == 2 and vox.z == 1
 
     # test recruit none due to below threshold
     rec_r = 20
@@ -120,7 +120,7 @@ def test_recruit_new_multiple_locations(
 
     for cell in macrophage_list.cell_data:
         vox = grid.get_voxel(cell['point'])
-        assert vox.z in [3, 6] and vox.y in [2, 5] and vox.x in [1, 4]
+        assert vox.x in [3, 6] and vox.y in [2, 5] and vox.z in [1, 4]
 
 
 def test_absorb_cytokines(macrophage_list: MacrophageCellList, cyto, grid: RectangularGrid):
