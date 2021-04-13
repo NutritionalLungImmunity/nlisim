@@ -103,7 +103,7 @@ class PhagocyteModel(ModuleModel):
         -------
         Nothing
         """
-        from nlisim.modulesv2.afumigatus import AfumigatusCellState, AfumigatusState
+        from nlisim.henrique_modules.afumigatus import AfumigatusCellState, AfumigatusState
 
         afumigatus: AfumigatusState = state.afumigatus
 
@@ -156,7 +156,7 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
     -------
     Nothing
     """
-    from nlisim.modulesv2.afumigatus import AfumigatusCellStatus, AfumigatusCellState
+    from nlisim.henrique_modules.afumigatus import AfumigatusCellStatus, AfumigatusCellState
 
     # We cannot internalize an already internalized fungal cell
     if aspergillus_cell['state'] != AfumigatusCellState.FREE:

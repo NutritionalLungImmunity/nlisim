@@ -7,13 +7,13 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.afumigatus import AfumigatusCellStatus, AfumigatusState
-from nlisim.modulesv2.geometry import GeometryState, TissueType
-from nlisim.modulesv2.hemoglobin import HemoglobinState
-from nlisim.modulesv2.hemolysin import HemolysinState
-from nlisim.modulesv2.macrophage import MacrophageState
-from nlisim.modulesv2.molecules import MoleculesState
-from nlisim.modulesv2.phagocyte import PhagocyteModel
+from nlisim.henrique_modules.afumigatus import AfumigatusCellStatus, AfumigatusState
+from nlisim.henrique_modules.geometry import GeometryState, TissueType
+from nlisim.henrique_modules.hemoglobin import HemoglobinState
+from nlisim.henrique_modules.hemolysin import HemolysinState
+from nlisim.henrique_modules.macrophage import MacrophageState
+from nlisim.henrique_modules.molecules import MoleculesState
+from nlisim.henrique_modules.phagocyte import PhagocyteModel
 from nlisim.state import State
 from nlisim.util import activation_function
 

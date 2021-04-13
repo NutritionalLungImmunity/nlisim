@@ -5,7 +5,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -40,7 +40,7 @@ class Hemoglobin(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
+        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
 
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules

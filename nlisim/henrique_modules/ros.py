@@ -2,7 +2,7 @@ import attr
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.modulesv2.molecules import MoleculeModel, MoleculesState
+from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 
 

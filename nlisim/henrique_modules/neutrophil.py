@@ -8,9 +8,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modulesv2.geometry import GeometryState
-from nlisim.modulesv2.mip2 import MIP2State
-from nlisim.modulesv2.phagocyte import internalize_aspergillus, PhagocyteCellData, PhagocyteModel, \
+from nlisim.henrique_modules.geometry import GeometryState
+from nlisim.henrique_modules.mip2 import MIP2State
+from nlisim.henrique_modules.phagocyte import internalize_aspergillus, PhagocyteCellData, PhagocyteModel, \
     PhagocyteModuleState, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
@@ -124,10 +124,10 @@ class Neutrophil(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        from nlisim.modulesv2.afumigatus import AfumigatusCellData, AfumigatusCellStatus, \
+        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusCellStatus, \
             AfumigatusState
-        from nlisim.modulesv2.iron import IronState
-        from nlisim.modulesv2.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.henrique_modules.iron import IronState
+        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
 
         neutrophil: NeutrophilState = state.neutrophil
         macrophage: MacrophageState = state.macrophage
@@ -237,7 +237,7 @@ class Neutrophil(PhagocyteModel):
             the new voxel position of the neutrophil
         """
         # neutrophils are attracted by MIP2
-        from nlisim.modulesv2.geometry import GeometryState, TissueType
+        from nlisim.henrique_modules.geometry import GeometryState, TissueType
 
         neutrophil: NeutrophilState = state.neutrophil
         mip2: MIP2State = state.mip1b
@@ -318,7 +318,7 @@ class Neutrophil(PhagocyteModel):
         -------
         nothing
         """
-        from nlisim.modulesv2.mip2 import MIP2State
+        from nlisim.henrique_modules.mip2 import MIP2State
 
         neutrophil: NeutrophilState = state.neutrophil
         mip2: MIP2State = state.mip2
