@@ -254,7 +254,7 @@ class CellList(object):
         mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
         return sample_indices[mask]
 
-    def append(self, cell: CellType) -> None:
+    def append(self, cell: CellType) -> int:
         """Append a new cell the the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
@@ -265,6 +265,7 @@ class CellList(object):
         voxel = self.grid.get_voxel(cell['point'])
         self._voxel_index[voxel].add(index)
         self._reverse_voxel_index.append(voxel)
+        return index
 
     def extend(self, cells: Iterable[CellData]) -> None:
         """Extend the cell list by multiple cells."""

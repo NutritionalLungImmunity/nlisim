@@ -9,12 +9,12 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.module import ModuleModel, ModuleState
-from nlisim.util import TissueType
 from nlisim.henrique_modules.iron import IronState
 from nlisim.henrique_modules.phagocyte import internalize_aspergillus
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 
 @unique
@@ -87,38 +87,38 @@ class AfumigatusCellData(CellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs) -> np.record:
         initializer = {
-            'iron_pool':            kwargs.get('iron_pool',
-                                               0),
-            'state':                kwargs.get('state',
-                                               AfumigatusCellState.FREE),
-            'status':               kwargs.get('status',
-                                               AfumigatusCellStatus.RESTING_CONIDIA),
-            'is_root':              kwargs.get('is_root',
-                                               True),
-            'root':                 kwargs.get('root',
-                                               np.zeros(3, dtype=np.float64)),
-            'tip':                  kwargs.get('tip',
-                                               np.zeros(3, dtype=np.float64)),
-            'vec':                  kwargs.get('vec',  # dx, dy, dz
-                                               np.zeros(3, dtype=np.float64)),
-            'growable':             kwargs.get('growable',
-                                               True),
-            'branchable':           kwargs.get('branchable',
-                                               False),
+            'iron_pool': kwargs.get('iron_pool',
+                                    0),
+            'state': kwargs.get('state',
+                                AfumigatusCellState.FREE),
+            'status': kwargs.get('status',
+                                 AfumigatusCellStatus.RESTING_CONIDIA),
+            'is_root': kwargs.get('is_root',
+                                  True),
+            'root': kwargs.get('root',
+                               np.zeros(3, dtype=np.float64)),
+            'tip': kwargs.get('tip',
+                              np.zeros(3, dtype=np.float64)),
+            'vec': kwargs.get('vec',  # dx, dy, dz
+                              np.zeros(3, dtype=np.float64)),
+            'growable': kwargs.get('growable',
+                                   True),
+            'branchable': kwargs.get('branchable',
+                                     False),
             'activation_iteration': kwargs.get('activation_iteration',
                                                0),
-            'growth_iteration':     kwargs.get('growth_iteration',
-                                               0),
-            'boolean_network':      kwargs.get('boolean_network',
-                                               cls.initial_boolean_network()),
-            'bn_iteration':         kwargs.get('bn_iteration',
-                                               0),
-            'next_branch':          kwargs.get('next_branch',
-                                               -1),
-            'next_septa':           kwargs.get('next_septa',
-                                               -1),
-            'previous_septa':       kwargs.get('previous_septa',
-                                               -1),
+            'growth_iteration': kwargs.get('growth_iteration',
+                                           0),
+            'boolean_network': kwargs.get('boolean_network',
+                                          cls.initial_boolean_network()),
+            'bn_iteration': kwargs.get('bn_iteration',
+                                       0),
+            'next_branch': kwargs.get('next_branch',
+                                      -1),
+            'next_septa': kwargs.get('next_septa',
+                                     -1),
+            'previous_septa': kwargs.get('previous_septa',
+                                         -1),
             }
 
         # ensure that these come in the correct order
@@ -127,27 +127,27 @@ class AfumigatusCellData(CellData):
 
     @classmethod
     def initial_boolean_network(cls) -> np.ndarray:
-        init_afumigatus_boolean_species = {NetworkSpecies.hapX:   True,
-                                           NetworkSpecies.sreA:   False,
-                                           NetworkSpecies.HapX:   True,
-                                           NetworkSpecies.SreA:   False,
-                                           NetworkSpecies.RIA:    True,
-                                           NetworkSpecies.EstB:   True,
-                                           NetworkSpecies.MirB:   True,
-                                           NetworkSpecies.SidA:   True,
-                                           NetworkSpecies.TAFC:   True,
-                                           NetworkSpecies.ICP:    False,
-                                           NetworkSpecies.LIP:    False,
-                                           NetworkSpecies.CccA:   False,
-                                           NetworkSpecies.FC0fe:  True,
-                                           NetworkSpecies.FC1fe:  False,
-                                           NetworkSpecies.VAC:    False,
-                                           NetworkSpecies.ROS:    False,
-                                           NetworkSpecies.Yap1:   False,
+        init_afumigatus_boolean_species = {NetworkSpecies.hapX: True,
+                                           NetworkSpecies.sreA: False,
+                                           NetworkSpecies.HapX: True,
+                                           NetworkSpecies.SreA: False,
+                                           NetworkSpecies.RIA: True,
+                                           NetworkSpecies.EstB: True,
+                                           NetworkSpecies.MirB: True,
+                                           NetworkSpecies.SidA: True,
+                                           NetworkSpecies.TAFC: True,
+                                           NetworkSpecies.ICP: False,
+                                           NetworkSpecies.LIP: False,
+                                           NetworkSpecies.CccA: False,
+                                           NetworkSpecies.FC0fe: True,
+                                           NetworkSpecies.FC1fe: False,
+                                           NetworkSpecies.VAC: False,
+                                           NetworkSpecies.ROS: False,
+                                           NetworkSpecies.Yap1: False,
                                            NetworkSpecies.SOD2_3: False,
                                            NetworkSpecies.Cat1_2: False,
-                                           NetworkSpecies.ThP:    False,
-                                           NetworkSpecies.Fe:     False,
+                                           NetworkSpecies.ThP: False,
+                                           NetworkSpecies.Fe: False,
                                            NetworkSpecies.Oxygen: False,
                                            }
         return np.asarray([init_afumigatus_boolean_species[species]
@@ -177,6 +177,8 @@ class AfumigatusState(ModuleState):
     iter_to_swelling: int
     time_to_germinate: float
     iter_to_germinate: int
+    time_to_grow: float
+    iter_to_grow: int
     pr_aspergillus_change: float
     init_iron: float
     conidia_vol: float
@@ -209,6 +211,7 @@ class Afumigatus(ModuleModel):
 
         afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')
         afumigatus.time_to_germinate = self.config.getfloat('time_to_germinate')
+        afumigatus.time_to_grow = self.config.getfloat('time_to_grow')
         afumigatus.aspergillus_change_half_life = self.config.getfloat('aspergillus_change_half_life')
 
         afumigatus.phag_afnt_t = self.config.getfloat('phag_afnt_t')
@@ -221,7 +224,8 @@ class Afumigatus(ModuleModel):
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(- afumigatus.rel_n_hyphae_int_unit_t /
                                                (voxel_volume * afumigatus.pr_ma_hyphae_param))
-        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)  # kd ~10x neut. (ref 71)
+        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)
+        #  kd ~10x neut. (ref 71)
         #  and below
         afumigatus.pr_ma_phag = 1 - math.exp(- afumigatus.rel_phag_afnt_unit_t /
                                              (voxel_volume * self.config.getfloat('pr_ma_phag_param')))
@@ -231,6 +235,7 @@ class Afumigatus(ModuleModel):
 
         afumigatus.iter_to_swelling = int(afumigatus.time_to_swelling * (60 / time_step_size) - 2)  # TODO: -2?
         afumigatus.iter_to_germinate = int(afumigatus.time_to_germinate * (60 / time_step_size) - 2)  # TODO: -2?
+        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / time_step_size) - 1
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
                 afumigatus.aspergillus_change_half_life * (60 / time_step_size))
 
@@ -251,11 +256,13 @@ class Afumigatus(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
+        from nlisim.grid import RectangularGrid
 
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
         iron: IronState = state.iron
-        grid = state.grid
+        grid: RectangularGrid = state.grid
+        lung_tissue: np.ndarray = state.lung_tissue
 
         # update live cells
         for afumigatus_index in afumigatus.cells.alive():
@@ -264,6 +271,18 @@ class Afumigatus(ModuleModel):
             voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
 
             cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+
+            # ------------ cell growth
+            if (afumigatus_cell['state'] == AfumigatusCellState.FREE
+                    and lung_tissue[tuple(voxel)] != TissueType.AIR):
+                elongate(afumigatus_cell,
+                         afumigatus_index,
+                         afumigatus.iter_to_grow,
+                         afumigatus)
+                branch(afumigatus_cell,
+                       afumigatus.pr_branch,
+                       voxel,
+                       state)
 
             # ------------ interactions after this point
 
@@ -279,7 +298,8 @@ class Afumigatus(ModuleModel):
                 macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
 
                 # Only healthy macrophages can internalize
-                if macrophage_cell['status'] in {PhagocyteStatus.APOPTOTIC, PhagocyteStatus.NECROTIC,
+                if macrophage_cell['status'] in {PhagocyteStatus.APOPTOTIC,
+                                                 PhagocyteStatus.NECROTIC,
                                                  PhagocyteStatus.DEAD}:
                     continue
 
@@ -293,8 +313,8 @@ class Afumigatus(ModuleModel):
 
         return state
 
-    def fungus_macrophage_interaction(self,
-                                      afumigatus: AfumigatusState,
+    @staticmethod
+    def fungus_macrophage_interaction(afumigatus: AfumigatusState,
                                       afumigatus_cell: AfumigatusCellData,
                                       afumigatus_cell_index: int,
                                       macrophage: 'MacrophageState',
@@ -487,3 +507,115 @@ def lip_activation(state: State, shape) -> np.ndarray:
     molar_concentration = iron.grid / afumigatus.hyphae_volume
     activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
     return np.random.rand(*shape) < activation
+
+
+def elongate(afumigatus_cell: AfumigatusCellData,
+             afumigatus_cell_index: int,
+             iter_to_grow: int,
+             afumigatus: AfumigatusState):
+    if not afumigatus_cell['growable'] or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]:
+        return
+
+    if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE:
+        if afumigatus_cell['growth_iteration'] >= iter_to_grow:
+            afumigatus_cell['growth_iteration'] = 0
+            afumigatus_cell['growable'] = False
+            afumigatus_cell['branchable'] = True
+            afumigatus_cell['iron_pool'] /= 2.0
+            next_septa_root = afumigatus_cell['root'] + afumigatus_cell['vec']
+
+            # create the new septa
+            next_septa: AfumigatusCellData = \
+                AfumigatusCellData.create_cell(point=Point(x=next_septa_root[2],
+                                                           y=next_septa_root[1],
+                                                           z=next_septa_root[0]),
+                                               root=next_septa_root,
+                                               tip=next_septa_root + afumigatus_cell['vec'],
+                                               vec=afumigatus_cell['vec'],
+                                               iron_pool=0,
+                                               status=AfumigatusCellStatus.HYPHAE,
+                                               state=afumigatus_cell['state'],
+                                               is_root=False)
+            next_septa_id: int = afumigatus.cells.append(next_septa)
+
+            # link the septae together
+            afumigatus_cell['next_septa'] = next_septa_id
+            next_septa['previous_septa'] = afumigatus_cell_index
+
+    elif afumigatus_cell['status'] == AfumigatusCellStatus.GERM_TUBE:
+        if afumigatus_cell['growth_iteration'] >= iter_to_grow:
+            afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
+            afumigatus_cell['tip'] = afumigatus_cell['root'] + afumigatus_cell['vec']
+        else:
+            afumigatus_cell['growth_iteration'] += 1
+
+
+def branch(afumigatus_cell: AfumigatusCellData,
+            afumigatus_cell_index: int,
+           pr_branch: float,
+           afumigatus: AfumigatusState,
+           voxel: Voxel,
+           state: State):
+    if (not afumigatus_cell['branchable']
+            or afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE
+            or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]):
+        return
+
+    if rg.random() < pr_branch:
+        # now we branch
+
+        branch_vector = generate_branch_direction(afumigatus_cell)
+
+        root = afumigatus_cell['root']
+
+        # create the new septa
+        next_branch: AfumigatusCellData = \
+            AfumigatusCellData.create_cell(point=Point(x=root[2],
+                                                       y=root[1],
+                                                       z=root[0]),
+                                           root=root,
+                                           tip=root + branch_vector,
+                                           vec=branch_vector,
+                                           growth_iteration=-1,
+                                           iron_pool=0,
+                                           status=AfumigatusCellStatus.HYPHAE,
+                                           state=afumigatus_cell['state'],
+                                           is_root=False)
+        next_branch_id: int = afumigatus.cells.append(next_branch)
+
+        # link them together
+        afumigatus_cell['next_branch'] = next_branch_id
+        next_branch['previous_septa'] = afumigatus_cell_index
+
+    # only get one shot at branching
+    afumigatus_cell['branchable'] = False
+
+
+def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -> np.ndarray:
+    # form a random unit vector on a 45 degree cone
+    theta = rg.random() * 2 * np.pi
+
+    # create orthogonal basis adapted to cell's direction
+    cell_vec: np.ndarray = afumigatus_cell['vec']
+    cell_vec_norm = np.linalg.norm(cell_vec)
+    normed_cell_vec = cell_vec / cell_vec_norm
+
+    # get first orthogonal vector
+    u: np.ndarray
+    EPSILON = 0.01
+    e1 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+    e2 = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+    # if the cell vector isn't too close to e1, just use that. otherwise use e2. (can't be too close to both)
+    if (np.linalg.norm(normed_cell_vec - e1) > EPSILON or np.linalg.norm(normed_cell_vec + e1) > EPSILON):
+        u = np.cross(normed_cell_vec, e1)
+    else:
+        u = np.cross(normed_cell_vec, e2)
+
+    # get second orthogonal vector
+    v = np.cross(normed_cell_vec, u)
+
+    # change of coordinates matrix
+    P = np.array([normed_cell_vec, u, v]).T
+    branch_direction = cell_vec_norm * P * np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+
+    return branch_direction
