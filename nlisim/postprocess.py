@@ -10,7 +10,6 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.modules.geometry import GeometryState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
@@ -68,12 +67,12 @@ def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     return vtk_grid
 
 
-def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -> vtkStructuredPoints:
     vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()
+    tissue = lung_tissue.copy()  # postprocessing can be in memory, so copy before mutate
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
@@ -91,16 +90,16 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vt
 
 
 def generate_vtk_objects(
-    state: State,
-) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_geometry(state.grid, state.geometry)
+        state: State,
+        ) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_vtk_geometry(state.grid, state.lung_tissue)
     molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
         'spore': convert_cells_to_vtk(state.fungus.cells),
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
         'macrophage': convert_cells_to_vtk(state.macrophage.cells),
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-    }
+        }
 
     return volume, molecules, cells
 

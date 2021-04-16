@@ -5,9 +5,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -56,7 +55,7 @@ class TGFB(MoleculeModel):
         tgfb: TGFBState = state.tgfb
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
-        geometry: GeometryState = state.geometry
+        voxel_volume: float = state.voxel_volume
         grid: RectangularGrid = state.grid
 
         for macrophage_cell_index in macrophage.cells.alive():
@@ -68,7 +67,7 @@ class TGFB(MoleculeModel):
                 if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
                                        kd=tgfb.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg.uniform():
+                                       volume=voxel_volume) > rg.uniform():
                     macrophage_cell['status_iteration'] = 0
 
             elif macrophage_cell['status'] not in {PhagocyteStatus.APOPTOTIC,
@@ -77,7 +76,7 @@ class TGFB(MoleculeModel):
                 if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
                                        kd=tgfb.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg.uniform():
+                                       volume=voxel_volume) > rg.uniform():
                     macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
                     macrophage_cell['status_iteration'] = 0  # Previously, was no reset of the status iteration
 

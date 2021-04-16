@@ -16,8 +16,7 @@ dz = 10
 validate = True
 
 # a list of modules to run with the simulation
-modules = nlisim.modules.geometry.Geometry
-          nlisim.modules.visualization.Visualization
+modules = nlisim.modules.visualization.Visualization
           nlisim.modules.molecules.Molecules
           nlisim.modules.fungus.Fungus
           nlisim.modules.epithelium.Epithelium

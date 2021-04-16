@@ -3,9 +3,8 @@ import math
 from attr import attrs
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -55,8 +54,8 @@ class Liver(MoleculeModel):
         il6: IL6State = state.il6
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume: float = state.voxel_volume
+        space_volume: float = state.space_volume
 
         # interact with transferrin
         tf = transferrin.tf_intercept + transferrin.tf_slope * max(transferrin.threshold_log_hep,
@@ -78,7 +77,7 @@ class Liver(MoleculeModel):
         transferrin.grid['TfFe2'] *= rate_tf_fe2
 
         # interact with IL6
-        global_il6_concentration = np.sum(il6.grid) / (2 * geometry.space_volume)  # div 2 : serum
+        global_il6_concentration = np.sum(il6.grid) / (2 * space_volume)  # div 2 : serum
         if global_il6_concentration > liver.il6_threshold:
             liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(global_il6_concentration, 10)
         else:

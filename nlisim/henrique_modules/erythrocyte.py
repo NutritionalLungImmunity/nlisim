@@ -8,14 +8,13 @@ from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.henrique_modules.afumigatus import AfumigatusCellStatus, AfumigatusState
-from nlisim.henrique_modules.geometry import GeometryState, TissueType
 from nlisim.henrique_modules.hemoglobin import HemoglobinState
 from nlisim.henrique_modules.hemolysin import HemolysinState
 from nlisim.henrique_modules.macrophage import MacrophageState
 from nlisim.henrique_modules.molecules import MoleculesState
 from nlisim.henrique_modules.phagocyte import PhagocyteModel
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, TissueType
 
 
 # note: treating these a bit more like molecules than cells. hence the adaptation of molecule_grid_factory
@@ -41,8 +40,8 @@ class ErythrocyteModel(PhagocyteModel):
 
     def initialize(self, state: State):
         erythrocyte: ErythrocyteState = state.erythrocyte
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
@@ -51,7 +50,7 @@ class ErythrocyteModel(PhagocyteModel):
 
         # initialize cells
         # TODO: discuss
-        erythrocyte.cells[geometry.lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
+        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
         rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
         erythrocyte.pr_ma_phag_eryt = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
                 voxel_volume * self.config.getfloat('pr_ma_phag_eryt')))  # TODO: -expm1?
@@ -65,8 +64,8 @@ class ErythrocyteModel(PhagocyteModel):
         hemolysin: HemolysinState = state.hemolysin
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
-        geometry: GeometryState = state.geometry
         grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
 
         shape = erythrocyte.cells['count'].shape
 
@@ -87,7 +86,7 @@ class ErythrocyteModel(PhagocyteModel):
         avg = erythrocyte.cells['count'] * activation_function(x=hemolysin.grid,
                                                                kd=erythrocyte.kd_hemo,
                                                                h=self.time_step / 60,
-                                                               volume=geometry.voxel_volume)
+                                                               volume=voxel_volume)
         num = np.minimum(np.random.poisson(avg, shape),
                          erythrocyte.cells['count'])
         erythrocyte.cells['hemoglobin'] += num * erythrocyte.hemoglobin_concentration

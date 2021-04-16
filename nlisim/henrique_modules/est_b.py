@@ -5,7 +5,6 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
@@ -35,8 +34,7 @@ class EstB(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         estb: EstBState = state.estb
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # config file values
         estb.half_life = self.config.getfloat('half_life')
@@ -59,8 +57,7 @@ class EstB(MoleculeModel):
         iron: IronState = state.iron
         tafc: TAFCState = state.tafc
         molecules: MoleculesState = state.molecules
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer

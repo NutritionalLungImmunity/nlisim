@@ -5,9 +5,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -56,7 +55,7 @@ class IL10(MoleculeModel):
         il10: IL10State = state.il10
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
-        geometry: GeometryState = state.geometry
+        voxel_volume: float = state.voxel_volume
         grid: RectangularGrid = state.grid
 
         # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
@@ -73,7 +72,7 @@ class IL10(MoleculeModel):
                 if activation_function(x=il10.grid[tuple(macrophage_cell_voxel)],
                                        kd=il10.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) < rg.uniform():
+                                       volume=voxel_volume) < rg.uniform():
                     if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
                     macrophage_cell['status_iteration'] = 0  # TODO: ask about this, why is it reset each time?

@@ -3,9 +3,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -35,8 +34,7 @@ class TAFC(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         tafc: TAFCState = state.tafc
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume: float = state.voxel_volume
 
         # config file values
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
@@ -61,8 +59,7 @@ class TAFC(MoleculeModel):
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume: float = state.voxel_volume
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC

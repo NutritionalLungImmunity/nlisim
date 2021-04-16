@@ -6,9 +6,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -53,8 +52,7 @@ class Transferrin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         transferrin: TransferrinState = state.transferrin
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # config file values
         transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
@@ -135,11 +133,11 @@ class Transferrin(MoleculeModel):
                 # amount of iron to export is bounded by the amount of iron in the cell as well as the amount
                 # which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
                 qtty = min(
-                    macrophage_cell['iron_pool'],
-                    2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
-                    macrophage_cell['iron_pool'] * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] *
-                    transferrin.ma_iron_export_rate * transferrin.rel_iron_imp_exp_unit_t
-                    )
+                        macrophage_cell['iron_pool'],
+                        2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
+                        macrophage_cell['iron_pool'] * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] *
+                        transferrin.ma_iron_export_rate * transferrin.rel_iron_imp_exp_unit_t
+                        )
 
                 rel_tf_fe = \
                     iron_tf_reaction(iron=qtty,

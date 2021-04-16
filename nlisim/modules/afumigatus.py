@@ -3,7 +3,7 @@ from enum import IntEnum
 from typing import Iterable, Iterator, List, Optional, Union
 
 import attr
-from h5py._debian_h5py_serial import Group
+from h5py import Group
 import numpy as np
 from scipy.sparse import coo_matrix, dok_matrix as sparse_matrix
 from scipy.spatial.transform import Rotation

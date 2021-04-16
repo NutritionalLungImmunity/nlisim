@@ -7,8 +7,8 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
+from nlisim.util import TissueType
 from nlisim.grid import RectangularGrid
-from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 
 MAX_PHAGOSOME_LENGTH = 100
@@ -41,20 +41,19 @@ class PhagocyteCellData(CellData):
         ('iron_pool', 'f8'),
         ('iteration', 'i4'),
         ('phagosome', (np.int32, (MAX_CONIDIA))),
-    ]
+        ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(
-        cls,
-        *,
-        iron_pool: float = 0,
-        status: Status = Status.RESTING,
-        state: State = State.FREE,
-        **kwargs,
-    ) -> np.record:
-
+            cls,
+            *,
+            iron_pool: float = 0,
+            status: Status = Status.RESTING,
+            state: State = State.FREE,
+            **kwargs,
+            ) -> np.record:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
@@ -64,7 +63,7 @@ class PhagocyteCellData(CellData):
             iron_pool,
             iteration,
             phagosome,
-        )
+            )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -74,9 +73,9 @@ class PhagocyteCellList(CellList):
     def is_moveable(self, grid: RectangularGrid):
         cells = self.cell_data
         return self.alive(
-            (cells['status'] == PhagocyteCellData.Status.RESTING)
-            & cells.point_mask(cells['point'], grid)
-        )
+                (cells['status'] == PhagocyteCellData.Status.RESTING)
+                & cells.point_mask(cells['point'], grid)
+                )
 
     def len_phagosome(self, index):
         cell = self[index]
@@ -101,7 +100,7 @@ class PhagocyteCellList(CellList):
                 phagosome[itemindex] = -1
                 return True
             else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[itemindex:-1] = phagosome[itemindex + 1:]
                 phagosome[-1] = -1
                 return True
         else:
@@ -124,13 +123,13 @@ class PhagocyteCellList(CellList):
 
     # move
     def chemotaxis(
-        self,
-        molecule,
-        drift_lambda,
-        drift_bias,
-        tissue,
-        grid: RectangularGrid,
-    ):
+            self,
+            molecule,
+            drift_lambda,
+            drift_bias,
+            tissue,
+            grid: RectangularGrid,
+            ):
         # 'molecule' = state.'molecule'.concentration
         # prob = 0-1 random number to determine which voxel is chosen to move
 
@@ -160,11 +159,11 @@ class PhagocyteCellList(CellList):
                         xi = vox.x + x
                         if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                             if tissue[zk, yj, xi] in [
-                                TissueTypes.SURFACTANT.value,
-                                TissueTypes.BLOOD.value,
-                                TissueTypes.EPITHELIUM.value,
-                                TissueTypes.PORE.value,
-                            ]:
+                                TissueType.SURFACTANT.value,
+                                TissueType.BLOOD.value,
+                                TissueType.EPITHELIUM.value,
+                                TissueType.PORE.value,
+                                ]:
                                 p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                                 p_tot += p[i]
 
@@ -179,16 +178,16 @@ class PhagocyteCellList(CellList):
                 cum_p += p[i]
                 if prob <= cum_p:
                     cell['point'] = Point(
-                        x=random.uniform(
-                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
-                        ),
-                        y=random.uniform(
-                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
-                        ),
-                        z=random.uniform(
-                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
-                        ),
-                    )
+                            x=random.uniform(
+                                    grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                                    ),
+                            y=random.uniform(
+                                    grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                                    ),
+                            z=random.uniform(
+                                    grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                                    ),
+                            )
                     self.update_voxel_index([index])
                     break
 

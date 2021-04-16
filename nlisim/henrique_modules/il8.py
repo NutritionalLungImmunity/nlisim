@@ -6,7 +6,6 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
@@ -64,7 +63,7 @@ class IL8(MoleculeModel):
         il8: IL8State = state.il8
         molecules: MoleculesState = state.molecules
         neutrophil: NeutrophilState = state.neutrophil
-        geometry: GeometryState = state.geometry
+        voxel_volume: float = state.voxel_volume
         grid: RectangularGrid = state.grid
 
         # IL8 activates neutrophils
@@ -75,7 +74,7 @@ class IL8(MoleculeModel):
                 if activation_function(x=il8.grid[tuple(neutrophil_cell_voxel)],
                                        kd=il8.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) < rg.uniform():
+                                       volume=voxel_volume) < rg.uniform():
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0
 
