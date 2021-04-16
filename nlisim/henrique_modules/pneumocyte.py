@@ -7,11 +7,10 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.geometry import GeometryState, TissueType
 from nlisim.henrique_modules.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, TissueType
 
 
 class PneumocyteCellData(PhagocyteCellData):
@@ -26,12 +25,12 @@ class PneumocyteCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status':    kwargs.get('status',
-                                    PhagocyteStatus.RESTING),
+            'status': kwargs.get('status',
+                                 PhagocyteStatus.RESTING),
             'iteration': kwargs.get('iteration',
                                     0),
-            'tnfa':      kwargs.get('tnfa',
-                                    False),
+            'tnfa': kwargs.get('tnfa',
+                               False),
             }
 
         # ensure that these come in the correct order
@@ -68,9 +67,9 @@ class Pneumocyte(PhagocyteModel):
 
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume: float = state.voxel_volume
         time_step_size: float = self.time_step
+        lung_tissue: np.ndarray = state.lung_tissue
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')
@@ -90,7 +89,7 @@ class Pneumocyte(PhagocyteModel):
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
-        for z, y, x in zip(*np.where(geometry.lung_tissue == TissueType.EPITHELIUM)):
+        for z, y, x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
             pneumocyte.cells.append(PneumocyteCellData.create_cell(point=Point(x=x, y=y, z=z)))
 
         return state
@@ -107,8 +106,8 @@ class Pneumocyte(PhagocyteModel):
         il6: IL6State = state.il6
         il8: IL8State = state.il8
         tnfa: TNFaState = state.tnfa
-        geometry: GeometryState = state.geometry
         grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
 
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
@@ -164,7 +163,7 @@ class Pneumocyte(PhagocyteModel):
                     rg.uniform() < activation_function(x=tnfa.grid,
                                                        kd=tnfa.k_d,
                                                        h=self.time_step / 60,
-                                                       volume=geometry.voxel_volume):
+                                                       volume=voxel_volume):
                 pneumocyte_cell['iteration'] = 0
                 pneumocyte_cell['tnfa'] = True
 

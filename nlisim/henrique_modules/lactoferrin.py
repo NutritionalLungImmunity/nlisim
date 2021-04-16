@@ -3,9 +3,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction, michaelian_kinetics, turnover_rate
 
@@ -38,8 +37,7 @@ class Lactoferrin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         lactoferrin: LactoferrinState = state.lactoferrin
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume: float = state.voxel_volume
 
         # config file values
         lactoferrin.k_m_tf_lac = self.config.getfloat('k_m_tf_lac')
@@ -71,8 +69,7 @@ class Lactoferrin(MoleculeModel):
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # macrophages uptake iron from lactoferrin
         for macrophage_cell_index in macrophage.cells.alive():

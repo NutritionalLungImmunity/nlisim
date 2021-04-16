@@ -4,7 +4,6 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -42,14 +41,14 @@ class Hepcidin(MoleculeModel):
 
         hepcidin: HepcidinState = state.hepcidin
         macrophage: MacrophageState = state.macrophage
-        geometry: GeometryState = state.geometry
+        voxel_volume: float = state.voxel_volume
 
         # interaction with macrophages
         activated_voxels = \
             zip(*np.where(activation_function(x=hepcidin.grid,
                                               kd=hepcidin.kd_hep,
                                               h=self.time_step / 60,
-                                              volume=geometry.voxel_volume) >
+                                              volume=voxel_volume) >
                           np.random.random(hepcidin.grid.shape)))
         for z, y, x in activated_voxels:
             for macrophage_cell_index in macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z)):

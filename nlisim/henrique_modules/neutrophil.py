@@ -8,13 +8,12 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.mip2 import MIP2State
 from nlisim.henrique_modules.phagocyte import internalize_aspergillus, PhagocyteCellData, PhagocyteModel, \
     PhagocyteModuleState, PhagocyteState, PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, TissueType
 
 MAX_CONIDIA = 100  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
@@ -89,8 +88,7 @@ class Neutrophil(PhagocyteModel):
 
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
         time_step_size: float = self.time_step
 
         neutrophil.time_to_change_state = self.config.getfloat('time_to_change_state')
@@ -134,9 +132,8 @@ class Neutrophil(PhagocyteModel):
         afumigatus: AfumigatusState = state.afumigatus
         iron: IronState = state.iron
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume: float = geometry.voxel_volume
-        space_volume: float = geometry.space_volume
+        voxel_volume: float = state.voxel_volume
+        space_volume: float = state.space_volume
 
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
@@ -237,13 +234,12 @@ class Neutrophil(PhagocyteModel):
             the new voxel position of the neutrophil
         """
         # neutrophils are attracted by MIP2
-        from nlisim.henrique_modules.geometry import GeometryState, TissueType
 
         neutrophil: NeutrophilState = state.neutrophil
         mip2: MIP2State = state.mip1b
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume: float = geometry.voxel_volume
+        lung_tissue: np.ndarray = state.lung_tissue
+        voxel_volume: float = state.voxel_volume
 
         # neutrophil has a non-zero probability of moving into non-air voxels
         nearby_voxels: Tuple[Voxel] = tuple(grid.get_adjacent_voxels(voxel))
@@ -251,7 +247,7 @@ class Neutrophil(PhagocyteModel):
                                                 kd=mip2.k_d,
                                                 h=self.time_step / 60,
                                                 volume=voxel_volume) + neutrophil.drift_bias
-                            if geometry.lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
+                            if lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
                             for vxl in nearby_voxels], dtype=np.float64)
 
         normalized_weights = weights / np.sum(weights)

@@ -5,9 +5,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -69,8 +68,7 @@ class MIP2(MoleculeModel):
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(x=mip2.grid,

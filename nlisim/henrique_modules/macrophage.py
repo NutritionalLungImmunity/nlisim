@@ -13,7 +13,7 @@ from nlisim.henrique_modules.phagocyte import PhagocyteCellData, PhagocyteModel,
     PhagocyteStatus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, TissueType
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -38,26 +38,26 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status':           kwargs.get('status',
-                                           PhagocyteStatus.RESTING),
-            'state':            kwargs.get('state',
-                                           PhagocyteState.FREE),
-            'fpn':              kwargs.get('fpn',
-                                           True),
-            'fpn_iteration':    kwargs.get('fpn_iteration',
-                                           0),
-            'tf':               kwargs.get('tf',
-                                           False),
-            'move_step':        kwargs.get('move_step',
-                                           0.0),  # TODO: reasonable default?
-            'max_move_step':    kwargs.get('max_move_step',
-                                           1.0),  # TODO: reasonable default?
-            'tnfa':             kwargs.get('tnfa',
-                                           False),
-            'engaged':          kwargs.get('engaged',
-                                           False),
-            'iron_pool':        kwargs.get('iron_pool',
-                                           0.0),
+            'status': kwargs.get('status',
+                                 PhagocyteStatus.RESTING),
+            'state': kwargs.get('state',
+                                PhagocyteState.FREE),
+            'fpn': kwargs.get('fpn',
+                              True),
+            'fpn_iteration': kwargs.get('fpn_iteration',
+                                        0),
+            'tf': kwargs.get('tf',
+                             False),
+            'move_step': kwargs.get('move_step',
+                                    0.0),  # TODO: reasonable default?
+            'max_move_step': kwargs.get('max_move_step',
+                                        1.0),  # TODO: reasonable default?
+            'tnfa': kwargs.get('tnfa',
+                               False),
+            'engaged': kwargs.get('engaged',
+                                  False),
+            'iron_pool': kwargs.get('iron_pool',
+                                    0.0),
             'status_iteration': kwargs.get('status_iteration',
                                            0)
             }
@@ -104,10 +104,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        from nlisim.henrique_modules.geometry import GeometryState
-
         macrophage: MacrophageState = state.macrophage
-        geometry: GeometryState = state.geometry
         time_step_size: float = self.time_step
 
         macrophage.max_conidia = self.config.getint('max_conidia')
@@ -138,14 +135,12 @@ class Macrophage(PhagocyteModel):
                 self.config.getfloat('ma_half_life') * (60 / time_step_size))
 
         # initialize cells, placing them randomly TODO: can we do anything more specific?
-        z_range = geometry.lung_tissue.shape[0]
-        y_range = geometry.lung_tissue.shape[1]
-        x_range = geometry.lung_tissue.shape[2]
+        z_range, y_range, x_range = state.lung_tissue.shape
         for _ in range(macrophage.init_num_macrophages):
             z = random.randint(0, z_range - 1)
             y = random.randint(0, y_range - 1)
             x = random.randint(0, x_range - 1)
-            self.create_macrophage(state, x, y, z)
+            self.create_macrophage(state=state, x=x, y=y, z=z)
 
         return state
 
@@ -206,13 +201,11 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         from nlisim.henrique_modules.mip1b import MIP1BState
-        from nlisim.henrique_modules.geometry import GeometryState
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
-        geometry: GeometryState = state.geometry
-        voxel_volume: float = geometry.voxel_volume
-        space_volume: float = geometry.space_volume
+        voxel_volume: float = state.voxel_volume
+        space_volume: float = state.space_volume
 
         # 1. compute number of macrophages to recruit
         num_live_macrophages = len(macrophage.cells.alive())
@@ -231,7 +224,7 @@ class Macrophage(PhagocyteModel):
                                                                     b=macrophage.rec_bias)))
             for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
                 z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
-                self.create_macrophage(state, x, y, z)
+                self.create_macrophage(state=state, x=x, y=y, z=z)
                 # TODO: have placement fail due to overcrowding of cells
 
     def single_step_probabilistic_drift(self, state: State, cell: MacrophageCellData, voxel: Voxel) -> Voxel:
@@ -254,13 +247,12 @@ class Macrophage(PhagocyteModel):
         """
         # macrophages are attracted by MIP1b
         from nlisim.henrique_modules.mip1b import MIP1BState
-        from nlisim.henrique_modules.geometry import GeometryState, TissueType
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
         grid: RectangularGrid = state.grid
-        geometry: GeometryState = state.geometry
-        voxel_volume: float = geometry.voxel_volume
+        lung_tissue: np.ndarray = state.lung_tissue
+        voxel_volume: float = state.voxel_volume
 
         # macrophage has a non-zero probability of moving into non-air voxels
         nearby_voxels: Tuple[Voxel] = tuple(grid.get_adjacent_voxels(voxel))
@@ -268,7 +260,7 @@ class Macrophage(PhagocyteModel):
                                                 kd=mip1b.k_d,
                                                 h=self.time_step / 60,
                                                 volume=voxel_volume) + macrophage.drift_bias
-                            if geometry.lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
+                            if lung_tissue[tuple(vxl)] != TissueType.AIR else 0.0
                             for vxl in nearby_voxels], dtype=np.float64)
 
         normalized_weights = weights / np.sum(weights)
@@ -283,7 +275,7 @@ class Macrophage(PhagocyteModel):
         assert False, "Sum of normalized weights must be ==1.0, but somehow it isn't."
 
     @staticmethod
-    def create_macrophage(state: State, x: float, y: float, z: float, **kwargs) -> None:
+    def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
         """
         Create a new macrophage cell
 

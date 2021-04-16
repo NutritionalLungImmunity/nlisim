@@ -10,7 +10,7 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.geometry import TissueTypes
+from nlisim.util import TissueType
 from nlisim.random import rg
 from nlisim.state import State
 
@@ -236,7 +236,7 @@ class Epithelium(ModuleModel):
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat('p_internalization')
 
-        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+        indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
 
         for i in range(0, len(indices)):
             x = grid.x[indices[i][2]]

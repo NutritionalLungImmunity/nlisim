@@ -10,7 +10,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.henrique_modules.geometry import GeometryState, TissueType
+from nlisim.util import TissueType
 from nlisim.henrique_modules.iron import IronState
 from nlisim.henrique_modules.phagocyte import internalize_aspergillus
 from nlisim.random import rg
@@ -193,8 +193,8 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
@@ -238,11 +238,11 @@ class Afumigatus(ModuleModel):
         # TODO: 'smart' placement should be checked
         # current initial positions: any air voxel which is in a Moore neighborhood of an epithelial voxel
         # https://en.wikipedia.org/wiki/Moore_neighborhood
-        epithelium_mask = geometry.lung_tissue == TissueType.EPITHELIUM
+        epithelium_mask = lung_tissue == TissueType.EPITHELIUM
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=0) | np.roll(epithelium_mask, -1, axis=0)
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=1) | np.roll(epithelium_mask, -1, axis=1)
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=2) | np.roll(epithelium_mask, -1, axis=2)
-        locations = list(zip(*np.where(np.logical_and(epithelium_mask, geometry.lung_tissue == TissueType.AIR))))
+        locations = list(zip(*np.where(np.logical_and(epithelium_mask, lung_tissue == TissueType.AIR))))
         for z, y, x in random.choices(locations, k=self.config.getint('init_infection_num')):
             afumigatus.cells.append(AfumigatusCellData.create_cell(point=Point(x=x, y=y, z=z),
                                                                    iron_pool=afumigatus.init_iron))

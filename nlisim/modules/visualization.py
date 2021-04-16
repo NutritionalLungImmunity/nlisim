@@ -20,7 +20,7 @@ from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellTreeList
 from nlisim.modules.fungus import FungusCellData
-from nlisim.modules.geometry import TissueTypes
+from nlisim.util import TissueType
 from nlisim.state import State
 
 
@@ -174,7 +174,7 @@ class Visualization(ModuleModel):
 
                 i_level = np.sum(
                     state.molecules.grid['iron'][
-                        state.geometry.lung_tissue != TissueTypes.BLOOD.value
+                        state.geometry.lung_tissue != TissueType.BLOOD.value
                     ]
                 )
 

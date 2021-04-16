@@ -3,9 +3,8 @@ import math
 import attr
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -32,8 +31,7 @@ class AntiTNFa(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         anti_tnf_a: AntiTNFaState = state.antitnfa
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')
@@ -56,8 +54,7 @@ class AntiTNFa(MoleculeModel):
 
         anti_tnf_a: AntiTNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules
-        geometry: GeometryState = state.geometry
-        voxel_volume = geometry.voxel_volume
+        voxel_volume = state.voxel_volume
         tnf_a: TNFaState = state.tnfa
 
         # AntiTNFa / TNFa reaction

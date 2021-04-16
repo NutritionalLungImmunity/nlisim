@@ -4,10 +4,10 @@ import attr
 import numpy as np
 from scipy.ndimage import convolve
 
+from nlisim.util import TissueType
 # from nlisim.coordinates import Voxel
 # from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.geometry import GeometryState, TissueTypes
 from nlisim.molecule import MoleculeGrid, MoleculeTypes
 from nlisim.state import State
 
@@ -31,10 +31,10 @@ class Molecules(ModuleModel):
 
     def initialize(self, state: State):
         molecules: MoleculesState = state.molecules
-        geometry: GeometryState = state.geometry
+        lung_tissue: np.ndarray = state.lung_tissue
 
         # check if the geometry array is empty
-        if not np.any(geometry.lung_tissue):
+        if not np.any(lung_tissue):
             raise RuntimeError('geometry molecule has to be initialized first')
 
         molecules.diffusion_rate = self.config.getfloat('diffusion_rate')
@@ -54,24 +54,24 @@ class Molecules(ModuleModel):
                 raise TypeError(f'Molecule {name} is not implemented yet')
 
             for loc in init_loc:
-                if loc not in [e.name for e in TissueTypes]:
+                if loc not in [e.name for e in TissueType]:
                     raise TypeError(f'Cannot find lung tissue type {loc}')
 
             molecules.grid.append_molecule_type(name)
 
             for loc in init_loc:
                 molecules.grid.concentrations[name][
-                    np.where(geometry.lung_tissue == TissueTypes[loc].value)
+                    np.where(lung_tissue == TissueType[loc].value)
                 ] = init_val
 
             if 'source' in molecule:
                 source = molecule['source']
                 incr = molecule['incr']
-                if source not in [e.name for e in TissueTypes]:
+                if source not in [e.name for e in TissueType]:
                     raise TypeError(f'Cannot find lung tissue type {source}')
 
                 molecules.grid.sources[name][
-                    np.where(geometry.lung_tissue == TissueTypes[init_loc[0]].value)
+                    np.where(lung_tissue == TissueType[init_loc[0]].value)
                 ] = incr
 
         return state
@@ -102,8 +102,8 @@ class Molecules(ModuleModel):
         for _ in range(3):
             molecules.grid.incr()
             self.convolution_diffusion(
-                molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
-            )
+                    molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
+                    )
 
             self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
             self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
@@ -120,7 +120,7 @@ class Molecules(ModuleModel):
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode='constant')
 
-        molecule[(tissue == TissueTypes.AIR.value)] = 0
+        molecule[(tissue == TissueType.AIR.value)] = 0
 
         if threshold:
             molecule[molecule > threshold] = threshold

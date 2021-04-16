@@ -1,3 +1,4 @@
+from enum import IntEnum
 import math
 
 import numpy as np
@@ -75,3 +76,17 @@ def michaelian_kinetics(*,
     # enzyme /= voxel_volume and substrate /= voxel_volume.
     # This is algebraically equivalent and reduces the number of operations.
     return h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)
+
+
+class TissueType(IntEnum):
+    AIR = 0
+    BLOOD = 1
+    OTHER = 2
+    EPITHELIUM = 3
+    SURFACTANT = 4  # unused 1/28/2021
+    PORE = 5  # unused 1/28/2021
+
+    @classmethod
+    def validate(cls, value: np.ndarray):
+        return np.logical_and(value >= 0, value <= 5).all() and \
+               np.issubclass_(value.dtype.type, np.integer)

@@ -5,9 +5,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.henrique_modules.geometry import GeometryState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -64,7 +63,7 @@ class TNFa(MoleculeModel):
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
-        geometry: GeometryState = state.geometry
+        voxel_volume: float = state.voxel_volume
         grid: RectangularGrid = state.grid
 
         for macrophage_cell_index in macrophage.cells.alive():
@@ -78,7 +77,7 @@ class TNFa(MoleculeModel):
                 if activation_function(x=tnfa.grid[tuple(macrophage_cell_voxel)],
                                        kd=tnfa.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg.uniform():
+                                       volume=voxel_volume) > rg.uniform():
                     if macrophage_cell['status'] == PhagocyteStatus.RESTING:
                         macrophage_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
@@ -98,7 +97,7 @@ class TNFa(MoleculeModel):
                 if activation_function(x=tnfa.grid[tuple(neutrophil_cell_voxel)],
                                        kd=tnfa.k_d,
                                        h=self.time_step / 60,
-                                       volume=geometry.voxel_volume) > rg.uniform():
+                                       volume=voxel_volume) > rg.uniform():
                     if neutrophil_cell['status'] == PhagocyteStatus.RESTING:
                         neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
