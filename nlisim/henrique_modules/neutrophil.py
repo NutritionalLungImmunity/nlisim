@@ -15,7 +15,7 @@ from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, TissueType
 
-MAX_CONIDIA = 100  # note: this the max that we can set the max to. i.e. not an actual model parameter
+MAX_CONIDIA = 50  # note: this the max that we can set the max to. i.e. not an actual model parameter
 
 
 class NeutrophilCellData(PhagocyteCellData):
@@ -91,6 +91,8 @@ class Neutrophil(PhagocyteModel):
         voxel_volume = state.voxel_volume
         time_step_size: float = self.time_step
 
+        neutrophil.init_num_neutrophils = self.config.getint('init_num_neutrophils')
+
         neutrophil.time_to_change_state = self.config.getfloat('time_to_change_state')
         neutrophil.max_conidia = self.config.getint('max_conidia')
 
@@ -117,6 +119,15 @@ class Neutrophil(PhagocyteModel):
         rel_phagocyte_affinity_unit_t = time_step_size / 60  # TODO: not like this
         neutrophil.pr_n_phagocyte = 1 - math.exp(
             -rel_phagocyte_affinity_unit_t / (voxel_volume * self.config.getfloat('pr_n_phag_param')))  # TODO: -exp1m
+
+        # place initial neutrophils
+        z_range, y_range, x_range = state.lung_tissue.shape
+        for _ in range(neutrophil.init_num_neutrophils):
+            z, y, x = rg.integers([z_range, y_range, x_range])
+            while state.lung_tissue[z, y, x] == TissueType.AIR:
+                z, y, x = rg.integers([z_range, y_range, x_range])
+
+            self.create_neutrophil(state=state, x=x, y=y, z=z)
 
         return state
 
