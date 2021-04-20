@@ -3,8 +3,8 @@ import random
 from typing import Tuple
 
 import attr
-from attr import attrs
 import numpy as np
+from attr import attrs
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
@@ -29,7 +29,7 @@ class MacrophageCellData(PhagocyteCellData):
         ('engaged', bool),
         ('iron_pool', np.float64),
         ('status_iteration', np.uint64)
-        ]
+    ]
 
     # TODO: this implementation of inheritance is not so slick, redo with super?
     dtype = np.dtype(CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS,
@@ -38,29 +38,29 @@ class MacrophageCellData(PhagocyteCellData):
     @classmethod
     def create_cell_tuple(cls, **kwargs, ) -> np.record:
         initializer = {
-            'status': kwargs.get('status',
-                                 PhagocyteStatus.RESTING),
-            'state': kwargs.get('state',
-                                PhagocyteState.FREE),
-            'fpn': kwargs.get('fpn',
-                              True),
-            'fpn_iteration': kwargs.get('fpn_iteration',
-                                        0),
-            'tf': kwargs.get('tf',
-                             False),
-            'move_step': kwargs.get('move_step',
-                                    0.0),  # TODO: reasonable default?
-            'max_move_step': kwargs.get('max_move_step',
-                                        1.0),  # TODO: reasonable default?
-            'tnfa': kwargs.get('tnfa',
-                               False),
-            'engaged': kwargs.get('engaged',
-                                  False),
-            'iron_pool': kwargs.get('iron_pool',
-                                    0.0),
+            'status'          : kwargs.get('status',
+                                           PhagocyteStatus.RESTING),
+            'state'           : kwargs.get('state',
+                                           PhagocyteState.FREE),
+            'fpn'             : kwargs.get('fpn',
+                                           True),
+            'fpn_iteration'   : kwargs.get('fpn_iteration',
+                                           0),
+            'tf'              : kwargs.get('tf',
+                                           False),
+            'move_step'       : kwargs.get('move_step',
+                                           0.0),  # TODO: reasonable default?
+            'max_move_step'   : kwargs.get('max_move_step',
+                                           1.0),  # TODO: reasonable default?
+            'tnfa'            : kwargs.get('tnfa',
+                                           False),
+            'engaged'         : kwargs.get('engaged',
+                                           False),
+            'iron_pool'       : kwargs.get('iron_pool',
+                                           0.0),
             'status_iteration': kwargs.get('status_iteration',
                                            0)
-            }
+        }
 
         # ensure that these come in the correct order
         return \
@@ -80,8 +80,6 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 @attr.s(kw_only=True)
 class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    move_rate_rest: float
-    move_rate_act: float
     iter_to_rest: int
     time_to_change_state: float
     iter_to_change_state: int
@@ -126,20 +124,19 @@ class Macrophage(PhagocyteModel):
         macrophage.ma_move_rate_rest = self.config.getfloat('ma_move_rate_rest')
 
         # computed values
-        macrophage.move_rate_act = self.config.getfloat('move_rate_act') / time_step_size / 40  # TODO: 40?
-        macrophage.move_rate_rest = self.config.getfloat('move_rate_rest') / time_step_size / 40
-
         macrophage.iter_to_change_state = int(macrophage.time_to_change_state * (60 / time_step_size))  # 4
 
         macrophage.ma_half_life = - math.log(0.5) / (
                 self.config.getfloat('ma_half_life') * (60 / time_step_size))
 
-        # initialize cells, placing them randomly TODO: can we do anything more specific?
+        # initialize cells, placing them randomly
+        # TODO: can we do anything more specific? (Not in AIR)
         z_range, y_range, x_range = state.lung_tissue.shape
         for _ in range(macrophage.init_num_macrophages):
-            z = random.randint(0, z_range - 1)
-            y = random.randint(0, y_range - 1)
-            x = random.randint(0, x_range - 1)
+            z, y, x = rg.integers([z_range, y_range, x_range])
+            while state.lung_tissue[z, y, x] == TissueType.AIR:
+                z, y, x = rg.integers([z_range, y_range, x_range])
+
             self.create_macrophage(state=state, x=x, y=y, z=z)
 
         return state
