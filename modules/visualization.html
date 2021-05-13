@@ -29,6 +29,7 @@
 </summary>
 <pre><code class="python">import csv
 from enum import Enum
+import itertools
 import json
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
@@ -40,16 +41,14 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 
 # noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
 
 # noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.afumigatus import AfumigatusCellTreeList
-from nlisim.modules.fungus import FungusCellData
-from nlisim.modules.geometry import TissueTypes
+from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
@@ -82,17 +81,19 @@ class Visualization(ModuleModel):
         verts = vtkPoints()
         lines = vtkCellArray()
 
-        if isinstance(var, AfumigatusCellTreeList):
-            adjacency = var.adjacency
-
-            for i, j in adjacency.keys():
-                if i != j:
-                    line = vtkLine()
-                    line.GetPointIds().SetId(0, i)
-                    line.GetPointIds().SetId(1, j)
-                    lines.InsertNextCell(line)
-
-        elif not isinstance(var, CellList):
+        # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
+        # if isinstance(var, AfumigatusCellTreeList):
+        #     adjacency = var.adjacency
+        #
+        #     for i, j in adjacency.keys():
+        #         if i != j:
+        #             line = vtkLine()
+        #             line.GetPointIds().SetId(0, i)
+        #             line.GetPointIds().SetId(1, j)
+        #             lines.InsertNextCell(line)
+        #
+        # el
+        if not isinstance(var, CellList):
             raise NotImplementedError(
                 f&#39;Only supported CellTree or CellList for POLY_DATA. \
                 Got {type(var)}&#39;
@@ -195,36 +196,15 @@ class Visualization(ModuleModel):
         now = state.time
 
         if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
+            )
             with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
                 csvwriter = csv.writer(file)
-
-                cells = state.fungus.cells
-                i_f_tot = np.sum(cells.cell_data[cells.alive()][&#39;iron&#39;])
-
-                i_level = np.sum(
-                    state.molecules.grid[&#39;iron&#39;][
-                        state.geometry.lung_tissue != TissueTypes.BLOOD.value
-                    ]
-                )
-
-                csvwriter.writerow(
-                    [
-                        now,
-                        len(state.neutrophil.cells.alive()),
-                        len(state.fungus.cells.alive()),
-                        len(state.macrophage.cells.alive()),
-                        len(
-                            state.fungus.cells.alive(
-                                state.fungus.cells.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA
-                            )
-                        ),
-                        np.sum(state.molecules.grid[&#39;iron&#39;]),
-                        np.std(state.molecules.grid[&#39;iron&#39;]),
-                        np.mean(state.molecules.grid[&#39;iron&#39;]),
-                        i_f_tot,
-                        i_level,
-                    ]
-                )
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%005.0f&#39; % now).strip())
@@ -234,22 +214,18 @@ class Visualization(ModuleModel):
         return state
 
     def initialize(self, state: State) -&gt; State:
-        with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(
-                [
-                    &#39;time&#39;,
-                    &#39;Neutrophil&#39;,
-                    &#39;Fungus&#39;,
-                    &#39;Macrophage&#39;,
-                    &#39;Conidia&#39;,
-                    &#39;tot_Fe&#39;,
-                    &#39;std_Fe&#39;,
-                    &#39;mean_Fe&#39;,
-                    &#39;fungus_Fe&#39;,
-                    &#39;not_blood_Fe&#39;,
-                ]
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = [&#39;time&#39;] + list(
+                itertools.chain.from_iterable(
+                    [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
             )
+            with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -331,17 +307,19 @@ class Visualization(ModuleModel):
         verts = vtkPoints()
         lines = vtkCellArray()
 
-        if isinstance(var, AfumigatusCellTreeList):
-            adjacency = var.adjacency
-
-            for i, j in adjacency.keys():
-                if i != j:
-                    line = vtkLine()
-                    line.GetPointIds().SetId(0, i)
-                    line.GetPointIds().SetId(1, j)
-                    lines.InsertNextCell(line)
-
-        elif not isinstance(var, CellList):
+        # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
+        # if isinstance(var, AfumigatusCellTreeList):
+        #     adjacency = var.adjacency
+        #
+        #     for i, j in adjacency.keys():
+        #         if i != j:
+        #             line = vtkLine()
+        #             line.GetPointIds().SetId(0, i)
+        #             line.GetPointIds().SetId(1, j)
+        #             lines.InsertNextCell(line)
+        #
+        # el
+        if not isinstance(var, CellList):
             raise NotImplementedError(
                 f&#39;Only supported CellTree or CellList for POLY_DATA. \
                 Got {type(var)}&#39;
@@ -444,36 +422,15 @@ class Visualization(ModuleModel):
         now = state.time
 
         if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
+            )
             with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
                 csvwriter = csv.writer(file)
-
-                cells = state.fungus.cells
-                i_f_tot = np.sum(cells.cell_data[cells.alive()][&#39;iron&#39;])
-
-                i_level = np.sum(
-                    state.molecules.grid[&#39;iron&#39;][
-                        state.geometry.lung_tissue != TissueTypes.BLOOD.value
-                    ]
-                )
-
-                csvwriter.writerow(
-                    [
-                        now,
-                        len(state.neutrophil.cells.alive()),
-                        len(state.fungus.cells.alive()),
-                        len(state.macrophage.cells.alive()),
-                        len(
-                            state.fungus.cells.alive(
-                                state.fungus.cells.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA
-                            )
-                        ),
-                        np.sum(state.molecules.grid[&#39;iron&#39;]),
-                        np.std(state.molecules.grid[&#39;iron&#39;]),
-                        np.mean(state.molecules.grid[&#39;iron&#39;]),
-                        i_f_tot,
-                        i_level,
-                    ]
-                )
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%005.0f&#39; % now).strip())
@@ -483,22 +440,18 @@ class Visualization(ModuleModel):
         return state
 
     def initialize(self, state: State) -&gt; State:
-        with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(
-                [
-                    &#39;time&#39;,
-                    &#39;Neutrophil&#39;,
-                    &#39;Fungus&#39;,
-                    &#39;Macrophage&#39;,
-                    &#39;Conidia&#39;,
-                    &#39;tot_Fe&#39;,
-                    &#39;std_Fe&#39;,
-                    &#39;mean_Fe&#39;,
-                    &#39;fungus_Fe&#39;,
-                    &#39;not_blood_Fe&#39;,
-                ]
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = [&#39;time&#39;] + list(
+                itertools.chain.from_iterable(
+                    [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
             )
+            with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -523,17 +476,19 @@ def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
     verts = vtkPoints()
     lines = vtkCellArray()
 
-    if isinstance(var, AfumigatusCellTreeList):
-        adjacency = var.adjacency
-
-        for i, j in adjacency.keys():
-            if i != j:
-                line = vtkLine()
-                line.GetPointIds().SetId(0, i)
-                line.GetPointIds().SetId(1, j)
-                lines.InsertNextCell(line)
-
-    elif not isinstance(var, CellList):
+    # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
+    # if isinstance(var, AfumigatusCellTreeList):
+    #     adjacency = var.adjacency
+    #
+    #     for i, j in adjacency.keys():
+    #         if i != j:
+    #             line = vtkLine()
+    #             line.GetPointIds().SetId(0, i)
+    #             line.GetPointIds().SetId(1, j)
+    #             lines.InsertNextCell(line)
+    #
+    # el
+    if not isinstance(var, CellList):
         raise NotImplementedError(
             f&#39;Only supported CellTree or CellList for POLY_DATA. \
             Got {type(var)}&#39;
@@ -664,6 +619,7 @@ def write_structured_points(
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>

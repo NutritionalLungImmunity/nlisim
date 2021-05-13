@@ -28,7 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import numpy as np  # type: ignore
@@ -102,7 +102,7 @@ def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -&gt; vt
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()
+    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
@@ -161,7 +161,23 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 
         postprocess_step_dir = postprocess_dir / (&#39;%03i&#39; % (state_file_index + 1))
         postprocess_step_dir.mkdir()
-        generate_vtk(state, postprocess_step_dir)</code></pre>
+        generate_vtk(state, postprocess_step_dir)
+
+
+def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
+    &#34;&#34;&#34;Generate summary statistics for the simulation.
+
+    Polls each loaded module for its summary statistics, producing a nested dictionary
+    where the first key is the module name and the second key is the statistic name.
+    e.g. stats[&#39;molecules&#39;][&#39;iron_mean&#39;]
+    modules reporting no statistics are omitted
+    &#34;&#34;&#34;
+    simulation_stats = dict()
+    for module in state.config.modules:
+        module_stats: Dict[str, Any] = module.summary_stats(state)
+        if len(module_stats) &gt; 0:
+            simulation_stats[module.name] = module_stats
+    return simulation_stats</code></pre>
 </details>
 </section>
 <section>
@@ -232,7 +248,7 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()
+    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid</code></pre>
@@ -280,6 +296,35 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
     return vtk_grid</code></pre>
+</details>
+</dd>
+<dt id="nlisim.postprocess.generate_summary_stats"><code class="name flex">
+<span>def <span class="ident">generate_summary_stats</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Dict[str, Dict[str, Any]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate summary statistics for the simulation.</p>
+<p>Polls each loaded module for its summary statistics, producing a nested dictionary
+where the first key is the module name and the second key is the statistic name.
+e.g. stats['molecules']['iron_mean']
+modules reporting no statistics are omitted</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
+    &#34;&#34;&#34;Generate summary statistics for the simulation.
+
+    Polls each loaded module for its summary statistics, producing a nested dictionary
+    where the first key is the module name and the second key is the statistic name.
+    e.g. stats[&#39;molecules&#39;][&#39;iron_mean&#39;]
+    modules reporting no statistics are omitted
+    &#34;&#34;&#34;
+    simulation_stats = dict()
+    for module in state.config.modules:
+        module_stats: Dict[str, Any] = module.summary_stats(state)
+        if len(module_stats) &gt; 0:
+            simulation_stats[module.name] = module_stats
+    return simulation_stats</code></pre>
 </details>
 </dd>
 <dt id="nlisim.postprocess.generate_vtk"><code class="name flex">
@@ -376,6 +421,7 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -&gt; Non
 <li><code><a title="nlisim.postprocess.create_vtk_geometry" href="#nlisim.postprocess.create_vtk_geometry">create_vtk_geometry</a></code></li>
 <li><code><a title="nlisim.postprocess.create_vtk_molecules" href="#nlisim.postprocess.create_vtk_molecules">create_vtk_molecules</a></code></li>
 <li><code><a title="nlisim.postprocess.create_vtk_volume" href="#nlisim.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
+<li><code><a title="nlisim.postprocess.generate_summary_stats" href="#nlisim.postprocess.generate_summary_stats">generate_summary_stats</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_vtk" href="#nlisim.postprocess.generate_vtk">generate_vtk</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_vtk_objects" href="#nlisim.postprocess.generate_vtk_objects">generate_vtk_objects</a></code></li>
 <li><code><a title="nlisim.postprocess.process_output" href="#nlisim.postprocess.process_output">process_output</a></code></li>

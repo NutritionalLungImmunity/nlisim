@@ -29,6 +29,7 @@
 </summary>
 <pre><code class="python">import itertools
 from random import choice, shuffle
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -356,7 +357,20 @@ class Macrophage(ModuleModel):
         if len(fungus.alive(fungus.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) == 0:
             m_cells.remove_if_sporeless(macrophage.rm)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        macrophage: MacrophageState = state.macrophage
+
+        num_phagosome: int = 0
+        for cell_index in macrophage.cells.alive():
+            cell: MacrophageCellData = macrophage.cells[cell_index]
+            num_phagosome += np.sum(cell[&#39;phagosome&#39;] &gt;= 0)
+
+        return {
+            &#39;count&#39;: len(macrophage.cells.alive()),
+            &#39;phagosome&#39;: num_phagosome,
+        }</code></pre>
 </details>
 </section>
 <section>
@@ -456,7 +470,20 @@ class Macrophage(ModuleModel):
         if len(fungus.alive(fungus.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) == 0:
             m_cells.remove_if_sporeless(macrophage.rm)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        macrophage: MacrophageState = state.macrophage
+
+        num_phagosome: int = 0
+        for cell_index in macrophage.cells.alive():
+            cell: MacrophageCellData = macrophage.cells[cell_index]
+            num_phagosome += np.sum(cell[&#39;phagosome&#39;] &gt;= 0)
+
+        return {
+            &#39;count&#39;: len(macrophage.cells.alive()),
+            &#39;phagosome&#39;: num_phagosome,
+        }</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -473,6 +500,7 @@ class Macrophage(ModuleModel):
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>

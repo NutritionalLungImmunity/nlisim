@@ -28,6 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from enum import IntEnum
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -352,7 +353,28 @@ class Fungus(ModuleModel):
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        fungus: FungusState = state.fungus
+
+        num_conidia: int = 0
+        num_hyphae: int = 0
+        total_iron: float = 0.0
+        for cell_index in fungus.cells.alive():
+            cell: FungusCellData = fungus.cells[cell_index]
+            if cell[&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                num_hyphae += 1
+            elif cell[&#39;form&#39;] == FungusCellData.Form.CONIDIA:
+                num_conidia += 1
+            total_iron += cell[&#39;iron&#39;]
+
+        return {
+            &#39;count&#39;: len(fungus.cells.alive()),
+            &#39;conidia&#39;: num_conidia,
+            &#39;hyphae&#39;: num_hyphae,
+            &#39;total_iron&#39;: total_iron,
+        }</code></pre>
 </details>
 </section>
 <section>
@@ -431,7 +453,28 @@ class Fungus(ModuleModel):
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        fungus: FungusState = state.fungus
+
+        num_conidia: int = 0
+        num_hyphae: int = 0
+        total_iron: float = 0.0
+        for cell_index in fungus.cells.alive():
+            cell: FungusCellData = fungus.cells[cell_index]
+            if cell[&#39;form&#39;] == FungusCellData.Form.HYPHAE:
+                num_hyphae += 1
+            elif cell[&#39;form&#39;] == FungusCellData.Form.CONIDIA:
+                num_conidia += 1
+            total_iron += cell[&#39;iron&#39;]
+
+        return {
+            &#39;count&#39;: len(fungus.cells.alive()),
+            &#39;conidia&#39;: num_conidia,
+            &#39;hyphae&#39;: num_hyphae,
+            &#39;total_iron&#39;: total_iron,
+        }</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -448,6 +491,7 @@ class Fungus(ModuleModel):
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>

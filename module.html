@@ -193,7 +193,11 @@ class ModuleModel(object):
 
     def finalize(self, state: State) -&gt; State:
         &#34;&#34;&#34;Run after the last time step.&#34;&#34;&#34;
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+        return dict()</code></pre>
 </details>
 </section>
 <section>
@@ -261,11 +265,14 @@ class ModuleModel(object):
 
     def finalize(self, state: State) -&gt; State:
         &#34;&#34;&#34;Run after the last time step.&#34;&#34;&#34;
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+        return dict()</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#nlisim.modules.afumigatus.Afumigatus">Afumigatus</a></li>
 <li><a title="nlisim.modules.epithelium.Epithelium" href="modules/epithelium.html#nlisim.modules.epithelium.Epithelium">Epithelium</a></li>
 <li><a title="nlisim.modules.fungus.Fungus" href="modules/fungus.html#nlisim.modules.fungus.Fungus">Fungus</a></li>
 <li><a title="nlisim.modules.geometry.Geometry" href="modules/geometry.html#nlisim.modules.geometry.Geometry">Geometry</a></li>
@@ -376,6 +383,20 @@ def time_step(self) -&gt; float:
 <pre><code class="python">def initialize(self, state: State) -&gt; State:
     &#34;&#34;&#34;Run after state initialization.&#34;&#34;&#34;
     return state</code></pre>
+</details>
+</dd>
+<dt id="nlisim.module.ModuleModel.summary_stats"><code class="name flex">
+<span>def <span class="ident">summary_stats</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run to provide informative statistics based on the module's current state.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+    return dict()</code></pre>
 </details>
 </dd>
 </dl>
@@ -502,7 +523,6 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
 <li><a title="nlisim.modules.epithelium.EpitheliumState" href="modules/epithelium.html#nlisim.modules.epithelium.EpitheliumState">EpitheliumState</a></li>
 <li><a title="nlisim.modules.fungus.FungusState" href="modules/fungus.html#nlisim.modules.fungus.FungusState">FungusState</a></li>
 <li><a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a></li>
@@ -697,6 +717,7 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>

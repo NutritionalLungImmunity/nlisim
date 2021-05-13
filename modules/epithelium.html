@@ -30,6 +30,7 @@
 <pre><code class="python">from enum import IntEnum
 import itertools
 from random import shuffle
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -312,7 +313,12 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        # epithelium : EpitheliumState = state.epithelium
+        # TODO: what are the useful statistics here?
+        return {}</code></pre>
 </details>
 </section>
 <section>
@@ -417,7 +423,12 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        # epithelium : EpitheliumState = state.epithelium
+        # TODO: what are the useful statistics here?
+        return {}</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -434,6 +445,7 @@ class Epithelium(ModuleModel):
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>

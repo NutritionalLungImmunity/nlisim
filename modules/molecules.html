@@ -28,6 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import json
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -233,7 +234,26 @@ class Molecules(ModuleModel):
 
     #     molecule[:] = temp[:]
 
-    #     return</code></pre>
+    #     return
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        molecules: MoleculesState = state.molecules
+
+        m_cyto = molecules.grid[&#39;m_cyto&#39;]
+        n_cyto = molecules.grid[&#39;n_cyto&#39;]
+        iron = molecules.grid[&#39;iron&#39;]
+
+        return {
+            &#39;m_cyto_max&#39;: np.max(m_cyto),
+            &#39;m_cyto_min&#39;: np.min(m_cyto),
+            &#39;m_cyto_mean&#39;: np.mean(m_cyto),
+            &#39;n_cyto_max&#39;: np.max(n_cyto),
+            &#39;n_cyto_min&#39;: np.min(n_cyto),
+            &#39;n_cyto_mean&#39;: np.mean(n_cyto),
+            &#39;iron_max&#39;: np.max(iron),
+            &#39;iron_min&#39;: np.min(iron),
+            &#39;iron_mean&#39;: np.mean(iron),
+        }</code></pre>
 </details>
 </section>
 <section>
@@ -450,7 +470,26 @@ class Molecules(ModuleModel):
 
     #     molecule[:] = temp[:]
 
-    #     return</code></pre>
+    #     return
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        molecules: MoleculesState = state.molecules
+
+        m_cyto = molecules.grid[&#39;m_cyto&#39;]
+        n_cyto = molecules.grid[&#39;n_cyto&#39;]
+        iron = molecules.grid[&#39;iron&#39;]
+
+        return {
+            &#39;m_cyto_max&#39;: np.max(m_cyto),
+            &#39;m_cyto_min&#39;: np.min(m_cyto),
+            &#39;m_cyto_mean&#39;: np.mean(m_cyto),
+            &#39;n_cyto_max&#39;: np.max(n_cyto),
+            &#39;n_cyto_min&#39;: np.min(n_cyto),
+            &#39;n_cyto_mean&#39;: np.mean(n_cyto),
+            &#39;iron_max&#39;: np.max(iron),
+            &#39;iron_min&#39;: np.min(iron),
+            &#39;iron_mean&#39;: np.mean(iron),
+        }</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -555,6 +594,7 @@ def degrade(cls, molecule: np.ndarray, evap: float):
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
