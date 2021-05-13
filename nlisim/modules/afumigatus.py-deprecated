@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
 from enum import IntEnum
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Union
 
 import attr
 from h5py import Group
@@ -13,7 +13,7 @@ from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
-from nlisim.state import State, get_class_path
+from nlisim.state import get_class_path, State
 
 
 class AfumigatusCellData(CellData):
@@ -61,7 +61,6 @@ class AfumigatusCellData(CellData):
         state: State = State.FREE,
         **kwargs,
     ) -> np.record:
-
         growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True
