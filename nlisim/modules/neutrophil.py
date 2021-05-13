@@ -1,6 +1,7 @@
 from enum import IntEnum
 import itertools
 from random import choice, shuffle
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -295,3 +296,11 @@ class Neutrophil(ModuleModel):
         n_cells.kill_by_age(neutrophil.age_limit)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        neutrophil: NeutrophilState = state.neutrophil
+
+        return {
+            'count': len(neutrophil.cells.alive()),
+            'granules': neutrophil.granule_count,
+        }

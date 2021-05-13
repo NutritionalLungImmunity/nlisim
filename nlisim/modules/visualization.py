@@ -11,14 +11,13 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 
 # noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
 
 # noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.afumigatus import AfumigatusCellTreeList
 from nlisim.modules.fungus import FungusCellData
 from nlisim.modules.geometry import TissueTypes
 from nlisim.state import State
@@ -53,17 +52,19 @@ class Visualization(ModuleModel):
         verts = vtkPoints()
         lines = vtkCellArray()
 
-        if isinstance(var, AfumigatusCellTreeList):
-            adjacency = var.adjacency
-
-            for i, j in adjacency.keys():
-                if i != j:
-                    line = vtkLine()
-                    line.GetPointIds().SetId(0, i)
-                    line.GetPointIds().SetId(1, j)
-                    lines.InsertNextCell(line)
-
-        elif not isinstance(var, CellList):
+        # Retained, but not used. 'Fungus' is current, not 'Afumigatus'
+        # if isinstance(var, AfumigatusCellTreeList):
+        #     adjacency = var.adjacency
+        #
+        #     for i, j in adjacency.keys():
+        #         if i != j:
+        #             line = vtkLine()
+        #             line.GetPointIds().SetId(0, i)
+        #             line.GetPointIds().SetId(1, j)
+        #             lines.InsertNextCell(line)
+        #
+        # el
+        if not isinstance(var, CellList):
             raise NotImplementedError(
                 f'Only supported CellTree or CellList for POLY_DATA. \
                 Got {type(var)}'
