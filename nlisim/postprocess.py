@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import numpy as np  # type: ignore
@@ -133,3 +133,16 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -> None:
         postprocess_step_dir = postprocess_dir / ('%03i' % (state_file_index + 1))
         postprocess_step_dir.mkdir()
         generate_vtk(state, postprocess_step_dir)
+
+
+def generate_summary_stats(state: State) -> Dict[str, Dict[str, Any]]:
+    """Polls each loaded module for its summary statistics, producing a nested dictionary
+    where the first key is the module name and the second key is the statistic name.
+    e.g. stats['molecules']['iron_mean']
+    modules reporting no statistics are omitted"""
+    simulation_stats = dict()
+    for module in state.config.modules:
+        module_stats: Dict[str, Any] = module.summary_stats(state)
+        if len(module_stats) > 0:
+            simulation_stats[module.name] = module_stats
+    return simulation_stats

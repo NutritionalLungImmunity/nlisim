@@ -1,4 +1,5 @@
 import json
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -205,3 +206,22 @@ class Molecules(ModuleModel):
     #     molecule[:] = temp[:]
 
     #     return
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        molecules: MoleculesState = state.molecules
+
+        m_cyto = molecules.grid['m_cyto']
+        n_cyto = molecules.grid['n_cyto']
+        iron = molecules.grid['iron']
+
+        return {
+            'm_cyto_max': np.max(m_cyto),
+            'm_cyto_min': np.min(m_cyto),
+            'm_cyto_mean': np.mean(m_cyto),
+            'n_cyto_max': np.max(n_cyto),
+            'n_cyto_min': np.min(n_cyto),
+            'n_cyto_mean': np.mean(n_cyto),
+            'iron_max': np.max(iron),
+            'iron_min': np.min(iron),
+            'iron_mean': np.mean(iron),
+        }

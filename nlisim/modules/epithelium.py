@@ -1,6 +1,7 @@
 from enum import IntEnum
 import itertools
 from random import shuffle
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -284,3 +285,8 @@ class Epithelium(ModuleModel):
         cells.die_by_germination(spores)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        # epithelium : EpitheliumState = state.epithelium
+        # TODO: what are the useful statistics here?
+        return {}

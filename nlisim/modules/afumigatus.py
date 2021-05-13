@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
 from enum import IntEnum
-from typing import Iterable, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
 
 import attr
 from h5py import Group
