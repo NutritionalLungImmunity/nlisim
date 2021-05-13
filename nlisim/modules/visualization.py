@@ -11,7 +11,7 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 
 # noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
 
 # noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
