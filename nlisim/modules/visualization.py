@@ -1,5 +1,6 @@
 import csv
 from enum import Enum
+import itertools
 import json
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
@@ -18,8 +19,7 @@ from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.fungus import FungusCellData
-from nlisim.modules.geometry import TissueTypes
+from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
@@ -167,36 +167,15 @@ class Visualization(ModuleModel):
         now = state.time
 
         if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
+            )
             with open('data.csv', 'a') as file:
                 csvwriter = csv.writer(file)
-
-                cells = state.fungus.cells
-                i_f_tot = np.sum(cells.cell_data[cells.alive()]['iron'])
-
-                i_level = np.sum(
-                    state.molecules.grid['iron'][
-                        state.geometry.lung_tissue != TissueTypes.BLOOD.value
-                    ]
-                )
-
-                csvwriter.writerow(
-                    [
-                        now,
-                        len(state.neutrophil.cells.alive()),
-                        len(state.fungus.cells.alive()),
-                        len(state.macrophage.cells.alive()),
-                        len(
-                            state.fungus.cells.alive(
-                                state.fungus.cells.cell_data['form'] == FungusCellData.Form.CONIDIA
-                            )
-                        ),
-                        np.sum(state.molecules.grid['iron']),
-                        np.std(state.molecules.grid['iron']),
-                        np.mean(state.molecules.grid['iron']),
-                        i_f_tot,
-                        i_level,
-                    ]
-                )
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
@@ -206,21 +185,17 @@ class Visualization(ModuleModel):
         return state
 
     def initialize(self, state: State) -> State:
-        with open('data.csv', 'w') as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(
-                [
-                    'time',
-                    'Neutrophil',
-                    'Fungus',
-                    'Macrophage',
-                    'Conidia',
-                    'tot_Fe',
-                    'std_Fe',
-                    'mean_Fe',
-                    'fungus_Fe',
-                    'not_blood_Fe',
-                ]
+        csv_output: bool = self.config.getboolean('csv_output')
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = ['time'] + list(
+                itertools.chain.from_iterable(
+                    [module + '-' + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
             )
+            with open('data.csv', 'w') as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state
