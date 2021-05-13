@@ -73,7 +73,7 @@ def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkSt
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy() # copy required as postprocessing can be live
+    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
@@ -136,10 +136,13 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -> None:
 
 
 def generate_summary_stats(state: State) -> Dict[str, Dict[str, Any]]:
-    """Polls each loaded module for its summary statistics, producing a nested dictionary
+    """Generate summary statistics for the simulation.
+
+    Polls each loaded module for its summary statistics, producing a nested dictionary
     where the first key is the module name and the second key is the statistic name.
     e.g. stats['molecules']['iron_mean']
-    modules reporting no statistics are omitted"""
+    modules reporting no statistics are omitted
+    """
     simulation_stats = dict()
     for module in state.config.modules:
         module_stats: Dict[str, Any] = module.summary_stats(state)
