@@ -285,8 +285,3 @@ class Epithelium(ModuleModel):
         cells.die_by_germination(spores)
 
         return state
-
-    def summary_stats(self, state: State) -> Dict[str, Any]:
-        # epithelium : EpitheliumState = state.epithelium
-        # TODO: what are the useful statistics here?
-        return {}

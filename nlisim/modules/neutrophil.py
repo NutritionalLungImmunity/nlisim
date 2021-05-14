@@ -302,5 +302,5 @@ class Neutrophil(ModuleModel):
 
         return {
             'count': len(neutrophil.cells.alive()),
-            'granules': neutrophil.granule_count,
+            'granules': int(neutrophil.granule_count),
         }

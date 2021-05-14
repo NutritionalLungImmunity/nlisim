@@ -340,5 +340,5 @@ class Macrophage(ModuleModel):
 
         return {
             'count': len(macrophage.cells.alive()),
-            'phagosome': num_phagosome,
+            'phagosome': int(num_phagosome),
         }

@@ -215,13 +215,13 @@ class Molecules(ModuleModel):
         iron = molecules.grid['iron']
 
         return {
-            'm_cyto_max': np.max(m_cyto),
-            'm_cyto_min': np.min(m_cyto),
-            'm_cyto_mean': np.mean(m_cyto),
-            'n_cyto_max': np.max(n_cyto),
-            'n_cyto_min': np.min(n_cyto),
-            'n_cyto_mean': np.mean(n_cyto),
-            'iron_max': np.max(iron),
-            'iron_min': np.min(iron),
-            'iron_mean': np.mean(iron),
+            'm_cyto_max': float(np.max(m_cyto)),
+            'm_cyto_min': float(np.min(m_cyto)),
+            'm_cyto_mean': float(np.mean(m_cyto)),
+            'n_cyto_max': float(np.max(n_cyto)),
+            'n_cyto_min': float(np.min(n_cyto)),
+            'n_cyto_mean': float(np.mean(n_cyto)),
+            'iron_max': float(np.max(iron)),
+            'iron_min': float(np.min(iron)),
+            'iron_mean': float(np.mean(iron)),
         }
