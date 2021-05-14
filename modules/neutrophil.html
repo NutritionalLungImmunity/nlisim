@@ -331,7 +331,7 @@ class Neutrophil(ModuleModel):
 
         return {
             &#39;count&#39;: len(neutrophil.cells.alive()),
-            &#39;granules&#39;: neutrophil.granule_count,
+            &#39;granules&#39;: int(neutrophil.granule_count),
         }</code></pre>
 </details>
 </section>
@@ -444,7 +444,7 @@ class Neutrophil(ModuleModel):
 
         return {
             &#39;count&#39;: len(neutrophil.cells.alive()),
-            &#39;granules&#39;: neutrophil.granule_count,
+            &#39;granules&#39;: int(neutrophil.granule_count),
         }</code></pre>
 </details>
 <h3>Ancestors</h3>

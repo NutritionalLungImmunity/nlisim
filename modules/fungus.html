@@ -371,9 +371,9 @@ class Fungus(ModuleModel):
 
         return {
             &#39;count&#39;: len(fungus.cells.alive()),
-            &#39;conidia&#39;: num_conidia,
-            &#39;hyphae&#39;: num_hyphae,
-            &#39;total_iron&#39;: total_iron,
+            &#39;conidia&#39;: int(num_conidia),
+            &#39;hyphae&#39;: int(num_hyphae),
+            &#39;total_iron&#39;: float(total_iron),
         }</code></pre>
 </details>
 </section>
@@ -471,9 +471,9 @@ class Fungus(ModuleModel):
 
         return {
             &#39;count&#39;: len(fungus.cells.alive()),
-            &#39;conidia&#39;: num_conidia,
-            &#39;hyphae&#39;: num_hyphae,
-            &#39;total_iron&#39;: total_iron,
+            &#39;conidia&#39;: int(num_conidia),
+            &#39;hyphae&#39;: int(num_hyphae),
+            &#39;total_iron&#39;: float(total_iron),
         }</code></pre>
 </details>
 <h3>Ancestors</h3>

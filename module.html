@@ -196,7 +196,11 @@ class ModuleModel(object):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.
+
+        Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
+        is important to cast these values to standard python types.
+        &#34;&#34;&#34;
         return dict()</code></pre>
 </details>
 </section>
@@ -268,7 +272,11 @@ class ModuleModel(object):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+        &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.
+
+        Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
+        is important to cast these values to standard python types.
+        &#34;&#34;&#34;
         return dict()</code></pre>
 </details>
 <h3>Subclasses</h3>
@@ -389,13 +397,19 @@ def time_step(self) -&gt; float:
 <span>def <span class="ident">summary_stats</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Dict[str, Any]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run to provide informative statistics based on the module's current state.</p></div>
+<div class="desc"><p>Run to provide informative statistics based on the module's current state.</p>
+<p>Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
+is important to cast these values to standard python types.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-    &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.&#34;&#34;&#34;
+    &#34;&#34;&#34;Run to provide informative statistics based on the module&#39;s current state.
+
+    Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
+    is important to cast these values to standard python types.
+    &#34;&#34;&#34;
     return dict()</code></pre>
 </details>
 </dd>

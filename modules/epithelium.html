@@ -30,7 +30,6 @@
 <pre><code class="python">from enum import IntEnum
 import itertools
 from random import shuffle
-from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -313,12 +312,7 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state
-
-    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        # epithelium : EpitheliumState = state.epithelium
-        # TODO: what are the useful statistics here?
-        return {}</code></pre>
+        return state</code></pre>
 </details>
 </section>
 <section>
@@ -423,12 +417,7 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state
-
-    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        # epithelium : EpitheliumState = state.epithelium
-        # TODO: what are the useful statistics here?
-        return {}</code></pre>
+        return state</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
