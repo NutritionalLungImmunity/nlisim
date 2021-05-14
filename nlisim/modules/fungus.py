@@ -342,7 +342,7 @@ class Fungus(ModuleModel):
 
         return {
             'count': len(fungus.cells.alive()),
-            'conidia': num_conidia,
-            'hyphae': num_hyphae,
-            'total_iron': total_iron,
+            'conidia': int(num_conidia),
+            'hyphae': int(num_hyphae),
+            'total_iron': float(total_iron),
         }

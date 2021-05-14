@@ -167,5 +167,9 @@ class ModuleModel(object):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        """Run to provide informative statistics based on the module's current state."""
+        """Run to provide informative statistics based on the module's current state.
+
+        Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
+        is important to cast these values to standard python types.
+        """
         return dict()
