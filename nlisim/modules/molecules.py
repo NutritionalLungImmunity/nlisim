@@ -1,4 +1,5 @@
 import json
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -99,16 +100,17 @@ class Molecules(ModuleModel):
         # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
         # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
 
-        molecules.grid.incr()
-        self.convolution_diffusion(
-            molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
-        )
+        for _ in range(3):
+            molecules.grid.incr()
+            self.convolution_diffusion(
+                molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
+            )
 
-        self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
-        self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
+            self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
+            self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
 
-        self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
-        self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
+            self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
+            self.convolution_diffusion(molecules.grid['n_cyto'], state.geometry.lung_tissue)
 
         return state
 
@@ -204,3 +206,22 @@ class Molecules(ModuleModel):
     #     molecule[:] = temp[:]
 
     #     return
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        molecules: MoleculesState = state.molecules
+
+        m_cyto = molecules.grid['m_cyto']
+        n_cyto = molecules.grid['n_cyto']
+        iron = molecules.grid['iron']
+
+        return {
+            'm_cyto_max': float(np.max(m_cyto)),
+            'm_cyto_min': float(np.min(m_cyto)),
+            'm_cyto_mean': float(np.mean(m_cyto)),
+            'n_cyto_max': float(np.max(n_cyto)),
+            'n_cyto_min': float(np.min(n_cyto)),
+            'n_cyto_mean': float(np.mean(n_cyto)),
+            'iron_max': float(np.max(iron)),
+            'iron_min': float(np.min(iron)),
+            'iron_mean': float(np.mean(iron)),
+        }

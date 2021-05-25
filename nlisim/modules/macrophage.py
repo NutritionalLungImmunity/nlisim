@@ -1,3 +1,7 @@
+import itertools
+from random import choice, shuffle
+from typing import Any, Dict
+
 import attr
 import numpy as np
 
@@ -12,9 +16,10 @@ from nlisim.state import State
 
 MAX_CONIDIA = 100
 
+np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+
 
 class MacrophageCellData(CellData):
-
     MACROPHAGE_FIELDS = [
         ('iteration', 'i4'),
         ('phagosome', (np.int32, (MAX_CONIDIA))),
@@ -27,7 +32,6 @@ class MacrophageCellData(CellData):
         cls,
         **kwargs,
     ) -> np.record:
-
         iteration = 0
         phagosome = np.empty(MAX_CONIDIA)
         phagosome.fill(-1)
@@ -81,26 +85,31 @@ class MacrophageCellList(CellList):
         self[index]['phagosome'].fill(-1)
 
     def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
-        num_reps = rec_rate_ph  # number of macrophages recruited per time step
+        num_reps = rec_rate_ph  # maximum number of macrophages recruited per time step
 
-        blood_index = np.argwhere(tissue == TissueTypes.BLOOD.value)
-        blood_index = np.transpose(blood_index)
-        mask = cyto[blood_index[2], blood_index[1], blood_index[0]] >= rec_r
-        blood_index = np.transpose(blood_index)
-        cyto_index = blood_index[mask]
-        rg.shuffle(cyto_index)
+        cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto >= rec_r))
+        if len(cyto_index) == 0:
+            # nowhere to place cells
+            return
 
-        for _ in range(0, num_reps):
-            if len(cyto_index) > 0:
-                ii = rg.integers(len(cyto_index))
+        for _ in range(num_reps):
+            if p_rec_r > rg.random():
+                ii = rg.integers(cyto_index.shape[0])
                 point = Point(
-                    x=grid.x[cyto_index[ii][2]],
-                    y=grid.y[cyto_index[ii][1]],
-                    z=grid.z[cyto_index[ii][0]],
+                    x=grid.x[cyto_index[ii, 2]],
+                    y=grid.y[cyto_index[ii, 1]],
+                    z=grid.z[cyto_index[ii, 0]],
                 )
-
-                if p_rec_r > rg.random():
-                    self.append(MacrophageCellData.create_cell(point=point))
+                # Do we really want these things to always be in the exact center of the voxel?
+                # No we do not. Should not have any effect on model, but maybe some on
+                # visualization.
+                perturbation = rg.multivariate_normal(
+                    mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
+                )
+                perturbation_magnitude = np.linalg.norm(perturbation)
+                perturbation /= max(1.0, perturbation_magnitude)
+                point += perturbation
+                self.append(MacrophageCellData.create_cell(point=point))
 
     def absorb_cytokines(self, m_abs, cyto, grid):
         for index in self.alive():
@@ -116,88 +125,79 @@ class MacrophageCellList(CellList):
 
             hyphae_count = 0
 
-            x_r = []
-            y_r = []
-            z_r = []
+            # Moore neighborhood
+            neighborhood = tuple(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
 
-            if m_det == 0:
-                index_arr = fungus.get_cells_in_voxel(vox)
-                for index in index_arr:
-                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
-                        hyphae_count += 1
-
-            else:
-                for num in range(0, m_det + 1):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for num in range(-1 * m_det, 0):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for x in x_r:
-                    for y in y_r:
-                        for z in z_r:
-                            zk = vox.z + z
-                            yj = vox.y + y
-                            xi = vox.x + x
-                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                                for index in index_arr:
-                                    if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
-                                        hyphae_count += 1
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    for index in index_arr:
+                        if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
+                            hyphae_count += 1
 
             cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
 
     def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
         for cell_index in self.alive():
             cell = self[cell_index]
-            vox = grid.get_voxel(cell['point'])
+            cell_voxel = grid.get_voxel(cell['point'])
 
-            p = np.zeros(shape=27)
-            vox_list = []
-            i = -1
+            valid_voxel_offsets = []
+            above_threshold_voxel_offsets = []
 
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if (
-                            grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk))
-                            and tissue[zk, yj, xi] != TissueTypes.AIR.value
-                        ):
-                            vox_list.append([x, y, z])
-                            i += 1
-                            if cyto[zk, yj, xi] >= rec_r:
-                                p[i] = cyto[zk, yj, xi]
+            # iterate over nearby voxels, recording the cytokine levels
+            for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
+                zi = cell_voxel.z + dz
+                yj = cell_voxel.y + dy
+                xk = cell_voxel.x + dx
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    if tissue[zi, yj, xk] != TissueTypes.AIR.value:
+                        valid_voxel_offsets.append((dx, dy, dz))
+                        if cyto[zi, yj, xk] >= rec_r:
+                            above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))
 
-            indices = np.argwhere(p != 0)
-            num_vox_possible = len(indices)
-            if num_vox_possible == 1:
-                i = indices[0][0]
-            elif num_vox_possible > 1:
-                inds = np.argwhere(p == p[np.argmax(p)])
-                rg.shuffle(inds)
-                i = inds[0][0]
+            # pick a target for the move
+            if len(above_threshold_voxel_offsets) > 0:
+                # shuffle + sort (with _only_ 0-key, not lexicographic as tuples) ensures
+                # randomization when there are equal top cytokine levels
+                # note that numpy's shuffle will complain about ragged arrays
+                shuffle(above_threshold_voxel_offsets)
+                above_threshold_voxel_offsets = sorted(
+                    above_threshold_voxel_offsets, key=lambda x: x[0], reverse=True
+                )
+                _, target_voxel_offset = above_threshold_voxel_offsets[0]
+            elif len(valid_voxel_offsets) > 0:
+                target_voxel_offset = choice(valid_voxel_offsets)
             else:
-                i = rg.integers(len(vox_list))
+                raise AssertionError(
+                    'This cell has no valid voxel to move to, including the one that it is in!'
+                )
 
-            point = Point(
-                x=grid.x[vox.x + vox_list[i][0]],
-                y=grid.y[vox.y + vox_list[i][1]],
-                z=grid.z[vox.z + vox_list[i][2]],
+            # Some nonsense here, b/c jump is happening at the voxel level, not the point level
+            starting_cell_point = Point(x=cell['point'][2], y=cell['point'][1], z=cell['point'][0])
+            starting_cell_voxel = grid.get_voxel(starting_cell_point)
+            ending_cell_voxel = grid.get_voxel(
+                Point(
+                    x=grid.x[cell_voxel.x + target_voxel_offset[0]],
+                    y=grid.y[cell_voxel.y + target_voxel_offset[1]],
+                    z=grid.z[cell_voxel.z + target_voxel_offset[2]],
+                )
+            )
+            ending_cell_point = (
+                starting_cell_point
+                + grid.get_voxel_center(ending_cell_voxel)
+                - grid.get_voxel_center(starting_cell_voxel)
             )
 
-            cell['point'] = point
+            cell['point'] = ending_cell_point
             self.update_voxel_index([cell_index])
 
             for i in range(0, self.len_phagosome(cell_index)):
                 f_index = cell['phagosome'][i]
-                fungus[f_index]['point'] = point
+                fungus[f_index]['point'] = ending_cell_point
                 fungus.update_voxel_index([f_index])
 
     def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
@@ -205,47 +205,26 @@ class MacrophageCellList(CellList):
             cell = self[i]
             vox = grid.get_voxel(cell['point'])
 
-            x_r = []
-            y_r = []
-            z_r = []
+            # Moore neighborhood, but order partially randomized. Closest to furthest order, but
+            # the order of any set of points of equal distance is random
+            neighborhood = list(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
+            shuffle(neighborhood)
+            neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
 
-            if m_det == 0:
-                index_arr = fungus.get_cells_in_voxel(vox)
-                for index in index_arr:
-                    if (
-                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
-                        and not fungus[index]['internalized']
-                        and p_in > rg.random()
-                    ):
-                        fungus[index]['internalized'] = True
-                        self.append_to_phagosome(i, index, max_spores)
-            else:
-                for num in range(0, m_det + 1):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for num in range(-1 * m_det, 0):
-                    x_r.append(num)
-                    y_r.append(num)
-                    z_r.append(num)
-
-                for x in x_r:
-                    for y in y_r:
-                        for z in z_r:
-                            zk = vox.z + z
-                            yj = vox.y + y
-                            xi = vox.x + x
-                            if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                                index_arr = fungus.get_cells_in_voxel(Voxel(x=xi, y=yj, z=zk))
-                                for index in index_arr:
-                                    if (
-                                        fungus[index]['form'] == FungusCellData.Form.CONIDIA
-                                        and not fungus[index]['internalized']
-                                        and p_in > rg.random()
-                                    ):
-                                        fungus[index]['internalized'] = True
-                                        self.append_to_phagosome(i, index, max_spores)
+            for dx, dy, dz in neighborhood:
+                zi = vox.z + dz
+                yj = vox.y + dy
+                xk = vox.x + dx
+                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
+                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    for index in index_arr:
+                        if (
+                            fungus[index]['form'] == FungusCellData.Form.CONIDIA
+                            and not fungus[index]['internalized']
+                            and p_in > rg.random()
+                        ):
+                            fungus[index]['internalized'] = True
+                            self.append_to_phagosome(i, index, max_spores)
 
     def damage_conidia(self, kill, t, health, fungus):
         for i in self.alive():
@@ -302,7 +281,7 @@ class Macrophage(ModuleModel):
         macrophage.kill = self.config.getfloat('kill')
         macrophage.m_det = self.config.getint('m_det')  # radius
         macrophage.rec_rate_ph = self.config.getint('rec_rate_ph')
-        macrophage.time_m = self.config.getfloat('time_step')
+        macrophage.time_m = self.config.getfloat('time_m')
         macrophage.max_conidia_in_phag = self.config.getint('max_conidia_in_phag')
         macrophage.rm = self.config.getfloat('rm')
         macrophage.p_internalization = self.config.getfloat('p_internalization')
@@ -350,3 +329,16 @@ class Macrophage(ModuleModel):
             m_cells.remove_if_sporeless(macrophage.rm)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        macrophage: MacrophageState = state.macrophage
+
+        num_phagosome: int = 0
+        for cell_index in macrophage.cells.alive():
+            cell: MacrophageCellData = macrophage.cells[cell_index]
+            num_phagosome += np.sum(cell['phagosome'] >= 0)
+
+        return {
+            'count': len(macrophage.cells.alive()),
+            'phagosome': int(num_phagosome),
+        }

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import numpy as np  # type: ignore
@@ -11,6 +11,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
 from nlisim.modules.geometry import GeometryState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -52,7 +53,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     return poly
 
 
-def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     x = grid.x
     y = grid.y
     z = grid.z
@@ -64,18 +65,36 @@ def create_vtk_volume(grid: RectangularGrid, geometry: GeometryState) -> vtkStru
     # a uniform grid, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
+    return vtk_grid
 
+
+def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue
+    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
 
 
-def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_volume(state.grid, state.geometry)
+def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+    vtk_grid = create_vtk_volume(grid)
+    point_data = vtk_grid.GetPointData()
+    for name in molecules.grid.concentrations.dtype.names:
+        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+        data.SetName(name)
+        point_data.AddArray(data)
+
+    return vtk_grid
+
+
+def generate_vtk_objects(
+    state: State,
+) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    volume = create_vtk_geometry(state.grid, state.geometry)
+    molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
         'spore': convert_cells_to_vtk(state.fungus.cells),
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
@@ -83,16 +102,20 @@ def generate_vtk_objects(state: State) -> Tuple[vtkStructuredPoints, Dict[str, v
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
     }
 
-    return volume, cells
+    return volume, molecules, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):
-    volume, cells = generate_vtk_objects(state)
+    volume, molecules, cells = generate_vtk_objects(state)
 
     grid_writer = vtkXMLImageDataWriter()
     grid_writer.SetDataModeToBinary()
     grid_writer.SetFileName(str(postprocess_step_dir / 'geometry_001.vti'))
     grid_writer.SetInputData(volume)
+    grid_writer.Write()
+
+    grid_writer.SetFileName(str(postprocess_step_dir / 'molecules_001.vti'))
+    grid_writer.SetInputData(molecules)
     grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
@@ -110,3 +133,19 @@ def process_output(state_files: Iterable[Path], postprocess_dir: Path) -> None:
         postprocess_step_dir = postprocess_dir / ('%03i' % (state_file_index + 1))
         postprocess_step_dir.mkdir()
         generate_vtk(state, postprocess_step_dir)
+
+
+def generate_summary_stats(state: State) -> Dict[str, Dict[str, Any]]:
+    """Generate summary statistics for the simulation.
+
+    Polls each loaded module for its summary statistics, producing a nested dictionary
+    where the first key is the module name and the second key is the statistic name.
+    e.g. stats['molecules']['iron_mean']
+    modules reporting no statistics are omitted
+    """
+    simulation_stats = dict()
+    for module in state.config.modules:
+        module_stats: Dict[str, Any] = module.summary_stats(state)
+        if len(module_stats) > 0:
+            simulation_stats[module.name] = module_stats
+    return simulation_stats

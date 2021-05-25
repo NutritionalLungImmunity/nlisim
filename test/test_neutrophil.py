@@ -99,6 +99,7 @@ def test_recruit_new(neutrophil_list, tissue, grid: RectangularGrid, cyto):
     vox = grid.get_voxel(neutrophil_list[-1]['point'])
 
     assert len(neutrophil_list) == 2
+    # TODO: why are x=y=z? what is the point of this?
     assert vox.x == 5 and vox.y == 5 and vox.z == 5
 
     # test recruit none due to below threshold
@@ -215,7 +216,7 @@ def test_recruit_new_multiple_locations(
 
     for cell in neutrophil_list.cell_data:
         vox = grid.get_voxel(cell['point'])
-        assert vox.z == 5 and vox.y == 5 and vox.x in [4, 5]
+        assert vox.x == 5 and vox.y == 5 and vox.z in [4, 5]
 
 
 def test_absorb_cytokines(neutrophil_list: NeutrophilCellList, cyto, grid: RectangularGrid):
@@ -535,8 +536,9 @@ def test_damage_hyphae_granuleless(
     neutrophil_list.damage_hyphae(n_det, n_kill, t, health, grid, fungus_list, iron)
 
     assert fungus_list[0]['health'] == 50
-    assert fungus_list[1]['health'] == 50
-    assert fungus_list[2]['health'] == 100
+    # one should be 50, the other 100. It doesn't matter which is which
+    assert fungus_list[1]['health'] == 100 or fungus_list[2]['health'] == 100
+    assert fungus_list[1]['health'] == 50 or fungus_list[2]['health'] == 50
     assert neutrophil_list[0]['granule_count'] == 0
     assert neutrophil_list[0]['status'] == NeutrophilCellData.Status.NONGRANULATING
 

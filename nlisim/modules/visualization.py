@@ -1,19 +1,25 @@
+import csv
 from enum import Enum
+import itertools
 import json
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import attr
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk
+
+# noinspection PyUnresolvedReferences
 from vtkmodules.vtkCommonCore import vtkPoints
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkLine, vtkPolyData, vtkStructuredPoints
+
+# noinspection PyUnresolvedReferences
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
+
+# noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.afumigatus import AfumigatusCellTreeList
-from nlisim.modules.fungus import FungusCellData
-from nlisim.modules.geometry import TissueTypes
+from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
@@ -46,17 +52,19 @@ class Visualization(ModuleModel):
         verts = vtkPoints()
         lines = vtkCellArray()
 
-        if isinstance(var, AfumigatusCellTreeList):
-            adjacency = var.adjacency
-
-            for i, j in adjacency.keys():
-                if i != j:
-                    line = vtkLine()
-                    line.GetPointIds().SetId(0, i)
-                    line.GetPointIds().SetId(1, j)
-                    lines.InsertNextCell(line)
-
-        elif not isinstance(var, CellList):
+        # Retained, but not used. 'Fungus' is current, not 'Afumigatus'
+        # if isinstance(var, AfumigatusCellTreeList):
+        #     adjacency = var.adjacency
+        #
+        #     for i, j in adjacency.keys():
+        #         if i != j:
+        #             line = vtkLine()
+        #             line.GetPointIds().SetId(0, i)
+        #             line.GetPointIds().SetId(1, j)
+        #             lines.InsertNextCell(line)
+        #
+        # el
+        if not isinstance(var, CellList):
             raise NotImplementedError(
                 f'Only supported CellTree or CellList for POLY_DATA. \
                 Got {type(var)}'
@@ -68,8 +76,8 @@ class Visualization(ModuleModel):
 
         alive_cells = np.take(var.cell_data, var.alive())
         for attr_name in attr_names:
-            attr = alive_cells[attr_name]
-            scalars = numpy_to_vtk(num_array=attr)
+            cell_attr = alive_cells[attr_name]
+            scalars = numpy_to_vtk(num_array=cell_attr)
             scalars.SetName(attr_name)
             vol.GetPointData().AddArray(scalars)
 
@@ -114,19 +122,19 @@ class Visualization(ModuleModel):
             )
             if attr_names:
                 for attr_name in attr_names:
-                    attr = getattr(var, attr_name)
+                    var_attr = getattr(var, attr_name)
 
                     # composite data
-                    if attr.dtype.names:
-                        for name in attr.dtype.names:
+                    if var_attr.dtype.names:
+                        for name in var_attr.dtype.names:
                             file_name = filename.replace('<variable>', module_name + '-' + name)
                             Visualization.write_structured_points(
-                                attr[name], file_name, spacing[2], spacing[1], spacing[0]
+                                var_attr[name], file_name, spacing[2], spacing[1], spacing[0]
                             )
                     else:
-                        file_name = filename.replace('<variable>', module_name + '-' + attr)
+                        file_name = filename.replace('<variable>', module_name + '-' + var_attr)
                         Visualization.write_structured_points(
-                            attr, file_name, spacing[2], spacing[1], spacing[0]
+                            var_attr, file_name, spacing[2], spacing[1], spacing[0]
                         )
 
             else:
@@ -154,50 +162,40 @@ class Visualization(ModuleModel):
     def advance(self, state: State, previous_time: float) -> State:
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
-        print_to_stdout = self.config.getboolean('print_to_stdout')
+        csv_output: bool = self.config.getboolean('csv_output')
         json_config = json.loads(variables)
         now = state.time
 
-        if print_to_stdout:
-            print(
-                '\t'.join(
-                    map(
-                        str,
-                        [
-                            len(state.neutrophil.cells.alive()),
-                            len(state.fungus.cells.alive()),
-                            len(state.macrophage.cells.alive()),
-                            len(
-                                state.fungus.cells.alive(
-                                    state.fungus.cells.cell_data['form']
-                                    == FungusCellData.Form.CONIDIA
-                                )
-                            ),
-                            np.sum(state.molecules.grid['iron']),
-                            np.std(state.molecules.grid['iron']),
-                            np.mean(state.molecules.grid['iron']),
-                        ],
-                    )
-                ),
-                end='\t',
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
             )
-
-        i_f_tot = 0
-        cells = state.fungus.cells
-        for i in cells.alive():
-            i_f_tot += cells.cell_data[i]['iron']
-
-        mask = np.argwhere(state.geometry.lung_tissue != TissueTypes.BLOOD.value)
-        i_level = 0
-        for [x, y, z] in mask:
-            i_level += state.molecules.grid['iron'][x, y, z]
-
-        if print_to_stdout:
-            print(str(i_level) + '\t' + str(i_f_tot))
+            with open('data.csv', 'a') as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
             self.visualize(state, variable, file_name)
             state.visualization.last_visualize = now
+
+        return state
+
+    def initialize(self, state: State) -> State:
+        csv_output: bool = self.config.getboolean('csv_output')
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = ['time'] + list(
+                itertools.chain.from_iterable(
+                    [module + '-' + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
+            )
+            with open('data.csv', 'w') as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state
