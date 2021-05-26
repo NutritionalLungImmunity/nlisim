@@ -19,6 +19,7 @@ from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
