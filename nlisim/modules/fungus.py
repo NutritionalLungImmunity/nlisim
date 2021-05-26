@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -324,3 +325,24 @@ class Fungus(ModuleModel):
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        fungus: FungusState = state.fungus
+
+        num_conidia: int = 0
+        num_hyphae: int = 0
+        total_iron: float = 0.0
+        for cell_index in fungus.cells.alive():
+            cell: FungusCellData = fungus.cells[cell_index]
+            if cell['form'] == FungusCellData.Form.HYPHAE:
+                num_hyphae += 1
+            elif cell['form'] == FungusCellData.Form.CONIDIA:
+                num_conidia += 1
+            total_iron += cell['iron']
+
+        return {
+            'count': len(fungus.cells.alive()),
+            'conidia': int(num_conidia),
+            'hyphae': int(num_hyphae),
+            'total_iron': float(total_iron),
+        }
