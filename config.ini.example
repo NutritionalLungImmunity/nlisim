@@ -23,6 +23,7 @@ modules = nlisim.modules.visualization.Visualization
           nlisim.modules.macrophage.Macrophage
           nlisim.modules.neutrophil.Neutrophil
           nlisim.modules.state_output.StateOutput
+          nlisim.modules.visualization.Visualization
 
 
 [file_output]
