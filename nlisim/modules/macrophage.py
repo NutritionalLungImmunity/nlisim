@@ -1,5 +1,6 @@
 import itertools
 from random import choice, shuffle
+from typing import Any, Dict
 
 import attr
 import numpy as np
@@ -328,3 +329,16 @@ class Macrophage(ModuleModel):
             m_cells.remove_if_sporeless(macrophage.rm)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        macrophage: MacrophageState = state.macrophage
+
+        num_phagosome: int = 0
+        for cell_index in macrophage.cells.alive():
+            cell: MacrophageCellData = macrophage.cells[cell_index]
+            num_phagosome += np.sum(cell['phagosome'] >= 0)
+
+        return {
+            'count': len(macrophage.cells.alive()),
+            'phagosome': int(num_phagosome),
+        }
