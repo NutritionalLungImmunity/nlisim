@@ -1,6 +1,6 @@
 import itertools
 from random import choice, shuffle
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -10,9 +10,9 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.util import TissueType
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 MAX_CONIDIA = 100
 
@@ -342,3 +342,6 @@ class Macrophage(ModuleModel):
             'count': len(macrophage.cells.alive()),
             'phagosome': int(num_phagosome),
         }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.macrophage.cells

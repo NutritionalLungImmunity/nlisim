@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -346,3 +346,6 @@ class Fungus(ModuleModel):
             'hyphae': int(num_hyphae),
             'total_iron': float(total_iron),
         }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.fungus.cells

@@ -71,10 +71,15 @@ class IL8(MoleculeModel):
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING or PhagocyteStatus.ACTIVE}:
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
-                if activation_function(x=il8.grid[tuple(neutrophil_cell_voxel)],
-                                       kd=il8.k_d,
-                                       h=self.time_step / 60,
-                                       volume=voxel_volume) < rg.uniform():
+                if (
+                    activation_function(
+                        x=il8.grid[tuple(neutrophil_cell_voxel)],
+                        kd=il8.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                    )
+                    < rg.uniform()
+                ):
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0
 
@@ -82,10 +87,12 @@ class IL8(MoleculeModel):
 
         # Degrade IL8
         il8.grid *= il8.half_life_multiplier
-        il8.grid *= turnover_rate(x_mol=np.ones(shape=il8.grid.shape, dtype=np.float64),
-                                  x_system_mol=0.0,
-                                  base_turnover_rate=molecules.turnover_rate,
-                                  rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        il8.grid *= turnover_rate(
+            x_mol=np.ones(shape=il8.grid.shape, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of IL8
         self.diffuse(il8.grid, molecules.diffusion_constant_timestep)

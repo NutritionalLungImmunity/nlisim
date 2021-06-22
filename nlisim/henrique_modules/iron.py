@@ -45,9 +45,11 @@ class Iron(MoleculeModel):
 
         # dead macrophages contribute their iron to the environment
         for macrophage_cell in macrophage.cells:
-            if macrophage_cell['status'] in {PhagocyteStatus.NECROTIC,
-                                             PhagocyteStatus.APOPTOTIC,
-                                             PhagocyteStatus.DEAD}:
+            if macrophage_cell['status'] in {
+                PhagocyteStatus.NECROTIC,
+                PhagocyteStatus.APOPTOTIC,
+                PhagocyteStatus.DEAD,
+            }:
                 macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
                 iron.grid[tuple(macrophage_cell_voxel)] += macrophage_cell['iron_pool']
                 macrophage_cell['iron_pool'] = 0.0

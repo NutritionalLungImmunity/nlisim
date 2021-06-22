@@ -71,17 +71,18 @@ class MIP2(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         # interact with neutrophils
-        neutrophil_activation: np.ndarray = activation_function(x=mip2.grid,
-                                                                kd=mip2.k_d,
-                                                                h=self.time_step / 60,
-                                                                volume=voxel_volume)
+        neutrophil_activation: np.ndarray = activation_function(
+            x=mip2.grid, kd=mip2.k_d, h=self.time_step / 60, volume=voxel_volume
+        )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
             # TODO: verify direction of inequality
-            if (neutrophil_cell['status'] == PhagocyteStatus.RESTING and
-                    neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()):
+            if (
+                neutrophil_cell['status'] == PhagocyteStatus.RESTING
+                and neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()
+            ):
                 neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
 
             elif neutrophil_cell['tnfa']:
@@ -107,10 +108,12 @@ class MIP2(MoleculeModel):
 
         # Degrade MIP2
         mip2.grid *= mip2.half_life_multiplier
-        mip2.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                   x_system_mol=0.0,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        mip2.grid *= turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MIP2
         self.diffuse(mip2.grid, molecules.diffusion_constant_timestep)

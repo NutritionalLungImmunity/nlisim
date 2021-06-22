@@ -40,7 +40,11 @@ class Hemoglobin(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
+        from nlisim.henrique_modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusState,
+            AfumigatusCellStatus,
+        )
 
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
@@ -50,17 +54,24 @@ class Hemoglobin(MoleculeModel):
         # afumigatus uptakes iron from hemoglobin
         for afumigatus_cell_index in afumigatus.cells.alive():
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            if afumigatus_cell['status'] in {AfumigatusCellStatus.HYPHAE, AfumigatusCellStatus.GERM_TUBE}:
+            if afumigatus_cell['status'] in {
+                AfumigatusCellStatus.HYPHAE,
+                AfumigatusCellStatus.GERM_TUBE,
+            }:
                 afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
-                fungal_absorbed_hemoglobin = hemoglobin.uptake_rate * hemoglobin.grid[tuple(afumigatus_cell_voxel)]
+                fungal_absorbed_hemoglobin = (
+                    hemoglobin.uptake_rate * hemoglobin.grid[tuple(afumigatus_cell_voxel)]
+                )
                 hemoglobin.grid[tuple(afumigatus_cell_voxel)] -= fungal_absorbed_hemoglobin
                 afumigatus_cell['iron_pool'] += 4 * fungal_absorbed_hemoglobin
 
         # Degrade Hemoglobin
-        hemoglobin.grid *= turnover_rate(x_mol=hemoglobin.grid,
-                                         x_system_mol=0.0,
-                                         base_turnover_rate=molecules.turnover_rate,
-                                         rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        hemoglobin.grid *= turnover_rate(
+            x_mol=hemoglobin.grid,
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of Hemoglobin
         self.diffuse(hemoglobin.grid, molecules.diffusion_constant_timestep)

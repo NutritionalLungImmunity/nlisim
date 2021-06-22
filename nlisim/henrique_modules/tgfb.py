@@ -64,28 +64,44 @@ class TGFB(MoleculeModel):
 
             if macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
                 tgfb.grid[tuple(macrophage_cell_voxel)] += tgfb.macrophage_secretion_rate_unit_t
-                if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                                       kd=tgfb.k_d,
-                                       h=self.time_step / 60,
-                                       volume=voxel_volume) > rg.uniform():
+                if (
+                    activation_function(
+                        x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                        kd=tgfb.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                    )
+                    > rg.uniform()
+                ):
                     macrophage_cell['status_iteration'] = 0
 
-            elif macrophage_cell['status'] not in {PhagocyteStatus.APOPTOTIC,
-                                                   PhagocyteStatus.NECROTIC,
-                                                   PhagocyteStatus.DEAD}:
-                if activation_function(x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                                       kd=tgfb.k_d,
-                                       h=self.time_step / 60,
-                                       volume=voxel_volume) > rg.uniform():
+            elif macrophage_cell['status'] not in {
+                PhagocyteStatus.APOPTOTIC,
+                PhagocyteStatus.NECROTIC,
+                PhagocyteStatus.DEAD,
+            }:
+                if (
+                    activation_function(
+                        x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                        kd=tgfb.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                    )
+                    > rg.uniform()
+                ):
                     macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
-                    macrophage_cell['status_iteration'] = 0  # Previously, was no reset of the status iteration
+                    macrophage_cell[
+                        'status_iteration'
+                    ] = 0  # Previously, was no reset of the status iteration
 
         # Degrade TGFB
         tgfb.grid *= tgfb.half_life_multiplier
-        tgfb.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                   x_system_mol=0.0,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tgfb.grid *= turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of TGFB
         self.diffuse(tgfb.grid, molecules.diffusion_constant_timestep)

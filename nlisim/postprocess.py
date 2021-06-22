@@ -91,8 +91,9 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vt
 
 
 def generate_vtk_objects(
-        state: State,
-        ) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    state: State,
+) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+    """Generate the vtk objects for each module. (e.g. for upload)"""
     volume = create_vtk_geometry(state.grid, state.lung_tissue)
     molecules = create_vtk_molecules(state.grid, state.molecules)
     cells = {
@@ -100,7 +101,7 @@ def generate_vtk_objects(
         'epithelium': convert_cells_to_vtk(state.epithelium.cells),
         'macrophage': convert_cells_to_vtk(state.macrophage.cells),
         'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-        }
+    }
 
     return volume, molecules, cells
 

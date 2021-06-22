@@ -45,8 +45,12 @@ class MIP1B(MoleculeModel):
         # computed values
         mip1b.half_life_multiplier = 1 + math.log(0.5) / (mip1b.half_life / self.time_step)
         # time unit conversions
-        mip1b.macrophage_secretion_rate_unit_t = mip1b.macrophage_secretion_rate * 60 * self.time_step
-        mip1b.pneumocyte_secretion_rate_unit_t = mip1b.pneumocyte_secretion_rate * 60 * self.time_step
+        mip1b.macrophage_secretion_rate_unit_t = (
+            mip1b.macrophage_secretion_rate * 60 * self.time_step
+        )
+        mip1b.pneumocyte_secretion_rate_unit_t = (
+            mip1b.pneumocyte_secretion_rate * 60 * self.time_step
+        )
 
         return state
 
@@ -79,10 +83,12 @@ class MIP1B(MoleculeModel):
 
         # Degrade MIP1B
         mip1b.grid *= mip1b.half_life_multiplier
-        mip1b.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                    x_system_mol=0.0,
-                                    base_turnover_rate=molecules.turnover_rate,
-                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        mip1b.grid *= turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MIP1b
         self.diffuse(mip1b.grid, molecules.diffusion_constant_timestep)

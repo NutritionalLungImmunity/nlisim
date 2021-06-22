@@ -1,7 +1,7 @@
 from enum import IntEnum
 import itertools
 from random import choice, shuffle
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -304,3 +304,6 @@ class Neutrophil(ModuleModel):
             'count': len(neutrophil.cells.alive()),
             'granules': int(neutrophil.granule_count),
         }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.neutrophil.cells

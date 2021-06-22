@@ -44,12 +44,14 @@ class Hepcidin(MoleculeModel):
         voxel_volume: float = state.voxel_volume
 
         # interaction with macrophages
-        activated_voxels = \
-            zip(*np.where(activation_function(x=hepcidin.grid,
-                                              kd=hepcidin.kd_hep,
-                                              h=self.time_step / 60,
-                                              volume=voxel_volume) >
-                          np.random.random(hepcidin.grid.shape)))
+        activated_voxels = zip(
+            *np.where(
+                activation_function(
+                    x=hepcidin.grid, kd=hepcidin.kd_hep, h=self.time_step / 60, volume=voxel_volume
+                )
+                > np.random.random(hepcidin.grid.shape)
+            )
+        )
         for z, y, x in activated_voxels:
             for macrophage_cell_index in macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z)):
                 macrophage_cell = macrophage.cells[macrophage_cell_index]

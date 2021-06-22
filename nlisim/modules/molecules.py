@@ -1,11 +1,12 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
 from scipy.ndimage import convolve
 
 from nlisim.util import TissueType
+
 # from nlisim.coordinates import Voxel
 # from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -103,8 +104,8 @@ class Molecules(ModuleModel):
         for _ in range(3):
             molecules.grid.incr()
             self.convolution_diffusion(
-                    molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
-                    )
+                molecules.grid['iron'], state.geometry.lung_tissue, molecules.iron_max
+            )
 
             self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
             self.convolution_diffusion(molecules.grid['m_cyto'], state.geometry.lung_tissue)
@@ -225,3 +226,6 @@ class Molecules(ModuleModel):
             'iron_min': float(np.min(iron)),
             'iron_mean': float(np.mean(iron)),
         }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'molecule', state.molecules

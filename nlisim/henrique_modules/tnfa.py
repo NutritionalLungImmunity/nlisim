@@ -74,10 +74,15 @@ class TNFa(MoleculeModel):
                 tnfa.grid[tuple(macrophage_cell_voxel)] += tnfa.macrophage_secretion_rate_unit_t
 
             if macrophage_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
-                if activation_function(x=tnfa.grid[tuple(macrophage_cell_voxel)],
-                                       kd=tnfa.k_d,
-                                       h=self.time_step / 60,
-                                       volume=voxel_volume) > rg.uniform():
+                if (
+                    activation_function(
+                        x=tnfa.grid[tuple(macrophage_cell_voxel)],
+                        kd=tnfa.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                    )
+                    > rg.uniform()
+                ):
                     if macrophage_cell['status'] == PhagocyteStatus.RESTING:
                         macrophage_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
@@ -94,10 +99,15 @@ class TNFa(MoleculeModel):
                 tnfa.grid[tuple(neutrophil_cell_voxel)] += tnfa.neutrophil_secretion_rate_unit_t
 
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
-                if activation_function(x=tnfa.grid[tuple(neutrophil_cell_voxel)],
-                                       kd=tnfa.k_d,
-                                       h=self.time_step / 60,
-                                       volume=voxel_volume) > rg.uniform():
+                if (
+                    activation_function(
+                        x=tnfa.grid[tuple(neutrophil_cell_voxel)],
+                        kd=tnfa.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                    )
+                    > rg.uniform()
+                ):
                     if neutrophil_cell['status'] == PhagocyteStatus.RESTING:
                         neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
@@ -108,10 +118,12 @@ class TNFa(MoleculeModel):
 
         # Degrade TNFa
         tnfa.grid *= tnfa.half_life_multiplier
-        tnfa.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                   x_system_mol=0.0,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tnfa.grid *= turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of TNFa
         self.diffuse(tnfa.grid, molecules.diffusion_constant_timestep)

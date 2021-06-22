@@ -41,7 +41,9 @@ class AntiTNFa(MoleculeModel):
 
         # computed values
         anti_tnf_a.system_amount_per_voxel = anti_tnf_a.system_concentration * voxel_volume
-        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (anti_tnf_a.half_life / self.time_step)
+        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (
+            anti_tnf_a.half_life / self.time_step
+        )
 
         # initialize concentration field
         anti_tnf_a.grid.fill(anti_tnf_a.system_amount_per_voxel)
@@ -58,21 +60,25 @@ class AntiTNFa(MoleculeModel):
         tnf_a: TNFaState = state.tnfa
 
         # AntiTNFa / TNFa reaction
-        reacted_quantity = michaelian_kinetics(substrate=anti_tnf_a.grid,
-                                               enzyme=tnf_a.grid,
-                                               km=anti_tnf_a.k_m,
-                                               h=anti_tnf_a.react_time_unit,
-                                               voxel_volume=voxel_volume)
+        reacted_quantity = michaelian_kinetics(
+            substrate=anti_tnf_a.grid,
+            enzyme=tnf_a.grid,
+            km=anti_tnf_a.k_m,
+            h=anti_tnf_a.react_time_unit,
+            voxel_volume=voxel_volume,
+        )
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
         anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
         tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)
 
         # Degradation of AntiTNFa
         anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
-        anti_tnf_a.grid *= turnover_rate(x_mol=anti_tnf_a.grid,
-                                         x_system_mol=anti_tnf_a.system_amount_per_voxel,
-                                         base_turnover_rate=molecules.turnover_rate,
-                                         rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        anti_tnf_a.grid *= turnover_rate(
+            x_mol=anti_tnf_a.grid,
+            x_system_mol=anti_tnf_a.system_amount_per_voxel,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of AntiTNFa
         self.diffuse(anti_tnf_a.grid, molecules.diffusion_constant_timestep)

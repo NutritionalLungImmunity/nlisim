@@ -108,14 +108,16 @@ class State(object):
             config.getfloat('simulation', 'dz'),
             config.getfloat('simulation', 'dy'),
             config.getfloat('simulation', 'dx'),
-            )
+        )
         grid = RectangularGrid.construct_uniform(shape, spacing)
-        state = State(time=0.0,
-                      grid=grid,
-                      config=config,
-                      lung_tissue=lung_tissue,
-                      voxel_volume=voxel_volume,
-                      space_volume=space_volume)
+        state = State(
+            time=0.0,
+            grid=grid,
+            config=config,
+            lung_tissue=lung_tissue,
+            voxel_volume=voxel_volume,
+            space_volume=space_volume,
+        )
 
         for module in state.config.modules:
             if hasattr(state, module.name):
@@ -169,10 +171,10 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
 
     metadata = {'grid': True}
     return attr.ib(
-            default=attr.Factory(factory, takes_self=True),
-            validator=validate_numeric,
-            metadata=metadata,
-            )
+        default=attr.Factory(factory, takes_self=True),
+        validator=validate_numeric,
+        metadata=metadata,
+    )
 
 
 def cell_list(list_class: Type['CellList']) -> 'CellList':

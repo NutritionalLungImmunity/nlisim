@@ -51,7 +51,7 @@ class CellData(np.ndarray):
     FIELDS: List[Any] = [
         ('point', Point.dtype),
         ('dead', 'b1'),
-        ]
+    ]
     """
     This variable contains the base fields that all subclasses should include
     in their derived data type.
@@ -110,12 +110,14 @@ class CellData(np.ndarray):
         point = points.T.view(Point)
 
         # TODO: add geometry restriction
-        return ((grid.xv[0] <= point.x)
-                & (point.x <= grid.xv[-1])
-                & (grid.yv[0] <= point.y)
-                & (point.y <= grid.yv[-1])
-                & (grid.zv[0] <= point.z)
-                & (point.z <= grid.zv[-1]))
+        return (
+            (grid.xv[0] <= point.x)
+            & (point.x <= grid.xv[-1])
+            & (grid.yv[0] <= point.y)
+            & (point.y <= grid.yv[-1])
+            & (grid.zv[0] <= point.z)
+            & (point.z <= grid.zv[-1])
+        )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -123,24 +125,24 @@ class CellList(object):
     # noinspection PyUnresolvedReferences
     """A python view on top of a CellData array.
 
-        This class represents a pythonic interface to the data contained in a
-        CellData array.  Because the CellData class is a low-level object, it does
-        not allow dynamically appending new elements.  Objects of this class get
-        around this limitation by pre-allocating a large block of memory that is
-        transparently available.  User-facing properties are sliced to make it
-        appear as if the extra data is not there.
+    This class represents a pythonic interface to the data contained in a
+    CellData array.  Because the CellData class is a low-level object, it does
+    not allow dynamically appending new elements.  Objects of this class get
+    around this limitation by pre-allocating a large block of memory that is
+    transparently available.  User-facing properties are sliced to make it
+    appear as if the extra data is not there.
 
-        Subclassed types are expected to set the `CellDataClass` attribute to
-        a subclass of `CellData`.  This provides information about the underlying
-        low-level array.
+    Subclassed types are expected to set the `CellDataClass` attribute to
+    a subclass of `CellData`.  This provides information about the underlying
+    low-level array.
 
-        Parameters
-        ------
-        grid : `simulation.grid.RectangularGrid`
-        max_cells : int, optional
-        cells : `simulation.cell.CellData`, optional
+    Parameters
+    ------
+    grid : `simulation.grid.RectangularGrid`
+    max_cells : int, optional
+    cells : `simulation.cell.CellData`, optional
 
-        """
+    """
 
     CellDataClass: Type[CellData] = CellData
     """

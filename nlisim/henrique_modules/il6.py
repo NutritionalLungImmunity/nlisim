@@ -84,10 +84,12 @@ class IL6(MoleculeModel):
 
         # Degrade IL6
         il6.grid *= il6.half_life_multiplier
-        il6.grid *= turnover_rate(x_mol=np.ones(shape=il6.grid.shape, dtype=np.float64),
-                                  x_system_mol=0.0,
-                                  base_turnover_rate=molecules.turnover_rate,
-                                  rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        il6.grid *= turnover_rate(
+            x_mol=np.ones(shape=il6.grid.shape, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of IL6
         self.diffuse(il6.grid, molecules.diffusion_constant_timestep)

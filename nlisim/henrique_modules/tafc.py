@@ -11,9 +11,9 @@ from nlisim.util import michaelian_kinetics, turnover_rate
 
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
     # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
-    return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('TAFC', np.float64),
-                           ('TAFCBI', np.float64)])
+    return np.zeros(
+        shape=self.global_state.grid.shape, dtype=[('TAFC', np.float64), ('TAFCBI', np.float64)]
+    )
 
 
 @attr.s(kw_only=True, repr=False)
@@ -50,8 +50,13 @@ class TAFC(MoleculeModel):
         """Advance the state by a single time step."""
         from nlisim.henrique_modules.iron import IronState
         from nlisim.henrique_modules.transferrin import TransferrinState
-        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusCellState, AfumigatusCellStatus, \
-            AfumigatusState, NetworkSpecies
+        from nlisim.henrique_modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellState,
+            AfumigatusCellStatus,
+            AfumigatusState,
+            NetworkSpecies,
+        )
 
         tafc: TAFCState = state.tafc
         transferrin: TransferrinState = state.transferrin
@@ -63,16 +68,20 @@ class TAFC(MoleculeModel):
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = michaelian_kinetics(substrate=transferrin.grid["TfFe2"],
-                                     enzyme=tafc.grid["TAFC"],
-                                     km=tafc.k_m_tf_tafc,
-                                     h=self.time_step / 60,
-                                     voxel_volume=voxel_volume)
-        dfedt = michaelian_kinetics(substrate=transferrin.grid["TfFe"],
-                                    enzyme=tafc.grid["TAFC"],
-                                    km=tafc.k_m_tf_tafc,
-                                    h=self.time_step / 60,
-                                    voxel_volume=voxel_volume)
+        dfe2dt = michaelian_kinetics(
+            substrate=transferrin.grid["TfFe2"],
+            enzyme=tafc.grid["TAFC"],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
+        dfedt = michaelian_kinetics(
+            substrate=transferrin.grid["TfFe"],
+            enzyme=tafc.grid["TAFC"],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
 
         # - enforce bounds from TAFC quantity
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -105,8 +114,10 @@ class TAFC(MoleculeModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
 
-            if afumigatus_cell['state'] != AfumigatusCellState.FREE or \
-                    afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
+            if (
+                afumigatus_cell['state'] != AfumigatusCellState.FREE
+                or afumigatus_cell['status'] == AfumigatusCellStatus.DYING
+            ):
                 continue
 
             afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
@@ -121,17 +132,20 @@ class TAFC(MoleculeModel):
                 afumigatus_cell['iron_pool'] += qtty
 
             # secrete TAFC
-            if afumigatus_bool_net[NetworkSpecies.TAFC] and \
-                    afumigatus_cell['status'] in {AfumigatusCellStatus.SWELLING_CONIDIA,
-                                                  AfumigatusCellStatus.HYPHAE,
-                                                  AfumigatusCellStatus.GERM_TUBE}:
+            if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell['status'] in {
+                AfumigatusCellStatus.SWELLING_CONIDIA,
+                AfumigatusCellStatus.HYPHAE,
+                AfumigatusCellStatus.GERM_TUBE,
+            }:
                 tafc.grid['TAFC'][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
 
         # Degrade TAFC
-        trnvr_rt = turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                 x_system_mol=0.0,
-                                 base_turnover_rate=molecules.turnover_rate,
-                                 rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        trnvr_rt = turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         tafc.grid['TAFC'] *= trnvr_rt
         tafc.grid['TAFCBI'] *= trnvr_rt
 

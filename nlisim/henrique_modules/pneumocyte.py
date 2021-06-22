@@ -7,7 +7,12 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.phagocyte import PhagocyteCellData, PhagocyteModel, PhagocyteModuleState, PhagocyteStatus
+from nlisim.henrique_modules.phagocyte import (
+    PhagocyteCellData,
+    PhagocyteModel,
+    PhagocyteModuleState,
+    PhagocyteStatus,
+)
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, TissueType
@@ -18,25 +23,25 @@ class PneumocyteCellData(PhagocyteCellData):
         ('status', np.uint8),
         ('iteration', np.uint),
         ('tnfa', bool),
-        ]
+    ]
 
     dtype = np.dtype(CellData.FIELDS + PNEUMOCYTE_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs, ) -> np.record:
+    def create_cell_tuple(
+        cls,
+        **kwargs,
+    ) -> np.record:
         initializer = {
-            'status': kwargs.get('status',
-                                 PhagocyteStatus.RESTING),
-            'iteration': kwargs.get('iteration',
-                                    0),
-            'tnfa': kwargs.get('tnfa',
-                               False),
-            }
+            'status': kwargs.get('status', PhagocyteStatus.RESTING),
+            'iteration': kwargs.get('iteration', 0),
+            'tnfa': kwargs.get('tnfa', False),
+        }
 
         # ensure that these come in the correct order
-        return \
-            CellData.create_cell_tuple(**kwargs) + \
-            tuple([initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS])
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+        )
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -81,11 +86,14 @@ class Pneumocyte(PhagocyteModel):
 
         # computed values
         pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
-        pneumocyte.iter_to_change_state = int(pneumocyte.time_to_change_state * (60 / time_step_size))
+        pneumocyte.iter_to_change_state = int(
+            pneumocyte.time_to_change_state * (60 / time_step_size)
+        )
 
         rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
-        pneumocyte.pr_p_int = 1 - math.exp(-rel_phag_afnt_unit_t /
-                                           (voxel_volume * self.config.getfloat('pr_p_int_param')))
+        pneumocyte.pr_p_int = 1 - math.exp(
+            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_p_int_param'))
+        )
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
@@ -99,7 +107,11 @@ class Pneumocyte(PhagocyteModel):
         from nlisim.henrique_modules.il6 import IL6State
         from nlisim.henrique_modules.il8 import IL8State
         from nlisim.henrique_modules.tnfa import TNFaState
-        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusState
+        from nlisim.henrique_modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellStatus,
+            AfumigatusState,
+        )
 
         pneumocyte: PneumocyteState = state.pneumocyte
         afumigatus: AfumigatusState = state.afumigatus
@@ -132,9 +144,11 @@ class Pneumocyte(PhagocyteModel):
             # ----------- interactions
 
             # interact with fungus
-            if pneumocyte_cell['status'] not in {PhagocyteStatus.APOPTOTIC,
-                                                 PhagocyteStatus.NECROTIC,
-                                                 PhagocyteStatus.DEAD}:
+            if pneumocyte_cell['status'] not in {
+                PhagocyteStatus.APOPTOTIC,
+                PhagocyteStatus.NECROTIC,
+                PhagocyteStatus.DEAD,
+            }:
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(pneumocyte_cell_voxel)
                 for aspergillus_index in local_aspergillus:
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
@@ -159,11 +173,11 @@ class Pneumocyte(PhagocyteModel):
                 il8.grid[pneumocyte_cell_voxel] += pneumocyte.p_il8_qtty
 
             # interact with TNFa
-            if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE and \
-                    rg.uniform() < activation_function(x=tnfa.grid,
-                                                       kd=tnfa.k_d,
-                                                       h=self.time_step / 60,
-                                                       volume=voxel_volume):
+            if pneumocyte_cell[
+                'status'
+            ] == PhagocyteStatus.ACTIVE and rg.uniform() < activation_function(
+                x=tnfa.grid, kd=tnfa.k_d, h=self.time_step / 60, volume=voxel_volume
+            ):
                 pneumocyte_cell['iteration'] = 0
                 pneumocyte_cell['tnfa'] = True
 

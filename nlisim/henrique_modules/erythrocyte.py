@@ -19,10 +19,10 @@ from nlisim.util import activation_function, TissueType
 
 # note: treating these a bit more like molecules than cells. hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('count', np.int64),
-                           ('hemoglobin', np.float64),
-                           ('hemorrhage', bool)])
+    return np.zeros(
+        shape=self.global_state.grid.shape,
+        dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)],
+    )
 
 
 @attrs(kw_only=True)
@@ -50,10 +50,13 @@ class ErythrocyteModel(PhagocyteModel):
 
         # initialize cells
         # TODO: discuss
-        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = self.config.getfloat('init_erythrocyte_level')
+        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = self.config.getfloat(
+            'init_erythrocyte_level'
+        )
         rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
-        erythrocyte.pr_ma_phag_eryt = 1 - math.exp(-rel_n_hyphae_int_unit_t / (
-                voxel_volume * self.config.getfloat('pr_ma_phag_eryt')))  # TODO: -expm1?
+        erythrocyte.pr_ma_phag_eryt = 1 - math.exp(
+            -rel_n_hyphae_int_unit_t / (voxel_volume * self.config.getfloat('pr_ma_phag_eryt'))
+        )  # TODO: -expm1?
 
         return state
 
@@ -71,7 +74,9 @@ class ErythrocyteModel(PhagocyteModel):
 
         # erythrocytes replenish themselves
         # TODO: avg? variable name improvement?
-        avg = (1 - molecules.turnover_rate) * (1 - erythrocyte.cells['count'] / erythrocyte.max_erythrocyte_voxel)
+        avg = (1 - molecules.turnover_rate) * (
+            1 - erythrocyte.cells['count'] / erythrocyte.max_erythrocyte_voxel
+        )
         mask = avg > 0
         erythrocyte.cells['count'][mask] += np.random.poisson(avg[mask], avg[mask].shape)
 
@@ -83,20 +88,17 @@ class ErythrocyteModel(PhagocyteModel):
 
         # interact with hemolysin. pop goes the blood cell
         # TODO: avg? variable name improvement?
-        avg = erythrocyte.cells['count'] * activation_function(x=hemolysin.grid,
-                                                               kd=erythrocyte.kd_hemo,
-                                                               h=self.time_step / 60,
-                                                               volume=voxel_volume)
-        num = np.minimum(np.random.poisson(avg, shape),
-                         erythrocyte.cells['count'])
+        avg = erythrocyte.cells['count'] * activation_function(
+            x=hemolysin.grid, kd=erythrocyte.kd_hemo, h=self.time_step / 60, volume=voxel_volume
+        )
+        num = np.minimum(np.random.poisson(avg, shape), erythrocyte.cells['count'])
         erythrocyte.cells['hemoglobin'] += num * erythrocyte.hemoglobin_concentration
         erythrocyte.cells['count'] -= num
 
         # interact with Macrophage
-        erythrocytes_to_hemorrhage = \
-            erythrocyte.cells['hemorrhage'] * \
-            np.random.poisson(erythrocyte.pr_ma_phag_eryt * erythrocyte.cells['count'],
-                              shape)
+        erythrocytes_to_hemorrhage = erythrocyte.cells['hemorrhage'] * np.random.poisson(
+            erythrocyte.pr_ma_phag_eryt * erythrocyte.cells['count'], shape
+        )
         # TODO: python for loop, possible performance issue
         zs, ys, xs = np.where(erythrocytes_to_hemorrhage > 0)
         for z, y, x in zip(zs, ys, xs):
@@ -106,10 +108,12 @@ class ErythrocyteModel(PhagocyteModel):
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
                 # TODO: what's the 4 all about?
-                macrophage_cell['iron_pool'] += \
-                    4 * \
-                    erythrocyte.hemoglobin_concentration * \
-                    erythrocytes_to_hemorrhage[z, y, x] / num_local_macrophages
+                macrophage_cell['iron_pool'] += (
+                    4
+                    * erythrocyte.hemoglobin_concentration
+                    * erythrocytes_to_hemorrhage[z, y, x]
+                    / num_local_macrophages
+                )
         erythrocyte.cells['count'] -= erythrocytes_to_hemorrhage
 
         # interact with fungus
@@ -117,6 +121,8 @@ class ErythrocyteModel(PhagocyteModel):
             fungal_cell = afumigatus.cells[fungal_cell_index]
             if fungal_cell['status'] == AfumigatusCellStatus.HYPHAE:
                 fungal_voxel: Voxel = grid.get_voxel(fungal_cell['point'])
-                erythrocyte.cells['hemorrhage'][fungal_voxel.z, fungal_voxel.y, fungal_voxel.x] = True
+                erythrocyte.cells['hemorrhage'][
+                    fungal_voxel.z, fungal_voxel.y, fungal_voxel.x
+                ] = True
 
         return state

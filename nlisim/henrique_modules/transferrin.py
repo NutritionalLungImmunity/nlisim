@@ -13,10 +13,10 @@ from nlisim.util import iron_tf_reaction
 
 
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('Tf', np.float64),
-                           ('TfFe', np.float64),
-                           ('TfFe2', np.float64)])
+    return np.zeros(
+        shape=self.global_state.grid.shape,
+        dtype=[('Tf', np.float64), ('TfFe', np.float64), ('TfFe2', np.float64)],
+    )
 
 
 @attrs(kw_only=True, repr=False)
@@ -64,23 +64,33 @@ class Transferrin(MoleculeModel):
         transferrin.tf_intercept = self.config.getfloat('tf_intercept')
         transferrin.tf_slope = self.config.getfloat('tf_slope')
 
-        transferrin.default_apotf_rel_concentration = self.config.getfloat('default_apotf_rel_concentration')
-        transferrin.default_tffe_rel_concentration = self.config.getfloat('default_tffe_rel_concentration')
-        transferrin.default_tffe2_rel_concentration = self.config.getfloat('default_tffe2_rel_concentration')
+        transferrin.default_apotf_rel_concentration = self.config.getfloat(
+            'default_apotf_rel_concentration'
+        )
+        transferrin.default_tffe_rel_concentration = self.config.getfloat(
+            'default_tffe_rel_concentration'
+        )
+        transferrin.default_tffe2_rel_concentration = self.config.getfloat(
+            'default_tffe2_rel_concentration'
+        )
 
         transferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
 
         # computed values
         transferrin.threshold = transferrin.k_m_tf_tafc * voxel_volume / 1.0e6
         transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
-        transferrin.default_tf_concentration = (transferrin.tf_intercept +
-                                                transferrin.tf_slope * transferrin.threshold_log_hep) * voxel_volume
-        transferrin.default_apotf_concentration = \
+        transferrin.default_tf_concentration = (
+            transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
+        ) * voxel_volume
+        transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
-        transferrin.default_tffe_concentration = \
+        )
+        transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
-        transferrin.default_tffe2_concentration = \
+        )
+        transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
+        )
 
         transferrin.rel_iron_imp_exp_unit_t = self.time_step / transferrin.iron_imp_exp_t
         # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
@@ -113,13 +123,13 @@ class Transferrin(MoleculeModel):
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
             # TODO: what is going on with these min's? hard to believe that these constants will > 1
-            qtty_fe2 = \
-                transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * \
-                min(1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t)
+            qtty_fe2 = transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * min(
+                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
+            )
 
-            qtty_fe = \
-                transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] * \
-                min(1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t)
+            qtty_fe = transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] * min(
+                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
+            )
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
@@ -127,25 +137,29 @@ class Transferrin(MoleculeModel):
             transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] += qtty_fe + qtty_fe2
             macrophage_cell['iron_pool'] += 2 * qtty_fe2 + qtty_fe
 
-            if macrophage_cell['fpn'] and \
-                    macrophage_cell['status'] not in {PhagocyteStatus.ACTIVE,
-                                                      PhagocyteStatus.ACTIVATING}:
+            if macrophage_cell['fpn'] and macrophage_cell['status'] not in {
+                PhagocyteStatus.ACTIVE,
+                PhagocyteStatus.ACTIVATING,
+            }:
                 # amount of iron to export is bounded by the amount of iron in the cell as well as the amount
                 # which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
                 qtty = min(
-                        macrophage_cell['iron_pool'],
-                        2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
-                        macrophage_cell['iron_pool'] * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] *
-                        transferrin.ma_iron_export_rate * transferrin.rel_iron_imp_exp_unit_t
-                        )
+                    macrophage_cell['iron_pool'],
+                    2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
+                    macrophage_cell['iron_pool']
+                    * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)]
+                    * transferrin.ma_iron_export_rate
+                    * transferrin.rel_iron_imp_exp_unit_t,
+                )
 
-                rel_tf_fe = \
-                    iron_tf_reaction(iron=qtty,
-                                     tf=transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
-                                     tf_fe=transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)],
-                                     p1=transferrin.p1,
-                                     p2=transferrin.p2,
-                                     p3=transferrin.p3)
+                rel_tf_fe = iron_tf_reaction(
+                    iron=qtty,
+                    tf=transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
+                    tf_fe=transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)],
+                    p1=transferrin.p1,
+                    p2=transferrin.p2,
+                    p3=transferrin.p3,
+                )
                 tffe_qtty = rel_tf_fe * qtty
                 tffe2_qtty = (qtty - tffe_qtty) / 2
 
@@ -157,12 +171,14 @@ class Transferrin(MoleculeModel):
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.grid['Tf'] + transferrin.grid['TfFe']
         potential_reactive_quantity = np.minimum(iron.grid, transferrin_fe_capacity)
-        rel_tf_fe = iron_tf_reaction(iron=potential_reactive_quantity,
-                                     tf=transferrin.grid["Tf"],
-                                     tf_fe=transferrin.grid["TfFe"],
-                                     p1=transferrin.p1,
-                                     p2=transferrin.p2,
-                                     p3=transferrin.p3)
+        rel_tf_fe = iron_tf_reaction(
+            iron=potential_reactive_quantity,
+            tf=transferrin.grid["Tf"],
+            tf_fe=transferrin.grid["TfFe"],
+            p1=transferrin.p1,
+            p2=transferrin.p2,
+            p3=transferrin.p3,
+        )
         tffe_qtty = rel_tf_fe * potential_reactive_quantity
         tffe2_qtty = (potential_reactive_quantity - tffe_qtty) / 2
         transferrin.grid['Tf'] -= tffe_qtty + tffe2_qtty

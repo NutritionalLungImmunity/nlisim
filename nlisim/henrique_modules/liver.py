@@ -58,20 +58,27 @@ class Liver(MoleculeModel):
         space_volume: float = state.space_volume
 
         # interact with transferrin
-        tf = transferrin.tf_intercept + transferrin.tf_slope * max(transferrin.threshold_log_hep,
-                                                                   liver.log_hepcidin)
-        rate_tf = turnover_rate(x_mol=transferrin.grid['Tf'],
-                                x_system_mol=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
-                                base_turnover_rate=molecules.turnover_rate,
-                                rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
-        rate_tf_fe = turnover_rate(x_mol=transferrin.grid['TfFe'],
-                                   x_system_mol=tf * transferrin.default_tffe_rel_concentration * voxel_volume,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
-        rate_tf_fe2 = turnover_rate(x_mol=transferrin.grid['TfFe2'],
-                                    x_system_mol=tf * transferrin.default_tffe2_rel_concentration * voxel_volume,
-                                    base_turnover_rate=molecules.turnover_rate,
-                                    rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        tf = transferrin.tf_intercept + transferrin.tf_slope * max(
+            transferrin.threshold_log_hep, liver.log_hepcidin
+        )
+        rate_tf = turnover_rate(
+            x_mol=transferrin.grid['Tf'],
+            x_system_mol=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+        rate_tf_fe = turnover_rate(
+            x_mol=transferrin.grid['TfFe'],
+            x_system_mol=tf * transferrin.default_tffe_rel_concentration * voxel_volume,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+        rate_tf_fe2 = turnover_rate(
+            x_mol=transferrin.grid['TfFe2'],
+            x_system_mol=tf * transferrin.default_tffe2_rel_concentration * voxel_volume,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         transferrin.grid['Tf'] *= rate_tf
         transferrin.grid['TfFe'] *= rate_tf_fe
         transferrin.grid['TfFe2'] *= rate_tf_fe2
@@ -79,17 +86,23 @@ class Liver(MoleculeModel):
         # interact with IL6
         global_il6_concentration = np.sum(il6.grid) / (2 * space_volume)  # div 2 : serum
         if global_il6_concentration > liver.il6_threshold:
-            liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(global_il6_concentration, 10)
+            liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(
+                global_il6_concentration, 10
+            )
         else:
             liver.log_hepcidin = float('-inf')
 
         # interact with hepcidin
-        system_concentration = liver.threshold_hep \
-            if liver.log_hepcidin == float('-inf') or liver.log_hepcidin > liver.threshold_log_hep else \
-            math.pow(10.0, liver.log_hepcidin)
-        hepcidin.grid *= turnover_rate(x_mol=hepcidin.grid,
-                                       x_system_mol=system_concentration * voxel_volume,
-                                       base_turnover_rate=molecules.turnover_rate,
-                                       rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        system_concentration = (
+            liver.threshold_hep
+            if liver.log_hepcidin == float('-inf') or liver.log_hepcidin > liver.threshold_log_hep
+            else math.pow(10.0, liver.log_hepcidin)
+        )
+        hepcidin.grid *= turnover_rate(
+            x_mol=hepcidin.grid,
+            x_system_mol=system_concentration * voxel_volume,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         return state

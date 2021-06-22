@@ -64,28 +64,34 @@ class EstB(MoleculeModel):
         estb.iron_buffer.fill(0.0)
 
         # interact with TAFC
-        v1 = michaelian_kinetics(substrate=tafc.grid["TAFC"],
-                                 enzyme=estb.grid,
-                                 km=estb.k_m,
-                                 k_cat=estb.kcat,
-                                 h=self.time_step / 60,
-                                 voxel_volume=voxel_volume)
-        v2 = michaelian_kinetics(substrate=tafc.grid["TAFCBI"],
-                                 enzyme=estb.grid,
-                                 km=estb.k_m,
-                                 k_cat=estb.kcat,
-                                 h=self.time_step / 60,
-                                 voxel_volume=voxel_volume)
+        v1 = michaelian_kinetics(
+            substrate=tafc.grid["TAFC"],
+            enzyme=estb.grid,
+            km=estb.k_m,
+            k_cat=estb.kcat,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
+        v2 = michaelian_kinetics(
+            substrate=tafc.grid["TAFCBI"],
+            enzyme=estb.grid,
+            km=estb.k_m,
+            k_cat=estb.kcat,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
         tafc.grid["TAFC"] -= v1
         tafc.grid["TAFCBI"] -= v2
         estb.iron_buffer += v2  # set equal to zero previously
 
         # Degrade EstB
         estb.grid *= estb.half_life_multiplier
-        estb.grid *= turnover_rate(x_mol=estb.grid,
-                                   x_system_mol=estb.system_amount_per_voxel,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        estb.grid *= turnover_rate(
+            x_mol=estb.grid,
+            x_system_mol=estb.system_amount_per_voxel,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of EstB
         self.diffuse(estb.grid, molecules.diffusion_constant_timestep)

@@ -39,7 +39,11 @@ class Hemolysin(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.afumigatus import AfumigatusCellData, AfumigatusState, AfumigatusCellStatus
+        from nlisim.henrique_modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusState,
+            AfumigatusCellStatus,
+        )
 
         hemolysin: HemolysinState = state.hemolysin
         molecules: MoleculesState = state.molecules
@@ -54,10 +58,12 @@ class Hemolysin(MoleculeModel):
                 hemolysin.grid[tuple(afumigatus_cell_voxel)] += hemolysin.hemolysin_qtty
 
         # Degrade Hemolysin
-        hemolysin.grid *= turnover_rate(x_mol=hemolysin.grid,
-                                        x_system_mol=0.0,
-                                        base_turnover_rate=molecules.turnover_rate,
-                                        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        hemolysin.grid *= turnover_rate(
+            x_mol=hemolysin.grid,
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of Hemolysin
         self.diffuse(hemolysin.grid, molecules.diffusion_constant_timestep)

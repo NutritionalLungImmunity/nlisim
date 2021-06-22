@@ -10,30 +10,33 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
-MAX_CONIDIA = 30  # note: this the max that we can set the max to. i.e. not an actual model parameter
+MAX_CONIDIA = (
+    30  # note: this the max that we can set the max to. i.e. not an actual model parameter
+)
 
 
 class PhagocyteCellData(CellData):
     PHAGOCYTE_FIELDS = [
         ('phagosome', (np.int64, MAX_CONIDIA)),
         ('has_conidia', bool),
-        ]
+    ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs, ) -> np.record:
+    def create_cell_tuple(
+        cls,
+        **kwargs,
+    ) -> np.record:
         initializer = {
-            'phagosome':   kwargs.get('phagosome',
-                                      -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
-            'has_conidia': kwargs.get('has_conidia',
-                                      False),
-            }
+            'phagosome': kwargs.get('phagosome', -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
+            'has_conidia': kwargs.get('has_conidia', False),
+        }
 
         # ensure that these come in the correct order
-        return \
-            CellData.create_cell_tuple(**kwargs) + \
-            tuple([initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS])
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS]
+        )
 
 
 @attrs(kw_only=True)
@@ -85,7 +88,10 @@ class PhagocyteModel(ModuleModel):
         cell['point'] = new_voxel + offset
 
     @abstractmethod
-    def single_step_probabilistic_drift(self, state: State, cell: PhagocyteCellData, voxel: Voxel) -> Voxel: ...
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -> Voxel:
+        ...
 
     @staticmethod
     def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -> None:
@@ -136,11 +142,13 @@ class PhagocyteStatus(IntEnum):
 
 
 # noinspection PyUnresolvedReferences
-def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
-                            aspergillus_cell: 'AfumigatusCellData',
-                            aspergillus_cell_index: int,
-                            phagocyte: PhagocyteModuleState,
-                            phagocytize: bool = False) -> None:
+def internalize_aspergillus(
+    phagocyte_cell: PhagocyteCellData,
+    aspergillus_cell: 'AfumigatusCellData',
+    aspergillus_cell_index: int,
+    phagocyte: PhagocyteModuleState,
+    phagocytize: bool = False,
+) -> None:
     """
     Possibly have a phagocyte phagocytize a fungal cell
 
@@ -163,12 +171,20 @@ def internalize_aspergillus(phagocyte_cell: PhagocyteCellData,
         return
 
     # deal with conidia
-    if (aspergillus_cell['status'] in {AfumigatusCellStatus.RESTING_CONIDIA,
-                                       AfumigatusCellStatus.SWELLING_CONIDIA,
-                                       AfumigatusCellStatus.STERILE_CONIDIA} or phagocytize):
-        if (phagocyte_cell['status'] not in {PhagocyteStatus.NECROTIC,
-                                             PhagocyteStatus.APOPTOTIC,
-                                             PhagocyteStatus.DEAD}):
+    if (
+        aspergillus_cell['status']
+        in {
+            AfumigatusCellStatus.RESTING_CONIDIA,
+            AfumigatusCellStatus.SWELLING_CONIDIA,
+            AfumigatusCellStatus.STERILE_CONIDIA,
+        }
+        or phagocytize
+    ):
+        if phagocyte_cell['status'] not in {
+            PhagocyteStatus.NECROTIC,
+            PhagocyteStatus.APOPTOTIC,
+            PhagocyteStatus.DEAD,
+        }:
             # check to see if we have room before we add in another cell to the phagosome
             num_cells_in_phagosome = np.sum(phagocyte_cell['phagosome'] >= 0)
             if num_cells_in_phagosome < phagocyte.max_conidia:

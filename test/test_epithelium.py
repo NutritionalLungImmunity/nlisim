@@ -194,7 +194,7 @@ def test_dead_conidia_1(
     epithelium_list.internalize_conidia(0, 10, 1, grid, fungus_list)
     fungus_list[0]['dead'] = True  # simulate killing
 
-    epithelium_list.remove_dead_fungus(fungus_list, grid)
+    epithelium_list.remove_dead_fungus(fungus_list)
 
     assert epithelium_list.len_phagosome(0) == 0
     assert 0 not in epithelium_list[0]['phagosome']

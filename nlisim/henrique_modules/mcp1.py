@@ -79,10 +79,12 @@ class MCP1(MoleculeModel):
 
         # Degrade MCP1
         mcp1.grid *= mcp1.half_life_multiplier
-        mcp1.grid *= turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                   x_system_mol=0.0,
-                                   base_turnover_rate=molecules.turnover_rate,
-                                   rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        mcp1.grid *= turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MCP1
         self.diffuse(mcp1.grid, molecules.diffusion_constant_timestep)

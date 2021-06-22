@@ -10,10 +10,14 @@ from nlisim.util import iron_tf_reaction, michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape,
-                    dtype=[('Lactoferrin', np.float64),
-                           ('LactoferrinFe', np.float64),
-                           ('LactoferrinFe2', np.float64)])
+    return np.zeros(
+        shape=self.global_state.grid.shape,
+        dtype=[
+            ('Lactoferrin', np.float64),
+            ('LactoferrinFe', np.float64),
+            ('LactoferrinFe2', np.float64),
+        ],
+    )
 
 
 @attr.s(kw_only=True, repr=False)
@@ -76,17 +80,15 @@ class Lactoferrin(MoleculeModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
-            qtty_fe2 = \
-                lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] * \
-                np.minimum(lactoferrin.ma_iron_import_rate *
-                           lactoferrin.rel_iron_imp_exp_unit_t,
-                           1.0)
+            qtty_fe2 = lactoferrin.grid['LactoferrinFe2'][
+                tuple(macrophage_cell_voxel)
+            ] * np.minimum(
+                lactoferrin.ma_iron_import_rate * lactoferrin.rel_iron_imp_exp_unit_t, 1.0
+            )
 
-            qtty_fe = \
-                lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] * \
-                np.minimum(lactoferrin.ma_iron_import_rate *
-                           lactoferrin.rel_iron_imp_exp_unit_t,
-                           1.0)
+            qtty_fe = lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] * np.minimum(
+                lactoferrin.ma_iron_import_rate * lactoferrin.rel_iron_imp_exp_unit_t, 1.0
+            )
 
             lactoferrin.grid['LactoferrinFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
             lactoferrin.grid['LactoferrinFe'][tuple(macrophage_cell_voxel)] -= qtty_fe
@@ -97,22 +99,30 @@ class Lactoferrin(MoleculeModel):
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
-            if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE and \
-                    neutrophil_cell['state'] == PhagocyteState.INTERACTING:
-                lactoferrin.grid['Lactoferrin'][tuple(neutrophil_cell_voxel)] += lactoferrin.lac_qtty
+            if (
+                neutrophil_cell['status'] == PhagocyteStatus.ACTIVE
+                and neutrophil_cell['state'] == PhagocyteState.INTERACTING
+            ):
+                lactoferrin.grid['Lactoferrin'][
+                    tuple(neutrophil_cell_voxel)
+                ] += lactoferrin.lac_qtty
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin
-        dfe2dt = michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
-                                     enzyme=lactoferrin.grid["Lactoferrin"],
-                                     km=lactoferrin.k_m_tf_lac,
-                                     h=self.time_step / 60,
-                                     voxel_volume=voxel_volume)
-        dfedt = michaelian_kinetics(substrate=transferrin.grid['TfFe'],
-                                    enzyme=lactoferrin.grid['Lactoferrin'],
-                                    km=lactoferrin.k_m_tf_lac,
-                                    h=self.time_step / 60,
-                                    voxel_volume=voxel_volume)
+        dfe2dt = michaelian_kinetics(
+            substrate=transferrin.grid['TfFe2'],
+            enzyme=lactoferrin.grid["Lactoferrin"],
+            km=lactoferrin.k_m_tf_lac,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
+        dfedt = michaelian_kinetics(
+            substrate=transferrin.grid['TfFe'],
+            enzyme=lactoferrin.grid['Lactoferrin'],
+            km=lactoferrin.k_m_tf_lac,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
         # - enforce bounds from lactoferrin quantity
         mask = (dfe2dt + dfedt) > lactoferrin.grid['Lactoferrin']
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -122,16 +132,20 @@ class Lactoferrin(MoleculeModel):
         dfedt[mask] = (dfedt * rel)[mask]
 
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin+Fe
-        dfe2dt_fe = michaelian_kinetics(substrate=transferrin.grid['TfFe2'],
-                                        enzyme=lactoferrin.grid['LactoferrinFe'],
-                                        km=lactoferrin.k_m_tf_lac,
-                                        h=self.time_step / 60,
-                                        voxel_volume=voxel_volume)
-        dfedt_fe = michaelian_kinetics(substrate=transferrin.grid['TfFe'],
-                                       enzyme=lactoferrin.grid['LactoferrinFe'],
-                                       km=lactoferrin.k_m_tf_lac,
-                                       h=self.time_step / 60,
-                                       voxel_volume=voxel_volume)
+        dfe2dt_fe = michaelian_kinetics(
+            substrate=transferrin.grid['TfFe2'],
+            enzyme=lactoferrin.grid['LactoferrinFe'],
+            km=lactoferrin.k_m_tf_lac,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
+        dfedt_fe = michaelian_kinetics(
+            substrate=transferrin.grid['TfFe'],
+            enzyme=lactoferrin.grid['LactoferrinFe'],
+            km=lactoferrin.k_m_tf_lac,
+            h=self.time_step / 60,
+            voxel_volume=voxel_volume,
+        )
         # - enforce bounds from lactoferrin+Fe quantity
         mask = (dfe2dt_fe + dfedt_fe) > lactoferrin.grid['LactoferrinFe']
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -157,15 +171,18 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.grid['LactoferrinFe2'] += dfe2dt_fe + dfedt_fe
 
         # interaction with iron
-        lactoferrin_fe_capacity = 2 * lactoferrin.grid["Lactoferrin"] + lactoferrin.grid["LactoferrinFe"]
+        lactoferrin_fe_capacity = (
+            2 * lactoferrin.grid["Lactoferrin"] + lactoferrin.grid["LactoferrinFe"]
+        )
         potential_reactive_quantity = np.minimum(iron.grid, lactoferrin_fe_capacity)
-        rel_tf_fe = \
-            iron_tf_reaction(iron=potential_reactive_quantity,
-                             tf=lactoferrin.grid["Lactoferrin"],
-                             tf_fe=lactoferrin.grid["LactoferrinFe"],
-                             p1=lactoferrin.p1,
-                             p2=lactoferrin.p2,
-                             p3=lactoferrin.p3)
+        rel_tf_fe = iron_tf_reaction(
+            iron=potential_reactive_quantity,
+            tf=lactoferrin.grid["Lactoferrin"],
+            tf_fe=lactoferrin.grid["LactoferrinFe"],
+            p1=lactoferrin.p1,
+            p2=lactoferrin.p2,
+            p3=lactoferrin.p3,
+        )
         tffe_qtty = rel_tf_fe * potential_reactive_quantity
         tffe2_qtty = (potential_reactive_quantity - tffe_qtty) / 2
         lactoferrin.grid['Lactoferrin'] -= tffe_qtty + tffe2_qtty
@@ -174,10 +191,12 @@ class Lactoferrin(MoleculeModel):
         iron.grid -= potential_reactive_quantity
 
         # Degrade Lactoferrin
-        trnvr_rt = turnover_rate(x_mol=np.array(1.0, dtype=np.float64),
-                                 x_system_mol=0.0,
-                                 base_turnover_rate=molecules.turnover_rate,
-                                 rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t)
+        trnvr_rt = turnover_rate(
+            x_mol=np.array(1.0, dtype=np.float64),
+            x_system_mol=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         lactoferrin.grid['Lactoferrin'] *= trnvr_rt
         lactoferrin.grid['LactoferrinFe'] *= trnvr_rt
         lactoferrin.grid['LactoferrinFe2'] *= trnvr_rt

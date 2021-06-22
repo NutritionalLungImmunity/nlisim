@@ -7,8 +7,8 @@ from nlisim.grid import RectangularGrid
 
 
 def discrete_laplacian(
-        grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
-        ) -> csr_matrix:
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+) -> csr_matrix:
     """Return a discrete laplacian operator for the given restricted grid.
 
     This computes a standard laplacian operator as a scipy linear operator, except it is
@@ -52,8 +52,8 @@ def discrete_laplacian(
 
 
 def apply_diffusion(
-        variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
-        ) -> np.ndarray:
+    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
+) -> np.ndarray:
     """Apply diffusion to a variable.
 
     Solves laplaces equation in 3D using implicit time steps.  The variable is
