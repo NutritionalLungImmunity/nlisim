@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import os
+from pathlib import Path
 
 from setuptools import find_packages, setup
 
+with open(Path(__file__).parent / 'requirements.txt', 'r') as file:
+    requirements = file.read().splitlines()
 
 def prerelease_local_scheme(version):
     """Return local scheme version unless building on master in Gitlab.
@@ -25,19 +28,7 @@ setup(
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={'nlisim': ['geometry.hdf5']},
     python_requires='>=3.6',
-    install_requires=[
-        'attrs',
-        'click',
-        'click-pathlib',
-        'dataclasses;python_version<"3.8"',
-        'h5py',
-        'importlib-metadata;python_version<"3.8"',
-        'matplotlib',
-        'numpy',
-        'scipy',
-        'tqdm',
-        'vtk',
-    ],
+    install_requires=requirements,
     entry_points={'console_scripts': ['nlisim = nlisim.cli:main']},
     setup_requires=['setuptools_scm'],
     use_scm_version={'local_scheme': prerelease_local_scheme},
