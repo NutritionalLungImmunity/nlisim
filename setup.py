@@ -7,6 +7,7 @@ from setuptools import find_packages, setup
 with open(Path(__file__).parent / 'requirements.txt', 'r') as file:
     requirements = file.read().splitlines()
 
+
 def prerelease_local_scheme(version):
     """Return local scheme version unless building on master in Gitlab.
 
