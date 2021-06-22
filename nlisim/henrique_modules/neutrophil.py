@@ -257,7 +257,7 @@ class Neutrophil(PhagocyteModel):
 
         return {
             'count': len(neutrophil.cells.alive()),
-            }
+        }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
         return 'cells', state.neutrophil.cells

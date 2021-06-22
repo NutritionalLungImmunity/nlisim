@@ -197,7 +197,6 @@ class Macrophage(PhagocyteModel):
     def visualization_data(self, state: State) -> Tuple[str, Any]:
         return 'cells', state.macrophage.cells
 
-
     def recruit_macrophages(self, state: State) -> None:
         """
         Recruit macrophages based on MIP1b activation

@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -84,3 +85,15 @@ class AntiTNFa(MoleculeModel):
         self.diffuse(anti_tnf_a.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        anti_tnf_a: AntiTNFaState = state.antitnfa
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(anti_tnf_a.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        anti_tnf_a: AntiTNFaState = state.antitnfa
+        return 'molecule', anti_tnf_a.grid

@@ -1,3 +1,5 @@
+from typing import Any, Dict, Tuple
+
 import attr
 import numpy as np
 
@@ -154,3 +156,15 @@ class TAFC(MoleculeModel):
         self.diffuse(tafc.grid['TAFCBI'], molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        tafc: TAFCState = state.tafc
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(tafc.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        tafc: TAFCState = state.tafc
+        return 'molecule', tafc.grid

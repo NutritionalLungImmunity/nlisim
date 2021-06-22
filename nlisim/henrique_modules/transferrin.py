@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -196,3 +197,17 @@ class Transferrin(MoleculeModel):
         self.diffuse(transferrin.grid['TfFe2'], molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        transferrin: TransferrinState = state.transferrin
+        voxel_volume = state.voxel_volume
+
+        return {
+            '+0Fe concentration': float(np.mean(transferrin.grid['Tf']) / voxel_volume),
+            '+1Fe concentration': float(np.mean(transferrin.grid['TfFe']) / voxel_volume),
+            '+2Fe concentration': float(np.mean(transferrin.grid['TfFe2']) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        transferrin: TransferrinState = state.transferrin
+        return 'molecule', transferrin.grid

@@ -1,10 +1,12 @@
+from typing import Any, Dict, Tuple
+
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
 from nlisim.henrique_modules.molecules import MoleculeModel
+from nlisim.module import ModuleState
 from nlisim.state import State
 
 
@@ -60,3 +62,15 @@ class Iron(MoleculeModel):
         # iron does not diffuse
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        iron: IronState = state.iron
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(iron.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        iron: IronState = state.iron
+        return 'molecule', iron.grid

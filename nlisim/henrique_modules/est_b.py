@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -97,3 +98,15 @@ class EstB(MoleculeModel):
         self.diffuse(estb.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        estb: EstBState = state.estb
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(estb.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        estb: EstBState = state.estb
+        return 'molecule', estb.grid

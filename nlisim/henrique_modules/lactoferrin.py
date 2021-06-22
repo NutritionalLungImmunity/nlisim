@@ -1,3 +1,5 @@
+from typing import Any, Dict, Tuple
+
 import attr
 import numpy as np
 
@@ -207,3 +209,18 @@ class Lactoferrin(MoleculeModel):
         self.diffuse(lactoferrin.grid['LactoferrinFe2'], molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        lactoferrin: LactoferrinState = state.lactoferrin
+        voxel_volume = state.voxel_volume
+
+        return {
+            '+0Fe concentration': float(np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume),
+            '+1Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume),
+            '+2Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        lactoferrin: LactoferrinState = state.lactoferrin
+
+        return 'molecule', lactoferrin.grid

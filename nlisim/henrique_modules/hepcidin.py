@@ -1,10 +1,12 @@
+from typing import Any, Dict, Tuple
+
 import attr
 from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.module import ModuleState
 from nlisim.henrique_modules.molecules import MoleculeModel
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -63,3 +65,15 @@ class Hepcidin(MoleculeModel):
         # hepcidin does not diffuse
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        hepcidin: HepcidinState = state.hepcidin
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(hepcidin.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        hepcidin: HepcidinState = state.hepcidin
+        return 'molecule', hepcidin.grid

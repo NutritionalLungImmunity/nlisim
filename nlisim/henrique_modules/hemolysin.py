@@ -1,11 +1,13 @@
+from typing import Any, Dict, Tuple
+
 import attr
 from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -69,3 +71,15 @@ class Hemolysin(MoleculeModel):
         self.diffuse(hemolysin.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        hemolysin: HemolysinState = state.hemolysin
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(hemolysin.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        hemolysin: HemolysinState = state.hemolysin
+        return 'molecule', hemolysin.grid

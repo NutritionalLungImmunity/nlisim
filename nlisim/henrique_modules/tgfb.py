@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -107,3 +108,15 @@ class TGFB(MoleculeModel):
         self.diffuse(tgfb.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        tgfb: TGFBState = state.tgfb
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(tgfb.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        tgfb: TGFBState = state.tgfb
+        return 'molecule', tgfb.grid

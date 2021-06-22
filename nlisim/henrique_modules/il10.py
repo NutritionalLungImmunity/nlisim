@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -101,3 +102,15 @@ class IL10(MoleculeModel):
         self.diffuse(il10.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        il10: IL10State = state.il10
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(il10.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        il10: IL10State = state.il10
+        return 'molecule', il10.grid

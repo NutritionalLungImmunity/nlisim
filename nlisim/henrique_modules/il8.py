@@ -1,12 +1,13 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -98,3 +99,15 @@ class IL8(MoleculeModel):
         self.diffuse(il8.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        il8: IL8State = state.il8
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(il8.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        il8: IL8State = state.il8
+        return 'molecule', il8.grid

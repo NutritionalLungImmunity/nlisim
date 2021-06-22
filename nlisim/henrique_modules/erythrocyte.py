@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -17,7 +18,8 @@ from nlisim.state import State
 from nlisim.util import activation_function, TissueType
 
 
-# note: treating these a bit more like molecules than cells. hence the adaptation of molecule_grid_factory
+# note: treating these a bit more like molecules than cells.
+# hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
     return np.zeros(
         shape=self.global_state.grid.shape,
@@ -126,3 +128,16 @@ class ErythrocyteModel(PhagocyteModel):
                 ] = True
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        erythrocyte: ErythrocyteState = state.erythrocyte
+        voxel_volume = state.voxel_volume
+
+        return {
+            'count': int(np.sum(erythrocyte.cells['count'])),
+            'concentration': float(np.mean(erythrocyte.cells['count']) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        erythrocyte: ErythrocyteState = state.erythrocyte
+        return 'molecule', erythrocyte.cells

@@ -1,8 +1,10 @@
+from typing import Any, Dict, Tuple
+
 import attr
 import numpy as np
 
-from nlisim.module import ModuleState
 from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleState
 from nlisim.state import State
 
 
@@ -53,3 +55,15 @@ class ROS(MoleculeModel):
         self.diffuse(ros.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        ros: ROSState = state.ros
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(ros.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        ros: ROSState = state.ros
+        return 'molecule', ros.grid

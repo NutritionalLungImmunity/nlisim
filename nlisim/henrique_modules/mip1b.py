@@ -1,3 +1,4 @@
+from typing import Any, Dict, Tuple
 import math
 
 import attr
@@ -94,3 +95,15 @@ class MIP1B(MoleculeModel):
         self.diffuse(mip1b.grid, molecules.diffusion_constant_timestep)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        mip1b: MIP1BState = state.mip1b
+        voxel_volume = state.voxel_volume
+
+        return {
+            'concentration': float(np.mean(mip1b.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        mip1b: MIP1BState = state.mip1b
+        return 'molecule', mip1b.grid

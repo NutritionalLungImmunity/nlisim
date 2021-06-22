@@ -193,7 +193,7 @@ class Pneumocyte(PhagocyteModel):
 
         return {
             'count': len(pneumocyte.cells.alive()),
-            }
+        }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
         return 'cells', state.pneumocyte.cells
