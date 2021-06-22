@@ -1,5 +1,5 @@
 import math
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -251,6 +251,16 @@ class Neutrophil(PhagocyteModel):
         self.recruit_neutrophils(state, space_volume, voxel_volume)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        neutrophil: NeutrophilState = state.neutrophil
+
+        return {
+            'count': len(neutrophil.cells.alive()),
+            }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.neutrophil.cells
 
     def single_step_probabilistic_drift(
         self, state: State, cell: NeutrophilCellData, voxel: Voxel

@@ -1,4 +1,5 @@
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -186,3 +187,13 @@ class Pneumocyte(PhagocyteModel):
                 tnfa.grid[pneumocyte_cell_voxel] += pneumocyte.p_tnf_qtty
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        pneumocyte: PneumocyteState = state.pneumocyte
+
+        return {
+            'count': len(pneumocyte.cells.alive()),
+            }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.pneumocyte.cells

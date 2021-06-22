@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -186,6 +186,17 @@ class Macrophage(PhagocyteModel):
         self.recruit_macrophages(state)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        macrophage: MacrophageState = state.macrophage
+
+        return {
+            'count': len(macrophage.cells.alive()),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.macrophage.cells
+
 
     def recruit_macrophages(self, state: State) -> None:
         """
