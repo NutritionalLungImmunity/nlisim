@@ -10,7 +10,6 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -79,11 +78,22 @@ def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -> vtkSt
     return vtk_grid
 
 
-def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+# def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+#     vtk_grid = create_vtk_volume(grid)
+#     point_data = vtk_grid.GetPointData()
+#     for name in molecules.grid.concentrations.dtype.names:
+#         data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+#         data.SetName(name)
+#         point_data.AddArray(data)
+#
+#     return vtk_grid
+
+
+def create_vtk_molecules(grid: RectangularGrid, molecules: np.ndarray) -> vtkStructuredPoints:
     vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
-    for name in molecules.grid.concentrations.dtype.names:
-        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+    for name in molecules.dtype.names:
+        data = numpy_to_vtk(molecules[name].ravel())
         data.SetName(name)
         point_data.AddArray(data)
 
@@ -92,16 +102,17 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vt
 
 def generate_vtk_objects(
     state: State,
-) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
+) -> Tuple[vtkStructuredPoints, Dict[str, vtkStructuredPoints], Dict[str, vtkPolyData]]:
     """Generate the vtk objects for each module. (e.g. for upload)"""
     volume = create_vtk_geometry(state.grid, state.lung_tissue)
-    molecules = create_vtk_molecules(state.grid, state.molecules)
-    cells = {
-        'spore': convert_cells_to_vtk(state.fungus.cells),
-        'epithelium': convert_cells_to_vtk(state.epithelium.cells),
-        'macrophage': convert_cells_to_vtk(state.macrophage.cells),
-        'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-    }
+    molecules = dict()
+    cells = dict()
+    for module in state.config.modules:
+        data_type, content = module.visualization_data(state)
+        if data_type == 'molecule':
+            molecules[module.name] = create_vtk_molecules(state.grid, content)
+        elif data_type == 'cells':
+            cells[module.name] = convert_cells_to_vtk(content)
 
     return volume, molecules, cells
 
@@ -115,9 +126,10 @@ def generate_vtk(state: State, postprocess_step_dir: Path):
     grid_writer.SetInputData(volume)
     grid_writer.Write()
 
-    grid_writer.SetFileName(str(postprocess_step_dir / 'molecules_001.vti'))
-    grid_writer.SetInputData(molecules)
-    grid_writer.Write()
+    for module, data in molecules.items():
+        grid_writer.SetFileName(str(postprocess_step_dir / f'{module}_001.vti'))
+        grid_writer.SetInputData(data)
+        grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
     cell_writer.SetDataModeToBinary()
