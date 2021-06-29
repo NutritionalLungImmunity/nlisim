@@ -1,4 +1,3 @@
-from typing import Any, Dict, Tuple
 import math
 
 from attr import attrs
@@ -32,7 +31,8 @@ class Molecules(ModuleModel):
         # TODO: move these to individual molecules? otherwise changes in the time step will be off
         # Computed values
         molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
-        # TODO: original comments as below. Is the param 0.2? i.e. ...math.log(1+0.2)... Yes, 20% per hour
+        # TODO: original comments as below. Is the param 0.2?
+        #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
         molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
         # TODO: is this a 2 hour constant? i.e. 4*30 min
@@ -49,6 +49,9 @@ class Molecules(ModuleModel):
 
 class MoleculeModel(ModuleModel):
     @staticmethod
-    def diffuse(grid: np.ndarray, diffusion_constant: float):
-        # TODO: verify! One question is about how diffusion works in AIR cells.
-        grid += diffusion_constant * scipy.ndimage.laplace(grid)
+    def diffuse(grid: np.ndarray, diffusion_constant: float, state: State):
+        from nlisim.util import TissueType
+
+        # TODO: this isn't correct on the boundary
+        tissue = state.geometry.lung_tissue
+        grid += diffusion_constant * scipy.ndimage.laplace(grid) * (tissue != TissueType.AIR.value)
