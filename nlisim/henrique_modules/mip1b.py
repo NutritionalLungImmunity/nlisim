@@ -92,7 +92,7 @@ class MIP1B(MoleculeModel):
         )
 
         # Diffusion of MIP1b
-        self.diffuse(mip1b.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(mip1b.grid, state)
 
         return state
 

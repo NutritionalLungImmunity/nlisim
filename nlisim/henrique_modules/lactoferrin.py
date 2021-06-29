@@ -204,9 +204,9 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.grid['LactoferrinFe2'] *= trnvr_rt
 
         # Diffusion of lactoferrin
-        self.diffuse(lactoferrin.grid['Lactoferrin'], molecules.diffusion_constant_timestep)
-        self.diffuse(lactoferrin.grid['LactoferrinFe'], molecules.diffusion_constant_timestep)
-        self.diffuse(lactoferrin.grid['LactoferrinFe2'], molecules.diffusion_constant_timestep)
+        self.diffuse(lactoferrin.grid['Lactoferrin'], state)
+        self.diffuse(lactoferrin.grid['LactoferrinFe'], state)
+        self.diffuse(lactoferrin.grid['LactoferrinFe2'], state)
 
         return state
 

@@ -93,7 +93,7 @@ class IL6(MoleculeModel):
         )
 
         # Diffusion of IL6
-        self.diffuse(il6.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(il6.grid, state)
 
         return state
 

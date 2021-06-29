@@ -88,7 +88,7 @@ class MCP1(MoleculeModel):
         )
 
         # Diffusion of MCP1
-        self.diffuse(mcp1.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(mcp1.grid, state)
 
         return state
 

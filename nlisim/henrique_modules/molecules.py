@@ -1,8 +1,10 @@
+from functools import reduce
+from itertools import product
 import math
+from operator import mul
 
 from attr import attrs
 import numpy as np
-import scipy.ndimage
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
@@ -15,6 +17,7 @@ class MoleculesState(ModuleState):
     rel_cyt_bind_unit_t: float
     turnover_rate: float
     diffusion_constant_timestep: float
+    implicit_euler_matrix: np.ndarray
 
 
 class Molecules(ModuleModel):
@@ -40,6 +43,61 @@ class Molecules(ModuleModel):
             self.config.getfloat('diffusion_constant') * self.time_step / (4 * 30)
         )
 
+        # construct the laplacian
+        # TODO: this is so wasteful of memory and should be replaced. Crank-Nicholson?
+        grid_cardinality = reduce(mul, state.grid.shape)
+        tissue = state.geometry.lung_tissue
+        from nlisim.util import TissueType
+
+        laplacian = np.zeros(shape=(grid_cardinality, grid_cardinality), dtype=float)
+        for z, y, x in product(*map(range, state.grid.shape)):
+            # ignore air voxels
+            if tissue[z, y, x] == TissueType.AIR.value:
+                continue
+            # collect connections to non-air voxels (toric boundary)
+            base_idx = np.ravel_multi_index((z, y, x), state.grid.shape)
+            if tissue[z - 1, y, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    ((z - 1) % state.grid.shape[0], y, x), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+            if tissue[z + 1, y, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    ((z + 1) % state.grid.shape[0], y, x), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+
+            if tissue[z, y - 1, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    (z, (y - 1) % state.grid.shape[1], x), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+            if tissue[z, y + 1, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    (z, (y + 1) % state.grid.shape[1], x), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+
+            if tissue[z, y, x - 1] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    (z, y, (x - 1) % state.grid.shape[2]), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+            if tissue[z, y, x + 1] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(
+                    (z, y, (x + 1) % state.grid.shape[2]), state.grid.shape
+                )
+                laplacian[offset_idx, base_idx] += 1.0
+                laplacian[base_idx, base_idx] -= 1.0
+        molecules.implicit_euler_matrix = (
+            np.eye(grid_cardinality) - molecules.diffusion_constant_timestep * laplacian
+        )
+
         return state
 
     def advance(self, state: State, previous_time: float):
@@ -49,9 +107,10 @@ class Molecules(ModuleModel):
 
 class MoleculeModel(ModuleModel):
     @staticmethod
-    def diffuse(grid: np.ndarray, diffusion_constant: float, state: State):
-        from nlisim.util import TissueType
-
-        # TODO: this isn't correct on the boundary
-        tissue = state.geometry.lung_tissue
-        grid += diffusion_constant * scipy.ndimage.laplace(grid) * (tissue != TissueType.AIR.value)
+    def diffuse(grid: np.ndarray, state: State):
+        # implicit euler
+        shape = grid.shape
+        np.copyto(
+            grid,
+            np.linalg.solve(state.molecules.implicit_euler_matrix, grid.reshape(-1)).reshape(shape),
+        )

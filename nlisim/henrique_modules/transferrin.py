@@ -192,9 +192,9 @@ class Transferrin(MoleculeModel):
         # Degrade transferrin: done in liver
 
         # Diffusion of transferrin
-        self.diffuse(transferrin.grid['Tf'], molecules.diffusion_constant_timestep)
-        self.diffuse(transferrin.grid['TfFe'], molecules.diffusion_constant_timestep)
-        self.diffuse(transferrin.grid['TfFe2'], molecules.diffusion_constant_timestep)
+        self.diffuse(transferrin.grid['Tf'], state)
+        self.diffuse(transferrin.grid['TfFe'], state)
+        self.diffuse(transferrin.grid['TfFe2'], state)
 
         return state
 

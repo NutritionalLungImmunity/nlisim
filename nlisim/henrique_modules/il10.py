@@ -99,7 +99,7 @@ class IL10(MoleculeModel):
         )
 
         # Diffusion of IL10
-        self.diffuse(il10.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(il10.grid, state)
 
         return state
 

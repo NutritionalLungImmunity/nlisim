@@ -95,7 +95,7 @@ class EstB(MoleculeModel):
         )
 
         # Diffusion of EstB
-        self.diffuse(estb.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(estb.grid, state)
 
         return state
 

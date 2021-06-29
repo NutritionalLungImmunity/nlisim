@@ -76,7 +76,7 @@ class Hemoglobin(MoleculeModel):
         )
 
         # Diffusion of Hemoglobin
-        self.diffuse(hemoglobin.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(hemoglobin.grid, state)
 
         return state
 

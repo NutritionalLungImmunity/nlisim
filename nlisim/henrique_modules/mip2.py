@@ -117,7 +117,7 @@ class MIP2(MoleculeModel):
         )
 
         # Diffusion of MIP2
-        self.diffuse(mip2.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(mip2.grid, state)
 
         return state
 

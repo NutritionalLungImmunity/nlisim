@@ -105,7 +105,7 @@ class TGFB(MoleculeModel):
         )
 
         # Diffusion of TGFB
-        self.diffuse(tgfb.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(tgfb.grid, state)
 
         return state
 

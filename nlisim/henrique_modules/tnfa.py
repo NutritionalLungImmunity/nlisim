@@ -127,7 +127,7 @@ class TNFa(MoleculeModel):
         )
 
         # Diffusion of TNFa
-        self.diffuse(tnfa.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(tnfa.grid, state)
 
         return state
 

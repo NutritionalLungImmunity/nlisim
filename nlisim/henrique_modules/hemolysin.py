@@ -68,7 +68,7 @@ class Hemolysin(MoleculeModel):
         )
 
         # Diffusion of Hemolysin
-        self.diffuse(hemolysin.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(hemolysin.grid, state)
 
         return state
 

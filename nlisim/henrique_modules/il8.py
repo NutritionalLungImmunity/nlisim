@@ -96,7 +96,7 @@ class IL8(MoleculeModel):
         )
 
         # Diffusion of IL8
-        self.diffuse(il8.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(il8.grid, state)
 
         return state
 

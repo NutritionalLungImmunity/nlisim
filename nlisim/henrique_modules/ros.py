@@ -52,7 +52,7 @@ class ROS(MoleculeModel):
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
 
         # Diffusion of ros
-        self.diffuse(ros.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(ros.grid, state)
 
         return state
 

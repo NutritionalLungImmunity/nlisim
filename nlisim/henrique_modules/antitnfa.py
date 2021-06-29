@@ -82,7 +82,7 @@ class AntiTNFa(MoleculeModel):
         )
 
         # Diffusion of AntiTNFa
-        self.diffuse(anti_tnf_a.grid, molecules.diffusion_constant_timestep)
+        self.diffuse(anti_tnf_a.grid, state)
 
         return state
 

@@ -152,8 +152,8 @@ class TAFC(MoleculeModel):
         tafc.grid['TAFCBI'] *= trnvr_rt
 
         # Diffusion of TAFC
-        self.diffuse(tafc.grid['TAFC'], molecules.diffusion_constant_timestep)
-        self.diffuse(tafc.grid['TAFCBI'], molecules.diffusion_constant_timestep)
+        self.diffuse(tafc.grid['TAFC'], state)
+        self.diffuse(tafc.grid['TAFCBI'], state)
 
         return state
 
