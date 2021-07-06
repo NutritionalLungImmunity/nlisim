@@ -46,52 +46,41 @@ class Molecules(ModuleModel):
         # construct the laplacian
         # TODO: this is so wasteful of memory and should be replaced. Crank-Nicholson?
         grid_cardinality = reduce(mul, state.grid.shape)
-        tissue = state.geometry.lung_tissue
+        tissue = state.lung_tissue
         from nlisim.util import TissueType
 
         laplacian = np.zeros(shape=(grid_cardinality, grid_cardinality), dtype=float)
+        z_grid_size, y_grid_size, x_grid_size = state.grid.shape
         for z, y, x in product(*map(range, state.grid.shape)):
             # ignore air voxels
             if tissue[z, y, x] == TissueType.AIR.value:
                 continue
             # collect connections to non-air voxels (toric boundary)
             base_idx = np.ravel_multi_index((z, y, x), state.grid.shape)
-            if tissue[z - 1, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    ((z - 1) % state.grid.shape[0], y, x), state.grid.shape
-                )
+            if tissue[(z - 1) % z_grid_size, y, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(((z - 1) % z_grid_size, y, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
-            if tissue[z + 1, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    ((z + 1) % state.grid.shape[0], y, x), state.grid.shape
-                )
+            if tissue[(z + 1) % z_grid_size, y, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index(((z + 1) % z_grid_size, y, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
 
-            if tissue[z, y - 1, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    (z, (y - 1) % state.grid.shape[1], x), state.grid.shape
-                )
+            if tissue[z, (y - 1) % y_grid_size, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index((z, (y - 1) % y_grid_size, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
-            if tissue[z, y + 1, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    (z, (y + 1) % state.grid.shape[1], x), state.grid.shape
-                )
+            if tissue[z, (y + 1) % y_grid_size, x] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index((z, (y + 1) % y_grid_size, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
 
-            if tissue[z, y, x - 1] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    (z, y, (x - 1) % state.grid.shape[2]), state.grid.shape
-                )
+            if tissue[z, y, (x - 1) % x_grid_size] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index((z, y, (x - 1) % x_grid_size), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
-            if tissue[z, y, x + 1] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(
-                    (z, y, (x + 1) % state.grid.shape[2]), state.grid.shape
-                )
+            if tissue[z, y, (x + 1) % x_grid_size] != TissueType.AIR.value:
+                offset_idx = np.ravel_multi_index((z, y, (x + 1) % x_grid_size), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
         molecules.implicit_euler_matrix = (
