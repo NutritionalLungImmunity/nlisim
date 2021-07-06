@@ -10,9 +10,9 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import internalize_aspergillus
-from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import TissueType
@@ -239,7 +239,8 @@ class Afumigatus(ModuleModel):
 
         # place cells for initial infection
         # TODO: 'smart' placement should be checked
-        # current initial positions: any air voxel which is in a Moore neighborhood of an epithelial voxel
+        # current initial positions: any air voxel which is in a Moore neighborhood of an
+        # epithelial voxel
         # https://en.wikipedia.org/wiki/Moore_neighborhood
         epithelium_mask = lung_tissue == TissueType.EPITHELIUM
         epithelium_mask |= np.roll(epithelium_mask, 1, axis=0) | np.roll(
@@ -291,12 +292,12 @@ class Afumigatus(ModuleModel):
                 and lung_tissue[tuple(voxel)] != TissueType.AIR
             ):
                 elongate(afumigatus_cell, afumigatus_index, afumigatus.iter_to_grow, afumigatus)
-                branch(afumigatus_cell, afumigatus.pr_branch, voxel, state)
+                branch(afumigatus_cell, afumigatus_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
 
-            # TODO: this should never be reached?! Make sure that we release iron when we kill the fungal cell
-            #  release cell's iron pool back to voxel
+            # TODO: this should never be reached?! Make sure that we release iron when we kill
+            #  the fungal cell and release cell's iron pool back to voxel
             if afumigatus_cell['status'] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
                 iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
                 afumigatus_cell['iron_pool'] = 0.0
@@ -423,8 +424,8 @@ def cell_self_update(
         afumigatus_cell['activation_iteration'] = 0
 
     elif afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
-        # TODO: Henrique said something about the DYING state not being necessary. First glance in code
-        #  suggests that this update only removes the cells from live counts
+        # TODO: Henrique said something about the DYING state not being necessary. First glance in
+        #  code suggests that this update only removes the cells from live counts
         afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
 
     # TODO: this looks redundant/unnecessary. well, as long as we are careful about pruning the tree
@@ -614,8 +615,6 @@ def branch(
     afumigatus_cell_index: int,
     pr_branch: float,
     afumigatus: AfumigatusState,
-    voxel: Voxel,
-    state: State,
 ):
     if (
         not afumigatus_cell['branchable']
@@ -664,13 +663,14 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -> np.ndarray
 
     # get first orthogonal vector
     u: np.ndarray
-    EPSILON = 0.01
+    epsilon = 0.01
     e1 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
     e2 = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-    # if the cell vector isn't too close to e1, just use that. otherwise use e2. (can't be too close to both)
+    # if the cell vector isn't too close to e1, just use that. otherwise use e2.
+    # (we can't be too close to both)
     if (
-        np.linalg.norm(normed_cell_vec - e1) > EPSILON
-        or np.linalg.norm(normed_cell_vec + e1) > EPSILON
+        np.linalg.norm(normed_cell_vec - e1) > epsilon
+        or np.linalg.norm(normed_cell_vec + e1) > epsilon
     ):
         u = np.cross(normed_cell_vec, e1)
     else:
@@ -680,9 +680,9 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -> np.ndarray
     v = np.cross(normed_cell_vec, u)
 
     # change of coordinates matrix
-    P = np.array([normed_cell_vec, u, v]).T
+    p_matrix = np.array([normed_cell_vec, u, v]).T
     branch_direction = (
-        cell_vec_norm * P * np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+        cell_vec_norm * p_matrix * np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
     )
 
     return branch_direction
