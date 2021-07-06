@@ -1,4 +1,4 @@
-from enum import auto, IntEnum, unique
+from enum import IntEnum, auto, unique
 import math
 from queue import SimpleQueue
 import random
@@ -31,8 +31,8 @@ class AfumigatusCellStatus(IntEnum):
 
 @unique
 class NetworkSpecies(IntEnum):
-    hapX = 0  # gene
-    sreA = auto()  # gene
+    hapX = 0  # gene # noqa: N815
+    sreA = auto()  # gene # noqa: N815
     HapX = auto()  # protein
     SreA = auto()  # protein
     RIA = auto()
@@ -265,12 +265,8 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        from nlisim.modules.macrophage import (
-            MacrophageCellData,
-            MacrophageState,
-            PhagocyteStatus,
-        )
         from nlisim.grid import RectangularGrid
+        from nlisim.modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
@@ -370,7 +366,7 @@ class Afumigatus(ModuleModel):
                     elif parent_cell['next_branch'] == afumigatus_cell:
                         parent_cell['next_branch'] = -1
                     else:
-                        assert False, "The fungal tree structure must be screwed up somehow"
+                        raise AssertionError("The fungal tree structure must be screwed up somehow")
 
             if (
                 afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE

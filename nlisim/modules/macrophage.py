@@ -17,7 +17,6 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, TissueType
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -99,6 +98,8 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
+        from nlisim.util import TissueType
+
         macrophage: MacrophageState = state.macrophage
         time_step_size: float = self.time_step
 
@@ -210,6 +211,7 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import activation_function
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
@@ -268,6 +270,7 @@ class Macrophage(PhagocyteModel):
         """
         # macrophages are attracted by MIP1b
         from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import TissueType, activation_function
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
@@ -302,7 +305,7 @@ class Macrophage(PhagocyteModel):
                 return vxl
             r -= weight
 
-        assert False, "Sum of normalized weights must be ==1.0, but somehow it isn't."
+        raise AssertionError("Sum of normalized weights must be ==1.0, but somehow it isn't.")
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:

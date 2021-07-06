@@ -7,9 +7,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.util import TissueType
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 
 class FungusCellData(CellData):
@@ -51,7 +51,6 @@ class FungusCellData(CellData):
         health=100,
         **kwargs,
     ) -> np.record:
-
         return CellData.create_cell_tuple(**kwargs) + (
             form,
             status,

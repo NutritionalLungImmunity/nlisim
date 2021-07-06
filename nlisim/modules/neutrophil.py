@@ -10,16 +10,16 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.mip2 import MIP2State
 from nlisim.modules.phagocyte import (
-    internalize_aspergillus,
     PhagocyteCellData,
     PhagocyteModel,
     PhagocyteModuleState,
     PhagocyteState,
     PhagocyteStatus,
+    internalize_aspergillus,
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, TissueType
+from nlisim.util import TissueType, activation_function
 
 MAX_CONIDIA = (
     50  # note: this the max that we can set the max to. i.e. not an actual model parameter
@@ -222,7 +222,8 @@ class Neutrophil(PhagocyteModel):
                             pass
 
             # interact with macrophages:
-            # if we are apoptotic, give our iron and phagosome to a nearby present macrophage (if empty)
+            # if we are apoptotic, give our iron and phagosome to a nearby
+            # present macrophage (if empty)
             if neutrophil_cell['status'] == PhagocyteStatus.APOPTOTIC:
                 local_macrophages = macrophage.cells.get_cells_in_voxel(neutrophil_cell_voxel)
                 for macrophage_index in local_macrophages:
@@ -314,7 +315,7 @@ class Neutrophil(PhagocyteModel):
                 return vxl
             r -= weight
 
-        assert False, "Sum of normalized weights must be ==1.0, but somehow it isn't."
+        raise AssertionError("Sum of normalized weights must be ==1.0, but somehow it isn't.")
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """

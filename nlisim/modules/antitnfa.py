@@ -4,8 +4,8 @@ from typing import Any, Dict, Tuple
 import attr
 import numpy as np
 
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 

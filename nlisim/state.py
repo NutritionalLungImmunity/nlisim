@@ -1,6 +1,6 @@
 from io import BytesIO, StringIO
 from pathlib import Path, PurePath
-from typing import Any, cast, Dict, IO, Tuple, Type, TYPE_CHECKING, Union
+from typing import IO, TYPE_CHECKING, Any, Dict, Tuple, Type, Union, cast
 
 import attr
 from attr import attrib, attrs
@@ -93,7 +93,6 @@ class State(object):
     @classmethod
     def create(cls, config: 'SimulationConfig'):
         """Generate a new state object from a config."""
-
         voxel_volume = config.getfloat('simulation', 'voxel_volume')
         lung_tissue = get_geometry_file(config.get('simulation', 'geometry_path'))
 

@@ -15,7 +15,7 @@ from nlisim.modules.macrophage import MacrophageState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.modules.phagocyte import PhagocyteModel
 from nlisim.state import State
-from nlisim.util import activation_function, TissueType
+from nlisim.util import TissueType, activation_function
 
 
 # note: treating these a bit more like molecules than cells.

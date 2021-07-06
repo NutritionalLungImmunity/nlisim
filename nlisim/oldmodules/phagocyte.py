@@ -7,9 +7,9 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.util import TissueType
 from nlisim.grid import RectangularGrid
 from nlisim.random import rg
+from nlisim.util import TissueType
 
 MAX_PHAGOSOME_LENGTH = 100
 

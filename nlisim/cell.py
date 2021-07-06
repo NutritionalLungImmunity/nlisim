@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, cast, Dict, Iterable, Iterator, List, Set, Type, Union
+from typing import Any, Dict, Iterable, Iterator, List, Set, Type, Union, cast
 
 import attr
 from h5py import Group
@@ -7,7 +7,7 @@ import numpy as np
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.state import get_class_path, State
+from nlisim.state import State, get_class_path
 
 MAX_CELL_LIST_SIZE = 1_000_000
 

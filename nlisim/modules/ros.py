@@ -66,4 +66,4 @@ class ROS(MoleculeModel):
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
         ros: ROSState = state.ros
-        return 'molecule', ros.grid
+        return 'molecule', ros.g

@@ -16,7 +16,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, TissueType
+from nlisim.util import TissueType, activation_function
 
 
 class PneumocyteCellData(PhagocyteCellData):
@@ -105,14 +105,14 @@ class Pneumocyte(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        from nlisim.modules.il6 import IL6State
-        from nlisim.modules.il8 import IL8State
-        from nlisim.modules.tnfa import TNFaState
         from nlisim.modules.afumigatus import (
             AfumigatusCellData,
             AfumigatusCellStatus,
             AfumigatusState,
         )
+        from nlisim.modules.il6 import IL6State
+        from nlisim.modules.il8 import IL8State
+        from nlisim.modules.tnfa import TNFaState
 
         pneumocyte: PneumocyteState = state.pneumocyte
         afumigatus: AfumigatusState = state.afumigatus

@@ -5,13 +5,10 @@ import attr
 import numpy as np
 from scipy.ndimage import convolve
 
-from nlisim.util import TissueType
-
-# from nlisim.coordinates import Voxel
-# from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.molecule import MoleculeGrid, MoleculeTypes
 from nlisim.state import State
+from nlisim.util import TissueType
 
 
 def molecule_grid_factory(self: 'MoleculesState'):

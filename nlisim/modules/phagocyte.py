@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from enum import auto, IntEnum, unique
+from enum import IntEnum, auto, unique
+from typing import TYPE_CHECKING
 
 from attr import attrs
 import numpy as np
@@ -9,6 +10,9 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
+
+if TYPE_CHECKING:  # prevent circular imports for type checking
+    from nlisim.modules.afumigatus import AfumigatusCellData
 
 MAX_CONIDIA = (
     30  # note: this the max that we can set the max to. i.e. not an actual model parameter
@@ -64,8 +68,9 @@ class PhagocyteModel(ModuleModel):
 
     def single_step_move(self, state: State, cell: PhagocyteCellData) -> None:
         """
-        Move the phagocyte one step (voxel) probabilistically, depending on
-        single_step_probabilistic_drift
+        Move the phagocyte one step (voxel) probabilistically.
+
+        depending on single_step_probabilistic_drift
 
         Parameters
         ----------
@@ -151,7 +156,7 @@ def internalize_aspergillus(
     phagocytize: bool = False,
 ) -> None:
     """
-    Possibly have a phagocyte phagocytize a fungal cell
+    Possibly have a phagocyte phagocytize a fungal cell.
 
     Parameters
     ----------
@@ -165,7 +170,7 @@ def internalize_aspergillus(
     -------
     Nothing
     """
-    from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusCellState
+    from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
 
     # We cannot internalize an already internalized fungal cell
     if aspergillus_cell['state'] != AfumigatusCellState.FREE:

@@ -1,5 +1,5 @@
-from typing import Any, Dict, Tuple
 import math
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np

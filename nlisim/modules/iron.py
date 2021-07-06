@@ -5,8 +5,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import MoleculeModel
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
 
 

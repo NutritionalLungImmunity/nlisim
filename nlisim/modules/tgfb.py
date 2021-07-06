@@ -6,8 +6,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate

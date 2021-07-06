@@ -175,7 +175,7 @@ class ModuleModel(object):
         return dict()
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
-        """Returns any 3d visualization data associated with the module.
+        """Return any 3d visualization data associated with the module.
 
         This is returned as a tuple of the form (datatype, data) where datatype should be one of
         'molecule', 'cells', or ''. The last, empty string, should be reported by modules which do
