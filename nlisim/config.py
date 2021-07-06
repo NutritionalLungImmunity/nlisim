@@ -55,7 +55,7 @@ class SimulationConfig(ConfigParser):
     def load_module(cls, path: str) -> Type['ModuleModel']:
         """Load a module class, returning the class constructor."""
         module_path, func_name = path.rsplit('.', 1)
-        module = import_module(module_path, 'simulation')
+        module = import_module(module_path)
         func = getattr(module, func_name, None)
 
         cls.validate_module(func, path)
