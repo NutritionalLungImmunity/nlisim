@@ -1,4 +1,3 @@
-from typing import Any, Dict, Tuple
 from abc import abstractmethod
 from enum import auto, IntEnum, unique
 
@@ -65,7 +64,8 @@ class PhagocyteModel(ModuleModel):
 
     def single_step_move(self, state: State, cell: PhagocyteCellData) -> None:
         """
-        Move the phagocyte one step (voxel) probabilistically, depending on single_step_probabilistic_drift
+        Move the phagocyte one step (voxel) probabilistically, depending on
+        single_step_probabilistic_drift
 
         Parameters
         ----------

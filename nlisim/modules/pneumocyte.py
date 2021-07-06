@@ -162,7 +162,8 @@ class Pneumocyte(PhagocyteModel):
                         if rg.uniform() < pneumocyte.pr_p_int:
                             pneumocyte_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
-                        # TODO: I don't get this, looks like it zeros out the iteration when activating
+                        # TODO: I don't get this, looks like it zeros out the iteration
+                        #  when activating
                         pneumocyte_cell['iteration'] = 0
 
             # secrete IL6

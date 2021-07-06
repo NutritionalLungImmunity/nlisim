@@ -1,11 +1,10 @@
-from typing import Any, Dict, Tuple
 import math
 
 from attr import attrs
 import numpy as np
 
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 

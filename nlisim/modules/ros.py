@@ -3,8 +3,8 @@ from typing import Any, Dict, Tuple
 import attr
 import numpy as np
 
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
 
 
@@ -37,7 +37,7 @@ class ROS(MoleculeModel):
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
         ros: ROSState = state.ros
-        molecules: MoleculesState = state.molecules
+        # molecules: MoleculesState = state.molecules
 
         # TODO: code below adds zero, omitting until we have a non-trivial model
 

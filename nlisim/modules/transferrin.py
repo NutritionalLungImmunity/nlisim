@@ -7,8 +7,8 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -116,7 +116,7 @@ class Transferrin(MoleculeModel):
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
         grid: RectangularGrid = state.grid
-        molecules: MoleculesState = state.molecules
+        # molecules: MoleculesState = state.molecules
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -142,8 +142,8 @@ class Transferrin(MoleculeModel):
                 PhagocyteStatus.ACTIVE,
                 PhagocyteStatus.ACTIVATING,
             }:
-                # amount of iron to export is bounded by the amount of iron in the cell as well as the amount
-                # which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
+                # amount of iron to export is bounded by the amount of iron in the cell as well
+                # as the amount which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
                 qtty = min(
                     macrophage_cell['iron_pool'],
                     2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
