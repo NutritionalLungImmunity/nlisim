@@ -1,46 +1,25 @@
-from enum import IntEnum
-import math
-import random
+from typing import Any, Dict, Tuple
+from abc import abstractmethod
+from enum import auto, IntEnum, unique
 
-import attr
+from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData
 from nlisim.coordinates import Point, Voxel
-from nlisim.util import TissueType
 from nlisim.grid import RectangularGrid
-from nlisim.random import rg
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.state import State
 
-MAX_PHAGOSOME_LENGTH = 100
+MAX_CONIDIA = (
+    30  # note: this the max that we can set the max to. i.e. not an actual model parameter
+)
 
 
 class PhagocyteCellData(CellData):
-    RECRUIT_RATE = 0.0
-    LEAVE_RATE = 0.0
-    CHEMOKINE_THRESHOLD = 0.0
-    LEAVES_BOOL = True
-    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
-
-    class Status(IntEnum):
-        INACTIVE = 0
-        INACTIVATING = 1
-        RESTING = 2
-        ACTIVATING = 3
-        ACTIVE = 4
-        APOPTOTIC = 5
-        NECROTIC = 6
-        DEAD = 7
-
-    class State(IntEnum):
-        FREE = 0
-        INTERACTING = 1
-
     PHAGOCYTE_FIELDS = [
-        ('status', 'u1'),
-        ('state', 'u1'),
-        ('iron_pool', 'f8'),
-        ('iteration', 'i4'),
-        ('phagosome', (np.int32, (MAX_CONIDIA))),
+        ('phagosome', (np.int64, MAX_CONIDIA)),
+        ('has_conidia', bool),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -48,149 +27,179 @@ class PhagocyteCellData(CellData):
     @classmethod
     def create_cell_tuple(
         cls,
-        *,
-        iron_pool: float = 0,
-        status: Status = Status.RESTING,
-        state: State = State.FREE,
         **kwargs,
     ) -> np.record:
-        iteration = 0
-        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
-        phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (
-            status,
-            state,
-            iron_pool,
-            iteration,
-            phagosome,
+        initializer = {
+            'phagosome': kwargs.get('phagosome', -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
+            'has_conidia': kwargs.get('has_conidia', False),
+        }
+
+        # ensure that these come in the correct order
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS]
         )
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
-class PhagocyteCellList(CellList):
-    CellDataClass = PhagocyteCellData
+@attrs(kw_only=True)
+class PhagocyteModuleState(ModuleState):
+    max_conidia: int
 
-    def is_moveable(self, grid: RectangularGrid):
-        cells = self.cell_data
-        return self.alive(
-            (cells['status'] == PhagocyteCellData.Status.RESTING)
-            & cells.point_mask(cells['point'], grid)
-        )
 
-    def len_phagosome(self, index):
-        cell = self[index]
-        return len(np.argwhere(cell['phagosome'] != -1))
+class PhagocyteModel(ModuleModel):
 
-    def append_to_phagosome(self, index, pathogen_index, max_size):
-        cell = self[index]
-        index_to_append = PhagocyteCellList.len_phagosome(self, index)
-        if index_to_append < MAX_PHAGOSOME_LENGTH and index_to_append < max_size:
-            cell['phagosome'][index_to_append] = pathogen_index
-            return True
-        else:
-            return False
+    # def move(self, old_voxel, steps):
+    #     if steps < self.get_max_move_steps():
+    #         calc_drift_probability(old_voxel, self)
+    #         new_voxel = get_voxel(old_voxel, random())
+    #
+    #         old_voxel.remove_cell(self.id)
+    #         new_voxel.set_cell(self)
+    #         steps += 1
+    #
+    #         for _, a in self.phagosome.items():
+    #             a.x = new_voxel.x + random()
+    #             a.y = new_voxel.y + random()
+    #             a.z = new_voxel.z + random()
+    #
+    #         return self.move(new_voxel, steps)
 
-    def remove_from_phagosome(self, index, pathogen_index):
-        phagosome = self[index]['phagosome']
-        if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = PhagocyteCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
-        else:
-            return False
+    def single_step_move(self, state: State, cell: PhagocyteCellData) -> None:
+        """
+        Move the phagocyte one step (voxel) probabilistically, depending on single_step_probabilistic_drift
 
-    def clear_all_phagosome(self, index):
-        self[index]['phagosome'].fill(-1)
+        Parameters
+        ----------
+        state : State
+            the global simulation state
+        cell : PhagocyteCellData
+            the cell to move
 
-    def recruit(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add recruitment
-        # indices = np.argwhere(molecule_to_recruit >= threshold_value)
-        # then for each index create a cell with prob 'rec_rate'
+        Returns
+        -------
+        nothing
+        """
+        grid: RectangularGrid = state.grid
+
+        # At this moment, there is no inter-voxel geometry, but I'm keeping the offset around
+        # just in case.
+        cell_point: Point = cell['point']
+        cell_voxel: Voxel = grid.get_voxel(cell['point'])
+        offset = cell_point - cell_voxel
+        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell['point'] = new_voxel + offset
+
+    @abstractmethod
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -> Voxel:
+        ...
+
+    @staticmethod
+    def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -> None:
+        """
+        Release afumigatus cells in the phagosome
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        phagocyte_cell : PhagocyteCellData
+
+
+        Returns
+        -------
+        Nothing
+        """
+        from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusState
+
+        afumigatus: AfumigatusState = state.afumigatus
+
+        for fungal_cell_index in phagocyte_cell['phagosome']:
+            if fungal_cell_index == -1:
+                continue
+            afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
+        phagocyte_cell['phagosome'].fill(-1)
+
+
+# TODO: name
+@unique
+class PhagocyteState(IntEnum):
+    FREE = 0
+    INTERACTING = auto()  # TODO: is this dead code?
+
+
+# TODO: name
+@unique
+class PhagocyteStatus(IntEnum):
+    INACTIVE = 0
+    INACTIVATING = auto()
+    RESTING = auto()
+    ACTIVATING = auto()
+    ACTIVE = auto()
+    APOPTOTIC = auto()
+    NECROTIC = auto()
+    DEAD = auto()
+    ANERGIC = auto()
+
+
+# noinspection PyUnresolvedReferences
+def internalize_aspergillus(
+    phagocyte_cell: PhagocyteCellData,
+    aspergillus_cell: 'AfumigatusCellData',
+    aspergillus_cell_index: int,
+    phagocyte: PhagocyteModuleState,
+    phagocytize: bool = False,
+) -> None:
+    """
+    Possibly have a phagocyte phagocytize a fungal cell
+
+    Parameters
+    ----------
+    phagocyte_cell : PhagocyteCellData
+    aspergillus_cell : AfumigatusCellData
+    aspergillus_cell_index : int
+    phagocyte : PhagocyteState
+    phagocytize : bool
+
+    Returns
+    -------
+    Nothing
+    """
+    from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusCellState
+
+    # We cannot internalize an already internalized fungal cell
+    if aspergillus_cell['state'] != AfumigatusCellState.FREE:
         return
 
-    def remove(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add leaving
-        # indices = np.argwhere(molecule_to_leave <= threshold_value)
-        # then for each index kill a cell with prob 'leave_rate'
-        return
-
-    # move
-    def chemotaxis(
-        self,
-        molecule,
-        drift_lambda,
-        drift_bias,
-        tissue,
-        grid: RectangularGrid,
+    # deal with conidia
+    if (
+        aspergillus_cell['status']
+        in {
+            AfumigatusCellStatus.RESTING_CONIDIA,
+            AfumigatusCellStatus.SWELLING_CONIDIA,
+            AfumigatusCellStatus.STERILE_CONIDIA,
+        }
+        or phagocytize
     ):
-        # 'molecule' = state.'molecule'.concentration
-        # prob = 0-1 random number to determine which voxel is chosen to move
+        if phagocyte_cell['status'] not in {
+            PhagocyteStatus.NECROTIC,
+            PhagocyteStatus.APOPTOTIC,
+            PhagocyteStatus.DEAD,
+        }:
+            # check to see if we have room before we add in another cell to the phagosome
+            num_cells_in_phagosome = np.sum(phagocyte_cell['phagosome'] >= 0)
+            if num_cells_in_phagosome < phagocyte.max_conidia:
+                phagocyte_cell['has_conidia'] = True
+                aspergillus_cell['state'] = AfumigatusCellState.INTERNALIZING
+                # place the fungal cell in the phagosome,
+                # sorting makes sure that an 'empty' i.e. -1 slot is first
+                phagocyte_cell['phagosome'].sort()
+                phagocyte_cell['phagosome'][0] = aspergillus_cell_index
 
-        # 1. Get cells that are alive
-        for index in self.alive():
-            prob = rg.random()
-
-            # 2. Get voxel for each cell to get molecule in that voxel
-            cell = self[index]
-            vox = grid.get_voxel(cell['point'])
-
-            # 3. Set prob for neighboring voxels
-            p = []
-            vox_list = []
-            p_tot = 0.0
-            i = -1
-
-            # calculate individual probability
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        p.append(0.0)
-                        vox_list.append([x, y, z])
-                        i += 1
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            if tissue[zk, yj, xi] in [
-                                TissueType.SURFACTANT.value,
-                                TissueType.BLOOD.value,
-                                TissueType.EPITHELIUM.value,
-                                TissueType.PORE.value,
-                            ]:
-                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
-                                p_tot += p[i]
-
-            # scale to sum of probabilities
-            if p_tot:
-                for i in range(len(p)):
-                    p[i] = p[i] / p_tot
-
-            # chose vox from neighbors
-            cum_p = 0.0
-            for i in range(len(p)):
-                cum_p += p[i]
-                if prob <= cum_p:
-                    cell['point'] = Point(
-                        x=random.uniform(
-                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
-                        ),
-                        y=random.uniform(
-                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
-                        ),
-                        z=random.uniform(
-                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
-                        ),
-                    )
-                    self.update_voxel_index([index])
-                    break
-
-
-def logistic(x, lamb, bias):
-    return 1 - bias * math.exp(-((x / lamb) ** 2))
+    # TODO: what is going on here? is the if too loose?
+    if aspergillus_cell['status'] != AfumigatusCellStatus.RESTING_CONIDIA:
+        phagocyte_cell['state'] = PhagocyteStatus.INTERACTING
+        if phagocyte_cell['status'] != PhagocyteStatus.ACTIVE:
+            phagocyte_cell['status'] = PhagocyteStatus.ACTIVATING
+        else:
+            phagocyte_cell['status_iteration'] = 0

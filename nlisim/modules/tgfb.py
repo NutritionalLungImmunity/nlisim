@@ -6,7 +6,7 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
@@ -50,8 +50,8 @@ class TGFB(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
-        from nlisim.henrique_modules.phagocyte import PhagocyteStatus
+        from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.modules.phagocyte import PhagocyteStatus
 
         tgfb: TGFBState = state.tgfb
         molecules: MoleculesState = state.molecules

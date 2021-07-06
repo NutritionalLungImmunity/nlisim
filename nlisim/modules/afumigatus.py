@@ -10,8 +10,8 @@ import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.henrique_modules.iron import IronState
-from nlisim.henrique_modules.phagocyte import internalize_aspergillus
+from nlisim.modules.iron import IronState
+from nlisim.modules.phagocyte import internalize_aspergillus
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
@@ -179,7 +179,7 @@ class Afumigatus(ModuleModel):
     name = 'afumigatus'
     StateClass = AfumigatusState
 
-    from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
+    from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
@@ -264,7 +264,7 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        from nlisim.henrique_modules.macrophage import (
+        from nlisim.modules.macrophage import (
             MacrophageCellData,
             MacrophageState,
             PhagocyteStatus,
@@ -330,7 +330,7 @@ class Afumigatus(ModuleModel):
         macrophage: 'MacrophageState',
         macrophage_cell: 'MacrophageCellData',
     ):
-        from nlisim.henrique_modules.macrophage import PhagocyteStatus
+        from nlisim.modules.macrophage import PhagocyteStatus
 
         probability_of_interaction = (
             afumigatus.pr_ma_hyphae

@@ -6,7 +6,7 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
 from nlisim.random import rg
 from nlisim.state import State
@@ -58,10 +58,10 @@ class MIP2(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.macrophage import MacrophageCellData, MacrophageState
-        from nlisim.henrique_modules.neutrophil import NeutrophilCellData, NeutrophilState
-        from nlisim.henrique_modules.phagocyte import PhagocyteStatus
-        from nlisim.henrique_modules.pneumocyte import PneumocyteCellData, PneumocyteState
+        from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.modules.neutrophil import NeutrophilCellData, NeutrophilState
+        from nlisim.modules.phagocyte import PhagocyteStatus
+        from nlisim.modules.pneumocyte import PneumocyteCellData, PneumocyteState
 
         mip2: MIP2State = state.mip2
         molecules: MoleculesState = state.molecules

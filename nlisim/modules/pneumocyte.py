@@ -8,7 +8,7 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.henrique_modules.phagocyte import (
+from nlisim.modules.phagocyte import (
     PhagocyteCellData,
     PhagocyteModel,
     PhagocyteModuleState,
@@ -105,10 +105,10 @@ class Pneumocyte(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.il6 import IL6State
-        from nlisim.henrique_modules.il8 import IL8State
-        from nlisim.henrique_modules.tnfa import TNFaState
-        from nlisim.henrique_modules.afumigatus import (
+        from nlisim.modules.il6 import IL6State
+        from nlisim.modules.il8 import IL8State
+        from nlisim.modules.tnfa import TNFaState
+        from nlisim.modules.afumigatus import (
             AfumigatusCellData,
             AfumigatusCellStatus,
             AfumigatusState,

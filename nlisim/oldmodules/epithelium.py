@@ -10,7 +10,7 @@ from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.fungus import FungusCellData, FungusCellList
+from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import TissueType

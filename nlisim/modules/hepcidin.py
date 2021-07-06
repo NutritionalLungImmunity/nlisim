@@ -5,7 +5,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.henrique_modules.molecules import MoleculeModel
+from nlisim.modules.molecules import MoleculeModel
 from nlisim.module import ModuleState
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -39,7 +39,7 @@ class Hepcidin(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.henrique_modules.macrophage import MacrophageState
+        from nlisim.modules.macrophage import MacrophageState
 
         hepcidin: HepcidinState = state.hepcidin
         macrophage: MacrophageState = state.macrophage

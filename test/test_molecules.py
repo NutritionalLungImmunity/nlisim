@@ -2,7 +2,7 @@ import numpy as np
 from pytest import fixture
 
 # from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import Molecules
+from nlisim.oldmodules.molecules import Molecules
 
 
 @fixture

@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 import attr
 import numpy as np
 
-from nlisim.henrique_modules.molecules import MoleculeModel, MoleculesState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.module import ModuleState
 from nlisim.state import State
 

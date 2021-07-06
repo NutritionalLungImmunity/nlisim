@@ -3,8 +3,8 @@ from pytest import fixture
 
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.macrophage import MacrophageCellData, MacrophageCellList
+from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
+from nlisim.oldmodules.macrophage import MacrophageCellData, MacrophageCellList
 
 
 @fixture
