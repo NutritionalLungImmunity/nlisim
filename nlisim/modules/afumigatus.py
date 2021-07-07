@@ -2,7 +2,7 @@ from enum import IntEnum, auto, unique
 import math
 from queue import SimpleQueue
 import random
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import attr
 from attr import attrib, attrs
@@ -63,7 +63,7 @@ class AfumigatusCellState(IntEnum):
 
 
 class AfumigatusCellData(CellData):
-    AFUMIGATUS_FIELDS = [
+    AFUMIGATUS_FIELDS: List[Union[Tuple[str, Any], Tuple[str, Any, Any]]] = [
         ('iron_pool', np.float64),
         ('state', np.uint8),
         ('status', np.uint8),
@@ -86,7 +86,7 @@ class AfumigatusCellData(CellData):
     dtype = np.dtype(FIELDS, align=True)  # type: ignore
 
     @classmethod
-    def create_cell_tuple(cls, **kwargs) -> np.record:
+    def create_cell_tuple(cls, **kwargs) -> Tuple:
         initializer = {
             'iron_pool': kwargs.get('iron_pool', 0),
             'state': kwargs.get('state', AfumigatusCellState.FREE),
@@ -157,6 +157,7 @@ class AfumigatusState(ModuleState):
     pr_ma_hyphae: float
     pr_ma_hyphae_param: float
     pr_ma_phag: float
+    pr_ma_phag_param: float
     pr_branch: float
     steps_to_bn_eval: int
     hyphae_volume: float
@@ -171,6 +172,7 @@ class AfumigatusState(ModuleState):
     init_iron: float
     conidia_vol: float
     rel_n_hyphae_int_unit_t: float
+    rel_phag_afnt_unit_t: float
     phag_afnt_t: float
     aspergillus_change_half_life: float
 
@@ -532,7 +534,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
     total_iron: float = 0.0
 
     # walk along the tree, collecting iron
-    q = SimpleQueue()
+    q: SimpleQueue = SimpleQueue()
     q.put(root_cell_index)
     while not q.empty():
         next_cell_index = q.get()
@@ -582,7 +584,7 @@ def elongate(
             next_septa_root = afumigatus_cell['root'] + afumigatus_cell['vec']
 
             # create the new septa
-            next_septa: AfumigatusCellData = AfumigatusCellData.create_cell(
+            next_septa: np.record = AfumigatusCellData.create_cell(
                 point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
                 root=next_septa_root,
                 tip=next_septa_root + afumigatus_cell['vec'],
@@ -627,7 +629,7 @@ def branch(
         root = afumigatus_cell['root']
 
         # create the new septa
-        next_branch: AfumigatusCellData = AfumigatusCellData.create_cell(
+        next_branch: np.record = AfumigatusCellData.create_cell(
             point=Point(x=root[2], y=root[1], z=root[0]),
             root=root,
             tip=root + branch_vector,

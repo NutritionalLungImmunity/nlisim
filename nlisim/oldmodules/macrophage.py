@@ -31,7 +31,7 @@ class MacrophageCellData(CellData):
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         iteration = 0
         phagosome = np.empty(MAX_CONIDIA)
         phagosome.fill(-1)

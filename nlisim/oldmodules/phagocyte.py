@@ -1,6 +1,7 @@
 from enum import IntEnum
 import math
 import random
+from typing import Tuple
 
 import attr
 import numpy as np
@@ -53,7 +54,7 @@ class PhagocyteCellData(CellData):
         status: Status = Status.RESTING,
         state: State = State.FREE,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)

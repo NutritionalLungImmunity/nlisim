@@ -24,7 +24,7 @@ for details.
 """
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple
+from typing import Iterable, Iterator, List, Tuple, cast
 
 import attr
 from h5py import File as H5File
@@ -193,7 +193,9 @@ class RectangularGrid(object):
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         """
-        return np.ravel_multi_index(voxel, self.shape)
+        index = np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
+        assert index.shape == (1,), "Not a voxel!"
+        return int(index)
 
     def voxel_from_flattened_index(self, index: int) -> 'Voxel':
         """Create a Voxel from flattened index of the grid.
@@ -201,7 +203,9 @@ class RectangularGrid(object):
         This is a convenience method that wraps numpy.unravel_index.
         """
         z, y, x = np.unravel_index(index, self.shape)
-        return Voxel(x=x, y=y, z=z)
+        assert z.shape == (1,) and y.shape == (1,) and x.shape == (1,)
+        z_idx, y_idx, x_idx = int(z), int(y), int(x)
+        return Voxel(x=x_idx, y=y_idx, z=z_idx)
 
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.

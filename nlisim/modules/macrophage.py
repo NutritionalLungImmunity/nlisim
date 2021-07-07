@@ -43,7 +43,7 @@ class MacrophageCellData(PhagocyteCellData):
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         initializer = {
             'status': kwargs.get('status', PhagocyteStatus.RESTING),
             'state': kwargs.get('state', PhagocyteState.FREE),
@@ -243,13 +243,15 @@ class Macrophage(PhagocyteModel):
                     )
                 )
             )
-            for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+            for coordinates in rg.choice(
+                tuple(activation_voxels), size=number_to_recruit, replace=True
+            ):
                 z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
                 self.create_macrophage(state=state, x=x, y=y, z=z)
                 # TODO: have placement fail due to overcrowding of cells
 
     def single_step_probabilistic_drift(
-        self, state: State, cell: MacrophageCellData, voxel: Voxel
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
     ) -> Voxel:
         """
         Calculate a 1-step voxel movement of a macrophage
@@ -279,7 +281,7 @@ class Macrophage(PhagocyteModel):
         voxel_volume: float = state.voxel_volume
 
         # macrophage has a non-zero probability of moving into non-air voxels
-        nearby_voxels: Tuple[Voxel] = tuple(grid.get_adjacent_voxels(voxel))
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
                 activation_function(

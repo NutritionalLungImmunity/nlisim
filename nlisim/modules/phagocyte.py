@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from enum import IntEnum, auto, unique
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 from attr import attrs
 import numpy as np
@@ -31,7 +31,7 @@ class PhagocyteCellData(CellData):
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         initializer = {
             'phagosome': kwargs.get('phagosome', -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
             'has_conidia': kwargs.get('has_conidia', False),
@@ -89,7 +89,7 @@ class PhagocyteModel(ModuleModel):
         # just in case.
         cell_point: Point = cell['point']
         cell_voxel: Voxel = grid.get_voxel(cell['point'])
-        offset = cell_point - cell_voxel
+        offset: np.ndarray = cell_point - cell_voxel
         new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
         cell['point'] = new_voxel + offset
 
@@ -145,6 +145,7 @@ class PhagocyteStatus(IntEnum):
     NECROTIC = auto()
     DEAD = auto()
     ANERGIC = auto()
+    INTERACTING = auto()  # TODO: check
 
 
 # noinspection PyUnresolvedReferences

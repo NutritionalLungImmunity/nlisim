@@ -15,7 +15,6 @@ class MoleculesState(ModuleState):
     turnover_rate: float
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
-    turnover_rate: float
     diffusion_constant_timestep: float
     implicit_euler_matrix: np.ndarray
 

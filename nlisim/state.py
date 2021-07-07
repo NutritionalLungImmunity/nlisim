@@ -52,7 +52,14 @@ class State(object):
             with StringIO(hf.attrs['config']) as cf:
                 config = SimulationConfig(cf)
 
-            state = cls(time=time, grid=grid, config=config)
+            state = cls(
+                time=time,
+                grid=grid,
+                config=config,
+                lung_tissue=np.array([]),  # filler
+                voxel_volume=0.0,  # filler
+                space_volume=0.0,  # filler
+            )
 
             for module in config.modules:
                 group = hf.get(module.name)

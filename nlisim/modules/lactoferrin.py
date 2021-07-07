@@ -33,6 +33,7 @@ class LactoferrinState(ModuleState):
     iron_imp_exp_t: float
     rel_iron_imp_exp_unit_t: float
     lac_qtty: float
+    threshold: float
 
 
 class Lactoferrin(MoleculeModel):

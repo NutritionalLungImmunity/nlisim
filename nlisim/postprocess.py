@@ -32,7 +32,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     points.SetData(numpy_to_vtk(np.flip(cell_data['point'], axis=1)))
     point_data = poly.GetPointData()
 
-    for field, (dtype, _) in fields.items():
+    for field, (dtype, *_) in fields.items():
         data = cell_data[field]
 
         # numpy_to_vtk doesn't handle bool for some reason

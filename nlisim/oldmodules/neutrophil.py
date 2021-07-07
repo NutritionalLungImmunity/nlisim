@@ -32,7 +32,7 @@ class NeutrophilCellData(CellData):
         status=Status.NONGRANULATING,
         granule_count=0,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         iteration = 0
         return CellData.create_cell_tuple(**kwargs) + (
             status,

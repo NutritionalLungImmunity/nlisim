@@ -32,7 +32,7 @@ class PneumocyteCellData(PhagocyteCellData):
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         initializer = {
             'status': kwargs.get('status', PhagocyteStatus.RESTING),
             'iteration': kwargs.get('iteration', 0),

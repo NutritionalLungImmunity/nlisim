@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Set, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
 import attr
 from h5py import Group
@@ -43,7 +43,7 @@ class CellData(np.ndarray):
         dtype = np.dtype(CellData.FIELDS, align=True)
 
         @classmethod
-        def create_cell_tuple(cls, iron_content=0, **kwargs):
+        def create_cell_tuple(cls, iron_content=0, **kwargs) -> Tuple:
             return CellData.create_cell_tuple(**kwargs) + (iron_content,)
     ```
     """
@@ -76,7 +76,7 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs):
+    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
         The base class version of this method returns the fields associated with

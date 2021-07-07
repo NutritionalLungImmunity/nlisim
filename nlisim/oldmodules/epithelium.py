@@ -47,7 +47,7 @@ class EpitheliumCellData(CellData):
         iron_pool: float = 0,
         status: Status = Status.RESTING,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)

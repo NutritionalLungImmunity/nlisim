@@ -50,7 +50,7 @@ class FungusCellData(CellData):
         internalized=False,
         health=100,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         return CellData.create_cell_tuple(**kwargs) + (
             form,
             status,
