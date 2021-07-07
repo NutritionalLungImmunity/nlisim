@@ -18,19 +18,22 @@ def base_config():
 @fixture
 def config():
     yield SimulationConfig(
-        {
-            'simulation': {
-                'modules': 'nlisim.oldmodules.fungus.Fungus',
-                'nx': 20,
-                'ny': 40,
-                'nz': 20,
-                'dx': 20,
-                'dy': 40,
-                'dz': 20,
-                'validate': True,
-            }
-        }
-    )
+            {
+                'simulation': {
+                    'modules': 'nlisim.oldmodules.fungus.Fungus',
+                    'nx': 20,
+                    'ny': 40,
+                    'nz': 20,
+                    'dx': 20,
+                    'dy': 40,
+                    'dz': 20,
+                    'voxel_volume': 6.4e-11,
+                    'space_volume': 6.4e-11 * 20 * 40 * 20,
+                    'geometry_path': 'geometry.hdf5',
+                    'validate': True,
+                    }
+                }
+            )
 
 
 @fixture

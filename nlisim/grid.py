@@ -188,14 +188,12 @@ class RectangularGrid(object):
             return -1
         return indices[0] - 1
 
-    def get_flattened_index(self, voxel: Voxel) -> int:
+    def get_flattened_index(self, voxel: Voxel):
         """Return the flattened index of a voxel inside the grid.
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         """
-        index = np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
-        assert index.shape == (1,), "Not a voxel!"
-        return int(index)
+        return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
 
     def voxel_from_flattened_index(self, index: int) -> 'Voxel':
         """Create a Voxel from flattened index of the grid.
@@ -203,9 +201,7 @@ class RectangularGrid(object):
         This is a convenience method that wraps numpy.unravel_index.
         """
         z, y, x = np.unravel_index(index, self.shape)
-        assert z.shape == (1,) and y.shape == (1,) and x.shape == (1,)
-        z_idx, y_idx, x_idx = int(z), int(y), int(x)
-        return Voxel(x=x_idx, y=y_idx, z=z_idx)
+        return Voxel(x=x, y=y, z=z)
 
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.
