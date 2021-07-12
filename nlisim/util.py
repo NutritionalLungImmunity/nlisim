@@ -1,5 +1,6 @@
 from enum import IntEnum
 import math
+from typing import Optional, Union
 
 import numpy as np
 
@@ -84,3 +85,11 @@ class TissueType(IntEnum):
         return np.logical_and(value >= 0, value <= 5).all() and np.issubclass_(
             value.dtype.type, np.integer
         )
+
+
+def nan_filter(value: Union[np.ndarray, float]) -> Optional[float]:
+    value = float(value)  # for numpy scalars
+    if not math.isinf(value) and not math.isnan(value):
+        return value
+    else:
+        return None

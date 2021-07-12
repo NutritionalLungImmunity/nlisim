@@ -10,7 +10,7 @@ from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover_rate
+from nlisim.util import activation_function, nan_filter, turnover_rate
 
 
 def molecule_grid_factory(self: 'TNFaState') -> np.ndarray:
@@ -136,7 +136,7 @@ class TNFa(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(tnfa.grid) / voxel_volume),
+            'concentration': nan_filter(np.mean(tnfa.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

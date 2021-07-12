@@ -8,7 +8,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction, michaelian_kinetics, turnover_rate
+from nlisim.util import iron_tf_reaction, michaelian_kinetics, nan_filter, turnover_rate
 
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
@@ -217,9 +217,15 @@ class Lactoferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            '+0Fe concentration': float(np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume),
-            '+1Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume),
-            '+2Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume),
+            '+0Fe concentration': nan_filter(
+                np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume
+            ),
+            '+1Fe concentration': nan_filter(
+                np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume
+            ),
+            '+2Fe concentration': nan_filter(
+                np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume
+            ),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

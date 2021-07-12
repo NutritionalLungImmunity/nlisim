@@ -9,7 +9,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import nan_filter, turnover_rate
 
 
 def molecule_grid_factory(self: 'HemolysinState') -> np.ndarray:
@@ -77,7 +77,7 @@ class Hemolysin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(hemolysin.grid) / voxel_volume),
+            'concentration': nan_filter(np.mean(hemolysin.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

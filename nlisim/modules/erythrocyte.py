@@ -15,7 +15,7 @@ from nlisim.modules.macrophage import MacrophageState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.modules.phagocyte import PhagocyteModel
 from nlisim.state import State
-from nlisim.util import TissueType, activation_function
+from nlisim.util import TissueType, activation_function, nan_filter
 
 
 # note: treating these a bit more like molecules than cells.
@@ -135,7 +135,7 @@ class ErythrocyteModel(PhagocyteModel):
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),
-            'concentration': float(np.mean(erythrocyte.cells['count']) / voxel_volume),
+            'concentration': nan_filter(np.mean(erythrocyte.cells['count']) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

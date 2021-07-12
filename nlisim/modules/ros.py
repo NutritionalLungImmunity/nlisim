@@ -6,6 +6,7 @@ import numpy as np
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
+from nlisim.util import nan_filter
 
 
 def molecule_grid_factory(self: 'ROSState') -> np.ndarray:
@@ -61,7 +62,7 @@ class ROS(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(ros.grid) / voxel_volume),
+            'concentration': nan_filter(np.mean(ros.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
