@@ -307,7 +307,9 @@ class Macrophage(PhagocyteModel):
                 return vxl
             r -= weight
 
-        raise AssertionError("Sum of normalized weights must be ==1.0, but somehow it isn't.")
+        # if not any of these, stay in place. This could happen (to low probability) if the
+        # normalized weights don't add to 1.
+        return voxel
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
