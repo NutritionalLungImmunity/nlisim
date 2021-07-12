@@ -89,12 +89,19 @@ def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -> vtkSt
 #     return vtk_grid
 
 
-def create_vtk_molecules(grid: RectangularGrid, molecules: np.ndarray) -> vtkStructuredPoints:
-    vtk_grid = create_vtk_volume(grid)
+def add_vtk_molecules(
+    molecules: np.ndarray, module_name: str, vtk_grid: vtkStructuredPoints
+) -> vtkStructuredPoints:
     point_data = vtk_grid.GetPointData()
-    for name in molecules.dtype.names:
-        data = numpy_to_vtk(molecules[name].ravel())
-        data.SetName(name)
+    # the x-ferrin molecules have a record type which has several names, others do not
+    if molecules.dtype.names:
+        for name in molecules.dtype.names:
+            data = numpy_to_vtk(molecules[name].ravel())
+            data.SetName(name)  # TODO: should we put the module name as part?
+            point_data.AddArray(data)
+    else:
+        data = numpy_to_vtk(molecules.ravel())
+        data.SetName(module_name)
         point_data.AddArray(data)
 
     return vtk_grid
@@ -102,19 +109,19 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: np.ndarray) -> vtkStr
 
 def generate_vtk_objects(
     state: State,
-) -> Tuple[vtkStructuredPoints, Dict[str, vtkStructuredPoints], Dict[str, vtkPolyData]]:
+) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
     """Generate the vtk objects for each module. (e.g. for upload)"""
     volume = create_vtk_geometry(state.grid, state.lung_tissue)
-    molecules = dict()
+    molecules_grid = create_vtk_volume(state.grid)
     cells = dict()
     for module in state.config.modules:
         data_type, content = module.visualization_data(state)
         if data_type == 'molecule':
-            molecules[module.name] = create_vtk_molecules(state.grid, content)
+            add_vtk_molecules(content, module.name, molecules_grid)
         elif data_type == 'cells':
             cells[module.name] = convert_cells_to_vtk(content)
 
-    return volume, molecules, cells
+    return volume, molecules_grid, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):
@@ -126,10 +133,9 @@ def generate_vtk(state: State, postprocess_step_dir: Path):
     grid_writer.SetInputData(volume)
     grid_writer.Write()
 
-    for module, data in molecules.items():
-        grid_writer.SetFileName(str(postprocess_step_dir / f'{module}_001.vti'))
-        grid_writer.SetInputData(data)
-        grid_writer.Write()
+    grid_writer.SetFileName(str(postprocess_step_dir / 'molecules_001.vti'))
+    grid_writer.SetInputData(molecules)
+    grid_writer.Write()
 
     cell_writer = vtkXMLPolyDataWriter()
     cell_writer.SetDataModeToBinary()
