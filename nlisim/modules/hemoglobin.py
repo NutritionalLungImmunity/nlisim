@@ -69,8 +69,8 @@ class Hemoglobin(MoleculeModel):
 
         # Degrade Hemoglobin
         hemoglobin.grid *= turnover_rate(
-            x_mol=hemoglobin.grid,
-            x_system_mol=0.0,
+            x=hemoglobin.grid,
+            x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

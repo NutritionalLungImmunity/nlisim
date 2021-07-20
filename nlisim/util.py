@@ -4,6 +4,8 @@ from typing import Optional, Union
 
 import numpy as np
 
+EPSILON = 1e-50  # used in divide by zero fix: 1/x -> 1/(x+ϵ)
+
 
 def activation_function(*, x, kd, h, volume, b=1):
     x = x / volume  # CONVERT MOL TO MOLAR
@@ -11,21 +13,19 @@ def activation_function(*, x, kd, h, volume, b=1):
 
 
 def turnover_rate(
-    *, x_mol: np.ndarray, x_system_mol: float, base_turnover_rate: float, rel_cyt_bind_unit_t: float
+    *, x: np.ndarray, x_system: float, base_turnover_rate: float, rel_cyt_bind_unit_t: float
 ):
+    if x_system == 0.0:
+        return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
-    y = (x_mol - x_system_mol) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system_mol
+    y = (x - x_system) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
-    with np.errstate(divide='ignore', invalid='ignore'):
-        result = y / x_mol
-        # zero out problem divides
-        if np.isscalar(result) and x_mol == 0.0:
-            result = 0.0
-        else:
-            result[x_mol == 0].fill(0.0)
+    result = y / (x + EPSILON)
 
-    # enforce bounds
-    result = np.maximum(np.minimum(result, 1.0), 0.0)
+    # enforce bounds and zero out problem divides
+    result[x == 0].fill(0.0)
+    np.maximum(np.minimum(result, 1.0), 0.0, out=result)
+
     return result
 
 
@@ -35,10 +35,11 @@ def iron_tf_reaction(
     total_binding_site = 2 * (tf + tf_fe)  # That is right 2*(Tf + TfFe)!
     total_iron = iron + tf_fe  # it does not count TfFe2
 
-    with np.errstate(divide='ignore', invalid='ignore'):
-        rel_total_iron = total_iron / total_binding_site
-        np.nan_to_num(rel_total_iron, nan=0.0, posinf=0.0, neginf=0.0)
-        rel_total_iron = np.maximum(np.minimum(rel_total_iron, 1.0), 0.0)
+    rel_total_iron = total_iron / (total_binding_site + EPSILON)
+    # enforce bounds and zero out problem divides
+    rel_total_iron[total_binding_site == 0] = 0.0
+    np.minimum(rel_total_iron, 1.0, out=rel_total_iron)
+    np.maximum(rel_total_iron, 0.0, out=rel_total_iron)
 
     rel_tf_fe = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
 

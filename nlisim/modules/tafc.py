@@ -8,7 +8,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import michaelian_kinetics, nan_filter, turnover_rate
+from nlisim.util import EPSILON, michaelian_kinetics, nan_filter, turnover_rate
 
 
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
@@ -86,11 +86,13 @@ class TAFC(MoleculeModel):
         )
 
         # - enforce bounds from TAFC quantity
-        with np.errstate(divide='ignore', invalid='ignore'):
-            total_change = dfe2dt + dfedt
-            rel = tafc.grid['TAFC'] / total_change
-            rel[total_change == 0] = 0.0
-            np.maximum(rel, 1.0, out=rel)
+        total_change = dfe2dt + dfedt
+        rel = tafc.grid['TAFC'] / (total_change + EPSILON)
+        # enforce bounds and zero out problem divides
+        rel[total_change == 0] = 0.0
+        np.minimum(rel, 1.0, out=rel)
+        np.maximum(rel, 0.0, out=rel)
+
         dfe2dt = dfe2dt * rel
         dfedt = dfedt * rel
 
@@ -143,8 +145,8 @@ class TAFC(MoleculeModel):
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(
-            x_mol=np.array(1.0, dtype=np.float64),
-            x_system_mol=0.0,
+            x=np.array(1.0, dtype=np.float64),
+            x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

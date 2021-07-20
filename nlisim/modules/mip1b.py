@@ -85,8 +85,8 @@ class MIP1B(MoleculeModel):
         # Degrade MIP1B
         mip1b.grid *= mip1b.half_life_multiplier
         mip1b.grid *= turnover_rate(
-            x_mol=np.array(1.0, dtype=np.float64),
-            x_system_mol=0.0,
+            x=np.array(1.0, dtype=np.float64),
+            x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

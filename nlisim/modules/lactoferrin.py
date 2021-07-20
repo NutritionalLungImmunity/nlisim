@@ -8,7 +8,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction, michaelian_kinetics, nan_filter, turnover_rate
+from nlisim.util import EPSILON, iron_tf_reaction, michaelian_kinetics, nan_filter, turnover_rate
 
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
@@ -128,10 +128,16 @@ class Lactoferrin(MoleculeModel):
             voxel_volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin quantity
-        mask = (dfe2dt + dfedt) > lactoferrin.grid['Lactoferrin']
-        with np.errstate(divide='ignore', invalid='ignore'):
-            rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt)
-            np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        dfexdt = dfe2dt + dfedt
+        mask = dfexdt > lactoferrin.grid['Lactoferrin']
+
+        rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt + EPSILON)
+        # enforce bounds and zero out problem divides
+        rel[dfexdt == 0] = 0.0
+        np.minimum(rel, 1.0, out=rel)
+        np.maximum(rel, 0.0, out=rel)
+
+        np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         dfe2dt[mask] = (dfe2dt * rel)[mask]
         dfedt[mask] = (dfedt * rel)[mask]
 
@@ -151,10 +157,15 @@ class Lactoferrin(MoleculeModel):
             voxel_volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin+Fe quantity
-        mask = (dfe2dt_fe + dfedt_fe) > lactoferrin.grid['LactoferrinFe']
-        with np.errstate(divide='ignore', invalid='ignore'):
-            rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe)
-            np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        dfexdt_fe = dfe2dt_fe + dfedt_fe
+        mask = dfexdt_fe > lactoferrin.grid['LactoferrinFe']
+
+        rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe + EPSILON)
+        # enforce bounds and zero out problem divides
+        rel[dfexdt_fe == 0] = 0.0
+        np.minimum(rel, 1.0, out=rel)
+        np.maximum(rel, 0.0, out=rel)
+
         dfe2dt_fe[mask] = (dfe2dt_fe * rel)[mask]
         dfedt_fe[mask] = (dfedt_fe * rel)[mask]
 
@@ -196,8 +207,8 @@ class Lactoferrin(MoleculeModel):
 
         # Degrade Lactoferrin
         trnvr_rt = turnover_rate(
-            x_mol=np.array(1.0, dtype=np.float64),
-            x_system_mol=0.0,
+            x=np.array(1.0, dtype=np.float64),
+            x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

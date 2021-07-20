@@ -62,20 +62,20 @@ class Liver(MoleculeModel):
             transferrin.threshold_log_hep, liver.log_hepcidin
         )
         rate_tf = turnover_rate(
-            x_mol=transferrin.grid['Tf'],
-            x_system_mol=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
+            x=transferrin.grid['Tf'],
+            x_system=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
         rate_tf_fe = turnover_rate(
-            x_mol=transferrin.grid['TfFe'],
-            x_system_mol=tf * transferrin.default_tffe_rel_concentration * voxel_volume,
+            x=transferrin.grid['TfFe'],
+            x_system=tf * transferrin.default_tffe_rel_concentration * voxel_volume,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
         rate_tf_fe2 = turnover_rate(
-            x_mol=transferrin.grid['TfFe2'],
-            x_system_mol=tf * transferrin.default_tffe2_rel_concentration * voxel_volume,
+            x=transferrin.grid['TfFe2'],
+            x_system=tf * transferrin.default_tffe2_rel_concentration * voxel_volume,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
@@ -99,8 +99,8 @@ class Liver(MoleculeModel):
             else math.pow(10.0, liver.log_hepcidin)
         )
         hepcidin.grid *= turnover_rate(
-            x_mol=hepcidin.grid,
-            x_system_mol=system_concentration * voxel_volume,
+            x=hepcidin.grid,
+            x_system=system_concentration * voxel_volume,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

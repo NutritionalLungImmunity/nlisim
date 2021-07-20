@@ -88,8 +88,8 @@ class EstB(MoleculeModel):
         # Degrade EstB
         estb.grid *= estb.half_life_multiplier
         estb.grid *= turnover_rate(
-            x_mol=estb.grid,
-            x_system_mol=estb.system_amount_per_voxel,
+            x=estb.grid,
+            x_system=estb.system_amount_per_voxel,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

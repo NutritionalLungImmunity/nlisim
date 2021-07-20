@@ -92,8 +92,8 @@ class IL10(MoleculeModel):
         # Degrade IL10
         il10.grid *= il10.half_life_multiplier
         il10.grid *= turnover_rate(
-            x_mol=np.ones(shape=il10.grid.shape, dtype=np.float64),
-            x_system_mol=0.0,
+            x=np.ones(shape=il10.grid.shape, dtype=np.float64),
+            x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
