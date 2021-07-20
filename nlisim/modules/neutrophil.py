@@ -1,4 +1,5 @@
 import math
+import random
 from typing import Any, Dict, Tuple
 
 import attr
@@ -94,6 +95,7 @@ class Neutrophil(PhagocyteModel):
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
         voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
         neutrophil.init_num_neutrophils = self.config.getint('init_num_neutrophils')
@@ -130,13 +132,25 @@ class Neutrophil(PhagocyteModel):
         )  # TODO: -exp1m
 
         # place initial neutrophils
-        z_range, y_range, x_range = state.lung_tissue.shape
-        for _ in range(neutrophil.init_num_neutrophils):
-            z, y, x = rg.integers([z_range, y_range, x_range])
-            while state.lung_tissue[z, y, x] == TissueType.AIR:
-                z, y, x = rg.integers([z_range, y_range, x_range])
+        locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in random.choices(locations, k=neutrophil.init_num_neutrophils):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
 
-            self.create_neutrophil(state=state, x=x, y=y, z=z)
+            self.create_neutrophil(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
         return state
 

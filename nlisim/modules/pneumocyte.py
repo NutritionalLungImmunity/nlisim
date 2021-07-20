@@ -98,8 +98,26 @@ class Pneumocyte(PhagocyteModel):
 
         # initialize cells, placing one per epithelial voxel
         # TODO: Any changes due to ongoing conversation with Henrique
-        for z, y, x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
-            pneumocyte.cells.append(PneumocyteCellData.create_cell(point=Point(x=x, y=y, z=z)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            pneumocyte.cells.append(
+                PneumocyteCellData.create_cell(
+                    point=Point(
+                        x=x + rg.uniform(-dx / 2, dx / 2),
+                        y=y + rg.uniform(-dy / 2, dy / 2),
+                        z=z + rg.uniform(-dz / 2, dz / 2),
+                    )
+                )
+            )
 
         return state
 

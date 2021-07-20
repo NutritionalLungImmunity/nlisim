@@ -240,27 +240,28 @@ class Afumigatus(ModuleModel):
         )
 
         # place cells for initial infection
-        # TODO: 'smart' placement should be checked
-        # current initial positions: any air voxel which is in a Moore neighborhood of an
-        # epithelial voxel
-        # https://en.wikipedia.org/wiki/Moore_neighborhood
-        epithelium_mask = lung_tissue == TissueType.EPITHELIUM
-        epithelium_mask |= np.roll(epithelium_mask, 1, axis=0) | np.roll(
-            epithelium_mask, -1, axis=0
-        )
-        epithelium_mask |= np.roll(epithelium_mask, 1, axis=1) | np.roll(
-            epithelium_mask, -1, axis=1
-        )
-        epithelium_mask |= np.roll(epithelium_mask, 1, axis=2) | np.roll(
-            epithelium_mask, -1, axis=2
-        )
-        locations = list(
-            zip(*np.where(np.logical_and(epithelium_mask, lung_tissue == TissueType.AIR)))
-        )
-        for z, y, x in random.choices(locations, k=self.config.getint('init_infection_num')):
+        locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in random.choices(
+            locations, k=self.config.getint('init_infection_num')
+        ):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
             afumigatus.cells.append(
                 AfumigatusCellData.create_cell(
-                    point=Point(x=x, y=y, z=z), iron_pool=afumigatus.init_iron
+                    point=Voxel(
+                        x=x + rg.uniform(-dx / 2, dx / 2),
+                        y=y + rg.uniform(-dy / 2, dy / 2),
+                        z=z + rg.uniform(-dz / 2, dz / 2),
+                    ),
+                    iron_pool=afumigatus.init_iron,
                 )
             )
 

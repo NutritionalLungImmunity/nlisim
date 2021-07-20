@@ -1,4 +1,5 @@
 import math
+import random
 from typing import Any, Dict, Tuple
 
 import attr
@@ -101,6 +102,7 @@ class Macrophage(PhagocyteModel):
         from nlisim.util import TissueType
 
         macrophage: MacrophageState = state.macrophage
+        lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
         macrophage.max_conidia = self.config.getint('max_conidia')
@@ -131,14 +133,24 @@ class Macrophage(PhagocyteModel):
         )
 
         # initialize cells, placing them randomly
-        # TODO: can we do anything more specific? (Not in AIR)
-        z_range, y_range, x_range = state.lung_tissue.shape
-        for _ in range(macrophage.init_num_macrophages):
-            z, y, x = rg.integers([z_range, y_range, x_range])
-            while state.lung_tissue[z, y, x] == TissueType.AIR:
-                z, y, x = rg.integers([z_range, y_range, x_range])
-
-            self.create_macrophage(state=state, x=x, y=y, z=z)
+        locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in random.choices(locations, k=macrophage.init_num_macrophages):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_macrophage(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
         return state
 
