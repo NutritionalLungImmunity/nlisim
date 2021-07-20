@@ -52,15 +52,18 @@ class State(object):
             with StringIO(hf.attrs['config']) as cf:
                 config = SimulationConfig(cf)
 
+            voxel_volume = config.getfloat('simulation', 'voxel_volume')
+            lung_tissue = get_geometry_file(config.get('simulation', 'geometry_path'))
+            space_volume = voxel_volume * np.product(lung_tissue.shape)
+
             state = cls(
                 time=time,
                 grid=grid,
                 config=config,
-                lung_tissue=np.array([]),  # filler
-                voxel_volume=0.0,  # filler
-                space_volume=0.0,  # filler
+                lung_tissue=lung_tissue,
+                voxel_volume=voxel_volume,
+                space_volume=space_volume,
             )
-
             for module in config.modules:
                 group = hf.get(module.name)
                 if group is None:
@@ -147,7 +150,7 @@ class State(object):
         return super().__getattribute__(module_name)
 
     def __dir__(self):
-        return sorted(super().__dir__() + list(self._extra.keys()))
+        return sorted(list(super().__dir__()) + list(self._extra.keys()))
 
 
 def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
