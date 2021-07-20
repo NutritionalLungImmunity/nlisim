@@ -256,7 +256,7 @@ class Afumigatus(ModuleModel):
             dx = dx_field[vox_z, vox_y, vox_x]
             afumigatus.cells.append(
                 AfumigatusCellData.create_cell(
-                    point=Voxel(
+                    point=Point(
                         x=x + rg.uniform(-dx / 2, dx / 2),
                         y=y + rg.uniform(-dy / 2, dy / 2),
                         z=z + rg.uniform(-dz / 2, dz / 2),
