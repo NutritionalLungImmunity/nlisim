@@ -54,8 +54,8 @@ class RectangularGrid(object):
     \[
         (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
     \]
-    For a perticular function defined over the domain, \(f\), the
-    descritization is defined relative to this point,
+    For a particular function defined over the domain, \(f\), the
+    discretization is defined relative to this point,
     \[
         f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
     \]
