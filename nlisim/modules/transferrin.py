@@ -144,7 +144,7 @@ class Transferrin(MoleculeModel):
             }:
                 # amount of iron to export is bounded by the amount of iron in the cell as well
                 # as the amount which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
-                qtty = min(
+                qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],
                     2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
                     macrophage_cell['iron_pool']
@@ -152,7 +152,6 @@ class Transferrin(MoleculeModel):
                     * transferrin.ma_iron_export_rate
                     * transferrin.rel_iron_imp_exp_unit_t,
                 )
-
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
                     tf=transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
