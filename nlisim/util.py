@@ -104,4 +104,5 @@ def nan_filter(value: Union[np.ndarray, float]) -> Optional[float]:
     if not math.isinf(value) and not math.isnan(value):
         return value
     else:
+        print(f"Got an {value}", file=sys.stderr)
         return None
