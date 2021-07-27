@@ -56,7 +56,7 @@ def apply_diffusion(
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 
-    Solves laplaces equation in 3D using implicit time steps.  The variable is
+    Solves Laplace's equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
 
     The intended use case for this method is to perform "surface diffusion" generated

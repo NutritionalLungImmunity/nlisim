@@ -5,6 +5,8 @@ from operator import mul
 
 from attr import attrs
 import numpy as np
+from scipy.sparse import dok_matrix, identity
+from scipy.sparse.linalg import cg
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
@@ -25,6 +27,8 @@ class Molecules(ModuleModel):
 
     # noinspection SpellCheckingInspection
     def initialize(self, state: State):
+        from nlisim.util import TissueType
+
         molecules: MoleculesState = state.molecules
 
         molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')
@@ -46,9 +50,8 @@ class Molecules(ModuleModel):
         # TODO: this is so wasteful of memory and should be replaced. Crank-Nicholson?
         grid_cardinality = reduce(mul, state.grid.shape)
         tissue = state.lung_tissue
-        from nlisim.util import TissueType
 
-        laplacian = np.zeros(shape=(grid_cardinality, grid_cardinality), dtype=float)
+        laplacian = dok_matrix((grid_cardinality, grid_cardinality))
         z_grid_size, y_grid_size, x_grid_size = state.grid.shape
         for z, y, x in product(*map(range, state.grid.shape)):
             # ignore air voxels
@@ -83,8 +86,9 @@ class Molecules(ModuleModel):
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
         molecules.implicit_euler_matrix = (
-            np.eye(grid_cardinality) - molecules.diffusion_constant_timestep * laplacian
+            identity(grid_cardinality) - molecules.diffusion_constant_timestep * laplacian.tocsr()
         )
+        print(type(molecules.implicit_euler_matrix))
 
         return state
 
@@ -96,9 +100,10 @@ class Molecules(ModuleModel):
 class MoleculeModel(ModuleModel):
     @staticmethod
     def diffuse(grid: np.ndarray, state: State):
-        # implicit euler
-        shape = grid.shape
-        np.copyto(
-            grid,
-            np.linalg.solve(state.molecules.implicit_euler_matrix, grid.reshape(-1)).reshape(shape),
-        )
+        molecules: MoleculesState = state.molecules
+
+        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel())
+        if info != 0:
+            raise Exception(f'GMRES failed ({info})')
+
+        np.copyto(grid, var_next.reshape(grid.shape))
