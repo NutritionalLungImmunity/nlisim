@@ -7,6 +7,7 @@ from nlisim.grid import RectangularGrid
 
 _dtype_float64 = np.dtype('float64')
 
+
 def discrete_laplacian(
     grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
 ) -> csr_matrix:

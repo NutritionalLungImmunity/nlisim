@@ -64,20 +64,25 @@ class Geometry(object):
         return 1 * (distance <= r)
 
     def construct_cylinder(
-        self, lung_tissue: np.ndarray, center: Point, length: float, direction: np.ndarray, r: float
+        self,
+        lung_tissue: np.ndarray,
+        center: Point,
+        length: float,
+        direction: np.ndarray,
+        r: np.ndarray,
     ):
         """Construct cylinder within simulation space."""
-        coords = np.indices(lung_tissue.shape).T
+        coords = np.indices(lung_tissue.shape, dtype=np.float64).T
 
         # normalize direction, just in case
-        direction /= np.linalg.norm(direction)
+        direction = direction / np.linalg.norm(direction)
 
         relative_coords = coords - center
         distance_along_axis = relative_coords @ direction
         distance_from_axis = np.linalg.norm(
             relative_coords - np.multiply.outer(relative_coords @ direction, direction), axis=3
         )
-        mask = np.logical_and(distance_from_axis <= r, distance_along_axis <= length / 2.0).T
+        mask = np.logical_and(distance_from_axis <= r.T, distance_along_axis <= (length / 2.0)).T
         return mask
 
     def construct_air_duct(self, random_mask):
