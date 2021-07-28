@@ -137,15 +137,15 @@ class PhagocyteState(IntEnum):
 @unique
 class PhagocyteStatus(IntEnum):
     INACTIVE = 0
-    INACTIVATING = auto()
-    RESTING = auto()
-    ACTIVATING = auto()
-    ACTIVE = auto()
-    APOPTOTIC = auto()
-    NECROTIC = auto()
-    DEAD = auto()
-    ANERGIC = auto()
-    INTERACTING = auto()  # TODO: check
+    INACTIVATING = auto()  # 1
+    RESTING = auto()  # 2
+    ACTIVATING = auto()  # 3
+    ACTIVE = auto()  # 4
+    APOPTOTIC = auto()  # 5
+    NECROTIC = auto()  # 6
+    DEAD = auto()  # 7
+    ANERGIC = auto()  # 8
+    INTERACTING = auto()  # 9 TODO: check
 
 
 # noinspection PyUnresolvedReferences
