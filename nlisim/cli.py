@@ -70,5 +70,48 @@ def postprocess(obj, postprocess_dir: Path) -> None:
     process_output(state_files, postprocess_dir)
 
 
+@main.command()
+@click.option(
+    '--config',
+    type=click.Path(exists=True),
+    default='geometry.json',
+    help='Path to a geometry config',
+    show_default=True,
+)
+@click.option(
+    '--output',
+    type=click.Path(),
+    default='geometry',
+    help='Name of the output file.',
+    show_default=True,
+)
+@click.option(
+    '--preview',
+    is_flag=True,
+    default=False,
+    help='Preview geometry as VTK file',
+    show_default=True,
+)
+@click.option(
+    '--simple',
+    is_flag=True,
+    default=True,
+    help='Run generator in simple mode. No surfactant layer and pore.',
+    show_default=True,
+)
+@click.option(
+    '--lapl',
+    is_flag=True,
+    default=False,
+    help='Generate laplacian metric for diffusion.',
+    show_default=True,
+)
+def generate(config, output, preview, simple, lapl):
+    from nlisim.geometry.generator import generate_geometry
+
+    click.echo('generating geometry...')
+    generate_geometry(config, output, preview, simple, lapl)
+
+
 if __name__ == '__main__':
     main()

@@ -5,9 +5,11 @@ from scipy.sparse.linalg import cg
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 
+_dtype_float64 = np.dtype('float64')
+
 
 def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
 ) -> csr_matrix:
     """Return a discrete laplacian operator for the given restricted grid.
 
@@ -58,6 +60,9 @@ def apply_diffusion(
 
     Solves Laplace's equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
+
+    Notes that the output of this function might contain negative values caused by
+    rounding error. You can truncate the result by var_next[var_next < 0] = 0.
 
     The intended use case for this method is to perform "surface diffusion" generated
     by a mask from the `lung_tissue` variable, e.g.
