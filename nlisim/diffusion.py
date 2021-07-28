@@ -5,9 +5,10 @@ from scipy.sparse.linalg import cg
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 
+_dtype_float64 = np.dtype('float64')
 
 def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.dtype(np.float64)
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
 ) -> csr_matrix:
     """Return a discrete laplacian operator for the given restricted grid.
 
