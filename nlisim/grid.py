@@ -159,7 +159,7 @@ class RectangularGrid(object):
     def __len__(self):
         return reduce(lambda x, y: x * y, self.shape, 1)
 
-    def allocate_variable(self, dtype: np.dtype = np.dtype(np.float64)) -> np.ndarray:
+    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined over this grid."""
         return np.zeros(self.shape, dtype=dtype)
 

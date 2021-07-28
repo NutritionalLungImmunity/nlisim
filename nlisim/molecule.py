@@ -42,7 +42,7 @@ class MoleculeGrid(object):
     _concentrations = attr.ib()
     _sources = attr.ib()
     _diffusivity: Dict[str, int] = {}
-    _molecule_type: List[str] = attr.ib(init=False, factory=list)
+    _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
