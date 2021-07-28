@@ -7,7 +7,7 @@ from nlisim.grid import RectangularGrid
 
 
 def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.dtype(np.float64)
 ) -> csr_matrix:
     """Return a discrete laplacian operator for the given restricted grid.
 

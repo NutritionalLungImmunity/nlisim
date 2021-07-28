@@ -38,7 +38,7 @@ class Geometry(object):
         self.space = space
         self.grid = RectangularGrid.construct_uniform(self.shape, self.space)
 
-        self.geo = self.grid.allocate_variable(dtype=np.int8)
+        self.geo = self.grid.allocate_variable(dtype=np.dtype(np.int8))
         self.geo.fill(2)
         self.fixed = np.zeros(self.shape)
 
@@ -64,13 +64,13 @@ class Geometry(object):
         return 1 * (distance <= r)
 
     def construct_cylinder(
-        self, lung_tissue, center: Point, length: float, direction: np.ndarray, r: float
+        self, lung_tissue: np.ndarray, center: Point, length: float, direction: np.ndarray, r: float
     ):
         """Construct cylinder within simulation space."""
         coords = np.indices(lung_tissue.shape).T
 
         # normalize direction, just in case
-        direction = direction / np.linalg.norm(direction)
+        direction /= np.linalg.norm(direction)
 
         relative_coords = coords - center
         distance_along_axis = relative_coords @ direction
