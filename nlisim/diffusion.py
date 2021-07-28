@@ -28,7 +28,7 @@ def discrete_laplacian(
         voxel_index = grid.get_flattened_index(voxel)
         normalization = 0
 
-        for neighbor in grid.get_adjecent_voxels(voxel, corners=False):
+        for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
             nj = neighbor.y
             nk = neighbor.z
@@ -56,7 +56,7 @@ def apply_diffusion(
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 
-    Solves laplaces equation in 3D using implicit time steps.  The variable is
+    Solves Laplace's equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
 
     Notes that the output of this function might contain negative values caused by

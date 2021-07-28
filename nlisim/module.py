@@ -1,5 +1,5 @@
 from importlib import import_module
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import attr
 from h5py import Dataset, Group
@@ -173,3 +173,12 @@ class ModuleModel(object):
         is important to cast these values to standard python types.
         """
         return dict()
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        """Return any 3d visualization data associated with the module.
+
+        This is returned as a tuple of the form (datatype, data) where datatype should be one of
+        'molecule', 'cells', or ''. The last, empty string, should be reported by modules which do
+        not report data.
+        """
+        return '', None

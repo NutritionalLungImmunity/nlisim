@@ -24,7 +24,7 @@ for details.
 """
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple
+from typing import Iterable, Iterator, List, Tuple, cast
 
 import attr
 from h5py import File as H5File
@@ -54,8 +54,8 @@ class RectangularGrid(object):
     \[
         (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
     \]
-    For a perticular function defined over the domain, \(f\), the
-    descritization is defined relative to this point,
+    For a particular function defined over the domain, \(f\), the
+    discretization is defined relative to this point,
     \[
         f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
     \]
@@ -188,12 +188,12 @@ class RectangularGrid(object):
             return -1
         return indices[0] - 1
 
-    def get_flattened_index(self, voxel: Voxel) -> int:
+    def get_flattened_index(self, voxel: Voxel):
         """Return the flattened index of a voxel inside the grid.
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         """
-        return np.ravel_multi_index(voxel, self.shape)
+        return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
 
     def voxel_from_flattened_index(self, index: int) -> 'Voxel':
         """Create a Voxel from flattened index of the grid.
@@ -239,7 +239,7 @@ class RectangularGrid(object):
             and (self.zv[0] <= point.z <= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
+    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
         """Return an iterator over all neighbors of a given voxel.
 
         Parameters

@@ -1,8 +1,10 @@
 from io import BytesIO, StringIO
-from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Dict, Type, Union, cast
+from pathlib import Path, PurePath
+from typing import IO, TYPE_CHECKING, Any, Dict, Tuple, Type, Union, cast
 
 import attr
+from attr import attrib, attrs
+import h5py
 from h5py import File as H5File
 import numpy as np
 
@@ -18,19 +20,22 @@ _dtype_float = np.dtype('float')
 _dtype_float64 = np.dtype('float64')
 
 
-@attr.s(auto_attribs=True, repr=False)
+@attrs(auto_attribs=True, repr=False)
 class State(object):
     """A container for storing the simulation state at a single time step."""
 
     time: float
     grid: RectangularGrid
+    lung_tissue: np.ndarray
+    voxel_volume: float
+    space_volume: float
 
     # simulation configuration
     config: 'SimulationConfig'
 
     # a private container for module state, users of this class should use the
     # public API instead
-    _extra: Dict[str, 'ModuleState'] = attr.ib(factory=dict)
+    _extra: Dict[str, 'ModuleState'] = attrib(factory=dict)
 
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -> 'State':
@@ -47,8 +52,18 @@ class State(object):
             with StringIO(hf.attrs['config']) as cf:
                 config = SimulationConfig(cf)
 
-            state = cls(time=time, grid=grid, config=config)
+            voxel_volume = config.getfloat('simulation', 'voxel_volume')
+            lung_tissue = get_geometry_file(config.get('simulation', 'geometry_path'))
+            space_volume = voxel_volume * np.product(lung_tissue.shape)
 
+            state = cls(
+                time=time,
+                grid=grid,
+                config=config,
+                lung_tissue=lung_tissue,
+                voxel_volume=voxel_volume,
+                space_volume=space_volume,
+            )
             for module in config.modules:
                 group = hf.get(module.name)
                 if group is None:
@@ -88,18 +103,30 @@ class State(object):
     @classmethod
     def create(cls, config: 'SimulationConfig'):
         """Generate a new state object from a config."""
-        shape = (
-            config.getint('simulation', 'nz'),
-            config.getint('simulation', 'ny'),
-            config.getint('simulation', 'nx'),
-        )
+        voxel_volume = config.getfloat('simulation', 'voxel_volume')
+        lung_tissue = get_geometry_file(config.get('simulation', 'geometry_path'))
+
+        # python type checker isn't enough to understand this
+        assert len(lung_tissue.shape) == 3
+        # noinspection PyTypeChecker
+        shape: Tuple[int, int, int] = lung_tissue.shape
+
+        space_volume = voxel_volume * np.product(shape)
+
         spacing = (
             config.getfloat('simulation', 'dz'),
             config.getfloat('simulation', 'dy'),
             config.getfloat('simulation', 'dx'),
         )
         grid = RectangularGrid.construct_uniform(shape, spacing)
-        state = State(time=0.0, grid=grid, config=config)
+        state = State(
+            time=0.0,
+            grid=grid,
+            config=config,
+            lung_tissue=lung_tissue,
+            voxel_volume=voxel_volume,
+            space_volume=space_volume,
+        )
 
         for module in state.config.modules:
             if hasattr(state, module.name):
@@ -123,7 +150,7 @@ class State(object):
         return super().__getattribute__(module_name)
 
     def __dir__(self):
-        return sorted(super().__dir__() + list(self._extra.keys()))
+        return sorted(list(super().__dir__()) + list(self._extra.keys()))
 
 
 def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
@@ -170,3 +197,14 @@ def cell_list(list_class: Type['CellList']) -> 'CellList':
 def get_class_path(instance: Any) -> str:
     class_ = instance.__class__
     return f'{class_.__module__}:{class_.__name__}'
+
+
+def get_geometry_file(filename: str):
+    # The geometry data file is included next to this one
+    path = Path(__file__).parent / filename
+    try:
+        with h5py.File(path, 'r') as file:
+            return np.array(file['geometry'])
+    except Exception:
+        print(f'Error loading geometry file at {path}.')
+        raise

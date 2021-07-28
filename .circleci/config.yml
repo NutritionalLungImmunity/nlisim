@@ -3,10 +3,10 @@ version: 2.1
 jobs:
   test:
     docker:
-      - image: jbeezley/tox:latest
+      - image: knappa/tox:latest
     steps:
       - checkout
-      - run: tox -e lint,type,py36,py37,py38
+      - run: tox -e lint,type,py37,py38
 
   docs-build:
     docker:

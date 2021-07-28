@@ -60,7 +60,7 @@ class AfumigatusCellData(CellData):
         status: Status = Status.RESTING_CONIDIA,
         state: State = State.FREE,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         growth = cls.GROWTH_SCALE_FACTOR * Point.from_array(2 * rg.random(3) - 1)
         network = cls.initial_boolean_network()
         growable = True

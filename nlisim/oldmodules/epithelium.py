@@ -1,6 +1,7 @@
 from enum import IntEnum
 import itertools
 from random import shuffle
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -9,10 +10,10 @@ from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.geometry import TissueTypes
+from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -34,7 +35,7 @@ class EpitheliumCellData(CellData):
         ('status', 'u1'),
         ('iron_pool', 'f8'),
         ('iteration', 'i4'),
-        ('phagosome', (np.int32, (MAX_CONIDIA))),
+        ('phagosome', (np.int32, MAX_CONIDIA)),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -46,7 +47,7 @@ class EpitheliumCellData(CellData):
         iron_pool: float = 0,
         status: Status = Status.RESTING,
         **kwargs,
-    ) -> np.record:
+    ) -> Tuple:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
@@ -130,7 +131,7 @@ class EpitheliumCellList(CellList):
                             else:
                                 spores[index]['internalized'] = False
 
-    def remove_dead_fungus(self, spores, grid):
+    def remove_dead_fungus(self, spores):
         for epi_index in self.alive():
             for ii in range(0, self.len_phagosome(epi_index)):
                 index = self[epi_index]['phagosome'][ii]
@@ -236,7 +237,7 @@ class Epithelium(ModuleModel):
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat('p_internalization')
 
-        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+        indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
 
         for i in range(0, len(indices)):
             x = grid.x[indices[i][2]]
@@ -272,7 +273,7 @@ class Epithelium(ModuleModel):
             )
 
         # remove killed spores from phagosome
-        cells.remove_dead_fungus(spores, grid)
+        cells.remove_dead_fungus(spores)
 
         # produce cytokines
         cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
@@ -284,3 +285,13 @@ class Epithelium(ModuleModel):
         cells.die_by_germination(spores)
 
         return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        epi: EpitheliumState = state.epithelium
+
+        return {
+            'count': len(epi.cells.alive()),
+        }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.epithelium.cells

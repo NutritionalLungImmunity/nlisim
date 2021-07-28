@@ -10,8 +10,6 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.modules.geometry import GeometryState
-from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -34,13 +32,14 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     points.SetData(numpy_to_vtk(np.flip(cell_data['point'], axis=1)))
     point_data = poly.GetPointData()
 
-    for field, (dtype, _) in fields.items():
+    for field, (dtype, *_) in fields.items():
         data = cell_data[field]
 
         # numpy_to_vtk doesn't handle bool for some reason
         if dtype == np.dtype('bool'):
             data = data.astype(np.dtype('uint8'))
 
+        # noinspection PyBroadException
         try:
             scalar = numpy_to_vtk(data)
         except Exception:
@@ -68,23 +67,41 @@ def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     return vtk_grid
 
 
-def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -> vtkStructuredPoints:
+def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -> vtkStructuredPoints:
     vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
+    tissue = lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
 
 
-def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
-    vtk_grid = create_vtk_volume(grid)
+# def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+#     vtk_grid = create_vtk_volume(grid)
+#     point_data = vtk_grid.GetPointData()
+#     for name in molecules.grid.concentrations.dtype.names:
+#         data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+#         data.SetName(name)
+#         point_data.AddArray(data)
+#
+#     return vtk_grid
+
+
+def add_vtk_molecules(
+    molecules: np.ndarray, module_name: str, vtk_grid: vtkStructuredPoints
+) -> vtkStructuredPoints:
     point_data = vtk_grid.GetPointData()
-    for name in molecules.grid.concentrations.dtype.names:
-        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
-        data.SetName(name)
+    # the x-ferrin molecules have a record type which has several names, others do not
+    if molecules.dtype.names:
+        for name in molecules.dtype.names:
+            data = numpy_to_vtk(molecules[name].ravel())
+            data.SetName(name)  # TODO: should we put the module name as part?
+            point_data.AddArray(data)
+    else:
+        data = numpy_to_vtk(molecules.ravel())
+        data.SetName(module_name)
         point_data.AddArray(data)
 
     return vtk_grid
@@ -93,16 +110,18 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vt
 def generate_vtk_objects(
     state: State,
 ) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_geometry(state.grid, state.geometry)
-    molecules = create_vtk_molecules(state.grid, state.molecules)
-    cells = {
-        'spore': convert_cells_to_vtk(state.fungus.cells),
-        'epithelium': convert_cells_to_vtk(state.epithelium.cells),
-        'macrophage': convert_cells_to_vtk(state.macrophage.cells),
-        'neutrophil': convert_cells_to_vtk(state.neutrophil.cells),
-    }
+    """Generate the vtk objects for each module. (e.g. for upload)"""
+    volume = create_vtk_geometry(state.grid, state.lung_tissue)
+    molecules_grid = create_vtk_volume(state.grid)
+    cells = dict()
+    for module in state.config.modules:
+        data_type, content = module.visualization_data(state)
+        if data_type == 'molecule':
+            add_vtk_molecules(content, module.name, molecules_grid)
+        elif data_type == 'cells':
+            cells[module.name] = convert_cells_to_vtk(content)
 
-    return volume, molecules, cells
+    return volume, molecules_grid, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):

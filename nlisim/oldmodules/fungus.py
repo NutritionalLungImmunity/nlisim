@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -7,9 +7,9 @@ import numpy as np
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.geometry import TissueTypes
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 
 class FungusCellData(CellData):
@@ -50,8 +50,7 @@ class FungusCellData(CellData):
         internalized=False,
         health=100,
         **kwargs,
-    ) -> np.record:
-
+    ) -> Tuple:
         return CellData.create_cell_tuple(**kwargs) + (
             form,
             status,
@@ -116,7 +115,7 @@ class FungusCellList(CellList):
         grid = self.grid
         if init_num > 0:
             points = np.zeros((init_num, 3))
-            indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+            indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
             if len(indices) > 0:
                 rg.shuffle(indices)
                 for i in range(init_num):
@@ -346,3 +345,6 @@ class Fungus(ModuleModel):
             'hyphae': int(num_hyphae),
             'total_iron': float(total_iron),
         }
+
+    def visualization_data(self, state: State) -> Tuple[str, Any]:
+        return 'cells', state.fungus.cells
