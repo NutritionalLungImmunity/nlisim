@@ -1,7 +1,6 @@
 from enum import IntEnum
 import itertools
 from random import shuffle
-from typing import Any, Dict
 
 import attr
 import numpy as np
