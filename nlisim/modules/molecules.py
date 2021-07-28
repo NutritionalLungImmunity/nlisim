@@ -88,7 +88,6 @@ class Molecules(ModuleModel):
         molecules.implicit_euler_matrix = (
             identity(grid_cardinality) - molecules.diffusion_constant_timestep * laplacian.tocsr()
         )
-        print(type(molecules.implicit_euler_matrix))
 
         return state
 
