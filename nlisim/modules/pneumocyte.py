@@ -186,24 +186,26 @@ class Pneumocyte(PhagocyteModel):
 
             # secrete IL6
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                il6.grid[pneumocyte_cell_voxel] += pneumocyte.p_il6_qtty
+                il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
 
             # secrete IL8
             if pneumocyte_cell['tnfa']:  # TODO: and active?
-                il8.grid[pneumocyte_cell_voxel] += pneumocyte.p_il8_qtty
+                il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
 
             # interact with TNFa
-            if pneumocyte_cell[
-                'status'
-            ] == PhagocyteStatus.ACTIVE and rg.uniform() < activation_function(
-                x=tnfa.grid, kd=tnfa.k_d, h=self.time_step / 60, volume=voxel_volume
-            ):
-                pneumocyte_cell['iteration'] = 0
-                pneumocyte_cell['tnfa'] = True
+            if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
+                if rg.uniform() < activation_function(
+                    x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
+                    kd=tnfa.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                ):
+                    pneumocyte_cell['iteration'] = 0
+                    pneumocyte_cell['tnfa'] = True
 
             # secrete TNFa
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                tnfa.grid[pneumocyte_cell_voxel] += pneumocyte.p_tnf_qtty
+                tnfa.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
 
         return state
 

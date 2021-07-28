@@ -36,7 +36,7 @@ class TNFa(MoleculeModel):
     StateClass = TNFaState
 
     def initialize(self, state: State) -> State:
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
 
         # config file values
         tnfa.half_life = self.config.getfloat('half_life')
@@ -60,7 +60,7 @@ class TNFa(MoleculeModel):
         from nlisim.modules.neutrophil import NeutrophilCellData, NeutrophilState
         from nlisim.modules.phagocyte import PhagocyteStatus
 
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
