@@ -76,7 +76,7 @@ class IL6(MoleculeModel):
 
         # active Neutrophils secrete il6
         for neutrophil_cell_index in neutrophil.cells.alive():
-            neutrophil_cell = macrophage.cells[neutrophil_cell_index]
+            neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
                 il6.grid[tuple(neutrophil_cell_voxel)] += il6.neutrophil_secretion_rate_unit_t
