@@ -79,7 +79,6 @@ class MIP2(MoleculeModel):
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
-            # TODO: verify direction of inequality
             if (
                 neutrophil_cell['status'] == PhagocyteStatus.RESTING
                 and neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()
