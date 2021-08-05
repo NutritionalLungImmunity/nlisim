@@ -10,7 +10,7 @@ from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, nan_filter, turnover_rate
+from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'MIP2State') -> np.ndarray:
@@ -85,7 +85,7 @@ class MIP2(MoleculeModel):
                 and neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()
             ):
                 neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
-
+                neutrophil_cell['status_iteration'] = 0  # TODO: had 'todo: set_status' in orig
             elif neutrophil_cell['tnfa']:
                 mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
                 if neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform():
@@ -126,7 +126,7 @@ class MIP2(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': nan_filter(np.mean(mip2.grid) / voxel_volume),
+            'concentration': np.mean(mip2.grid) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

@@ -319,14 +319,14 @@ class Macrophage(PhagocyteModel):
         if number_to_recruit > 0:
             activation_voxels = zip(
                 *np.where(
-                    rg.uniform(size=mip1b.grid.shape)
-                    < activation_function(
+                    activation_function(
                         x=mip1b.grid,
                         kd=mip1b.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
                         b=macrophage.rec_bias,
                     )
+                    < rg.uniform(size=mip1b.grid.shape)
                 )
             )
             for coordinates in rg.choice(

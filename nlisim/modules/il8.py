@@ -10,7 +10,7 @@ from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, nan_filter, turnover_rate
+from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'IL8State') -> np.ndarray:
@@ -79,7 +79,7 @@ class IL8(MoleculeModel):
                         h=self.time_step / 60,
                         volume=voxel_volume,
                     )
-                    < rg.uniform()
+                    > rg.uniform()
                 ):
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['iteration'] = 0
@@ -105,7 +105,7 @@ class IL8(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': nan_filter(np.mean(il8.grid) / voxel_volume),
+            'concentration': np.mean(il8.grid) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

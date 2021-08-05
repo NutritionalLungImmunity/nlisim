@@ -406,14 +406,14 @@ class Neutrophil(PhagocyteModel):
         if number_to_recruit > 0:
             activation_voxels = zip(
                 *np.where(
-                    rg.uniform(size=mip2.grid.shape)
-                    < activation_function(
+                    activation_function(
                         x=mip2.grid,
                         kd=mip2.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
                         b=neutrophil.rec_bias,
                     )
+                    < rg.uniform(size=mip2.grid.shape)
                 )
             )
             for coordinates in rg.choice(

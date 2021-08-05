@@ -10,7 +10,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction, nan_filter
+from nlisim.util import iron_tf_reaction
 
 
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
@@ -202,9 +202,9 @@ class Transferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            '+0Fe concentration': nan_filter(np.mean(transferrin.grid['Tf']) / voxel_volume),
-            '+1Fe concentration': nan_filter(np.mean(transferrin.grid['TfFe']) / voxel_volume),
-            '+2Fe concentration': nan_filter(np.mean(transferrin.grid['TfFe2']) / voxel_volume),
+            '+0Fe concentration': np.mean(transferrin.grid['Tf']) / voxel_volume,
+            '+1Fe concentration': np.mean(transferrin.grid['TfFe']) / voxel_volume,
+            '+2Fe concentration': np.mean(transferrin.grid['TfFe2']) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

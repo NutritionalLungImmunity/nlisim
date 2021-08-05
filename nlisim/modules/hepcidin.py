@@ -8,7 +8,7 @@ from nlisim.coordinates import Voxel
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
-from nlisim.util import activation_function, nan_filter
+from nlisim.util import activation_function
 
 
 def molecule_grid_factory(self: 'HepcidinState') -> np.ndarray:
@@ -71,7 +71,7 @@ class Hepcidin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': nan_filter(np.mean(hepcidin.grid) / voxel_volume),
+            'concentration': np.mean(hepcidin.grid) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

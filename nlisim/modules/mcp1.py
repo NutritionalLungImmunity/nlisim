@@ -9,7 +9,7 @@ from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
-from nlisim.util import nan_filter, turnover_rate
+from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'MCP1State') -> np.ndarray:
@@ -97,7 +97,7 @@ class MCP1(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': nan_filter(np.mean(mcp1.grid) / voxel_volume),
+            'concentration': np.mean(mcp1.grid) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
