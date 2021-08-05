@@ -91,7 +91,7 @@ class AntiTNFa(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': nan_filter(np.mean(anti_tnf_a.grid) / voxel_volume),
+            'concentration': np.mean(anti_tnf_a.grid) / voxel_volume,
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

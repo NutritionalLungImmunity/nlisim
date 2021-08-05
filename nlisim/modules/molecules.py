@@ -5,7 +5,8 @@ from operator import mul
 
 from attr import attrs
 import numpy as np
-from scipy.sparse import dok_matrix, identity
+import scipy
+from scipy.sparse import dok_matrix
 from scipy.sparse.linalg import cg
 
 from nlisim.module import ModuleModel, ModuleState
@@ -47,7 +48,6 @@ class Molecules(ModuleModel):
         )
 
         # construct the laplacian
-        # TODO: this is so wasteful of memory and should be replaced. Crank-Nicholson?
         grid_cardinality = reduce(mul, state.grid.shape)
         tissue = state.lung_tissue
 
@@ -57,12 +57,14 @@ class Molecules(ModuleModel):
             # ignore air voxels
             if tissue[z, y, x] == TissueType.AIR.value:
                 continue
-            # collect connections to non-air voxels (toric boundary)
+            # collect connections to non-air voxels (periodic boundary)
             base_idx = np.ravel_multi_index((z, y, x), state.grid.shape)
+
             if tissue[(z - 1) % z_grid_size, y, x] != TissueType.AIR.value:
                 offset_idx = np.ravel_multi_index(((z - 1) % z_grid_size, y, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
+
             if tissue[(z + 1) % z_grid_size, y, x] != TissueType.AIR.value:
                 offset_idx = np.ravel_multi_index(((z + 1) % z_grid_size, y, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
@@ -72,6 +74,7 @@ class Molecules(ModuleModel):
                 offset_idx = np.ravel_multi_index((z, (y - 1) % y_grid_size, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
+
             if tissue[z, (y + 1) % y_grid_size, x] != TissueType.AIR.value:
                 offset_idx = np.ravel_multi_index((z, (y + 1) % y_grid_size, x), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
@@ -81,12 +84,18 @@ class Molecules(ModuleModel):
                 offset_idx = np.ravel_multi_index((z, y, (x - 1) % x_grid_size), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
+
             if tissue[z, y, (x + 1) % x_grid_size] != TissueType.AIR.value:
                 offset_idx = np.ravel_multi_index((z, y, (x + 1) % x_grid_size), state.grid.shape)
                 laplacian[offset_idx, base_idx] += 1.0
                 laplacian[base_idx, base_idx] -= 1.0
+
+        # D = 16
+        # TIME_STEP_SIZE = 2  # minutes
+        # D = Constants.D / (4 * (30 / Constants.TIME_STEP_SIZE))
         molecules.implicit_euler_matrix = (
-            identity(grid_cardinality) - molecules.diffusion_constant_timestep * laplacian.tocsr()
+            scipy.sparse.identity(grid_cardinality)
+            - molecules.diffusion_constant_timestep * laplacian.tocsr()
         )
 
         return state
@@ -101,7 +110,7 @@ class MoleculeModel(ModuleModel):
     def diffuse(grid: np.ndarray, state: State):
         molecules: MoleculesState = state.molecules
 
-        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel())
+        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=1e-32)
         if info != 0:
             raise Exception(f'GMRES failed ({info})')
 

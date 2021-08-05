@@ -12,7 +12,7 @@ EPSILON = 5.57e-309
 
 
 def activation_function(*, x, kd, h, volume, b=1):
-    # x = x / volume  # CONVERT MOL TO MOLAR
+    # x -> x / volume CONVERT MOL TO MOLAR
     return h * (1 - b * np.exp(-(x / volume) / kd))
 
 

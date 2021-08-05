@@ -130,22 +130,22 @@ class PhagocyteModel(ModuleModel):
 @unique
 class PhagocyteState(IntEnum):
     FREE = 0
-    INTERACTING = auto()  # TODO: is this dead code?
+    INTERACTING = 1  # TODO: is this dead code?
 
 
 # TODO: name
 @unique
 class PhagocyteStatus(IntEnum):
     INACTIVE = 0
-    INACTIVATING = auto()  # 1
-    RESTING = auto()  # 2
-    ACTIVATING = auto()  # 3
-    ACTIVE = auto()  # 4
-    APOPTOTIC = auto()  # 5
-    NECROTIC = auto()  # 6
-    DEAD = auto()  # 7
-    ANERGIC = auto()  # 8
-    INTERACTING = auto()  # 9 TODO: check
+    INACTIVATING = 1
+    RESTING = 2
+    ACTIVATING = 3
+    ACTIVE = 4
+    APOPTOTIC = 5
+    NECROTIC = 6
+    DEAD = 7
+    ANERGIC = 8
+    INTERACTING = 9  # TODO: check
 
 
 # noinspection PyUnresolvedReferences

@@ -217,4 +217,4 @@ class Pneumocyte(PhagocyteModel):
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
-        return 'cells', state.pneumocyte.cells
+        return 'cells', state.pneumocyte.cells.alive()

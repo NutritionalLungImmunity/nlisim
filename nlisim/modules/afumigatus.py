@@ -397,7 +397,7 @@ class Afumigatus(ModuleModel):
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
-        return 'cells', state.afumigatus.cells
+        return 'cells', state.afumigatus.cells.alive()
 
 
 def cell_self_update(

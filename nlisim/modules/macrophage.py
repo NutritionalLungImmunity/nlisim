@@ -51,8 +51,8 @@ class MacrophageCellData(PhagocyteCellData):
             'fpn': kwargs.get('fpn', True),
             'fpn_iteration': kwargs.get('fpn_iteration', 0),
             'tf': kwargs.get('tf', False),
-            'move_step': kwargs.get('move_step', 0.0),  # TODO: reasonable default?
-            'max_move_step': kwargs.get('max_move_step', 1.0),  # TODO: reasonable default?
+            'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
+            'max_move_step': kwargs.get('max_move_step', 10.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
             'engaged': kwargs.get('engaged', False),
             'iron_pool': kwargs.get('iron_pool', 0.0),
@@ -204,10 +204,84 @@ class Macrophage(PhagocyteModel):
 
         return {
             'count': len(macrophage.cells.alive()),
+            'inactive': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.INACTIVE
+                ]
+            ),
+            'inactivating': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status']
+                    == PhagocyteStatus.INACTIVATING
+                ]
+            ),
+            'resting': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.RESTING
+                ]
+            ),
+            'activating': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status']
+                    == PhagocyteStatus.ACTIVATING
+                ]
+            ),
+            'active': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.ACTIVE
+                ]
+            ),
+            'apoptotic': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status']
+                    == PhagocyteStatus.APOPTOTIC
+                ]
+            ),
+            'necrotic': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.NECROTIC
+                ]
+            ),
+            'dead': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.DEAD
+                ]
+            ),
+            'anergic': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.ANERGIC
+                ]
+            ),
+            'interacting': len(
+                [
+                    None
+                    for macrophage_cell_index in macrophage.cells.alive()
+                    if macrophage.cells[macrophage_cell_index]['status']
+                    == PhagocyteStatus.INTERACTING
+                ]
+            ),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
-        return 'cells', state.macrophage.cells
+        return 'cells', state.macrophage.cells.alive()
 
     def recruit_macrophages(self, state: State) -> None:
         """
@@ -346,12 +420,17 @@ class Macrophage(PhagocyteModel):
         macrophage: MacrophageState = state.macrophage
         if 'iron_pool' in kwargs:
             macrophage.cells.append(
-                MacrophageCellData.create_cell(point=Point(x=x, y=y, z=z), **kwargs)
+                MacrophageCellData.create_cell(
+                    point=Point(x=x, y=y, z=z),
+                    **kwargs,
+                )
             )
         else:
             macrophage.cells.append(
                 MacrophageCellData.create_cell(
-                    point=Point(x=x, y=y, z=z), iron_pool=macrophage.ma_internal_iron, **kwargs
+                    point=Point(x=x, y=y, z=z),
+                    iron_pool=macrophage.ma_internal_iron,
+                    **kwargs,
                 )
             )
 

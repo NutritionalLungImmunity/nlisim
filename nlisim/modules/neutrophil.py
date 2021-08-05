@@ -276,7 +276,7 @@ class Neutrophil(PhagocyteModel):
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
-        return 'cells', state.neutrophil.cells
+        return 'cells', state.neutrophil.cells.alive()
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
