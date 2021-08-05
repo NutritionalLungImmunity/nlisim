@@ -39,7 +39,9 @@ class NeutrophilCellData(PhagocyteCellData):
         ('status_iteration', np.uint),
     ]
 
-    dtype = np.dtype(CellData.FIELDS + NEUTROPHIL_FIELDS, align=True)  # type: ignore
+    dtype = np.dtype(
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + NEUTROPHIL_FIELDS, align=True
+    )  # type: ignore
 
     @classmethod
     def create_cell_tuple(
@@ -58,7 +60,7 @@ class NeutrophilCellData(PhagocyteCellData):
         }
 
         # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + tuple(
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
             [initializer[key] for key, *_ in NeutrophilCellData.NEUTROPHIL_FIELDS]
         )
 
