@@ -21,12 +21,12 @@ from nlisim.util import TissueType
 @unique
 class AfumigatusCellStatus(IntEnum):
     RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = auto()
-    GERM_TUBE = auto()
-    HYPHAE = auto()
-    DYING = auto()
-    DEAD = auto()
-    STERILE_CONIDIA = auto()
+    SWELLING_CONIDIA = 1
+    GERM_TUBE = 2
+    HYPHAE = 3
+    DYING = 4
+    DEAD = 5
+    STERILE_CONIDIA = 6
 
 
 @unique
@@ -394,6 +394,46 @@ class Afumigatus(ModuleModel):
 
         return {
             'count': len(afumigatus.cells.alive()),
+            'resting conidia': len(
+                [
+                    None
+                    for afumigatus_cell_index in afumigatus.cells.alive()
+                    if afumigatus.cells[afumigatus_cell_index]['status']
+                    == AfumigatusCellStatus.RESTING_CONIDIA
+                ]
+            ),
+            'swelling conidia': len(
+                [
+                    None
+                    for afumigatus_cell_index in afumigatus.cells.alive()
+                    if afumigatus.cells[afumigatus_cell_index]['status']
+                    == AfumigatusCellStatus.SWELLING_CONIDIA
+                ]
+            ),
+            'sterile conidia': len(
+                [
+                    None
+                    for afumigatus_cell_index in afumigatus.cells.alive()
+                    if afumigatus.cells[afumigatus_cell_index]['status']
+                    == AfumigatusCellStatus.STERILE_CONIDIA
+                ]
+            ),
+            'germ tube': len(
+                [
+                    None
+                    for afumigatus_cell_index in afumigatus.cells.alive()
+                    if afumigatus.cells[afumigatus_cell_index]['status']
+                    == AfumigatusCellStatus.GERM_TUBE
+                ]
+            ),
+            'hyphae': len(
+                [
+                    None
+                    for afumigatus_cell_index in afumigatus.cells.alive()
+                    if afumigatus.cells[afumigatus_cell_index]['status']
+                    == AfumigatusCellStatus.HYPHAE
+                ]
+            ),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
@@ -455,7 +495,6 @@ def process_boolean_network(
     active_bool_net: np.ndarray = boolean_network[bn_iteration == 0, :]
     temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=bool)
 
-    # TODO: verify array shape
     temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
     temp[:, NetworkSpecies.sreA] = ~active_bool_net[:, NetworkSpecies.HapX]
     temp[:, NetworkSpecies.HapX] = (
@@ -510,8 +549,8 @@ def process_boolean_network(
     temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
     temp[:, NetworkSpecies.Oxygen] = 0
 
-    # noinspection PyUnusedLocal
-    active_bool_net = temp
+    # copy temp back to active_bool_net's mask
+    boolean_network[bn_iteration == 0, :] = temp
 
 
 def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:

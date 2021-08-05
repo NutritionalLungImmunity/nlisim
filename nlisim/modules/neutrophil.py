@@ -32,6 +32,7 @@ class NeutrophilCellData(PhagocyteCellData):
         ('status', np.uint8),
         ('state', np.uint8),
         ('iron_pool', np.float64),
+        ('move_step', np.float64),
         ('max_move_step', np.float64),  # TODO: double check, might be int
         ('tnfa', bool),
         ('engaged', bool),
@@ -49,6 +50,7 @@ class NeutrophilCellData(PhagocyteCellData):
             'status': kwargs.get('status', PhagocyteStatus.RESTING),
             'state': kwargs.get('state', PhagocyteState.FREE),
             'iron_pool': kwargs.get('iron_pool', 0.0),
+            'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
             'max_move_step': kwargs.get('max_move_step', 1.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
             'engaged': kwargs.get('engaged', False),
@@ -273,6 +275,73 @@ class Neutrophil(PhagocyteModel):
 
         return {
             'count': len(neutrophil.cells.alive()),
+            'inactive': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.INACTIVE
+                ]
+            ),
+            'inactivating': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status']
+                    == PhagocyteStatus.INACTIVATING
+                ]
+            ),
+            'resting': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.RESTING
+                ]
+            ),
+            'activating': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status']
+                    == PhagocyteStatus.ACTIVATING
+                ]
+            ),
+            'active': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.ACTIVE
+                ]
+            ),
+            'apoptotic': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status']
+                    == PhagocyteStatus.APOPTOTIC
+                ]
+            ),
+            'necrotic': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.NECROTIC
+                ]
+            ),
+            # 'anergic': len(
+            #     [
+            #         None
+            #         for neutrophil_cell_index in neutrophil.cells.alive()
+            #         if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.ANERGIC
+            #     ]
+            # ),
+            'interacting': len(
+                [
+                    None
+                    for neutrophil_cell_index in neutrophil.cells.alive()
+                    if neutrophil.cells[neutrophil_cell_index]['status']
+                    == PhagocyteStatus.INTERACTING
+                ]
+            ),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
@@ -416,11 +485,27 @@ class Neutrophil(PhagocyteModel):
                     < rg.uniform(size=mip2.grid.shape)
                 )
             )
+
+            dz_field: np.ndarray = state.grid.delta(axis=0)
+            dy_field: np.ndarray = state.grid.delta(axis=1)
+            dx_field: np.ndarray = state.grid.delta(axis=2)
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
-                z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
-                self.create_neutrophil(state, x, y, z)
+                vox_z, vox_y, vox_x = coordinates
+                # the x,y,z coordinates are in the centers of the grids
+                z = state.grid.z[vox_z]
+                y = state.grid.y[vox_y]
+                x = state.grid.x[vox_x]
+                dz = dz_field[vox_z, vox_y, vox_x]
+                dy = dy_field[vox_z, vox_y, vox_x]
+                dx = dx_field[vox_z, vox_y, vox_x]
+                self.create_neutrophil(
+                    state=state,
+                    x=x + rg.uniform(-dx / 2, dx / 2),
+                    y=y + rg.uniform(-dy / 2, dy / 2),
+                    z=z + rg.uniform(-dz / 2, dz / 2),
+                )
                 # TODO: have placement fail due to overcrowding of cells
 
     @staticmethod

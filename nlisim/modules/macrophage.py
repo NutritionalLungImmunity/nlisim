@@ -256,13 +256,6 @@ class Macrophage(PhagocyteModel):
                     if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.NECROTIC
                 ]
             ),
-            'dead': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.DEAD
-                ]
-            ),
             'anergic': len(
                 [
                     None
@@ -329,12 +322,27 @@ class Macrophage(PhagocyteModel):
                     < rg.uniform(size=mip1b.grid.shape)
                 )
             )
+            dz_field: np.ndarray = state.grid.delta(axis=0)
+            dy_field: np.ndarray = state.grid.delta(axis=1)
+            dx_field: np.ndarray = state.grid.delta(axis=2)
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
-                z, y, x = coordinates + rg.uniform(3)  # TODO: discuss placement
-                self.create_macrophage(state=state, x=x, y=y, z=z)
                 # TODO: have placement fail due to overcrowding of cells
+                vox_z, vox_y, vox_x = coordinates
+                # the x,y,z coordinates are in the centers of the grids
+                z = state.grid.z[vox_z]
+                y = state.grid.y[vox_y]
+                x = state.grid.x[vox_x]
+                dz = dz_field[vox_z, vox_y, vox_x]
+                dy = dy_field[vox_z, vox_y, vox_x]
+                dx = dx_field[vox_z, vox_y, vox_x]
+                self.create_macrophage(
+                    state=state,
+                    x=x + rg.uniform(-dx / 2, dx / 2),
+                    y=y + rg.uniform(-dy / 2, dy / 2),
+                    z=z + rg.uniform(-dz / 2, dz / 2),
+                )
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel

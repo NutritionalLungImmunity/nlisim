@@ -216,6 +216,74 @@ class Pneumocyte(PhagocyteModel):
 
         return {
             'count': len(pneumocyte.cells.alive()),
+            'inactive': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.INACTIVE
+                ]
+            ),
+            'inactivating': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status']
+                    == PhagocyteStatus.INACTIVATING
+                ]
+            ),
+            'resting': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.RESTING
+                ]
+            ),
+            'activating': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status']
+                    == PhagocyteStatus.ACTIVATING
+                ]
+            ),
+            'active': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.ACTIVE
+                ]
+            ),
+            'apoptotic': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status']
+                    == PhagocyteStatus.APOPTOTIC
+                ]
+            ),
+            'necrotic': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.NECROTIC
+                ]
+            ),
+            # 'anergic': len(
+            #         [
+            #             None
+            #             for pneumocyte_cell_index in pneumocyte.cells.alive()
+            #             if
+            #             pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.ANERGIC
+            #             ]
+            #         ),
+            'interacting': len(
+                [
+                    None
+                    for pneumocyte_cell_index in pneumocyte.cells.alive()
+                    if pneumocyte.cells[pneumocyte_cell_index]['status']
+                    == PhagocyteStatus.INTERACTING
+                ]
+            ),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
