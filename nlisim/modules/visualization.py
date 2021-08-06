@@ -1,7 +1,5 @@
-import csv
-from enum import Enum
-import itertools
 import json
+from enum import Enum
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import attr
@@ -19,7 +17,6 @@ from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
@@ -166,40 +163,12 @@ class Visualization(ModuleModel):
     def advance(self, state: State, previous_time: float) -> State:
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
-        csv_output: bool = self.config.getboolean('csv_output')
         json_config = json.loads(variables)
         now = state.time
-
-        if csv_output:
-            summary_stats = generate_summary_stats(state)
-            data_columns = [now,] + list(
-                itertools.chain.from_iterable(
-                    list(module_stats.values()) for module, module_stats in summary_stats.items()
-                )
-            )
-            with open('data.csv', 'a') as file:
-                csvwriter = csv.writer(file)
-                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
             self.visualize(state, variable, file_name)
             state.visualization.last_visualize = now
-
-        return state
-
-    def initialize(self, state: State) -> State:
-        csv_output: bool = self.config.getboolean('csv_output')
-        if csv_output:
-            summary_stats = generate_summary_stats(state)
-            column_names = ['time'] + list(
-                itertools.chain.from_iterable(
-                    [module + '-' + statistic_name for statistic_name in module_stats.keys()]
-                    for module, module_stats in summary_stats.items()
-                )
-            )
-            with open('data.csv', 'w') as file:
-                csvwriter = csv.writer(file)
-                csvwriter.writerow(column_names)
 
         return state
