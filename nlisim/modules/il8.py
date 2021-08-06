@@ -82,7 +82,7 @@ class IL8(MoleculeModel):
                     > rg.uniform()
                 ):
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
-                    neutrophil_cell['iteration'] = 0
+                    neutrophil_cell['status_iteration'] = 0
 
         # TODO: were macrophages and pneumocytes also going to secrete IL8?
 
