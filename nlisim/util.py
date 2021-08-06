@@ -2,17 +2,19 @@ from enum import IntEnum
 import math
 from typing import Tuple, Union
 
+from numba import jit
 import numpy as np
+
+from nlisim.coordinates import Voxel
+from nlisim.random import rg
 
 # ϵ is used in a divide by zero fix: 1/x -> 1/(x+ϵ)
 # this value is pretty close to the smallest 64bit float with the property that its
 # reciprocal is finite.
-from nlisim.coordinates import Voxel
-from nlisim.random import rg
-
 EPSILON = 5.57e-309
 
 
+@jit(cache=True)
 def activation_function(*, x, kd, h, volume, b=1):
     # x -> x / volume CONVERT MOL TO MOLAR
     return h * (1 - b * np.exp(-(x / volume) / kd))
@@ -71,6 +73,7 @@ def iron_tf_reaction(
     return rel_tf_fe
 
 
+@jit(cache=True)
 def michaelian_kinetics(
     *,
     substrate: np.ndarray,

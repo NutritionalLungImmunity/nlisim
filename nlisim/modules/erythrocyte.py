@@ -91,7 +91,11 @@ class ErythrocyteModel(PhagocyteModel):
         # interact with hemolysin. pop goes the blood cell
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells['count'] * activation_function(
-            x=hemolysin.grid, kd=erythrocyte.kd_hemo, h=self.time_step / 60, volume=voxel_volume
+            x=hemolysin.grid,
+            kd=erythrocyte.kd_hemo,
+            h=self.time_step / 60,
+            volume=voxel_volume,
+            b=1,
         )
         num = np.minimum(np.random.poisson(avg, shape), erythrocyte.cells['count'])
         erythrocyte.cells['hemoglobin'] += num * erythrocyte.hemoglobin_concentration

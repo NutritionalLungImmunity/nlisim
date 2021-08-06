@@ -49,7 +49,11 @@ class Hepcidin(MoleculeModel):
         activated_voxels = zip(
             *np.where(
                 activation_function(
-                    x=hepcidin.grid, kd=hepcidin.kd_hep, h=self.time_step / 60, volume=voxel_volume
+                    x=hepcidin.grid,
+                    kd=hepcidin.kd_hep,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
                 )
                 > np.random.random(hepcidin.grid.shape)
             )

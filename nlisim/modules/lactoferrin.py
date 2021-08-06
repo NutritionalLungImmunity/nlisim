@@ -118,6 +118,7 @@ class Lactoferrin(MoleculeModel):
             enzyme=lactoferrin.grid["Lactoferrin"],
             km=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
+            k_cat=1.0,
             voxel_volume=voxel_volume,
         )
         dfedt = michaelian_kinetics(
@@ -125,6 +126,7 @@ class Lactoferrin(MoleculeModel):
             enzyme=lactoferrin.grid['Lactoferrin'],
             km=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
+            k_cat=1.0,
             voxel_volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin quantity
@@ -147,6 +149,7 @@ class Lactoferrin(MoleculeModel):
             enzyme=lactoferrin.grid['LactoferrinFe'],
             km=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
+            k_cat=1.0,
             voxel_volume=voxel_volume,
         )
         dfedt_fe = michaelian_kinetics(
@@ -154,6 +157,7 @@ class Lactoferrin(MoleculeModel):
             enzyme=lactoferrin.grid['LactoferrinFe'],
             km=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
+            k_cat=1.0,
             voxel_volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin+Fe quantity

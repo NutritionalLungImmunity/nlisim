@@ -73,7 +73,7 @@ class MIP2(MoleculeModel):
 
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(
-            x=mip2.grid, kd=mip2.k_d, h=self.time_step / 60, volume=voxel_volume
+            x=mip2.grid, kd=mip2.k_d, h=self.time_step / 60, volume=voxel_volume, b=1
         )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]

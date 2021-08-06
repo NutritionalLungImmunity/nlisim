@@ -66,6 +66,7 @@ class AntiTNFa(MoleculeModel):
             enzyme=tnf_a.grid,
             km=anti_tnf_a.k_m,
             h=anti_tnf_a.react_time_unit,
+            k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)

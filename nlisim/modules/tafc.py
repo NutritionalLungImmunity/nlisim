@@ -75,6 +75,7 @@ class TAFC(MoleculeModel):
             enzyme=tafc.grid["TAFC"],
             km=tafc.k_m_tf_tafc,
             h=self.time_step / 60,
+            k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
         dfedt = michaelian_kinetics(
@@ -82,6 +83,7 @@ class TAFC(MoleculeModel):
             enzyme=tafc.grid["TAFC"],
             km=tafc.k_m_tf_tafc,
             h=self.time_step / 60,
+            k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
 

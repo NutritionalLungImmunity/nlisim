@@ -80,6 +80,7 @@ class IL10(MoleculeModel):
                         kd=il10.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
+                        b=1,
                     )
                     > rg.uniform()
                 ):

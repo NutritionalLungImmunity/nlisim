@@ -20,7 +20,11 @@ pytest-cov = "*"
 tox = ">=3"
 
 [packages]
-nlisim = {editable = true,path = "."}
+numba = "*"
 
 [requires]
 python_version = "3.8"
+
+[packages.nlisim]
+editable = true
+path = "."

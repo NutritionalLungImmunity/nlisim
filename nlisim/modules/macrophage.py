@@ -386,6 +386,7 @@ class Macrophage(PhagocyteModel):
                     kd=mip1b.k_d,
                     h=self.time_step / 60,
                     volume=voxel_volume,
+                    b=1,
                 )
                 + macrophage.drift_bias
                 if lung_tissue[tuple(vxl)] != TissueType.AIR

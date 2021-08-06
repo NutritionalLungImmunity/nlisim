@@ -71,6 +71,7 @@ class TGFB(MoleculeModel):
                         kd=tgfb.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
+                        b=1,
                     )
                     > rg.uniform()
                 ):
@@ -87,6 +88,7 @@ class TGFB(MoleculeModel):
                         kd=tgfb.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
+                        b=1,
                     )
                     > rg.uniform()
                 ):

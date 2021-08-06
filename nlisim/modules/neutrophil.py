@@ -382,7 +382,11 @@ class Neutrophil(PhagocyteModel):
         weights = np.array(
             [
                 activation_function(
-                    x=mip2.grid[tuple(vxl)], kd=mip2.k_d, h=self.time_step / 60, volume=voxel_volume
+                    x=mip2.grid[tuple(vxl)],
+                    kd=mip2.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
                 )
                 + neutrophil.drift_bias
                 if lung_tissue[tuple(vxl)] != TissueType.AIR
