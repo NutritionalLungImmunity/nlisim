@@ -274,69 +274,29 @@ class Neutrophil(PhagocyteModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         neutrophil: NeutrophilState = state.neutrophil
+        live_neutrophils = neutrophil.cells.alive()
 
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    neutrophil.cells[neutrophil_cell_index]['status']
+                    for neutrophil_cell_index in live_neutrophils
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
         return {
             'count': len(neutrophil.cells.alive()),
-            'inactive': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.INACTIVE
-                ]
-            ),
-            'inactivating': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status']
-                    == PhagocyteStatus.INACTIVATING
-                ]
-            ),
-            'resting': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.RESTING
-                ]
-            ),
-            'activating': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status']
-                    == PhagocyteStatus.ACTIVATING
-                ]
-            ),
-            'active': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.ACTIVE
-                ]
-            ),
-            'apoptotic': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status']
-                    == PhagocyteStatus.APOPTOTIC
-                ]
-            ),
-            'necrotic': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.NECROTIC
-                ]
-            ),
-            'interacting': len(
-                [
-                    None
-                    for neutrophil_cell_index in neutrophil.cells.alive()
-                    if neutrophil.cells[neutrophil_cell_index]['status']
-                    == PhagocyteStatus.INTERACTING
-                ]
-            ),
+            'inactive': status_counts[PhagocyteStatus.INACTIVE],
+            'inactivating': status_counts[PhagocyteStatus.INACTIVATING],
+            'resting': status_counts[PhagocyteStatus.RESTING],
+            'activating': status_counts[PhagocyteStatus.ACTIVATING],
+            'active': status_counts[PhagocyteStatus.ACTIVE],
+            'apoptotic': status_counts[PhagocyteStatus.APOPTOTIC],
+            'necrotic': status_counts[PhagocyteStatus.NECROTIC],
+            'interacting': status_counts[PhagocyteStatus.INTERACTING],
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

@@ -202,76 +202,31 @@ class Macrophage(PhagocyteModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         macrophage: MacrophageState = state.macrophage
+        live_macrophages = macrophage.cells.alive()
+
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    macrophage.cells[macrophage_cell_index]['status']
+                    for macrophage_cell_index in live_macrophages
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
 
         return {
-            'count': len(macrophage.cells.alive()),
-            'inactive': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.INACTIVE
-                ]
-            ),
-            'inactivating': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status']
-                    == PhagocyteStatus.INACTIVATING
-                ]
-            ),
-            'resting': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.RESTING
-                ]
-            ),
-            'activating': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status']
-                    == PhagocyteStatus.ACTIVATING
-                ]
-            ),
-            'active': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.ACTIVE
-                ]
-            ),
-            'apoptotic': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status']
-                    == PhagocyteStatus.APOPTOTIC
-                ]
-            ),
-            'necrotic': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.NECROTIC
-                ]
-            ),
-            'anergic': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status'] == PhagocyteStatus.ANERGIC
-                ]
-            ),
-            'interacting': len(
-                [
-                    None
-                    for macrophage_cell_index in macrophage.cells.alive()
-                    if macrophage.cells[macrophage_cell_index]['status']
-                    == PhagocyteStatus.INTERACTING
-                ]
-            ),
+            'count': len(live_macrophages),
+            'inactive': status_counts[PhagocyteStatus.INACTIVE],
+            'inactivating': status_counts[PhagocyteStatus.INACTIVATING],
+            'resting': status_counts[PhagocyteStatus.RESTING],
+            'activating': status_counts[PhagocyteStatus.ACTIVATING],
+            'active': status_counts[PhagocyteStatus.ACTIVE],
+            'apoptotic': status_counts[PhagocyteStatus.APOPTOTIC],
+            'necrotic': status_counts[PhagocyteStatus.NECROTIC],
+            'anergic': status_counts[PhagocyteStatus.ANERGIC],
+            'interacting': status_counts[PhagocyteStatus.INTERACTING],
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:

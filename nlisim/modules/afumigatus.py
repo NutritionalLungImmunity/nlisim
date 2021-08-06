@@ -391,49 +391,27 @@ class Afumigatus(ModuleModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
+        live_fungus = afumigatus.cells.alive()
+
+        max_index = max(map(int, AfumigatusCellStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    afumigatus.cells[afumigatus_cell_index]['status']
+                    for afumigatus_cell_index in live_fungus
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
 
         return {
-            'count': len(afumigatus.cells.alive()),
-            'resting conidia': len(
-                [
-                    None
-                    for afumigatus_cell_index in afumigatus.cells.alive()
-                    if afumigatus.cells[afumigatus_cell_index]['status']
-                    == AfumigatusCellStatus.RESTING_CONIDIA
-                ]
-            ),
-            'swelling conidia': len(
-                [
-                    None
-                    for afumigatus_cell_index in afumigatus.cells.alive()
-                    if afumigatus.cells[afumigatus_cell_index]['status']
-                    == AfumigatusCellStatus.SWELLING_CONIDIA
-                ]
-            ),
-            'sterile conidia': len(
-                [
-                    None
-                    for afumigatus_cell_index in afumigatus.cells.alive()
-                    if afumigatus.cells[afumigatus_cell_index]['status']
-                    == AfumigatusCellStatus.STERILE_CONIDIA
-                ]
-            ),
-            'germ tube': len(
-                [
-                    None
-                    for afumigatus_cell_index in afumigatus.cells.alive()
-                    if afumigatus.cells[afumigatus_cell_index]['status']
-                    == AfumigatusCellStatus.GERM_TUBE
-                ]
-            ),
-            'hyphae': len(
-                [
-                    None
-                    for afumigatus_cell_index in afumigatus.cells.alive()
-                    if afumigatus.cells[afumigatus_cell_index]['status']
-                    == AfumigatusCellStatus.HYPHAE
-                ]
-            ),
+            'count': len(live_fungus),
+            'resting conidia': status_counts[AfumigatusCellStatus.RESTING_CONIDIA],
+            'swelling conidia': status_counts[AfumigatusCellStatus.SWELLING_CONIDIA],
+            'sterile conidia': status_counts[AfumigatusCellStatus.STERILE_CONIDIA],
+            'germ tube': status_counts[AfumigatusCellStatus.GERM_TUBE],
+            'hyphae': status_counts[AfumigatusCellStatus.HYPHAE],
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Any]:
