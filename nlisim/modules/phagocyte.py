@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from enum import IntEnum, auto, unique
+from enum import IntEnum, unique
 from typing import TYPE_CHECKING, Tuple
 
 from attr import attrs
