@@ -1,5 +1,5 @@
-import json
 from enum import Enum
+import json
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import attr

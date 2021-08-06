@@ -329,13 +329,6 @@ class Neutrophil(PhagocyteModel):
                     if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.NECROTIC
                 ]
             ),
-            # 'anergic': len(
-            #     [
-            #         None
-            #         for neutrophil_cell_index in neutrophil.cells.alive()
-            #         if neutrophil.cells[neutrophil_cell_index]['status'] == PhagocyteStatus.ANERGIC
-            #     ]
-            # ),
             'interacting': len(
                 [
                     None
