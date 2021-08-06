@@ -1,17 +1,7 @@
 import csv
 import itertools
 
-# Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import attr
-
-# noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonCore import vtkPoints
-
-# noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
-
-# noinspection PyUnresolvedReferences
-from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.postprocess import generate_summary_stats

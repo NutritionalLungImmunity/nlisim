@@ -271,14 +271,6 @@ class Pneumocyte(PhagocyteModel):
                     if pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.NECROTIC
                 ]
             ),
-            # 'anergic': len(
-            #         [
-            #             None
-            #             for pneumocyte_cell_index in pneumocyte.cells.alive()
-            #             if
-            #             pneumocyte.cells[pneumocyte_cell_index]['status'] == PhagocyteStatus.ANERGIC
-            #             ]
-            #         ),
             'interacting': len(
                 [
                     None

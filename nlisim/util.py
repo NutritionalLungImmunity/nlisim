@@ -104,7 +104,9 @@ class TissueType(IntEnum):
         )
 
 
-def choose_voxel_by_prob(voxels: Tuple[Voxel, ...], default_value, weights: np.ndarray):
+def choose_voxel_by_prob(
+    voxels: Tuple[Voxel, ...], default_value: Voxel, weights: np.ndarray
+) -> Voxel:
     """
     Choose a voxels using a non-normalized probability distribution.
 
@@ -115,13 +117,13 @@ def choose_voxel_by_prob(voxels: Tuple[Voxel, ...], default_value, weights: np.n
     voxels
         an tuple of voxels
     default_value
-
+        default return value for when weights are uniformly zero
     weights
         an array of non-negative (unchecked) unnormalized probabilities/weights for the voxels
 
     Returns
     -------
-
+    a Voxel, from voxels, chosen by the probability distribution, or the default
     """
     normalization_constant = np.sum(weights)
     if normalization_constant <= 0:
