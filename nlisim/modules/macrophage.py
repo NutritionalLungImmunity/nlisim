@@ -18,6 +18,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import choose_voxel_by_prob
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -374,7 +375,9 @@ class Macrophage(PhagocyteModel):
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 
-        # macrophage has a non-zero probability of moving into non-air voxels
+        # macrophage has a non-zero probability of moving into non-air voxels.
+        # if not any of these, stay in place. This could happen if e.g. you are
+        # somehow stranded in air.
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
@@ -392,18 +395,7 @@ class Macrophage(PhagocyteModel):
             dtype=np.float64,
         )
 
-        normalized_weights = weights / np.sum(weights)
-
-        # sample from distribution given by normalized weights
-        r = rg.uniform()
-        for vxl, weight in zip(nearby_voxels, normalized_weights):
-            if r <= weight:
-                return vxl
-            r -= weight
-
-        # if not any of these, stay in place. This could happen (to low probability) if the
-        # normalized weights don't add to 1.
-        return voxel
+        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:

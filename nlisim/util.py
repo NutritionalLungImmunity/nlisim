@@ -1,13 +1,15 @@
 from enum import IntEnum
 import math
-import sys
-from typing import Optional, Union
+from typing import Tuple, Union
 
 import numpy as np
 
 # ϵ is used in a divide by zero fix: 1/x -> 1/(x+ϵ)
 # this value is pretty close to the smallest 64bit float with the property that its
 # reciprocal is finite.
+from nlisim.coordinates import Voxel
+from nlisim.random import rg
+
 EPSILON = 5.57e-309
 
 
@@ -99,10 +101,37 @@ class TissueType(IntEnum):
         )
 
 
-def nan_filter(value: Union[np.ndarray, float]) -> Optional[float]:
-    value = float(value)  # for numpy scalars
-    if not math.isinf(value) and not math.isnan(value):
-        return value
+def choose_voxel_by_prob(voxels: Tuple[Voxel, ...], default_value, weights: np.ndarray):
+    """
+    Choose a voxels using a non-normalized probability distribution.
+
+    If weights are all zero, the default value is chosen.
+
+    Parameters
+    ----------
+    voxels
+        an tuple of voxels
+    default_value
+
+    weights
+        an array of non-negative (unchecked) unnormalized probabilities/weights for the voxels
+
+    Returns
+    -------
+
+    """
+    normalization_constant = np.sum(weights)
+    if normalization_constant <= 0:
+        # e.g. if all neighbors are air
+        return default_value
+
+    # prepend a zero to detect `failure by zero' in the argmax below
+    normalized_weights = np.concatenate((np.array([0.0]), weights / normalization_constant))
+
+    # sample from distribution given by normalized weights
+    random_voxel_idx = np.argmax(np.cumsum(normalized_weights) - rg.uniform() > 0.0) - 1
+    if random_voxel_idx < 0:
+        # the only way the 0th could be chosen is by argmax failing
+        return default_value
     else:
-        print(f"Got an {value}", file=sys.stderr)
-        return None
+        return voxels[random_voxel_idx]

@@ -20,7 +20,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType, activation_function
+from nlisim.util import TissueType, activation_function, choose_voxel_by_prob
 
 MAX_CONIDIA = (
     50  # note: this the max that we can set the max to. i.e. not an actual model parameter
@@ -392,18 +392,7 @@ class Neutrophil(PhagocyteModel):
             dtype=np.float64,
         )
 
-        normalized_weights = weights / np.sum(weights)
-
-        # sample from distribution given by normalized weights
-        r = rg.uniform()
-        for vxl, weight in zip(nearby_voxels, normalized_weights):
-            if r <= weight:
-                return vxl
-            r -= weight
-
-        # if not any of these, stay in place. This could happen (to low probability) if the
-        # normalized weights don't add to 1.
-        return voxel
+        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """

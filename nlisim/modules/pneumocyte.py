@@ -22,7 +22,7 @@ from nlisim.util import TissueType, activation_function
 class PneumocyteCellData(PhagocyteCellData):
     PNEUMOCYTE_FIELDS = [
         ('status', np.uint8),
-        ('iteration', np.uint),
+        ('status_iteration', np.uint),
         ('tnfa', bool),
     ]
 
@@ -37,7 +37,7 @@ class PneumocyteCellData(PhagocyteCellData):
     ) -> Tuple:
         initializer = {
             'status': kwargs.get('status', PhagocyteStatus.RESTING),
-            'iteration': kwargs.get('iteration', 0),
+            'status_iteration': kwargs.get('status_iteration', 0),
             'tnfa': kwargs.get('tnfa', False),
         }
 
@@ -148,19 +148,19 @@ class Pneumocyte(PhagocyteModel):
 
             # self update
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                if pneumocyte_cell['iteration'] >= pneumocyte.iter_to_rest:
-                    pneumocyte_cell['iteration'] = 0
+                if pneumocyte_cell['status_iteration'] >= pneumocyte.iter_to_rest:
+                    pneumocyte_cell['status_iteration'] = 0
                     pneumocyte_cell['status'] = PhagocyteStatus.RESTING
                     pneumocyte_cell['tnfa'] = False
                 else:
-                    pneumocyte_cell['iteration'] += 1
+                    pneumocyte_cell['status_iteration'] += 1
 
             elif pneumocyte_cell['status'] == PhagocyteStatus.ACTIVATING:
-                if pneumocyte_cell['iteration'] >= pneumocyte.iter_to_change_state:
-                    pneumocyte_cell['iteration'] = 0
+                if pneumocyte_cell['status_iteration'] >= pneumocyte.iter_to_change_state:
+                    pneumocyte_cell['status_iteration'] = 0
                     pneumocyte_cell['status'] = PhagocyteStatus.ACTIVE
                 else:
-                    pneumocyte_cell['iteration'] += 1
+                    pneumocyte_cell['status_iteration'] += 1
 
             # ----------- interactions
 
@@ -184,7 +184,7 @@ class Pneumocyte(PhagocyteModel):
                     else:
                         # TODO: I don't get this, looks like it zeros out the iteration
                         #  when activating
-                        pneumocyte_cell['iteration'] = 0
+                        pneumocyte_cell['status_iteration'] = 0
 
             # secrete IL6
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
@@ -205,7 +205,7 @@ class Pneumocyte(PhagocyteModel):
                     )
                     < rg.uniform()
                 ):
-                    pneumocyte_cell['iteration'] = 0
+                    pneumocyte_cell['status_iteration'] = 0
                     pneumocyte_cell['tnfa'] = True
 
                 # secrete TNFa
