@@ -167,8 +167,8 @@ class TAFC(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration TAFC': np.mean(tafc.grid['TAFC']) / voxel_volume,
-            'concentration TAFCBI': np.mean(tafc.grid['TAFCBI']) / voxel_volume,
+            'concentration TAFC': float(np.mean(tafc.grid['TAFC']) / voxel_volume),
+            'concentration TAFCBI': float(np.mean(tafc.grid['TAFCBI']) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

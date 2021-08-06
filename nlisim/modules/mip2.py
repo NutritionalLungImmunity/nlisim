@@ -126,7 +126,7 @@ class MIP2(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': np.mean(mip2.grid) / voxel_volume,
+            'concentration': float(np.mean(mip2.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

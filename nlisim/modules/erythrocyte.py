@@ -140,7 +140,7 @@ class ErythrocyteModel(PhagocyteModel):
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),
-            'concentration': np.mean(erythrocyte.cells['count']) / voxel_volume,
+            'concentration': float(np.mean(erythrocyte.cells['count']) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

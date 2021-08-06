@@ -407,11 +407,11 @@ class Afumigatus(ModuleModel):
 
         return {
             'count': len(live_fungus),
-            'resting conidia': status_counts[AfumigatusCellStatus.RESTING_CONIDIA],
-            'swelling conidia': status_counts[AfumigatusCellStatus.SWELLING_CONIDIA],
-            'sterile conidia': status_counts[AfumigatusCellStatus.STERILE_CONIDIA],
-            'germ tube': status_counts[AfumigatusCellStatus.GERM_TUBE],
-            'hyphae': status_counts[AfumigatusCellStatus.HYPHAE],
+            'resting conidia': int(status_counts[AfumigatusCellStatus.RESTING_CONIDIA]),
+            'swelling conidia': int(status_counts[AfumigatusCellStatus.SWELLING_CONIDIA]),
+            'sterile conidia': int(status_counts[AfumigatusCellStatus.STERILE_CONIDIA]),
+            'germ tube': int(status_counts[AfumigatusCellStatus.GERM_TUBE]),
+            'hyphae': int(status_counts[AfumigatusCellStatus.HYPHAE]),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

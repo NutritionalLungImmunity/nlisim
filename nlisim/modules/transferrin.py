@@ -203,9 +203,9 @@ class Transferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            '+0Fe concentration': np.mean(transferrin.grid['Tf']) / voxel_volume,
-            '+1Fe concentration': np.mean(transferrin.grid['TfFe']) / voxel_volume,
-            '+2Fe concentration': np.mean(transferrin.grid['TfFe2']) / voxel_volume,
+            '+0Fe concentration': float(np.mean(transferrin.grid['Tf']) / voxel_volume),
+            '+1Fe concentration': float(np.mean(transferrin.grid['TfFe']) / voxel_volume),
+            '+2Fe concentration': float(np.mean(transferrin.grid['TfFe2']) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

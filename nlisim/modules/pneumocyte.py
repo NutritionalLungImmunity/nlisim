@@ -231,14 +231,14 @@ class Pneumocyte(PhagocyteModel):
         )
         return {
             'count': len(pneumocyte.cells.alive()),
-            'inactive': status_counts[PhagocyteStatus.INACTIVE],
-            'inactivating': status_counts[PhagocyteStatus.INACTIVATING],
-            'resting': status_counts[PhagocyteStatus.RESTING],
-            'activating': status_counts[PhagocyteStatus.ACTIVATING],
-            'active': status_counts[PhagocyteStatus.ACTIVE],
-            'apoptotic': status_counts[PhagocyteStatus.APOPTOTIC],
-            'necrotic': status_counts[PhagocyteStatus.NECROTIC],
-            'interacting': status_counts[PhagocyteStatus.INTERACTING],
+            'inactive': int(status_counts[PhagocyteStatus.INACTIVE]),
+            'inactivating': int(status_counts[PhagocyteStatus.INACTIVATING]),
+            'resting': int(status_counts[PhagocyteStatus.RESTING]),
+            'activating': int(status_counts[PhagocyteStatus.ACTIVATING]),
+            'active': int(status_counts[PhagocyteStatus.ACTIVE]),
+            'apoptotic': int(status_counts[PhagocyteStatus.APOPTOTIC]),
+            'necrotic': int(status_counts[PhagocyteStatus.NECROTIC]),
+            'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

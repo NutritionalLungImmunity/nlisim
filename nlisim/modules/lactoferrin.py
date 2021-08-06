@@ -233,9 +233,9 @@ class Lactoferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            '+0Fe concentration': np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume,
-            '+1Fe concentration': np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume,
-            '+2Fe concentration': np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume,
+            '+0Fe concentration': float(np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume),
+            '+1Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume),
+            '+2Fe concentration': float(np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:

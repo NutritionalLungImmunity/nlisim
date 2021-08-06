@@ -98,7 +98,7 @@ class MCP1(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': np.mean(mcp1.grid) / voxel_volume,
+            'concentration': float(np.mean(mcp1.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
