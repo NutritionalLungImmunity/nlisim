@@ -1,9 +1,10 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
+from nlisim.cell import CellData
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
@@ -88,6 +89,6 @@ class Hemoglobin(MoleculeModel):
             'concentration': np.mean(hemoglobin.grid) / voxel_volume,
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Any]:
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
         hemoglobin: HemoglobinState = state.hemoglobin
         return 'molecule', hemoglobin.grid

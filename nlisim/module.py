@@ -5,6 +5,7 @@ import attr
 from h5py import Dataset, Group
 import numpy as np
 
+from nlisim.cell import CellData
 from nlisim.config import SimulationConfig
 from nlisim.state import State
 
@@ -174,7 +175,7 @@ class ModuleModel(object):
         """
         return dict()
 
-    def visualization_data(self, state: State) -> Tuple[str, Any]:
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
         """Return any 3d visualization data associated with the module.
 
         This is returned as a tuple of the form (datatype, data) where datatype should be one of

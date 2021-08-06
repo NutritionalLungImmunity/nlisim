@@ -1,8 +1,9 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import attr
 import numpy as np
 
+from nlisim.cell import CellData
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
@@ -237,7 +238,7 @@ class Lactoferrin(MoleculeModel):
             '+2Fe concentration': np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume,
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Any]:
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
         lactoferrin: LactoferrinState = state.lactoferrin
 
         return 'molecule', lactoferrin.grid

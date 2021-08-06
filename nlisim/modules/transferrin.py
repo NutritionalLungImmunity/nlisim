@@ -1,10 +1,11 @@
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
+from nlisim.cell import CellData
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
@@ -207,6 +208,6 @@ class Transferrin(MoleculeModel):
             '+2Fe concentration': np.mean(transferrin.grid['TfFe2']) / voxel_volume,
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Any]:
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
         transferrin: TransferrinState = state.transferrin
         return 'molecule', transferrin.grid

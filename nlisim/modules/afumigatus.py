@@ -2,7 +2,7 @@ from enum import IntEnum, auto, unique
 import math
 from queue import SimpleQueue
 import random
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import attr
 from attr import attrib, attrs
@@ -414,8 +414,8 @@ class Afumigatus(ModuleModel):
             'hyphae': status_counts[AfumigatusCellStatus.HYPHAE],
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Any]:
-        return 'cells', state.afumigatus.cells.alive()
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+        return 'cells', state.afumigatus.cells
 
 
 def cell_self_update(
