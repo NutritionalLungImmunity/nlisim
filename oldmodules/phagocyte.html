@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>nlisim.oldmodules.phagocyte API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>nlisim.oldmodules.phagocyte</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from enum import IntEnum
+import math
+import random
+from typing import Tuple
+
+import attr
+import numpy as np
+
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.random import rg
+from nlisim.util import TissueType
+
+MAX_PHAGOSOME_LENGTH = 100
+
+
+class PhagocyteCellData(CellData):
+    RECRUIT_RATE = 0.0
+    LEAVE_RATE = 0.0
+    CHEMOKINE_THRESHOLD = 0.0
+    LEAVES_BOOL = True
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
+
+    class Status(IntEnum):
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
+        APOPTOTIC = 5
+        NECROTIC = 6
+        DEAD = 7
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
+
+    PHAGOCYTE_FIELDS = [
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
+    ) -&gt; Tuple:
+        iteration = 0
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )
+
+
+@attr.s(kw_only=True, frozen=True, repr=False)
+class PhagocyteCellList(CellList):
+    CellDataClass = PhagocyteCellData
+
+    def is_moveable(self, grid: RectangularGrid):
+        cells = self.cell_data
+        return self.alive(
+            (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
+            &amp; cells.point_mask(cells[&#39;point&#39;], grid)
+        )
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = PhagocyteCellList.len_phagosome(self, index)
+        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = PhagocyteCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index):
+        self[index][&#39;phagosome&#39;].fill(-1)
+
+    def recruit(self, rate, molecule, grid: RectangularGrid):
+        # TODO - add recruitment
+        # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
+        # then for each index create a cell with prob &#39;rec_rate&#39;
+        return
+
+    def remove(self, rate, molecule, grid: RectangularGrid):
+        # TODO - add leaving
+        # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
+        # then for each index kill a cell with prob &#39;leave_rate&#39;
+        return
+
+    # move
+    def chemotaxis(
+        self,
+        molecule,
+        drift_lambda,
+        drift_bias,
+        tissue,
+        grid: RectangularGrid,
+    ):
+        # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
+        # prob = 0-1 random number to determine which voxel is chosen to move
+
+        # 1. Get cells that are alive
+        for index in self.alive():
+            prob = rg.random()
+
+            # 2. Get voxel for each cell to get molecule in that voxel
+            cell = self[index]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            # 3. Set prob for neighboring voxels
+            p = []
+            vox_list = []
+            p_tot = 0.0
+            i = -1
+
+            # calculate individual probability
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        p.append(0.0)
+                        vox_list.append([x, y, z])
+                        i += 1
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            if tissue[zk, yj, xi] in [
+                                TissueType.SURFACTANT.value,
+                                TissueType.BLOOD.value,
+                                TissueType.EPITHELIUM.value,
+                                TissueType.PORE.value,
+                            ]:
+                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
+                                p_tot += p[i]
+
+            # scale to sum of probabilities
+            if p_tot:
+                for i in range(len(p)):
+                    p[i] = p[i] / p_tot
+
+            # chose vox from neighbors
+            cum_p = 0.0
+            for i in range(len(p)):
+                cum_p += p[i]
+                if prob &lt;= cum_p:
+                    cell[&#39;point&#39;] = Point(
+                        x=random.uniform(
+                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                        ),
+                        y=random.uniform(
+                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                        ),
+                        z=random.uniform(
+                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                        ),
+                    )
+                    self.update_voxel_index([index])
+                    break
+
+
+def logistic(x, lamb, bias):
+    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="nlisim.oldmodules.phagocyte.logistic"><code class="name flex">
+<span>def <span class="ident">logistic</span></span>(<span>x, lamb, bias)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def logistic(x, lamb, bias):
+    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData"><code class="flex name class">
+<span>class <span class="ident">PhagocyteCellData</span></span>
+<span>(</span><span>arg: Union[int, Iterable[ForwardRef('CellData')]], initialize: bool = False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="language-python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs) -&gt; Tuple:
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhagocyteCellData(CellData):
+    RECRUIT_RATE = 0.0
+    LEAVE_RATE = 0.0
+    CHEMOKINE_THRESHOLD = 0.0
+    LEAVES_BOOL = True
+    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
+
+    class Status(IntEnum):
+        INACTIVE = 0
+        INACTIVATING = 1
+        RESTING = 2
+        ACTIVATING = 3
+        ACTIVE = 4
+        APOPTOTIC = 5
+        NECROTIC = 6
+        DEAD = 7
+
+    class State(IntEnum):
+        FREE = 0
+        INTERACTING = 1
+
+    PHAGOCYTE_FIELDS = [
+        (&#39;status&#39;, &#39;u1&#39;),
+        (&#39;state&#39;, &#39;u1&#39;),
+        (&#39;iron_pool&#39;, &#39;f8&#39;),
+        (&#39;iteration&#39;, &#39;i4&#39;),
+        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+    ]
+
+    dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        *,
+        iron_pool: float = 0,
+        status: Status = Status.RESTING,
+        state: State = State.FREE,
+        **kwargs,
+    ) -&gt; Tuple:
+        iteration = 0
+        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
+        phagosome.fill(-1)
+        return CellData.create_cell_tuple(**kwargs) + (
+            status,
+            state,
+            iron_pool,
+            iteration,
+            phagosome,
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
+<li>numpy.ndarray</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD"><code class="name">var <span class="ident">CHEMOKINE_THRESHOLD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVES_BOOL"><code class="name">var <span class="ident">LEAVES_BOOL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVE_RATE"><code class="name">var <span class="ident">LEAVE_RATE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.RECRUIT_RATE"><code class="name">var <span class="ident">RECRUIT_RATE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList"><code class="flex name class">
+<span>class <span class="ident">PhagocyteCellList</span></span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A python view on top of a CellData array.</p>
+<p>This class represents a pythonic interface to the data contained in a
+CellData array.
+Because the CellData class is a low-level object, it does
+not allow dynamically appending new elements.
+Objects of this class get
+around this limitation by pre-allocating a large block of memory that is
+transparently available.
+User-facing properties are sliced to make it
+appear as if the extra data is not there.</p>
+<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
+a subclass of <code>CellData</code>.
+This provides information about the underlying
+low-level array.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Method generated by attrs for class PhagocyteCellList.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhagocyteCellList(CellList):
+    CellDataClass = PhagocyteCellData
+
+    def is_moveable(self, grid: RectangularGrid):
+        cells = self.cell_data
+        return self.alive(
+            (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
+            &amp; cells.point_mask(cells[&#39;point&#39;], grid)
+        )
+
+    def len_phagosome(self, index):
+        cell = self[index]
+        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+
+    def append_to_phagosome(self, index, pathogen_index, max_size):
+        cell = self[index]
+        index_to_append = PhagocyteCellList.len_phagosome(self, index)
+        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+            return True
+        else:
+            return False
+
+    def remove_from_phagosome(self, index, pathogen_index):
+        phagosome = self[index][&#39;phagosome&#39;]
+        if pathogen_index in phagosome:
+            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+            size = PhagocyteCellList.len_phagosome(self, index)
+            if itemindex == size - 1:
+                # full phagosome
+                phagosome[itemindex] = -1
+                return True
+            else:
+                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+                phagosome[-1] = -1
+                return True
+        else:
+            return False
+
+    def clear_all_phagosome(self, index):
+        self[index][&#39;phagosome&#39;].fill(-1)
+
+    def recruit(self, rate, molecule, grid: RectangularGrid):
+        # TODO - add recruitment
+        # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
+        # then for each index create a cell with prob &#39;rec_rate&#39;
+        return
+
+    def remove(self, rate, molecule, grid: RectangularGrid):
+        # TODO - add leaving
+        # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
+        # then for each index kill a cell with prob &#39;leave_rate&#39;
+        return
+
+    # move
+    def chemotaxis(
+        self,
+        molecule,
+        drift_lambda,
+        drift_bias,
+        tissue,
+        grid: RectangularGrid,
+    ):
+        # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
+        # prob = 0-1 random number to determine which voxel is chosen to move
+
+        # 1. Get cells that are alive
+        for index in self.alive():
+            prob = rg.random()
+
+            # 2. Get voxel for each cell to get molecule in that voxel
+            cell = self[index]
+            vox = grid.get_voxel(cell[&#39;point&#39;])
+
+            # 3. Set prob for neighboring voxels
+            p = []
+            vox_list = []
+            p_tot = 0.0
+            i = -1
+
+            # calculate individual probability
+            for x in [0, 1, -1]:
+                for y in [0, 1, -1]:
+                    for z in [0, 1, -1]:
+                        p.append(0.0)
+                        vox_list.append([x, y, z])
+                        i += 1
+                        zk = vox.z + z
+                        yj = vox.y + y
+                        xi = vox.x + x
+                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                            if tissue[zk, yj, xi] in [
+                                TissueType.SURFACTANT.value,
+                                TissueType.BLOOD.value,
+                                TissueType.EPITHELIUM.value,
+                                TissueType.PORE.value,
+                            ]:
+                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
+                                p_tot += p[i]
+
+            # scale to sum of probabilities
+            if p_tot:
+                for i in range(len(p)):
+                    p[i] = p[i] / p_tot
+
+            # chose vox from neighbors
+            cum_p = 0.0
+            for i in range(len(p)):
+                cum_p += p[i]
+                if prob &lt;= cum_p:
+                    cell[&#39;point&#39;] = Point(
+                        x=random.uniform(
+                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                        ),
+                        y=random.uniform(
+                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                        ),
+                        z=random.uniform(
+                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                        ),
+                    )
+                    self.update_voxel_index([index])
+                    break</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.append_to_phagosome"><code class="name flex">
+<span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def append_to_phagosome(self, index, pathogen_index, max_size):
+    cell = self[index]
+    index_to_append = PhagocyteCellList.len_phagosome(self, index)
+    if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
+        cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
+        return True
+    else:
+        return False</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.chemotaxis"><code class="name flex">
+<span>def <span class="ident">chemotaxis</span></span>(<span>self, molecule, drift_lambda, drift_bias, tissue, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def chemotaxis(
+    self,
+    molecule,
+    drift_lambda,
+    drift_bias,
+    tissue,
+    grid: RectangularGrid,
+):
+    # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
+    # prob = 0-1 random number to determine which voxel is chosen to move
+
+    # 1. Get cells that are alive
+    for index in self.alive():
+        prob = rg.random()
+
+        # 2. Get voxel for each cell to get molecule in that voxel
+        cell = self[index]
+        vox = grid.get_voxel(cell[&#39;point&#39;])
+
+        # 3. Set prob for neighboring voxels
+        p = []
+        vox_list = []
+        p_tot = 0.0
+        i = -1
+
+        # calculate individual probability
+        for x in [0, 1, -1]:
+            for y in [0, 1, -1]:
+                for z in [0, 1, -1]:
+                    p.append(0.0)
+                    vox_list.append([x, y, z])
+                    i += 1
+                    zk = vox.z + z
+                    yj = vox.y + y
+                    xi = vox.x + x
+                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+                        if tissue[zk, yj, xi] in [
+                            TissueType.SURFACTANT.value,
+                            TissueType.BLOOD.value,
+                            TissueType.EPITHELIUM.value,
+                            TissueType.PORE.value,
+                        ]:
+                            p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
+                            p_tot += p[i]
+
+        # scale to sum of probabilities
+        if p_tot:
+            for i in range(len(p)):
+                p[i] = p[i] / p_tot
+
+        # chose vox from neighbors
+        cum_p = 0.0
+        for i in range(len(p)):
+            cum_p += p[i]
+            if prob &lt;= cum_p:
+                cell[&#39;point&#39;] = Point(
+                    x=random.uniform(
+                        grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
+                    ),
+                    y=random.uniform(
+                        grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
+                    ),
+                    z=random.uniform(
+                        grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
+                    ),
+                )
+                self.update_voxel_index([index])
+                break</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.clear_all_phagosome"><code class="name flex">
+<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_all_phagosome(self, index):
+    self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.is_moveable"><code class="name flex">
+<span>def <span class="ident">is_moveable</span></span>(<span>self, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_moveable(self, grid: RectangularGrid):
+    cells = self.cell_data
+    return self.alive(
+        (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
+        &amp; cells.point_mask(cells[&#39;point&#39;], grid)
+    )</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.len_phagosome"><code class="name flex">
+<span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def len_phagosome(self, index):
+    cell = self[index]
+    return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.recruit"><code class="name flex">
+<span>def <span class="ident">recruit</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def recruit(self, rate, molecule, grid: RectangularGrid):
+    # TODO - add recruitment
+    # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
+    # then for each index create a cell with prob &#39;rec_rate&#39;
+    return</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.remove"><code class="name flex">
+<span>def <span class="ident">remove</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove(self, rate, molecule, grid: RectangularGrid):
+    # TODO - add leaving
+    # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
+    # then for each index kill a cell with prob &#39;leave_rate&#39;
+    return</code></pre>
+</details>
+</dd>
+<dt id="nlisim.oldmodules.phagocyte.PhagocyteCellList.remove_from_phagosome"><code class="name flex">
+<span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_from_phagosome(self, index, pathogen_index):
+    phagosome = self[index][&#39;phagosome&#39;]
+    if pathogen_index in phagosome:
+        itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
+        size = PhagocyteCellList.len_phagosome(self, index)
+        if itemindex == size - 1:
+            # full phagosome
+            phagosome[itemindex] = -1
+            return True
+        else:
+            phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
+            phagosome[-1] = -1
+            return True
+    else:
+        return False</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="nlisim.oldmodules" href="index.html">nlisim.oldmodules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="nlisim.oldmodules.phagocyte.logistic" href="#nlisim.oldmodules.phagocyte.logistic">logistic</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></h4>
+<ul class="two-column">
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD">CHEMOKINE_THRESHOLD</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.State" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.State">State</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellData.Status" href="#nlisim.oldmodules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.append_to_phagosome" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.append_to_phagosome">append_to_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.chemotaxis" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.chemotaxis">chemotaxis</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.clear_all_phagosome" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.grid" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.is_moveable" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.is_moveable">is_moveable</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.len_phagosome" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.len_phagosome">len_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.max_cells" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.recruit" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.recruit">recruit</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.remove" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.remove">remove</a></code></li>
+<li><code><a title="nlisim.oldmodules.phagocyte.PhagocyteCellList.remove_from_phagosome" href="#nlisim.oldmodules.phagocyte.PhagocyteCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

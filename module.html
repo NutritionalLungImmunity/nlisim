@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.module API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -28,12 +28,13 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from importlib import import_module
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import attr
 from h5py import Dataset, Group
 import numpy as np
 
+from nlisim.cell import CellList
 from nlisim.config import SimulationConfig
 from nlisim.state import State
 
@@ -201,7 +202,16 @@ class ModuleModel(object):
         Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
         is important to cast these values to standard python types.
         &#34;&#34;&#34;
-        return dict()</code></pre>
+        return dict()
+
+    def visualization_data(self, state: State) -&gt; Tuple[str, Optional[Union[CellList, np.ndarray]]]:
+        &#34;&#34;&#34;Return any 3d visualization data associated with the module.
+
+        This is returned as a tuple of the form (datatype, data) where datatype should be one of
+        &#39;molecule&#39;, &#39;cells&#39;, or &#39;&#39;. The last, empty string, should be reported by modules which do
+        not report data.
+        &#34;&#34;&#34;
+        return &#39;&#39;, None</code></pre>
 </details>
 </section>
 <section>
@@ -277,19 +287,34 @@ class ModuleModel(object):
         Note: Json encoder does not support numpy data-types (e.g. np.float32) so it
         is important to cast these values to standard python types.
         &#34;&#34;&#34;
-        return dict()</code></pre>
+        return dict()
+
+    def visualization_data(self, state: State) -&gt; Tuple[str, Optional[Union[CellList, np.ndarray]]]:
+        &#34;&#34;&#34;Return any 3d visualization data associated with the module.
+
+        This is returned as a tuple of the form (datatype, data) where datatype should be one of
+        &#39;molecule&#39;, &#39;cells&#39;, or &#39;&#39;. The last, empty string, should be reported by modules which do
+        not report data.
+        &#34;&#34;&#34;
+        return &#39;&#39;, None</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.epithelium.Epithelium" href="modules/epithelium.html#nlisim.modules.epithelium.Epithelium">Epithelium</a></li>
-<li><a title="nlisim.modules.fungus.Fungus" href="modules/fungus.html#nlisim.modules.fungus.Fungus">Fungus</a></li>
+<li><a title="nlisim.modules.afumigatus.Afumigatus" href="modules/afumigatus.html#nlisim.modules.afumigatus.Afumigatus">Afumigatus</a></li>
+<li><a title="nlisim.modules.csv_writer.CSVWriter" href="modules/csv_writer.html#nlisim.modules.csv_writer.CSVWriter">CSVWriter</a></li>
 <li><a title="nlisim.modules.geometry.Geometry" href="modules/geometry.html#nlisim.modules.geometry.Geometry">Geometry</a></li>
-<li><a title="nlisim.modules.macrophage.Macrophage" href="modules/macrophage.html#nlisim.modules.macrophage.Macrophage">Macrophage</a></li>
+<li><a title="nlisim.modules.molecules.MoleculeModel" href="modules/molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.modules.molecules.Molecules" href="modules/molecules.html#nlisim.modules.molecules.Molecules">Molecules</a></li>
-<li><a title="nlisim.modules.neutrophil.Neutrophil" href="modules/neutrophil.html#nlisim.modules.neutrophil.Neutrophil">Neutrophil</a></li>
-<li><a title="nlisim.modules.plot.Plot" href="modules/plot.html#nlisim.modules.plot.Plot">Plot</a></li>
+<li><a title="nlisim.modules.phagocyte.PhagocyteModel" href="modules/phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></li>
 <li><a title="nlisim.modules.state_output.StateOutput" href="modules/state_output.html#nlisim.modules.state_output.StateOutput">StateOutput</a></li>
 <li><a title="nlisim.modules.visualization.Visualization" href="modules/visualization.html#nlisim.modules.visualization.Visualization">Visualization</a></li>
+<li><a title="nlisim.oldmodules.epithelium.Epithelium" href="oldmodules/epithelium.html#nlisim.oldmodules.epithelium.Epithelium">Epithelium</a></li>
+<li><a title="nlisim.oldmodules.fungus.Fungus" href="oldmodules/fungus.html#nlisim.oldmodules.fungus.Fungus">Fungus</a></li>
+<li><a title="nlisim.oldmodules.macrophage.Macrophage" href="oldmodules/macrophage.html#nlisim.oldmodules.macrophage.Macrophage">Macrophage</a></li>
+<li><a title="nlisim.oldmodules.molecules.Molecules" href="oldmodules/molecules.html#nlisim.oldmodules.molecules.Molecules">Molecules</a></li>
+<li><a title="nlisim.oldmodules.neutrophil.Neutrophil" href="oldmodules/neutrophil.html#nlisim.oldmodules.neutrophil.Neutrophil">Neutrophil</a></li>
+<li><a title="nlisim.oldmodules.plot.Plot" href="oldmodules/plot.html#nlisim.oldmodules.plot.Plot">Plot</a></li>
+<li><a title="nlisim.oldmodules.visualization.Visualization" href="oldmodules/visualization.html#nlisim.oldmodules.visualization.Visualization">Visualization</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -353,7 +378,7 @@ def time_step(self) -&gt; float:
 </details>
 </dd>
 <dt id="nlisim.module.ModuleModel.construct"><code class="name flex">
-<span>def <span class="ident">construct</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> NoneType</span>
+<span>def <span class="ident">construct</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run after state construction.</p></div>
@@ -411,6 +436,28 @@ is important to cast these values to standard python types.</p></div>
     is important to cast these values to standard python types.
     &#34;&#34;&#34;
     return dict()</code></pre>
+</details>
+</dd>
+<dt id="nlisim.module.ModuleModel.visualization_data"><code class="name flex">
+<span>def <span class="ident">visualization_data</span></span>(<span>self, state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Tuple[str, Union[<a title="nlisim.cell.CellList" href="cell.html#nlisim.cell.CellList">CellList</a>, numpy.ndarray, None]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return any 3d visualization data associated with the module.</p>
+<p>This is returned as a tuple of the form (datatype, data) where datatype should be one of
+'molecule', 'cells', or ''. The last, empty string, should be reported by modules which do
+not report data.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualization_data(self, state: State) -&gt; Tuple[str, Optional[Union[CellList, np.ndarray]]]:
+    &#34;&#34;&#34;Return any 3d visualization data associated with the module.
+
+    This is returned as a tuple of the form (datatype, data) where datatype should be one of
+    &#39;molecule&#39;, &#39;cells&#39;, or &#39;&#39;. The last, empty string, should be reported by modules which do
+    not report data.
+    &#34;&#34;&#34;
+    return &#39;&#39;, None</code></pre>
 </details>
 </dd>
 </dl>
@@ -537,15 +584,40 @@ state must override the serialization mechanism with custom behavior.</p>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.epithelium.EpitheliumState" href="modules/epithelium.html#nlisim.modules.epithelium.EpitheliumState">EpitheliumState</a></li>
-<li><a title="nlisim.modules.fungus.FungusState" href="modules/fungus.html#nlisim.modules.fungus.FungusState">FungusState</a></li>
+<li><a title="nlisim.modules.afumigatus.AfumigatusState" href="modules/afumigatus.html#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a></li>
+<li><a title="nlisim.modules.antitnfa.AntiTNFaState" href="modules/antitnfa.html#nlisim.modules.antitnfa.AntiTNFaState">AntiTNFaState</a></li>
+<li><a title="nlisim.modules.csv_writer.CSVWriterState" href="modules/csv_writer.html#nlisim.modules.csv_writer.CSVWriterState">CSVWriterState</a></li>
+<li><a title="nlisim.modules.erythrocyte.ErythrocyteState" href="modules/erythrocyte.html#nlisim.modules.erythrocyte.ErythrocyteState">ErythrocyteState</a></li>
+<li><a title="nlisim.modules.est_b.EstBState" href="modules/est_b.html#nlisim.modules.est_b.EstBState">EstBState</a></li>
 <li><a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a></li>
-<li><a title="nlisim.modules.macrophage.MacrophageState" href="modules/macrophage.html#nlisim.modules.macrophage.MacrophageState">MacrophageState</a></li>
+<li><a title="nlisim.modules.hemoglobin.HemoglobinState" href="modules/hemoglobin.html#nlisim.modules.hemoglobin.HemoglobinState">HemoglobinState</a></li>
+<li><a title="nlisim.modules.hemolysin.HemolysinState" href="modules/hemolysin.html#nlisim.modules.hemolysin.HemolysinState">HemolysinState</a></li>
+<li><a title="nlisim.modules.hepcidin.HepcidinState" href="modules/hepcidin.html#nlisim.modules.hepcidin.HepcidinState">HepcidinState</a></li>
+<li><a title="nlisim.modules.il10.IL10State" href="modules/il10.html#nlisim.modules.il10.IL10State">IL10State</a></li>
+<li><a title="nlisim.modules.il6.IL6State" href="modules/il6.html#nlisim.modules.il6.IL6State">IL6State</a></li>
+<li><a title="nlisim.modules.il8.IL8State" href="modules/il8.html#nlisim.modules.il8.IL8State">IL8State</a></li>
+<li><a title="nlisim.modules.iron.IronState" href="modules/iron.html#nlisim.modules.iron.IronState">IronState</a></li>
+<li><a title="nlisim.modules.lactoferrin.LactoferrinState" href="modules/lactoferrin.html#nlisim.modules.lactoferrin.LactoferrinState">LactoferrinState</a></li>
+<li><a title="nlisim.modules.liver.LiverState" href="modules/liver.html#nlisim.modules.liver.LiverState">LiverState</a></li>
+<li><a title="nlisim.modules.mcp1.MCP1State" href="modules/mcp1.html#nlisim.modules.mcp1.MCP1State">MCP1State</a></li>
+<li><a title="nlisim.modules.mip1b.MIP1BState" href="modules/mip1b.html#nlisim.modules.mip1b.MIP1BState">MIP1BState</a></li>
+<li><a title="nlisim.modules.mip2.MIP2State" href="modules/mip2.html#nlisim.modules.mip2.MIP2State">MIP2State</a></li>
 <li><a title="nlisim.modules.molecules.MoleculesState" href="modules/molecules.html#nlisim.modules.molecules.MoleculesState">MoleculesState</a></li>
-<li><a title="nlisim.modules.neutrophil.NeutrophilState" href="modules/neutrophil.html#nlisim.modules.neutrophil.NeutrophilState">NeutrophilState</a></li>
-<li><a title="nlisim.modules.plot.PlotState" href="modules/plot.html#nlisim.modules.plot.PlotState">PlotState</a></li>
+<li><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="modules/phagocyte.html#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></li>
+<li><a title="nlisim.modules.ros.ROSState" href="modules/ros.html#nlisim.modules.ros.ROSState">ROSState</a></li>
 <li><a title="nlisim.modules.state_output.StateOutputState" href="modules/state_output.html#nlisim.modules.state_output.StateOutputState">StateOutputState</a></li>
+<li><a title="nlisim.modules.tafc.TAFCState" href="modules/tafc.html#nlisim.modules.tafc.TAFCState">TAFCState</a></li>
+<li><a title="nlisim.modules.tgfb.TGFBState" href="modules/tgfb.html#nlisim.modules.tgfb.TGFBState">TGFBState</a></li>
+<li><a title="nlisim.modules.tnfa.TNFaState" href="modules/tnfa.html#nlisim.modules.tnfa.TNFaState">TNFaState</a></li>
+<li><a title="nlisim.modules.transferrin.TransferrinState" href="modules/transferrin.html#nlisim.modules.transferrin.TransferrinState">TransferrinState</a></li>
 <li><a title="nlisim.modules.visualization.VisualizationState" href="modules/visualization.html#nlisim.modules.visualization.VisualizationState">VisualizationState</a></li>
+<li><a title="nlisim.oldmodules.epithelium.EpitheliumState" href="oldmodules/epithelium.html#nlisim.oldmodules.epithelium.EpitheliumState">EpitheliumState</a></li>
+<li><a title="nlisim.oldmodules.fungus.FungusState" href="oldmodules/fungus.html#nlisim.oldmodules.fungus.FungusState">FungusState</a></li>
+<li><a title="nlisim.oldmodules.macrophage.MacrophageState" href="oldmodules/macrophage.html#nlisim.oldmodules.macrophage.MacrophageState">MacrophageState</a></li>
+<li><a title="nlisim.oldmodules.molecules.MoleculesState" href="oldmodules/molecules.html#nlisim.oldmodules.molecules.MoleculesState">MoleculesState</a></li>
+<li><a title="nlisim.oldmodules.neutrophil.NeutrophilState" href="oldmodules/neutrophil.html#nlisim.oldmodules.neutrophil.NeutrophilState">NeutrophilState</a></li>
+<li><a title="nlisim.oldmodules.plot.PlotState" href="oldmodules/plot.html#nlisim.oldmodules.plot.PlotState">PlotState</a></li>
+<li><a title="nlisim.oldmodules.visualization.VisualizationState" href="oldmodules/visualization.html#nlisim.oldmodules.visualization.VisualizationState">VisualizationState</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -557,7 +629,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <h3>Static methods</h3>
 <dl>
 <dt id="nlisim.module.ModuleState.load_attribute"><code class="name flex">
-<span>def <span class="ident">load_attribute</span></span>(<span>global_state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: Union[dict, NoneType] = None) ‑> Union[float, str, bool, numpy.ndarray]</span>
+<span>def <span class="ident">load_attribute</span></span>(<span>global_state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>, group: h5py._hl.group.Group, name: str, metadata: Optional[dict] = None) ‑> Union[float, str, bool, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load a raw value from an HDF5 file group.</p></div>
@@ -685,7 +757,7 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <h3>Methods</h3>
 <dl>
 <dt id="nlisim.module.ModuleState.save_state"><code class="name flex">
-<span>def <span class="ident">save_state</span></span>(<span>self, group: h5py._hl.group.Group) ‑> NoneType</span>
+<span>def <span class="ident">save_state</span></span>(<span>self, group: h5py._hl.group.Group) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Save the module state into an HDF5 group.</p></div>
@@ -733,6 +805,7 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 <li><code><a title="nlisim.module.ModuleModel.section" href="#nlisim.module.ModuleModel.section">section</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.summary_stats" href="#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 <li>
@@ -752,7 +825,7 @@ def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: d
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

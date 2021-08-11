@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.modules.phagocyte API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -27,49 +27,31 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from enum import IntEnum
-import math
-import random
+<pre><code class="python">from abc import abstractmethod
+from enum import IntEnum, unique
+from typing import TYPE_CHECKING, Tuple
 
-import attr
+from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modules.geometry import TissueTypes
-from nlisim.random import rg
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.state import State
 
-MAX_PHAGOSOME_LENGTH = 100
+if TYPE_CHECKING:  # prevent circular imports for type checking
+    from nlisim.modules.afumigatus import AfumigatusCellData
+
+MAX_CONIDIA = (
+    30  # note: this the max that we can set the max to. i.e. not an actual model parameter
+)
 
 
 class PhagocyteCellData(CellData):
-    RECRUIT_RATE = 0.0
-    LEAVE_RATE = 0.0
-    CHEMOKINE_THRESHOLD = 0.0
-    LEAVES_BOOL = True
-    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
-
-    class Status(IntEnum):
-        INACTIVE = 0
-        INACTIVATING = 1
-        RESTING = 2
-        ACTIVATING = 3
-        ACTIVE = 4
-        APOPTOTIC = 5
-        NECROTIC = 6
-        DEAD = 7
-
-    class State(IntEnum):
-        FREE = 0
-        INTERACTING = 1
-
     PHAGOCYTE_FIELDS = [
-        (&#39;status&#39;, &#39;u1&#39;),
-        (&#39;state&#39;, &#39;u1&#39;),
-        (&#39;iron_pool&#39;, &#39;f8&#39;),
-        (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;phagosome&#39;, (np.int64, MAX_CONIDIA)),
+        (&#39;has_conidia&#39;, bool),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -77,153 +59,185 @@ class PhagocyteCellData(CellData):
     @classmethod
     def create_cell_tuple(
         cls,
-        *,
-        iron_pool: float = 0,
-        status: Status = Status.RESTING,
-        state: State = State.FREE,
         **kwargs,
-    ) -&gt; np.record:
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;phagosome&#39;: kwargs.get(&#39;phagosome&#39;, -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
+            &#39;has_conidia&#39;: kwargs.get(&#39;has_conidia&#39;, False),
+        }
 
-        iteration = 0
-        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
-        phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (
-            status,
-            state,
-            iron_pool,
-            iteration,
-            phagosome,
+        # ensure that these come in the correct order
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS]
         )
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
-class PhagocyteCellList(CellList):
-    CellDataClass = PhagocyteCellData
+@attrs(kw_only=True)
+class PhagocyteModuleState(ModuleState):
+    max_conidia: int
 
-    def is_moveable(self, grid: RectangularGrid):
-        cells = self.cell_data
-        return self.alive(
-            (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
-            &amp; cells.point_mask(cells[&#39;point&#39;], grid)
-        )
 
-    def len_phagosome(self, index):
-        cell = self[index]
-        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+class PhagocyteModel(ModuleModel):
 
-    def append_to_phagosome(self, index, pathogen_index, max_size):
-        cell = self[index]
-        index_to_append = PhagocyteCellList.len_phagosome(self, index)
-        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
-            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-            return True
-        else:
-            return False
+    # def move(self, old_voxel, steps):
+    #     if steps &lt; self.get_max_move_steps():
+    #         calc_drift_probability(old_voxel, self)
+    #         new_voxel = get_voxel(old_voxel, random())
+    #
+    #         old_voxel.remove_cell(self.id)
+    #         new_voxel.set_cell(self)
+    #         steps += 1
+    #
+    #         for _, a in self.phagosome.items():
+    #             a.x = new_voxel.x + random()
+    #             a.y = new_voxel.y + random()
+    #             a.z = new_voxel.z + random()
+    #
+    #         return self.move(new_voxel, steps)
 
-    def remove_from_phagosome(self, index, pathogen_index):
-        phagosome = self[index][&#39;phagosome&#39;]
-        if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = PhagocyteCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
-        else:
-            return False
+    def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+        &#34;&#34;&#34;
+        Move the phagocyte one step (voxel) probabilistically.
 
-    def clear_all_phagosome(self, index):
-        self[index][&#39;phagosome&#39;].fill(-1)
+        depending on single_step_probabilistic_drift
 
-    def recruit(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add recruitment
-        # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
-        # then for each index create a cell with prob &#39;rec_rate&#39;
+        Parameters
+        ----------
+        state : State
+            the global simulation state
+        cell : PhagocyteCellData
+            the cell to move
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        grid: RectangularGrid = state.grid
+
+        # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
+        # just in case.
+        cell_point: Point = cell[&#39;point&#39;]
+        cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
+        offset: np.ndarray = cell_point - cell_voxel
+        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell[&#39;point&#39;] = new_voxel + offset
+
+    @abstractmethod
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -&gt; Voxel:
+        ...
+
+    @staticmethod
+    def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; None:
+        &#34;&#34;&#34;
+        Release afumigatus cells in the phagosome
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        phagocyte_cell : PhagocyteCellData
+
+
+        Returns
+        -------
+        Nothing
+        &#34;&#34;&#34;
+        from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusState
+
+        afumigatus: AfumigatusState = state.afumigatus
+
+        for fungal_cell_index in phagocyte_cell[&#39;phagosome&#39;]:
+            if fungal_cell_index == -1:
+                continue
+            afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
+        phagocyte_cell[&#39;phagosome&#39;].fill(-1)
+
+
+# TODO: name
+@unique
+class PhagocyteState(IntEnum):
+    FREE = 0
+    INTERACTING = 1  # TODO: is this dead code?
+
+
+# TODO: name
+@unique
+class PhagocyteStatus(IntEnum):
+    INACTIVE = 0
+    INACTIVATING = 1
+    RESTING = 2
+    ACTIVATING = 3
+    ACTIVE = 4
+    APOPTOTIC = 5
+    NECROTIC = 6
+    DEAD = 7
+    ANERGIC = 8
+    INTERACTING = 9  # TODO: check
+
+
+# noinspection PyUnresolvedReferences
+def internalize_aspergillus(
+    phagocyte_cell: PhagocyteCellData,
+    aspergillus_cell: &#39;AfumigatusCellData&#39;,
+    aspergillus_cell_index: int,
+    phagocyte: PhagocyteModuleState,
+    phagocytize: bool = False,
+) -&gt; None:
+    &#34;&#34;&#34;
+    Possibly have a phagocyte phagocytize a fungal cell.
+
+    Parameters
+    ----------
+    phagocyte_cell : PhagocyteCellData
+    aspergillus_cell : AfumigatusCellData
+    aspergillus_cell_index : int
+    phagocyte : PhagocyteState
+    phagocytize : bool
+
+    Returns
+    -------
+    Nothing
+    &#34;&#34;&#34;
+    from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
+
+    # We cannot internalize an already internalized fungal cell
+    if aspergillus_cell[&#39;state&#39;] != AfumigatusCellState.FREE:
         return
 
-    def remove(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add leaving
-        # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
-        # then for each index kill a cell with prob &#39;leave_rate&#39;
-        return
-
-    # move
-    def chemotaxis(
-        self,
-        molecule,
-        drift_lambda,
-        drift_bias,
-        tissue,
-        grid: RectangularGrid,
+    # deal with conidia
+    if (
+        aspergillus_cell[&#39;status&#39;]
+        in {
+            AfumigatusCellStatus.RESTING_CONIDIA,
+            AfumigatusCellStatus.SWELLING_CONIDIA,
+            AfumigatusCellStatus.STERILE_CONIDIA,
+        }
+        or phagocytize
     ):
-        # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
-        # prob = 0-1 random number to determine which voxel is chosen to move
+        if phagocyte_cell[&#39;status&#39;] not in {
+            PhagocyteStatus.NECROTIC,
+            PhagocyteStatus.APOPTOTIC,
+            PhagocyteStatus.DEAD,
+        }:
+            # check to see if we have room before we add in another cell to the phagosome
+            num_cells_in_phagosome = np.sum(phagocyte_cell[&#39;phagosome&#39;] &gt;= 0)
+            if num_cells_in_phagosome &lt; phagocyte.max_conidia:
+                phagocyte_cell[&#39;has_conidia&#39;] = True
+                aspergillus_cell[&#39;state&#39;] = AfumigatusCellState.INTERNALIZING
+                # place the fungal cell in the phagosome,
+                # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
+                phagocyte_cell[&#39;phagosome&#39;].sort()
+                phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
 
-        # 1. Get cells that are alive
-        for index in self.alive():
-            prob = rg.random()
-
-            # 2. Get voxel for each cell to get molecule in that voxel
-            cell = self[index]
-            vox = grid.get_voxel(cell[&#39;point&#39;])
-
-            # 3. Set prob for neighboring voxels
-            p = []
-            vox_list = []
-            p_tot = 0.0
-            i = -1
-
-            # calculate individual probability
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        p.append(0.0)
-                        vox_list.append([x, y, z])
-                        i += 1
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            if tissue[zk, yj, xi] in [
-                                TissueTypes.SURFACTANT.value,
-                                TissueTypes.BLOOD.value,
-                                TissueTypes.EPITHELIUM.value,
-                                TissueTypes.PORE.value,
-                            ]:
-                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
-                                p_tot += p[i]
-
-            # scale to sum of probabilities
-            if p_tot:
-                for i in range(len(p)):
-                    p[i] = p[i] / p_tot
-
-            # chose vox from neighbors
-            cum_p = 0.0
-            for i in range(len(p)):
-                cum_p += p[i]
-                if prob &lt;= cum_p:
-                    cell[&#39;point&#39;] = Point(
-                        x=random.uniform(
-                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
-                        ),
-                        y=random.uniform(
-                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
-                        ),
-                        z=random.uniform(
-                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
-                        ),
-                    )
-                    self.update_voxel_index([index])
-                    break
-
-
-def logistic(x, lamb, bias):
-    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
+    # TODO: what is going on here? is the if too loose?
+    if aspergillus_cell[&#39;status&#39;] != AfumigatusCellStatus.RESTING_CONIDIA:
+        phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
+        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+            phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+        else:
+            phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
 </details>
 </section>
 <section>
@@ -233,17 +247,93 @@ def logistic(x, lamb, bias):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="nlisim.modules.phagocyte.logistic"><code class="name flex">
-<span>def <span class="ident">logistic</span></span>(<span>x, lamb, bias)</span>
+<dt id="nlisim.modules.phagocyte.internalize_aspergillus"><code class="name flex">
+<span>def <span class="ident">internalize_aspergillus</span></span>(<span>phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, aspergillus_cell: AfumigatusCellData, aspergillus_cell_index: int, phagocyte: <a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a>, phagocytize: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Possibly have a phagocyte phagocytize a fungal cell.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>phagocyte_cell</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>aspergillus_cell</code></strong> :&ensp;<code>AfumigatusCellData</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>aspergillus_cell_index</code></strong> :&ensp;<code>int</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>phagocyte</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteState" href="#nlisim.modules.phagocyte.PhagocyteState">PhagocyteState</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>phagocytize</code></strong> :&ensp;<code>bool</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def logistic(x, lamb, bias):
-    return 1 - bias * math.exp(-((x / lamb) ** 2))</code></pre>
+<pre><code class="python">def internalize_aspergillus(
+    phagocyte_cell: PhagocyteCellData,
+    aspergillus_cell: &#39;AfumigatusCellData&#39;,
+    aspergillus_cell_index: int,
+    phagocyte: PhagocyteModuleState,
+    phagocytize: bool = False,
+) -&gt; None:
+    &#34;&#34;&#34;
+    Possibly have a phagocyte phagocytize a fungal cell.
+
+    Parameters
+    ----------
+    phagocyte_cell : PhagocyteCellData
+    aspergillus_cell : AfumigatusCellData
+    aspergillus_cell_index : int
+    phagocyte : PhagocyteState
+    phagocytize : bool
+
+    Returns
+    -------
+    Nothing
+    &#34;&#34;&#34;
+    from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
+
+    # We cannot internalize an already internalized fungal cell
+    if aspergillus_cell[&#39;state&#39;] != AfumigatusCellState.FREE:
+        return
+
+    # deal with conidia
+    if (
+        aspergillus_cell[&#39;status&#39;]
+        in {
+            AfumigatusCellStatus.RESTING_CONIDIA,
+            AfumigatusCellStatus.SWELLING_CONIDIA,
+            AfumigatusCellStatus.STERILE_CONIDIA,
+        }
+        or phagocytize
+    ):
+        if phagocyte_cell[&#39;status&#39;] not in {
+            PhagocyteStatus.NECROTIC,
+            PhagocyteStatus.APOPTOTIC,
+            PhagocyteStatus.DEAD,
+        }:
+            # check to see if we have room before we add in another cell to the phagosome
+            num_cells_in_phagosome = np.sum(phagocyte_cell[&#39;phagosome&#39;] &gt;= 0)
+            if num_cells_in_phagosome &lt; phagocyte.max_conidia:
+                phagocyte_cell[&#39;has_conidia&#39;] = True
+                aspergillus_cell[&#39;state&#39;] = AfumigatusCellState.INTERNALIZING
+                # place the fungal cell in the phagosome,
+                # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
+                phagocyte_cell[&#39;phagosome&#39;].sort()
+                phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
+
+    # TODO: what is going on here? is the if too loose?
+    if aspergillus_cell[&#39;status&#39;] != AfumigatusCellStatus.RESTING_CONIDIA:
+        phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
+        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+            phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+        else:
+            phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
 </details>
 </dd>
 </dl>
@@ -253,7 +343,7 @@ def logistic(x, lamb, bias):
 <dl>
 <dt id="nlisim.modules.phagocyte.PhagocyteCellData"><code class="flex name class">
 <span>class <span class="ident">PhagocyteCellData</span></span>
-<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
+<span>(</span><span>arg: Union[int, Iterable[ForwardRef('CellData')]], initialize: bool = False, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A low-level data contain for an array cells.</p>
@@ -281,7 +371,7 @@ associated with each cell.</p>
     dtype = np.dtype(CellData.FIELDS, align=True)
 
     @classmethod
-    def create_cell_tuple(cls, iron_content=0, **kwargs):
+    def create_cell_tuple(cls, iron_content=0, **kwargs) -&gt; Tuple:
         return CellData.create_cell_tuple(**kwargs) + (iron_content,)
 </code></pre></div>
 <details class="source">
@@ -289,32 +379,9 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PhagocyteCellData(CellData):
-    RECRUIT_RATE = 0.0
-    LEAVE_RATE = 0.0
-    CHEMOKINE_THRESHOLD = 0.0
-    LEAVES_BOOL = True
-    MAX_CONIDIA = MAX_PHAGOSOME_LENGTH
-
-    class Status(IntEnum):
-        INACTIVE = 0
-        INACTIVATING = 1
-        RESTING = 2
-        ACTIVATING = 3
-        ACTIVE = 4
-        APOPTOTIC = 5
-        NECROTIC = 6
-        DEAD = 7
-
-    class State(IntEnum):
-        FREE = 0
-        INTERACTING = 1
-
     PHAGOCYTE_FIELDS = [
-        (&#39;status&#39;, &#39;u1&#39;),
-        (&#39;state&#39;, &#39;u1&#39;),
-        (&#39;iron_pool&#39;, &#39;f8&#39;),
-        (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;phagosome&#39;, (np.int64, MAX_CONIDIA)),
+        (&#39;has_conidia&#39;, bool),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -322,22 +389,16 @@ associated with each cell.</p>
     @classmethod
     def create_cell_tuple(
         cls,
-        *,
-        iron_pool: float = 0,
-        status: Status = Status.RESTING,
-        state: State = State.FREE,
         **kwargs,
-    ) -&gt; np.record:
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;phagosome&#39;: kwargs.get(&#39;phagosome&#39;, -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
+            &#39;has_conidia&#39;: kwargs.get(&#39;has_conidia&#39;, False),
+        }
 
-        iteration = 0
-        phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
-        phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (
-            status,
-            state,
-            iron_pool,
-            iteration,
-            phagosome,
+        # ensure that these come in the correct order
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in PhagocyteCellData.PHAGOCYTE_FIELDS]
         )</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -345,39 +406,17 @@ associated with each cell.</p>
 <li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.macrophage.MacrophageCellData" href="macrophage.html#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></li>
+<li><a title="nlisim.modules.neutrophil.NeutrophilCellData" href="neutrophil.html#nlisim.modules.neutrophil.NeutrophilCellData">NeutrophilCellData</a></li>
+<li><a title="nlisim.modules.pneumocyte.PneumocyteCellData" href="pneumocyte.html#nlisim.modules.pneumocyte.PneumocyteCellData">PneumocyteCellData</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD"><code class="name">var <span class="ident">CHEMOKINE_THRESHOLD</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL"><code class="name">var <span class="ident">LEAVES_BOOL</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE"><code class="name">var <span class="ident">LEAVE_RATE</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE"><code class="name">var <span class="ident">RECRUIT_RATE</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.State"><code class="name">var <span class="ident">State</span></code></dt>
-<dd>
-<div class="desc"><p>An enumeration.</p></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
-<dd>
-<div class="desc"><p>An enumeration.</p></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
@@ -393,280 +432,209 @@ associated with each cell.</p>
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList"><code class="flex name class">
-<span>class <span class="ident">PhagocyteCellList</span></span>
-<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteModel"><code class="flex name class">
+<span>class <span class="ident">PhagocyteModel</span></span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A python view on top of a CellData array.</p>
-<p>This class represents a pythonic interface to the data contained in a
-CellData array.
-Because the CellData class is a low-level object, it does
-not allow dynamically appending new elements.
-Objects of this class get
-around this limitation by pre-allocating a large block of memory that is
-transparently available.
-User-facing properties are sliced to make it
-appear as if the extra data is not there.</p>
-<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
-a subclass of <code>CellData</code>.
-This provides information about the underlying
-low-level array.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
-<dd>&nbsp;</dd>
-</dl>
-<p>Method generated by attrs for class PhagocyteCellList.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PhagocyteCellList(CellList):
-    CellDataClass = PhagocyteCellData
+<pre><code class="python">class PhagocyteModel(ModuleModel):
 
-    def is_moveable(self, grid: RectangularGrid):
-        cells = self.cell_data
-        return self.alive(
-            (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
-            &amp; cells.point_mask(cells[&#39;point&#39;], grid)
-        )
+    # def move(self, old_voxel, steps):
+    #     if steps &lt; self.get_max_move_steps():
+    #         calc_drift_probability(old_voxel, self)
+    #         new_voxel = get_voxel(old_voxel, random())
+    #
+    #         old_voxel.remove_cell(self.id)
+    #         new_voxel.set_cell(self)
+    #         steps += 1
+    #
+    #         for _, a in self.phagosome.items():
+    #             a.x = new_voxel.x + random()
+    #             a.y = new_voxel.y + random()
+    #             a.z = new_voxel.z + random()
+    #
+    #         return self.move(new_voxel, steps)
 
-    def len_phagosome(self, index):
-        cell = self[index]
-        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
+    def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+        &#34;&#34;&#34;
+        Move the phagocyte one step (voxel) probabilistically.
 
-    def append_to_phagosome(self, index, pathogen_index, max_size):
-        cell = self[index]
-        index_to_append = PhagocyteCellList.len_phagosome(self, index)
-        if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
-            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-            return True
-        else:
-            return False
+        depending on single_step_probabilistic_drift
 
-    def remove_from_phagosome(self, index, pathogen_index):
-        phagosome = self[index][&#39;phagosome&#39;]
-        if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = PhagocyteCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
-        else:
-            return False
+        Parameters
+        ----------
+        state : State
+            the global simulation state
+        cell : PhagocyteCellData
+            the cell to move
 
-    def clear_all_phagosome(self, index):
-        self[index][&#39;phagosome&#39;].fill(-1)
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        grid: RectangularGrid = state.grid
 
-    def recruit(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add recruitment
-        # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
-        # then for each index create a cell with prob &#39;rec_rate&#39;
-        return
+        # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
+        # just in case.
+        cell_point: Point = cell[&#39;point&#39;]
+        cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
+        offset: np.ndarray = cell_point - cell_voxel
+        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell[&#39;point&#39;] = new_voxel + offset
 
-    def remove(self, rate, molecule, grid: RectangularGrid):
-        # TODO - add leaving
-        # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
-        # then for each index kill a cell with prob &#39;leave_rate&#39;
-        return
+    @abstractmethod
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -&gt; Voxel:
+        ...
 
-    # move
-    def chemotaxis(
-        self,
-        molecule,
-        drift_lambda,
-        drift_bias,
-        tissue,
-        grid: RectangularGrid,
-    ):
-        # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
-        # prob = 0-1 random number to determine which voxel is chosen to move
+    @staticmethod
+    def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; None:
+        &#34;&#34;&#34;
+        Release afumigatus cells in the phagosome
 
-        # 1. Get cells that are alive
-        for index in self.alive():
-            prob = rg.random()
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        phagocyte_cell : PhagocyteCellData
 
-            # 2. Get voxel for each cell to get molecule in that voxel
-            cell = self[index]
-            vox = grid.get_voxel(cell[&#39;point&#39;])
 
-            # 3. Set prob for neighboring voxels
-            p = []
-            vox_list = []
-            p_tot = 0.0
-            i = -1
+        Returns
+        -------
+        Nothing
+        &#34;&#34;&#34;
+        from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusState
 
-            # calculate individual probability
-            for x in [0, 1, -1]:
-                for y in [0, 1, -1]:
-                    for z in [0, 1, -1]:
-                        p.append(0.0)
-                        vox_list.append([x, y, z])
-                        i += 1
-                        zk = vox.z + z
-                        yj = vox.y + y
-                        xi = vox.x + x
-                        if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                            if tissue[zk, yj, xi] in [
-                                TissueTypes.SURFACTANT.value,
-                                TissueTypes.BLOOD.value,
-                                TissueTypes.EPITHELIUM.value,
-                                TissueTypes.PORE.value,
-                            ]:
-                                p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
-                                p_tot += p[i]
+        afumigatus: AfumigatusState = state.afumigatus
 
-            # scale to sum of probabilities
-            if p_tot:
-                for i in range(len(p)):
-                    p[i] = p[i] / p_tot
-
-            # chose vox from neighbors
-            cum_p = 0.0
-            for i in range(len(p)):
-                cum_p += p[i]
-                if prob &lt;= cum_p:
-                    cell[&#39;point&#39;] = Point(
-                        x=random.uniform(
-                            grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
-                        ),
-                        y=random.uniform(
-                            grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
-                        ),
-                        z=random.uniform(
-                            grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
-                        ),
-                    )
-                    self.update_voxel_index([index])
-                    break</code></pre>
+        for fungal_cell_index in phagocyte_cell[&#39;phagosome&#39;]:
+            if fungal_cell_index == -1:
+                continue
+            afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
+        phagocyte_cell[&#39;phagosome&#39;].fill(-1)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.erythrocyte.ErythrocyteModel" href="erythrocyte.html#nlisim.modules.erythrocyte.ErythrocyteModel">ErythrocyteModel</a></li>
+<li><a title="nlisim.modules.macrophage.Macrophage" href="macrophage.html#nlisim.modules.macrophage.Macrophage">Macrophage</a></li>
+<li><a title="nlisim.modules.neutrophil.Neutrophil" href="neutrophil.html#nlisim.modules.neutrophil.Neutrophil">Neutrophil</a></li>
+<li><a title="nlisim.modules.pneumocyte.Pneumocyte" href="pneumocyte.html#nlisim.modules.pneumocyte.Pneumocyte">Pneumocyte</a></li>
+</ul>
+<h3>Static methods</h3>
 <dl>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteModel.release_phagosome"><code class="name flex">
+<span>def <span class="ident">release_phagosome</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>) ‑> None</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
-<dd>
-<div class="desc"></div>
+<div class="desc"><p>Release afumigatus cells in the phagosome</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>global simulation state</dd>
+<dt><strong><code>phagocyte_cell</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; None:
+    &#34;&#34;&#34;
+    Release afumigatus cells in the phagosome
+
+    Parameters
+    ----------
+    state : State
+        global simulation state
+    phagocyte_cell : PhagocyteCellData
+
+
+    Returns
+    -------
+    Nothing
+    &#34;&#34;&#34;
+    from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusState
+
+    afumigatus: AfumigatusState = state.afumigatus
+
+    for fungal_cell_index in phagocyte_cell[&#39;phagosome&#39;]:
+        if fungal_cell_index == -1:
+            continue
+        afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
+    phagocyte_cell[&#39;phagosome&#39;].fill(-1)</code></pre>
+</details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome"><code class="name flex">
-<span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteModel.single_step_move"><code class="name flex">
+<span>def <span class="ident">single_step_move</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Move the phagocyte one step (voxel) probabilistically.</p>
+<p>depending on single_step_probabilistic_drift</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>the global simulation state</dd>
+<dt><strong><code>cell</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></dt>
+<dd>the cell to move</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def append_to_phagosome(self, index, pathogen_index, max_size):
-    cell = self[index]
-    index_to_append = PhagocyteCellList.len_phagosome(self, index)
-    if index_to_append &lt; MAX_PHAGOSOME_LENGTH and index_to_append &lt; max_size:
-        cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-        return True
-    else:
-        return False</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis"><code class="name flex">
-<span>def <span class="ident">chemotaxis</span></span>(<span>self, molecule, drift_lambda, drift_bias, tissue, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def chemotaxis(
-    self,
-    molecule,
-    drift_lambda,
-    drift_bias,
-    tissue,
-    grid: RectangularGrid,
-):
-    # &#39;molecule&#39; = state.&#39;molecule&#39;.concentration
-    # prob = 0-1 random number to determine which voxel is chosen to move
+<pre><code class="python">def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+    &#34;&#34;&#34;
+    Move the phagocyte one step (voxel) probabilistically.
 
-    # 1. Get cells that are alive
-    for index in self.alive():
-        prob = rg.random()
+    depending on single_step_probabilistic_drift
 
-        # 2. Get voxel for each cell to get molecule in that voxel
-        cell = self[index]
-        vox = grid.get_voxel(cell[&#39;point&#39;])
+    Parameters
+    ----------
+    state : State
+        the global simulation state
+    cell : PhagocyteCellData
+        the cell to move
 
-        # 3. Set prob for neighboring voxels
-        p = []
-        vox_list = []
-        p_tot = 0.0
-        i = -1
+    Returns
+    -------
+    nothing
+    &#34;&#34;&#34;
+    grid: RectangularGrid = state.grid
 
-        # calculate individual probability
-        for x in [0, 1, -1]:
-            for y in [0, 1, -1]:
-                for z in [0, 1, -1]:
-                    p.append(0.0)
-                    vox_list.append([x, y, z])
-                    i += 1
-                    zk = vox.z + z
-                    yj = vox.y + y
-                    xi = vox.x + x
-                    if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
-                        if tissue[zk, yj, xi] in [
-                            TissueTypes.SURFACTANT.value,
-                            TissueTypes.BLOOD.value,
-                            TissueTypes.EPITHELIUM.value,
-                            TissueTypes.PORE.value,
-                        ]:
-                            p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
-                            p_tot += p[i]
-
-        # scale to sum of probabilities
-        if p_tot:
-            for i in range(len(p)):
-                p[i] = p[i] / p_tot
-
-        # chose vox from neighbors
-        cum_p = 0.0
-        for i in range(len(p)):
-            cum_p += p[i]
-            if prob &lt;= cum_p:
-                cell[&#39;point&#39;] = Point(
-                    x=random.uniform(
-                        grid.xv[vox.x + vox_list[i][0]], grid.xv[vox.x + vox_list[i][0] + 1]
-                    ),
-                    y=random.uniform(
-                        grid.yv[vox.y + vox_list[i][1]], grid.yv[vox.y + vox_list[i][1] + 1]
-                    ),
-                    z=random.uniform(
-                        grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
-                    ),
-                )
-                self.update_voxel_index([index])
-                break</code></pre>
+    # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
+    # just in case.
+    cell_point: Point = cell[&#39;point&#39;]
+    cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
+    offset: np.ndarray = cell_point - cell_voxel
+    new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+    cell[&#39;point&#39;] = new_voxel + offset</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome"><code class="name flex">
-<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index)</span>
+<dt id="nlisim.modules.phagocyte.PhagocyteModel.single_step_probabilistic_drift"><code class="name flex">
+<span>def <span class="ident">single_step_probabilistic_drift</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -674,118 +642,182 @@ low-level array.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def clear_all_phagosome(self, index):
-    self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.is_moveable"><code class="name flex">
-<span>def <span class="ident">is_moveable</span></span>(<span>self, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_moveable(self, grid: RectangularGrid):
-    cells = self.cell_data
-    return self.alive(
-        (cells[&#39;status&#39;] == PhagocyteCellData.Status.RESTING)
-        &amp; cells.point_mask(cells[&#39;point&#39;], grid)
-    )</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome"><code class="name flex">
-<span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def len_phagosome(self, index):
-    cell = self[index]
-    return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.recruit"><code class="name flex">
-<span>def <span class="ident">recruit</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def recruit(self, rate, molecule, grid: RectangularGrid):
-    # TODO - add recruitment
-    # indices = np.argwhere(molecule_to_recruit &gt;= threshold_value)
-    # then for each index create a cell with prob &#39;rec_rate&#39;
-    return</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.remove"><code class="name flex">
-<span>def <span class="ident">remove</span></span>(<span>self, rate, molecule, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def remove(self, rate, molecule, grid: RectangularGrid):
-    # TODO - add leaving
-    # indices = np.argwhere(molecule_to_leave &lt;= threshold_value)
-    # then for each index kill a cell with prob &#39;leave_rate&#39;
-    return</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome"><code class="name flex">
-<span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def remove_from_phagosome(self, index, pathogen_index):
-    phagosome = self[index][&#39;phagosome&#39;]
-    if pathogen_index in phagosome:
-        itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-        size = PhagocyteCellList.len_phagosome(self, index)
-        if itemindex == size - 1:
-            # full phagosome
-            phagosome[itemindex] = -1
-            return True
-        else:
-            phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-            phagosome[-1] = -1
-            return True
-    else:
-        return False</code></pre>
+<pre><code class="python">@abstractmethod
+def single_step_probabilistic_drift(
+    self, state: State, cell: PhagocyteCellData, voxel: Voxel
+) -&gt; Voxel:
+    ...</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
-<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
-<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
-<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
-<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
-<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
-<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
-<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
-<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
-<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
-<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteModuleState"><code class="flex name class">
+<span>class <span class="ident">PhagocyteModuleState</span></span>
+<span>(</span><span>*, global_state: State)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p>
+<p>Method generated by attrs for class PhagocyteModuleState.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhagocyteModuleState(ModuleState):
+    max_conidia: int</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.macrophage.MacrophageState" href="macrophage.html#nlisim.modules.macrophage.MacrophageState">MacrophageState</a></li>
+<li><a title="nlisim.modules.neutrophil.NeutrophilState" href="neutrophil.html#nlisim.modules.neutrophil.NeutrophilState">NeutrophilState</a></li>
+<li><a title="nlisim.modules.pneumocyte.PneumocyteState" href="pneumocyte.html#nlisim.modules.pneumocyte.PneumocyteState">PneumocyteState</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.phagocyte.PhagocyteModuleState.max_conidia"><code class="name">var <span class="ident">max_conidia</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteState"><code class="flex name class">
+<span>class <span class="ident">PhagocyteState</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhagocyteState(IntEnum):
+    FREE = 0
+    INTERACTING = 1  # TODO: is this dead code?</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.IntEnum</li>
+<li>builtins.int</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.phagocyte.PhagocyteState.FREE"><code class="name">var <span class="ident">FREE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteState.INTERACTING"><code class="name">var <span class="ident">INTERACTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus"><code class="flex name class">
+<span>class <span class="ident">PhagocyteStatus</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhagocyteStatus(IntEnum):
+    INACTIVE = 0
+    INACTIVATING = 1
+    RESTING = 2
+    ACTIVATING = 3
+    ACTIVE = 4
+    APOPTOTIC = 5
+    NECROTIC = 6
+    DEAD = 7
+    ANERGIC = 8
+    INTERACTING = 9  # TODO: check</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.IntEnum</li>
+<li>builtins.int</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.ACTIVATING"><code class="name">var <span class="ident">ACTIVATING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.ACTIVE"><code class="name">var <span class="ident">ACTIVE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.ANERGIC"><code class="name">var <span class="ident">ANERGIC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.APOPTOTIC"><code class="name">var <span class="ident">APOPTOTIC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.DEAD"><code class="name">var <span class="ident">DEAD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.INACTIVATING"><code class="name">var <span class="ident">INACTIVATING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.INACTIVE"><code class="name">var <span class="ident">INACTIVE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.INTERACTING"><code class="name">var <span class="ident">INTERACTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.NECROTIC"><code class="name">var <span class="ident">NECROTIC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.phagocyte.PhagocyteStatus.RESTING"><code class="name">var <span class="ident">RESTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 </dd>
 </dl>
 </section>
@@ -803,37 +835,51 @@ low-level array.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="nlisim.modules.phagocyte.logistic" href="#nlisim.modules.phagocyte.logistic">logistic</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.internalize_aspergillus" href="#nlisim.modules.phagocyte.internalize_aspergillus">internalize_aspergillus</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></h4>
-<ul class="two-column">
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD" href="#nlisim.modules.phagocyte.PhagocyteCellData.CHEMOKINE_THRESHOLD">CHEMOKINE_THRESHOLD</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL" href="#nlisim.modules.phagocyte.PhagocyteCellData.LEAVES_BOOL">LEAVES_BOOL</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE" href="#nlisim.modules.phagocyte.PhagocyteCellData.LEAVE_RATE">LEAVE_RATE</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA" href="#nlisim.modules.phagocyte.PhagocyteCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
+<ul class="">
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS" href="#nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE" href="#nlisim.modules.phagocyte.PhagocyteCellData.RECRUIT_RATE">RECRUIT_RATE</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.State" href="#nlisim.modules.phagocyte.PhagocyteCellData.State">State</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.Status" href="#nlisim.modules.phagocyte.PhagocyteCellData.Status">Status</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.phagocyte.PhagocyteCellList" href="#nlisim.modules.phagocyte.PhagocyteCellList">PhagocyteCellList</a></code></h4>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteModel" href="#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.append_to_phagosome">append_to_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis" href="#nlisim.modules.phagocyte.PhagocyteCellList.chemotaxis">chemotaxis</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.grid" href="#nlisim.modules.phagocyte.PhagocyteCellList.grid">grid</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.is_moveable" href="#nlisim.modules.phagocyte.PhagocyteCellList.is_moveable">is_moveable</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.len_phagosome">len_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.max_cells" href="#nlisim.modules.phagocyte.PhagocyteCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.recruit" href="#nlisim.modules.phagocyte.PhagocyteCellList.recruit">recruit</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.remove" href="#nlisim.modules.phagocyte.PhagocyteCellList.remove">remove</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome" href="#nlisim.modules.phagocyte.PhagocyteCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.release_phagosome" href="#nlisim.modules.phagocyte.PhagocyteModel.release_phagosome">release_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.single_step_move" href="#nlisim.modules.phagocyte.PhagocyteModel.single_step_move">single_step_move</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.single_step_probabilistic_drift" href="#nlisim.modules.phagocyte.PhagocyteModel.single_step_probabilistic_drift">single_step_probabilistic_drift</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.max_conidia" href="#nlisim.modules.phagocyte.PhagocyteModuleState.max_conidia">max_conidia</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteState" href="#nlisim.modules.phagocyte.PhagocyteState">PhagocyteState</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteState.FREE" href="#nlisim.modules.phagocyte.PhagocyteState.FREE">FREE</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteState.INTERACTING" href="#nlisim.modules.phagocyte.PhagocyteState.INTERACTING">INTERACTING</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.phagocyte.PhagocyteStatus" href="#nlisim.modules.phagocyte.PhagocyteStatus">PhagocyteStatus</a></code></h4>
+<ul class="two-column">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.ACTIVATING" href="#nlisim.modules.phagocyte.PhagocyteStatus.ACTIVATING">ACTIVATING</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.ACTIVE" href="#nlisim.modules.phagocyte.PhagocyteStatus.ACTIVE">ACTIVE</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.ANERGIC" href="#nlisim.modules.phagocyte.PhagocyteStatus.ANERGIC">ANERGIC</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.APOPTOTIC" href="#nlisim.modules.phagocyte.PhagocyteStatus.APOPTOTIC">APOPTOTIC</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.DEAD" href="#nlisim.modules.phagocyte.PhagocyteStatus.DEAD">DEAD</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.INACTIVATING" href="#nlisim.modules.phagocyte.PhagocyteStatus.INACTIVATING">INACTIVATING</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.INACTIVE" href="#nlisim.modules.phagocyte.PhagocyteStatus.INACTIVE">INACTIVE</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.INTERACTING" href="#nlisim.modules.phagocyte.PhagocyteStatus.INTERACTING">INTERACTING</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.NECROTIC" href="#nlisim.modules.phagocyte.PhagocyteStatus.NECROTIC">NECROTIC</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteStatus.RESTING" href="#nlisim.modules.phagocyte.PhagocyteStatus.RESTING">RESTING</a></code></li>
 </ul>
 </li>
 </ul>
@@ -842,7 +888,7 @@ low-level array.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

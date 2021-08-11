@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.molecule API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -28,7 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from enum import Enum, unique
-from typing import List
+from typing import Dict, List
 
 import attr
 from h5py import Group
@@ -70,6 +70,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
+    _diffusivity: Dict[str, int] = {}
     _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
@@ -105,6 +106,10 @@ class MoleculeGrid(object):
         )
 
     @property
+    def diffusivity(self):
+        return self._diffusivity
+
+    @property
     def concentrations(self):
         return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)
 
@@ -127,6 +132,9 @@ class MoleculeGrid(object):
         if molecule not in self._concentrations.dtype.names:
             raise KeyError(f&#39;Molecule {molecule} is not declared&#39;)
         self._molecule_type.append(molecule)
+
+    def set_diffusivity(self, molecule: str, diffusivity: int):
+        self._diffusivity[molecule] = diffusivity
 
     def incr(self):
         concentrations = self._concentrations
@@ -201,6 +209,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
+    _diffusivity: Dict[str, int] = {}
     _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
@@ -236,6 +245,10 @@ class MoleculeGrid(object):
         )
 
     @property
+    def diffusivity(self):
+        return self._diffusivity
+
+    @property
     def concentrations(self):
         return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)
 
@@ -258,6 +271,9 @@ class MoleculeGrid(object):
         if molecule not in self._concentrations.dtype.names:
             raise KeyError(f&#39;Molecule {molecule} is not declared&#39;)
         self._molecule_type.append(molecule)
+
+    def set_diffusivity(self, molecule: str, diffusivity: int):
+        self._diffusivity[molecule] = diffusivity
 
     def incr(self):
         concentrations = self._concentrations
@@ -357,6 +373,18 @@ def concentrations(self):
     return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)</code></pre>
 </details>
 </dd>
+<dt id="nlisim.molecule.MoleculeGrid.diffusivity"><code class="name">var <span class="ident">diffusivity</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def diffusivity(self):
+    return self._diffusivity</code></pre>
+</details>
+</dd>
 <dt id="nlisim.molecule.MoleculeGrid.sources"><code class="name">var <span class="ident">sources</span></code></dt>
 <dd>
 <div class="desc"></div>
@@ -444,6 +472,19 @@ an HDF5 group.</p></div>
     composite_group.create_dataset(name=&#39;sources&#39;, data=sources)
 
     return composite_group</code></pre>
+</details>
+</dd>
+<dt id="nlisim.molecule.MoleculeGrid.set_diffusivity"><code class="name flex">
+<span>def <span class="ident">set_diffusivity</span></span>(<span>self, molecule: str, diffusivity: int)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_diffusivity(self, molecule: str, diffusivity: int):
+    self._diffusivity[molecule] = diffusivity</code></pre>
 </details>
 </dd>
 <dt id="nlisim.molecule.MoleculeGrid.shape"><code class="name flex">
@@ -599,10 +640,12 @@ an HDF5 group.</p></div>
 <ul class="">
 <li><code><a title="nlisim.molecule.MoleculeGrid.append_molecule_type" href="#nlisim.molecule.MoleculeGrid.append_molecule_type">append_molecule_type</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.concentrations" href="#nlisim.molecule.MoleculeGrid.concentrations">concentrations</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.diffusivity" href="#nlisim.molecule.MoleculeGrid.diffusivity">diffusivity</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.grid" href="#nlisim.molecule.MoleculeGrid.grid">grid</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.incr" href="#nlisim.molecule.MoleculeGrid.incr">incr</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.load" href="#nlisim.molecule.MoleculeGrid.load">load</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.save" href="#nlisim.molecule.MoleculeGrid.save">save</a></code></li>
+<li><code><a title="nlisim.molecule.MoleculeGrid.set_diffusivity" href="#nlisim.molecule.MoleculeGrid.set_diffusivity">set_diffusivity</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.shape" href="#nlisim.molecule.MoleculeGrid.shape">shape</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.sources" href="#nlisim.molecule.MoleculeGrid.sources">sources</a></code></li>
 <li><code><a title="nlisim.molecule.MoleculeGrid.types" href="#nlisim.molecule.MoleculeGrid.types">types</a></code></li>
@@ -638,7 +681,7 @@ an HDF5 group.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

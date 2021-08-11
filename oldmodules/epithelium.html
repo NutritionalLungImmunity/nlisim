@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
-<title>nlisim.modules.epithelium API documentation</title>
+<meta name="generator" content="pdoc 0.10.0" />
+<title>nlisim.oldmodules.epithelium API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>nlisim.modules.epithelium</code></h1>
+<h1 class="title">Module <code>nlisim.oldmodules.epithelium</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -30,6 +30,7 @@
 <pre><code class="python">from enum import IntEnum
 import itertools
 from random import shuffle
+from typing import Any, Dict, Tuple
 
 import attr
 import numpy as np
@@ -38,10 +39,10 @@ from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.geometry import TissueTypes
+from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 from nlisim.random import rg
 from nlisim.state import State
+from nlisim.util import TissueType
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -63,7 +64,7 @@ class EpitheliumCellData(CellData):
         (&#39;status&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;phagosome&#39;, (np.int32, MAX_CONIDIA)),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -75,7 +76,7 @@ class EpitheliumCellData(CellData):
         iron_pool: float = 0,
         status: Status = Status.RESTING,
         **kwargs,
-    ) -&gt; np.record:
+    ) -&gt; Tuple:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
@@ -159,7 +160,7 @@ class EpitheliumCellList(CellList):
                             else:
                                 spores[index][&#39;internalized&#39;] = False
 
-    def remove_dead_fungus(self, spores, grid):
+    def remove_dead_fungus(self, spores):
         for epi_index in self.alive():
             for ii in range(0, self.len_phagosome(epi_index)):
                 index = self[epi_index][&#39;phagosome&#39;][ii]
@@ -265,7 +266,7 @@ class Epithelium(ModuleModel):
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
 
-        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+        indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
 
         for i in range(0, len(indices)):
             x = grid.x[indices[i][2]]
@@ -301,7 +302,7 @@ class Epithelium(ModuleModel):
             )
 
         # remove killed spores from phagosome
-        cells.remove_dead_fungus(spores, grid)
+        cells.remove_dead_fungus(spores)
 
         # produce cytokines
         cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
@@ -312,7 +313,17 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        epi: EpitheliumState = state.epithelium
+
+        return {
+            &#39;count&#39;: len(epi.cells.alive()),
+        }
+
+    def visualization_data(self, state: State) -&gt; Tuple[str, Any]:
+        return &#39;cells&#39;, state.epithelium.cells</code></pre>
 </details>
 </section>
 <section>
@@ -322,8 +333,8 @@ class Epithelium(ModuleModel):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="nlisim.modules.epithelium.cell_list_factory"><code class="name flex">
-<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.epithelium.EpitheliumState" href="#nlisim.modules.epithelium.EpitheliumState">EpitheliumState</a>)</span>
+<dt id="nlisim.oldmodules.epithelium.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.oldmodules.epithelium.EpitheliumState" href="#nlisim.oldmodules.epithelium.EpitheliumState">EpitheliumState</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -340,7 +351,7 @@ class Epithelium(ModuleModel):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="nlisim.modules.epithelium.Epithelium"><code class="flex name class">
+<dt id="nlisim.oldmodules.epithelium.Epithelium"><code class="flex name class">
 <span>class <span class="ident">Epithelium</span></span>
 <span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
@@ -370,7 +381,7 @@ class Epithelium(ModuleModel):
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
 
-        indices = np.argwhere(tissue == TissueTypes.EPITHELIUM.value)
+        indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
 
         for i in range(0, len(indices)):
             x = grid.x[indices[i][2]]
@@ -406,7 +417,7 @@ class Epithelium(ModuleModel):
             )
 
         # remove killed spores from phagosome
-        cells.remove_dead_fungus(spores, grid)
+        cells.remove_dead_fungus(spores)
 
         # produce cytokines
         cells.cytokine_update(epi.s_det, epi.h_det, epi.cyto_rate, m_cyto, n_cyto, spores, grid)
@@ -417,7 +428,17 @@ class Epithelium(ModuleModel):
         # kill epithelium with germinated spore in its phagosome
         cells.die_by_germination(spores)
 
-        return state</code></pre>
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        epi: EpitheliumState = state.epithelium
+
+        return {
+            &#39;count&#39;: len(epi.cells.alive()),
+        }
+
+    def visualization_data(self, state: State) -&gt; Tuple[str, Any]:
+        return &#39;cells&#39;, state.epithelium.cells</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -436,13 +457,14 @@ class Epithelium(ModuleModel):
 <li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellData"><code class="flex name class">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellData"><code class="flex name class">
 <span>class <span class="ident">EpitheliumCellData</span></span>
-<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
+<span>(</span><span>arg: Union[int, Iterable[ForwardRef('CellData')]], initialize: bool = False, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A low-level data contain for an array cells.</p>
@@ -470,7 +492,7 @@ associated with each cell.</p>
     dtype = np.dtype(CellData.FIELDS, align=True)
 
     @classmethod
-    def create_cell_tuple(cls, iron_content=0, **kwargs):
+    def create_cell_tuple(cls, iron_content=0, **kwargs) -&gt; Tuple:
         return CellData.create_cell_tuple(**kwargs) + (iron_content,)
 </code></pre></div>
 <details class="source">
@@ -494,7 +516,7 @@ associated with each cell.</p>
         (&#39;status&#39;, &#39;u1&#39;),
         (&#39;iron_pool&#39;, &#39;f8&#39;),
         (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;phagosome&#39;, (np.int32, MAX_CONIDIA)),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -506,7 +528,7 @@ associated with each cell.</p>
         iron_pool: float = 0,
         status: Status = Status.RESTING,
         **kwargs,
-    ) -&gt; np.record:
+    ) -&gt; Tuple:
         iteration = 0
         phagosome = np.empty(MAX_PHAGOSOME_LENGTH)
         phagosome.fill(-1)
@@ -524,15 +546,15 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.epithelium.EpitheliumCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellData.MAX_CONIDIA"><code class="name">var <span class="ident">MAX_CONIDIA</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellData.Status"><code class="name">var <span class="ident">Status</span></code></dt>
 <dd>
 <div class="desc"><p>An enumeration.</p></div>
 </dd>
@@ -550,7 +572,7 @@ associated with each cell.</p>
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList"><code class="flex name class">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList"><code class="flex name class">
 <span>class <span class="ident">EpitheliumCellList</span></span>
 <span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
 </code></dt>
@@ -654,7 +676,7 @@ low-level array.</p>
                             else:
                                 spores[index][&#39;internalized&#39;] = False
 
-    def remove_dead_fungus(self, spores, grid):
+    def remove_dead_fungus(self, spores):
         for epi_index in self.alive():
             for ii in range(0, self.len_phagosome(epi_index)):
                 index = self[epi_index][&#39;phagosome&#39;][ii]
@@ -728,18 +750,18 @@ low-level array.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.append_to_phagosome"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.append_to_phagosome"><code class="name flex">
 <span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
 </code></dt>
 <dd>
@@ -762,8 +784,8 @@ low-level array.</p>
         return False</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.clear_all_phagosome"><code class="name flex">
-<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.clear_all_phagosome"><code class="name flex">
+<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="nlisim.oldmodules.fungus.FungusCellList" href="fungus.html#nlisim.oldmodules.fungus.FungusCellList">FungusCellList</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -778,7 +800,7 @@ low-level array.</p>
     self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.cytokine_update"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.cytokine_update"><code class="name flex">
 <span>def <span class="ident">cytokine_update</span></span>(<span>self, s_det, h_det, cyto_rate, m_cyto, n_cyto, fungus, grid)</span>
 </code></dt>
 <dd>
@@ -832,7 +854,7 @@ low-level array.</p>
         n_cyto[vox.z, vox.y, vox.x] += cyto_rate * (spore_count + hyphae_count)</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.damage"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.damage"><code class="name flex">
 <span>def <span class="ident">damage</span></span>(<span>self, kill, t, health, fungus)</span>
 </code></dt>
 <dd>
@@ -849,7 +871,7 @@ low-level array.</p>
             fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.die_by_germination"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.die_by_germination"><code class="name flex">
 <span>def <span class="ident">die_by_germination</span></span>(<span>self, spores)</span>
 </code></dt>
 <dd>
@@ -869,8 +891,8 @@ low-level array.</p>
                 break</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.internalize_conidia"><code class="name flex">
-<span>def <span class="ident">internalize_conidia</span></span>(<span>self, e_det, max_spores, p_in, grid, spores: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.internalize_conidia"><code class="name flex">
+<span>def <span class="ident">internalize_conidia</span></span>(<span>self, e_det, max_spores, p_in, grid, spores: <a title="nlisim.oldmodules.fungus.FungusCellList" href="fungus.html#nlisim.oldmodules.fungus.FungusCellList">FungusCellList</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -908,7 +930,7 @@ low-level array.</p>
                             spores[index][&#39;internalized&#39;] = False</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.len_phagosome"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.len_phagosome"><code class="name flex">
 <span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
 </code></dt>
 <dd>
@@ -922,8 +944,8 @@ low-level array.</p>
     return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.remove_dead_fungus"><code class="name flex">
-<span>def <span class="ident">remove_dead_fungus</span></span>(<span>self, spores, grid)</span>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.remove_dead_fungus"><code class="name flex">
+<span>def <span class="ident">remove_dead_fungus</span></span>(<span>self, spores)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -931,7 +953,7 @@ low-level array.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def remove_dead_fungus(self, spores, grid):
+<pre><code class="python">def remove_dead_fungus(self, spores):
     for epi_index in self.alive():
         for ii in range(0, self.len_phagosome(epi_index)):
             index = self[epi_index][&#39;phagosome&#39;][ii]
@@ -939,7 +961,7 @@ low-level array.</p>
                 self.remove_from_phagosome(epi_index, index)</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumCellList.remove_from_phagosome"><code class="name flex">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumCellList.remove_from_phagosome"><code class="name flex">
 <span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
 </code></dt>
 <dd>
@@ -985,9 +1007,9 @@ low-level array.</p>
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState"><code class="flex name class">
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState"><code class="flex name class">
 <span>class <span class="ident">EpitheliumState</span></span>
-<span>(</span><span>*, global_state: State, cells: <a title="nlisim.modules.epithelium.EpitheliumCellList" href="#nlisim.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a> = NOTHING)</span>
+<span>(</span><span>*, global_state: State, cells: <a title="nlisim.oldmodules.epithelium.EpitheliumCellList" href="#nlisim.oldmodules.epithelium.EpitheliumCellList">EpitheliumCellList</a> = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -1017,39 +1039,39 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.epithelium.EpitheliumState.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.modules.epithelium.EpitheliumCellList" href="#nlisim.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.oldmodules.epithelium.EpitheliumCellList" href="#nlisim.oldmodules.epithelium.EpitheliumCellList">EpitheliumCellList</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.cyto_rate"><code class="name">var <span class="ident">cyto_rate</span> : float</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.cyto_rate"><code class="name">var <span class="ident">cyto_rate</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.e_kill"><code class="name">var <span class="ident">e_kill</span> : float</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.e_kill"><code class="name">var <span class="ident">e_kill</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.h_det"><code class="name">var <span class="ident">h_det</span> : int</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.h_det"><code class="name">var <span class="ident">h_det</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.init_health"><code class="name">var <span class="ident">init_health</span> : float</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.init_health"><code class="name">var <span class="ident">init_health</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.max_conidia_in_phag"><code class="name">var <span class="ident">max_conidia_in_phag</span> : int</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.max_conidia_in_phag"><code class="name">var <span class="ident">max_conidia_in_phag</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.p_internalization"><code class="name">var <span class="ident">p_internalization</span> : float</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.p_internalization"><code class="name">var <span class="ident">p_internalization</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.s_det"><code class="name">var <span class="ident">s_det</span> : int</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.s_det"><code class="name">var <span class="ident">s_det</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.epithelium.EpitheliumState.time_e"><code class="name">var <span class="ident">time_e</span> : float</code></dt>
+<dt id="nlisim.oldmodules.epithelium.EpitheliumState.time_e"><code class="name">var <span class="ident">time_e</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1077,55 +1099,55 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
+<li><code><a title="nlisim.oldmodules" href="index.html">nlisim.oldmodules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="nlisim.modules.epithelium.cell_list_factory" href="#nlisim.modules.epithelium.cell_list_factory">cell_list_factory</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.cell_list_factory" href="#nlisim.oldmodules.epithelium.cell_list_factory">cell_list_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.epithelium.Epithelium" href="#nlisim.modules.epithelium.Epithelium">Epithelium</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.epithelium.Epithelium" href="#nlisim.oldmodules.epithelium.Epithelium">Epithelium</a></code></h4>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.epithelium.EpitheliumCellData" href="#nlisim.modules.epithelium.EpitheliumCellData">EpitheliumCellData</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellData" href="#nlisim.oldmodules.epithelium.EpitheliumCellData">EpitheliumCellData</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellData.MAX_CONIDIA" href="#nlisim.modules.epithelium.EpitheliumCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS" href="#nlisim.modules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellData.Status" href="#nlisim.modules.epithelium.EpitheliumCellData.Status">Status</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellData.MAX_CONIDIA" href="#nlisim.oldmodules.epithelium.EpitheliumCellData.MAX_CONIDIA">MAX_CONIDIA</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS" href="#nlisim.oldmodules.epithelium.EpitheliumCellData.PHAGOCYTE_FIELDS">PHAGOCYTE_FIELDS</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellData.Status" href="#nlisim.oldmodules.epithelium.EpitheliumCellData.Status">Status</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.epithelium.EpitheliumCellList" href="#nlisim.modules.epithelium.EpitheliumCellList">EpitheliumCellList</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList" href="#nlisim.oldmodules.epithelium.EpitheliumCellList">EpitheliumCellList</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.append_to_phagosome" href="#nlisim.modules.epithelium.EpitheliumCellList.append_to_phagosome">append_to_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.clear_all_phagosome" href="#nlisim.modules.epithelium.EpitheliumCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.cytokine_update" href="#nlisim.modules.epithelium.EpitheliumCellList.cytokine_update">cytokine_update</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.damage" href="#nlisim.modules.epithelium.EpitheliumCellList.damage">damage</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.die_by_germination" href="#nlisim.modules.epithelium.EpitheliumCellList.die_by_germination">die_by_germination</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.grid" href="#nlisim.modules.epithelium.EpitheliumCellList.grid">grid</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.internalize_conidia" href="#nlisim.modules.epithelium.EpitheliumCellList.internalize_conidia">internalize_conidia</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.len_phagosome" href="#nlisim.modules.epithelium.EpitheliumCellList.len_phagosome">len_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.max_cells" href="#nlisim.modules.epithelium.EpitheliumCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.remove_dead_fungus" href="#nlisim.modules.epithelium.EpitheliumCellList.remove_dead_fungus">remove_dead_fungus</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumCellList.remove_from_phagosome" href="#nlisim.modules.epithelium.EpitheliumCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.append_to_phagosome" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.append_to_phagosome">append_to_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.clear_all_phagosome" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.cytokine_update" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.cytokine_update">cytokine_update</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.damage" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.damage">damage</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.die_by_germination" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.die_by_germination">die_by_germination</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.grid" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.internalize_conidia" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.internalize_conidia">internalize_conidia</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.len_phagosome" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.len_phagosome">len_phagosome</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.max_cells" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.max_cells">max_cells</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.remove_dead_fungus" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.remove_dead_fungus">remove_dead_fungus</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumCellList.remove_from_phagosome" href="#nlisim.oldmodules.epithelium.EpitheliumCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.epithelium.EpitheliumState" href="#nlisim.modules.epithelium.EpitheliumState">EpitheliumState</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.epithelium.EpitheliumState" href="#nlisim.oldmodules.epithelium.EpitheliumState">EpitheliumState</a></code></h4>
 <ul class="two-column">
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.cells" href="#nlisim.modules.epithelium.EpitheliumState.cells">cells</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.cyto_rate" href="#nlisim.modules.epithelium.EpitheliumState.cyto_rate">cyto_rate</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.e_kill" href="#nlisim.modules.epithelium.EpitheliumState.e_kill">e_kill</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.h_det" href="#nlisim.modules.epithelium.EpitheliumState.h_det">h_det</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.init_health" href="#nlisim.modules.epithelium.EpitheliumState.init_health">init_health</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.max_conidia_in_phag" href="#nlisim.modules.epithelium.EpitheliumState.max_conidia_in_phag">max_conidia_in_phag</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.p_internalization" href="#nlisim.modules.epithelium.EpitheliumState.p_internalization">p_internalization</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.s_det" href="#nlisim.modules.epithelium.EpitheliumState.s_det">s_det</a></code></li>
-<li><code><a title="nlisim.modules.epithelium.EpitheliumState.time_e" href="#nlisim.modules.epithelium.EpitheliumState.time_e">time_e</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.cells" href="#nlisim.oldmodules.epithelium.EpitheliumState.cells">cells</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.cyto_rate" href="#nlisim.oldmodules.epithelium.EpitheliumState.cyto_rate">cyto_rate</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.e_kill" href="#nlisim.oldmodules.epithelium.EpitheliumState.e_kill">e_kill</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.h_det" href="#nlisim.oldmodules.epithelium.EpitheliumState.h_det">h_det</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.init_health" href="#nlisim.oldmodules.epithelium.EpitheliumState.init_health">init_health</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.max_conidia_in_phag" href="#nlisim.oldmodules.epithelium.EpitheliumState.max_conidia_in_phag">max_conidia_in_phag</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.p_internalization" href="#nlisim.oldmodules.epithelium.EpitheliumState.p_internalization">p_internalization</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.s_det" href="#nlisim.oldmodules.epithelium.EpitheliumState.s_det">s_det</a></code></li>
+<li><code><a title="nlisim.oldmodules.epithelium.EpitheliumState.time_e" href="#nlisim.oldmodules.epithelium.EpitheliumState.time_e">time_e</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1134,7 +1156,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

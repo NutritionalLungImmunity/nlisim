@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.modules.macrophage API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -27,350 +27,460 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import itertools
-from random import choice, shuffle
-from typing import Any, Dict
+<pre><code class="python">import math
+import random
+from typing import Any, Dict, Tuple
 
 import attr
+from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.geometry import TissueTypes
+from nlisim.modules.phagocyte import (
+    PhagocyteCellData,
+    PhagocyteModel,
+    PhagocyteModuleState,
+    PhagocyteState,
+    PhagocyteStatus,
+)
 from nlisim.random import rg
 from nlisim.state import State
-
-MAX_CONIDIA = 100
-
-np.warnings.filterwarnings(&#39;error&#39;, category=np.VisibleDeprecationWarning)
+from nlisim.util import choose_voxel_by_prob
 
 
-class MacrophageCellData(CellData):
+class MacrophageCellData(PhagocyteCellData):
     MACROPHAGE_FIELDS = [
-        (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;status&#39;, np.uint8),
+        (&#39;state&#39;, np.uint8),
+        (&#39;fpn&#39;, bool),
+        (&#39;fpn_iteration&#39;, np.int64),
+        (&#39;tf&#39;, bool),  # TODO: descriptive name, transferrin?
+        (&#39;move_step&#39;, np.float64),
+        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
+        (&#39;tnfa&#39;, bool),
+        (&#39;engaged&#39;, bool),
+        (&#39;iron_pool&#39;, np.float64),
+        (&#39;status_iteration&#39;, np.uint64),
     ]
 
-    dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
+    # TODO: this implementation of inheritance is not so slick, redo with super?
+    dtype = np.dtype(
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
+    )  # type: ignore
 
     @classmethod
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -&gt; np.record:
-        iteration = 0
-        phagosome = np.empty(MAX_CONIDIA)
-        phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (
-            iteration,
-            phagosome,
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
+            &#39;state&#39;: kwargs.get(&#39;state&#39;, PhagocyteState.FREE),
+            &#39;fpn&#39;: kwargs.get(&#39;fpn&#39;, True),
+            &#39;fpn_iteration&#39;: kwargs.get(&#39;fpn_iteration&#39;, 0),
+            &#39;tf&#39;: kwargs.get(&#39;tf&#39;, False),
+            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
+            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
+            &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
+            &#39;engaged&#39;: kwargs.get(&#39;engaged&#39;, False),
+            &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
+            &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+        }
+
+        # ensure that these come in the correct order
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in MacrophageCellData.MACROPHAGE_FIELDS]
         )
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
+@attrs(kw_only=True, frozen=True, repr=False)
 class MacrophageCellList(CellList):
     CellDataClass = MacrophageCellData
 
-    def len_phagosome(self, index):
-        cell = self[index]
-        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
 
-    def append_to_phagosome(self, index, pathogen_index, max_size):
-        cell = self[index]
-        index_to_append = MacrophageCellList.len_phagosome(self, index)
-        if (
-            index_to_append &lt; MAX_CONIDIA
-            and index_to_append &lt; max_size
-            and pathogen_index not in cell[&#39;phagosome&#39;]
-        ):
-            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-            return True
-        else:
-            return False
-
-    def remove_from_phagosome(self, index, pathogen_index):
-        phagosome = self[index][&#39;phagosome&#39;]
-        if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = MacrophageCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
-        else:
-            return False
-
-    def clear_all_phagosome(self, index, fungus: FungusCellList):
-        for i in range(0, self.len_phagosome(index)):
-            index = self[index][&#39;phagosome&#39;][i]
-            fungus[index][&#39;internalized&#39;] = False
-        self[index][&#39;phagosome&#39;].fill(-1)
-
-    def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
-        num_reps = rec_rate_ph  # maximum number of macrophages recruited per time step
-
-        cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto &gt;= rec_r))
-        if len(cyto_index) == 0:
-            # nowhere to place cells
-            return
-
-        for _ in range(num_reps):
-            if p_rec_r &gt; rg.random():
-                ii = rg.integers(cyto_index.shape[0])
-                point = Point(
-                    x=grid.x[cyto_index[ii, 2]],
-                    y=grid.y[cyto_index[ii, 1]],
-                    z=grid.z[cyto_index[ii, 0]],
-                )
-                # Do we really want these things to always be in the exact center of the voxel?
-                # No we do not. Should not have any effect on model, but maybe some on
-                # visualization.
-                perturbation = rg.multivariate_normal(
-                    mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
-                )
-                perturbation_magnitude = np.linalg.norm(perturbation)
-                perturbation /= max(1.0, perturbation_magnitude)
-                point += perturbation
-                self.append(MacrophageCellData.create_cell(point=point))
-
-    def absorb_cytokines(self, m_abs, cyto, grid):
-        for index in self.alive():
-            vox = grid.get_voxel(self[index][&#39;point&#39;])
-            x = vox.x
-            y = vox.y
-            z = vox.z
-            cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]
-
-    def produce_cytokines(self, m_det, m_n, grid, fungus: FungusCellList, cyto):
-        for i in self.alive():
-            vox = grid.get_voxel(self[i][&#39;point&#39;])
-
-            hyphae_count = 0
-
-            # Moore neighborhood
-            neighborhood = tuple(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-
-            for dx, dy, dz in neighborhood:
-                zi = vox.z + dz
-                yj = vox.y + dy
-                xk = vox.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                    for index in index_arr:
-                        if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
-                            hyphae_count += 1
-
-            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
-
-    def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
-        for cell_index in self.alive():
-            cell = self[cell_index]
-            cell_voxel = grid.get_voxel(cell[&#39;point&#39;])
-
-            valid_voxel_offsets = []
-            above_threshold_voxel_offsets = []
-
-            # iterate over nearby voxels, recording the cytokine levels
-            for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
-                zi = cell_voxel.z + dz
-                yj = cell_voxel.y + dy
-                xk = cell_voxel.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    if tissue[zi, yj, xk] != TissueTypes.AIR.value:
-                        valid_voxel_offsets.append((dx, dy, dz))
-                        if cyto[zi, yj, xk] &gt;= rec_r:
-                            above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))
-
-            # pick a target for the move
-            if len(above_threshold_voxel_offsets) &gt; 0:
-                # shuffle + sort (with _only_ 0-key, not lexicographic as tuples) ensures
-                # randomization when there are equal top cytokine levels
-                # note that numpy&#39;s shuffle will complain about ragged arrays
-                shuffle(above_threshold_voxel_offsets)
-                above_threshold_voxel_offsets = sorted(
-                    above_threshold_voxel_offsets, key=lambda x: x[0], reverse=True
-                )
-                _, target_voxel_offset = above_threshold_voxel_offsets[0]
-            elif len(valid_voxel_offsets) &gt; 0:
-                target_voxel_offset = choice(valid_voxel_offsets)
-            else:
-                raise AssertionError(
-                    &#39;This cell has no valid voxel to move to, including the one that it is in!&#39;
-                )
-
-            # Some nonsense here, b/c jump is happening at the voxel level, not the point level
-            starting_cell_point = Point(x=cell[&#39;point&#39;][2], y=cell[&#39;point&#39;][1], z=cell[&#39;point&#39;][0])
-            starting_cell_voxel = grid.get_voxel(starting_cell_point)
-            ending_cell_voxel = grid.get_voxel(
-                Point(
-                    x=grid.x[cell_voxel.x + target_voxel_offset[0]],
-                    y=grid.y[cell_voxel.y + target_voxel_offset[1]],
-                    z=grid.z[cell_voxel.z + target_voxel_offset[2]],
-                )
-            )
-            ending_cell_point = (
-                starting_cell_point
-                + grid.get_voxel_center(ending_cell_voxel)
-                - grid.get_voxel_center(starting_cell_voxel)
-            )
-
-            cell[&#39;point&#39;] = ending_cell_point
-            self.update_voxel_index([cell_index])
-
-            for i in range(0, self.len_phagosome(cell_index)):
-                f_index = cell[&#39;phagosome&#39;][i]
-                fungus[f_index][&#39;point&#39;] = ending_cell_point
-                fungus.update_voxel_index([f_index])
-
-    def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
-        for i in self.alive():
-            cell = self[i]
-            vox = grid.get_voxel(cell[&#39;point&#39;])
-
-            # Moore neighborhood, but order partially randomized. Closest to furthest order, but
-            # the order of any set of points of equal distance is random
-            neighborhood = list(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-            shuffle(neighborhood)
-            neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-
-            for dx, dy, dz in neighborhood:
-                zi = vox.z + dz
-                yj = vox.y + dy
-                xk = vox.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                    for index in index_arr:
-                        if (
-                            fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
-                            and not fungus[index][&#39;internalized&#39;]
-                            and p_in &gt; rg.random()
-                        ):
-                            fungus[index][&#39;internalized&#39;] = True
-                            self.append_to_phagosome(i, index, max_spores)
-
-    def damage_conidia(self, kill, t, health, fungus):
-        for i in self.alive():
-            cell = self[i]
-            for ii in range(0, self.len_phagosome(i)):
-                index = cell[&#39;phagosome&#39;][ii]
-                fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))
-                if fungus[index][&#39;dead&#39;]:
-                    self.remove_from_phagosome(i, index)
-
-    def remove_if_sporeless(self, val):
-        living = self.alive()
-        living_len = len(living)
-        num = int(val * living_len)
-        if num == 0 and living_len &gt; 0:
-            num = 1
-        for _ in range(num):
-            r = rg.integers(living_len)
-            self.cell_data[living[r]][&#39;dead&#39;] = True
-
-
-def cell_list_factory(self: &#39;MacrophageState&#39;):
+def cell_list_factory(self: &#39;MacrophageState&#39;) -&gt; MacrophageCellList:
     return MacrophageCellList(grid=self.global_state.grid)
 
 
 @attr.s(kw_only=True)
-class MacrophageState(ModuleState):
+class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    rec_r: float
-    p_rec_r: float
-    m_abs: float
-    m_n: float
-    kill: float
-    m_det: int
-    rec_rate_ph: int
-    time_m: float
-    max_conidia_in_phag: int
-    p_internalization: float
-    rm: float
+    iter_to_rest: int
+    time_to_change_state: float
+    iter_to_change_state: int
+    ma_internal_iron: float
+    kd_ma_iron: float
+    ma_vol: float
+    ma_half_life: float
+    max_ma: int
+    min_ma: int
+    init_num_macrophages: int
+    recruitment_rate: float
+    rec_bias: float
+    drift_bias: float
+    ma_move_rate_act: float
+    ma_move_rate_rest: float
 
 
-class Macrophage(ModuleModel):
+class Macrophage(PhagocyteModel):
     name = &#39;macrophage&#39;
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        from nlisim.util import TissueType
 
-        macrophage.rec_r = self.config.getfloat(&#39;rec_r&#39;)
-        macrophage.p_rec_r = self.config.getfloat(&#39;p_rec_r&#39;)
-        macrophage.m_abs = self.config.getfloat(&#39;m_abs&#39;)
-        macrophage.m_n = self.config.getfloat(&#39;Mn&#39;)
-        macrophage.kill = self.config.getfloat(&#39;kill&#39;)
-        macrophage.m_det = self.config.getint(&#39;m_det&#39;)  # radius
-        macrophage.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
-        macrophage.time_m = self.config.getfloat(&#39;time_m&#39;)
-        macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
-        macrophage.rm = self.config.getfloat(&#39;rm&#39;)
-        macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
-        macrophage.cells = MacrophageCellList(grid=grid)
+        macrophage: MacrophageState = state.macrophage
+        lung_tissue = state.lung_tissue
+        time_step_size: float = self.time_step
+
+        macrophage.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        macrophage.iter_to_rest = self.config.getint(&#39;iter_to_rest&#39;)
+        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
+        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)
+        macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
+        macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+
+        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)
+        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)
+
+        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)
+        macrophage.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
+        macrophage.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
+
+        macrophage.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
+        macrophage.ma_move_rate_act = self.config.getfloat(&#39;ma_move_rate_act&#39;)
+        macrophage.ma_move_rate_rest = self.config.getfloat(&#39;ma_move_rate_rest&#39;)
+
+        # computed values
+        macrophage.iter_to_change_state = int(
+            macrophage.time_to_change_state * (60 / time_step_size)
+        )  # 4
+
+        macrophage.ma_half_life = -math.log(0.5) / (
+            self.config.getfloat(&#39;ma_half_life&#39;) * (60 / time_step_size)
+        )
+
+        # initialize cells, placing them randomly
+        locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in random.choices(locations, k=macrophage.init_num_macrophages):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_macrophage(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
         return state
 
     def advance(self, state: State, previous_time: float):
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         macrophage: MacrophageState = state.macrophage
-        m_cells: MacrophageCellList = macrophage.cells
-        tissue = state.geometry.lung_tissue
-        grid = state.grid
-        cyto = state.molecules.grid[&#39;m_cyto&#39;]
-        n_cyto = state.molecules.grid[&#39;n_cyto&#39;]
-        fungus: FungusCellList = state.fungus.cells
-        health = state.fungus.health
 
-        # recruit new
-        m_cells.recruit_new(
-            macrophage.rec_rate_ph, macrophage.rec_r, macrophage.p_rec_r, tissue, grid, cyto
-        )
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell = macrophage.cells[macrophage_cell_index]
 
-        # absorb cytokines
-        m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
+            num_cells_in_phagosome = np.sum(macrophage_cell[&#39;phagosome&#39;] &gt;= 0)
 
-        # produce cytokines
-        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, n_cyto)
+            self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-        # move
-        m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
+            # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
+            if (
+                num_cells_in_phagosome == 0
+                and rg.uniform() &lt; macrophage.ma_half_life
+                and len(macrophage.cells.alive()) &gt; macrophage.min_ma
+            ):
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
+                macrophage_cell[&#39;dead&#39;] = True
 
-        # internalize
-        m_cells.internalize_conidia(
-            macrophage.m_det,
-            macrophage.max_conidia_in_phag,
-            macrophage.p_internalization,
-            grid,
-            fungus,
-        )
+            if not macrophage_cell[&#39;fpn&#39;]:
+                if macrophage_cell[&#39;fpn_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                    macrophage_cell[&#39;fpn_iteration&#39;] = 0
+                    macrophage_cell[&#39;fpn&#39;] = True
+                else:
+                    macrophage_cell[&#39;fpn_iteration&#39;] += 1
 
-        # damage conidia
-        m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
+            # macrophage_cell[&#39;move_step&#39;] = 0
+            # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
+            # macrophage_cell[&#39;max_move_step&#39;] = -1
 
-        if len(fungus.alive(fungus.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) == 0:
-            m_cells.remove_if_sporeless(macrophage.rm)
+            # Movement
+            if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                max_move_step = macrophage.ma_move_rate_act * self.time_step
+            else:
+                max_move_step = macrophage.ma_move_rate_rest * self.time_step
+            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+            for _ in range(move_step):
+                self.single_step_move(state, macrophage_cell)
+
+        # Recruitment
+        self.recruit_macrophages(state)
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         macrophage: MacrophageState = state.macrophage
+        live_macrophages = macrophage.cells.alive()
 
-        num_phagosome: int = 0
-        for cell_index in macrophage.cells.alive():
-            cell: MacrophageCellData = macrophage.cells[cell_index]
-            num_phagosome += np.sum(cell[&#39;phagosome&#39;] &gt;= 0)
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    macrophage.cells[macrophage_cell_index][&#39;status&#39;]
+                    for macrophage_cell_index in live_macrophages
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
 
         return {
-            &#39;count&#39;: len(macrophage.cells.alive()),
-            &#39;phagosome&#39;: int(num_phagosome),
-        }</code></pre>
+            &#39;count&#39;: len(live_macrophages),
+            &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
+            &#39;inactivating&#39;: int(status_counts[PhagocyteStatus.INACTIVATING]),
+            &#39;resting&#39;: int(status_counts[PhagocyteStatus.RESTING]),
+            &#39;activating&#39;: int(status_counts[PhagocyteStatus.ACTIVATING]),
+            &#39;active&#39;: int(status_counts[PhagocyteStatus.ACTIVE]),
+            &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
+            &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
+            &#39;anergic&#39;: int(status_counts[PhagocyteStatus.ANERGIC]),
+            &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+        }
+
+    def visualization_data(self, state: State):
+        return &#39;cells&#39;, state.macrophage.cells
+
+    def recruit_macrophages(self, state: State) -&gt; None:
+        &#34;&#34;&#34;
+        Recruit macrophages based on MIP1b activation
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import activation_function
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        voxel_volume: float = state.voxel_volume
+        space_volume: float = state.space_volume
+
+        # 1. compute number of macrophages to recruit
+        num_live_macrophages = len(macrophage.cells.alive())
+        avg = (
+            macrophage.recruitment_rate
+            * np.sum(mip1b.grid)
+            * (1 - num_live_macrophages / macrophage.max_ma)
+            / (mip1b.k_d * space_volume)
+        )
+        number_to_recruit = max(
+            np.random.poisson(avg) if avg &gt; 0 else 0, macrophage.min_ma - num_live_macrophages
+        )
+        # 2. get voxels for new macrophages, based on activation
+        if number_to_recruit &gt; 0:
+            activation_voxels = zip(
+                *np.where(
+                    activation_function(
+                        x=mip1b.grid,
+                        kd=mip1b.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                        b=macrophage.rec_bias,
+                    )
+                    &lt; rg.uniform(size=mip1b.grid.shape)
+                )
+            )
+            dz_field: np.ndarray = state.grid.delta(axis=0)
+            dy_field: np.ndarray = state.grid.delta(axis=1)
+            dx_field: np.ndarray = state.grid.delta(axis=2)
+            for coordinates in rg.choice(
+                tuple(activation_voxels), size=number_to_recruit, replace=True
+            ):
+                # TODO: have placement fail due to overcrowding of cells
+                vox_z, vox_y, vox_x = coordinates
+                # the x,y,z coordinates are in the centers of the grids
+                z = state.grid.z[vox_z]
+                y = state.grid.y[vox_y]
+                x = state.grid.x[vox_x]
+                dz = dz_field[vox_z, vox_y, vox_x]
+                dy = dy_field[vox_z, vox_y, vox_x]
+                dx = dx_field[vox_z, vox_y, vox_x]
+                self.create_macrophage(
+                    state=state,
+                    x=x + rg.uniform(-dx / 2, dx / 2),
+                    y=y + rg.uniform(-dy / 2, dy / 2),
+                    z=z + rg.uniform(-dz / 2, dz / 2),
+                )
+
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -&gt; Voxel:
+        &#34;&#34;&#34;
+        Calculate a 1-step voxel movement of a macrophage
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        cell : MacrophageCellData
+            a macrophage cell
+        voxel : Voxel
+            current voxel position of the macrophage
+
+        Returns
+        -------
+        Voxel
+            the new voxel position of the macrophage
+        &#34;&#34;&#34;
+        # macrophages are attracted by MIP1b
+        from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import TissueType, activation_function
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        grid: RectangularGrid = state.grid
+        lung_tissue: np.ndarray = state.lung_tissue
+        voxel_volume: float = state.voxel_volume
+
+        # macrophage has a non-zero probability of moving into non-air voxels.
+        # if not any of these, stay in place. This could happen if e.g. you are
+        # somehow stranded in air.
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+        weights = np.array(
+            [
+                activation_function(
+                    x=mip1b.grid[tuple(vxl)],
+                    kd=mip1b.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
+                )
+                + macrophage.drift_bias
+                if lung_tissue[tuple(vxl)] != TissueType.AIR
+                else 0.0
+                for vxl in nearby_voxels
+            ],
+            dtype=np.float64,
+        )
+
+        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
+
+    @staticmethod
+    def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
+        &#34;&#34;&#34;
+        Create a new macrophage cell
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        x : float
+        y : float
+        z : float
+            coordinates of created macrophage
+        kwargs
+            parameters for macrophage, will give
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        macrophage: MacrophageState = state.macrophage
+        if &#39;iron_pool&#39; in kwargs:
+            macrophage.cells.append(
+                MacrophageCellData.create_cell(
+                    point=Point(x=x, y=y, z=z),
+                    **kwargs,
+                )
+            )
+        else:
+            macrophage.cells.append(
+                MacrophageCellData.create_cell(
+                    point=Point(x=x, y=y, z=z),
+                    iron_pool=macrophage.ma_internal_iron,
+                    **kwargs,
+                )
+            )
+
+    def update_status(
+        self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Update the status of the cell, progressing between states after a certain number of ticks.
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        macrophage_cell : MacrophageCellData
+        num_cells_in_phagosome
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        macrophage: MacrophageState = state.macrophage
+
+        if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.NECROTIC:
+            # TODO: what about APOPTOTIC?
+            self.release_phagosome(state, macrophage_cell)
+
+        elif num_cells_in_phagosome &gt; macrophage.max_conidia:
+            # TODO: how do we get here?
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.NECROTIC
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_rest:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;tnfa&#39;] = False
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVE:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVATING:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.INACTIVE
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ANERGIC:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1</code></pre>
 </details>
 </section>
 <section>
@@ -381,7 +491,7 @@ class Macrophage(ModuleModel):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="nlisim.modules.macrophage.cell_list_factory"><code class="name flex">
-<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.macrophage.MacrophageState" href="#nlisim.modules.macrophage.MacrophageState">MacrophageState</a>)</span>
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.macrophage.MacrophageState" href="#nlisim.modules.macrophage.MacrophageState">MacrophageState</a>) ‑> <a title="nlisim.modules.macrophage.MacrophageCellList" href="#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -389,7 +499,7 @@ class Macrophage(ModuleModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def cell_list_factory(self: &#39;MacrophageState&#39;):
+<pre><code class="python">def cell_list_factory(self: &#39;MacrophageState&#39;) -&gt; MacrophageCellList:
     return MacrophageCellList(grid=self.global_state.grid)</code></pre>
 </details>
 </dd>
@@ -408,107 +518,773 @@ class Macrophage(ModuleModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Macrophage(ModuleModel):
+<pre><code class="python">class Macrophage(PhagocyteModel):
     name = &#39;macrophage&#39;
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        from nlisim.util import TissueType
 
-        macrophage.rec_r = self.config.getfloat(&#39;rec_r&#39;)
-        macrophage.p_rec_r = self.config.getfloat(&#39;p_rec_r&#39;)
-        macrophage.m_abs = self.config.getfloat(&#39;m_abs&#39;)
-        macrophage.m_n = self.config.getfloat(&#39;Mn&#39;)
-        macrophage.kill = self.config.getfloat(&#39;kill&#39;)
-        macrophage.m_det = self.config.getint(&#39;m_det&#39;)  # radius
-        macrophage.rec_rate_ph = self.config.getint(&#39;rec_rate_ph&#39;)
-        macrophage.time_m = self.config.getfloat(&#39;time_m&#39;)
-        macrophage.max_conidia_in_phag = self.config.getint(&#39;max_conidia_in_phag&#39;)
-        macrophage.rm = self.config.getfloat(&#39;rm&#39;)
-        macrophage.p_internalization = self.config.getfloat(&#39;p_internalization&#39;)
-        macrophage.cells = MacrophageCellList(grid=grid)
+        macrophage: MacrophageState = state.macrophage
+        lung_tissue = state.lung_tissue
+        time_step_size: float = self.time_step
+
+        macrophage.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        macrophage.iter_to_rest = self.config.getint(&#39;iter_to_rest&#39;)
+        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
+        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)
+        macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
+        macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+
+        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)
+        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)
+
+        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)
+        macrophage.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
+        macrophage.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
+
+        macrophage.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
+        macrophage.ma_move_rate_act = self.config.getfloat(&#39;ma_move_rate_act&#39;)
+        macrophage.ma_move_rate_rest = self.config.getfloat(&#39;ma_move_rate_rest&#39;)
+
+        # computed values
+        macrophage.iter_to_change_state = int(
+            macrophage.time_to_change_state * (60 / time_step_size)
+        )  # 4
+
+        macrophage.ma_half_life = -math.log(0.5) / (
+            self.config.getfloat(&#39;ma_half_life&#39;) * (60 / time_step_size)
+        )
+
+        # initialize cells, placing them randomly
+        locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in random.choices(locations, k=macrophage.init_num_macrophages):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_macrophage(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
         return state
 
     def advance(self, state: State, previous_time: float):
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         macrophage: MacrophageState = state.macrophage
-        m_cells: MacrophageCellList = macrophage.cells
-        tissue = state.geometry.lung_tissue
-        grid = state.grid
-        cyto = state.molecules.grid[&#39;m_cyto&#39;]
-        n_cyto = state.molecules.grid[&#39;n_cyto&#39;]
-        fungus: FungusCellList = state.fungus.cells
-        health = state.fungus.health
 
-        # recruit new
-        m_cells.recruit_new(
-            macrophage.rec_rate_ph, macrophage.rec_r, macrophage.p_rec_r, tissue, grid, cyto
-        )
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell = macrophage.cells[macrophage_cell_index]
 
-        # absorb cytokines
-        m_cells.absorb_cytokines(macrophage.m_abs, cyto, grid)
+            num_cells_in_phagosome = np.sum(macrophage_cell[&#39;phagosome&#39;] &gt;= 0)
 
-        # produce cytokines
-        m_cells.produce_cytokines(macrophage.m_det, macrophage.m_n, grid, fungus, n_cyto)
+            self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-        # move
-        m_cells.move(macrophage.rec_r, grid, cyto, tissue, fungus)
+            # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
+            if (
+                num_cells_in_phagosome == 0
+                and rg.uniform() &lt; macrophage.ma_half_life
+                and len(macrophage.cells.alive()) &gt; macrophage.min_ma
+            ):
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
+                macrophage_cell[&#39;dead&#39;] = True
 
-        # internalize
-        m_cells.internalize_conidia(
-            macrophage.m_det,
-            macrophage.max_conidia_in_phag,
-            macrophage.p_internalization,
-            grid,
-            fungus,
-        )
+            if not macrophage_cell[&#39;fpn&#39;]:
+                if macrophage_cell[&#39;fpn_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                    macrophage_cell[&#39;fpn_iteration&#39;] = 0
+                    macrophage_cell[&#39;fpn&#39;] = True
+                else:
+                    macrophage_cell[&#39;fpn_iteration&#39;] += 1
 
-        # damage conidia
-        m_cells.damage_conidia(macrophage.kill, macrophage.time_m, health, fungus)
+            # macrophage_cell[&#39;move_step&#39;] = 0
+            # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
+            # macrophage_cell[&#39;max_move_step&#39;] = -1
 
-        if len(fungus.alive(fungus.cell_data[&#39;form&#39;] == FungusCellData.Form.CONIDIA)) == 0:
-            m_cells.remove_if_sporeless(macrophage.rm)
+            # Movement
+            if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                max_move_step = macrophage.ma_move_rate_act * self.time_step
+            else:
+                max_move_step = macrophage.ma_move_rate_rest * self.time_step
+            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+            for _ in range(move_step):
+                self.single_step_move(state, macrophage_cell)
+
+        # Recruitment
+        self.recruit_macrophages(state)
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         macrophage: MacrophageState = state.macrophage
+        live_macrophages = macrophage.cells.alive()
 
-        num_phagosome: int = 0
-        for cell_index in macrophage.cells.alive():
-            cell: MacrophageCellData = macrophage.cells[cell_index]
-            num_phagosome += np.sum(cell[&#39;phagosome&#39;] &gt;= 0)
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    macrophage.cells[macrophage_cell_index][&#39;status&#39;]
+                    for macrophage_cell_index in live_macrophages
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
 
         return {
-            &#39;count&#39;: len(macrophage.cells.alive()),
-            &#39;phagosome&#39;: int(num_phagosome),
-        }</code></pre>
+            &#39;count&#39;: len(live_macrophages),
+            &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
+            &#39;inactivating&#39;: int(status_counts[PhagocyteStatus.INACTIVATING]),
+            &#39;resting&#39;: int(status_counts[PhagocyteStatus.RESTING]),
+            &#39;activating&#39;: int(status_counts[PhagocyteStatus.ACTIVATING]),
+            &#39;active&#39;: int(status_counts[PhagocyteStatus.ACTIVE]),
+            &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
+            &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
+            &#39;anergic&#39;: int(status_counts[PhagocyteStatus.ANERGIC]),
+            &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+        }
+
+    def visualization_data(self, state: State):
+        return &#39;cells&#39;, state.macrophage.cells
+
+    def recruit_macrophages(self, state: State) -&gt; None:
+        &#34;&#34;&#34;
+        Recruit macrophages based on MIP1b activation
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import activation_function
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        voxel_volume: float = state.voxel_volume
+        space_volume: float = state.space_volume
+
+        # 1. compute number of macrophages to recruit
+        num_live_macrophages = len(macrophage.cells.alive())
+        avg = (
+            macrophage.recruitment_rate
+            * np.sum(mip1b.grid)
+            * (1 - num_live_macrophages / macrophage.max_ma)
+            / (mip1b.k_d * space_volume)
+        )
+        number_to_recruit = max(
+            np.random.poisson(avg) if avg &gt; 0 else 0, macrophage.min_ma - num_live_macrophages
+        )
+        # 2. get voxels for new macrophages, based on activation
+        if number_to_recruit &gt; 0:
+            activation_voxels = zip(
+                *np.where(
+                    activation_function(
+                        x=mip1b.grid,
+                        kd=mip1b.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                        b=macrophage.rec_bias,
+                    )
+                    &lt; rg.uniform(size=mip1b.grid.shape)
+                )
+            )
+            dz_field: np.ndarray = state.grid.delta(axis=0)
+            dy_field: np.ndarray = state.grid.delta(axis=1)
+            dx_field: np.ndarray = state.grid.delta(axis=2)
+            for coordinates in rg.choice(
+                tuple(activation_voxels), size=number_to_recruit, replace=True
+            ):
+                # TODO: have placement fail due to overcrowding of cells
+                vox_z, vox_y, vox_x = coordinates
+                # the x,y,z coordinates are in the centers of the grids
+                z = state.grid.z[vox_z]
+                y = state.grid.y[vox_y]
+                x = state.grid.x[vox_x]
+                dz = dz_field[vox_z, vox_y, vox_x]
+                dy = dy_field[vox_z, vox_y, vox_x]
+                dx = dx_field[vox_z, vox_y, vox_x]
+                self.create_macrophage(
+                    state=state,
+                    x=x + rg.uniform(-dx / 2, dx / 2),
+                    y=y + rg.uniform(-dy / 2, dy / 2),
+                    z=z + rg.uniform(-dz / 2, dz / 2),
+                )
+
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -&gt; Voxel:
+        &#34;&#34;&#34;
+        Calculate a 1-step voxel movement of a macrophage
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        cell : MacrophageCellData
+            a macrophage cell
+        voxel : Voxel
+            current voxel position of the macrophage
+
+        Returns
+        -------
+        Voxel
+            the new voxel position of the macrophage
+        &#34;&#34;&#34;
+        # macrophages are attracted by MIP1b
+        from nlisim.modules.mip1b import MIP1BState
+        from nlisim.util import TissueType, activation_function
+
+        macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        grid: RectangularGrid = state.grid
+        lung_tissue: np.ndarray = state.lung_tissue
+        voxel_volume: float = state.voxel_volume
+
+        # macrophage has a non-zero probability of moving into non-air voxels.
+        # if not any of these, stay in place. This could happen if e.g. you are
+        # somehow stranded in air.
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+        weights = np.array(
+            [
+                activation_function(
+                    x=mip1b.grid[tuple(vxl)],
+                    kd=mip1b.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
+                )
+                + macrophage.drift_bias
+                if lung_tissue[tuple(vxl)] != TissueType.AIR
+                else 0.0
+                for vxl in nearby_voxels
+            ],
+            dtype=np.float64,
+        )
+
+        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
+
+    @staticmethod
+    def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
+        &#34;&#34;&#34;
+        Create a new macrophage cell
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        x : float
+        y : float
+        z : float
+            coordinates of created macrophage
+        kwargs
+            parameters for macrophage, will give
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        macrophage: MacrophageState = state.macrophage
+        if &#39;iron_pool&#39; in kwargs:
+            macrophage.cells.append(
+                MacrophageCellData.create_cell(
+                    point=Point(x=x, y=y, z=z),
+                    **kwargs,
+                )
+            )
+        else:
+            macrophage.cells.append(
+                MacrophageCellData.create_cell(
+                    point=Point(x=x, y=y, z=z),
+                    iron_pool=macrophage.ma_internal_iron,
+                    **kwargs,
+                )
+            )
+
+    def update_status(
+        self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Update the status of the cell, progressing between states after a certain number of ticks.
+
+        Parameters
+        ----------
+        state : State
+            global simulation state
+        macrophage_cell : MacrophageCellData
+        num_cells_in_phagosome
+
+        Returns
+        -------
+        nothing
+        &#34;&#34;&#34;
+        macrophage: MacrophageState = state.macrophage
+
+        if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.NECROTIC:
+            # TODO: what about APOPTOTIC?
+            self.release_phagosome(state, macrophage_cell)
+
+        elif num_cells_in_phagosome &gt; macrophage.max_conidia:
+            # TODO: how do we get here?
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.NECROTIC
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_rest:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;tnfa&#39;] = False
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVE:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVATING:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.INACTIVE
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1
+
+        elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ANERGIC:
+            if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;status_iteration&#39;] = 0
+                macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+            else:
+                macrophage_cell[&#39;status_iteration&#39;] += 1</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="nlisim.modules.macrophage.Macrophage.create_macrophage"><code class="name flex">
+<span>def <span class="ident">create_macrophage</span></span>(<span>*, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, x: float, y: float, z: float, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new macrophage cell</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>global simulation state</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>coordinates of created macrophage</dd>
+<dt><strong><code>kwargs</code></strong></dt>
+<dd>parameters for macrophage, will give</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
+    &#34;&#34;&#34;
+    Create a new macrophage cell
+
+    Parameters
+    ----------
+    state : State
+        global simulation state
+    x : float
+    y : float
+    z : float
+        coordinates of created macrophage
+    kwargs
+        parameters for macrophage, will give
+
+    Returns
+    -------
+    nothing
+    &#34;&#34;&#34;
+    macrophage: MacrophageState = state.macrophage
+    if &#39;iron_pool&#39; in kwargs:
+        macrophage.cells.append(
+            MacrophageCellData.create_cell(
+                point=Point(x=x, y=y, z=z),
+                **kwargs,
+            )
+        )
+    else:
+        macrophage.cells.append(
+            MacrophageCellData.create_cell(
+                point=Point(x=x, y=y, z=z),
+                iron_pool=macrophage.ma_internal_iron,
+                **kwargs,
+            )
+        )</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="nlisim.modules.macrophage.Macrophage.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance the state by a single time step.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def advance(self, state: State, previous_time: float):
+    &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+    macrophage: MacrophageState = state.macrophage
+
+    for macrophage_cell_index in macrophage.cells.alive():
+        macrophage_cell = macrophage.cells[macrophage_cell_index]
+
+        num_cells_in_phagosome = np.sum(macrophage_cell[&#39;phagosome&#39;] &gt;= 0)
+
+        self.update_status(state, macrophage_cell, num_cells_in_phagosome)
+
+        # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
+        if (
+            num_cells_in_phagosome == 0
+            and rg.uniform() &lt; macrophage.ma_half_life
+            and len(macrophage.cells.alive()) &gt; macrophage.min_ma
+        ):
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
+            macrophage_cell[&#39;dead&#39;] = True
+
+        if not macrophage_cell[&#39;fpn&#39;]:
+            if macrophage_cell[&#39;fpn_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+                macrophage_cell[&#39;fpn_iteration&#39;] = 0
+                macrophage_cell[&#39;fpn&#39;] = True
+            else:
+                macrophage_cell[&#39;fpn_iteration&#39;] += 1
+
+        # macrophage_cell[&#39;move_step&#39;] = 0
+        # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
+        # macrophage_cell[&#39;max_move_step&#39;] = -1
+
+        # Movement
+        if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            max_move_step = macrophage.ma_move_rate_act * self.time_step
+        else:
+            max_move_step = macrophage.ma_move_rate_rest * self.time_step
+        move_step: int = rg.poisson(max_move_step)  # TODO: verify
+        for _ in range(move_step):
+            self.single_step_move(state, macrophage_cell)
+
+    # Recruitment
+    self.recruit_macrophages(state)
+
+    return state</code></pre>
+</details>
+</dd>
+<dt id="nlisim.modules.macrophage.Macrophage.recruit_macrophages"><code class="name flex">
+<span>def <span class="ident">recruit_macrophages</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Recruit macrophages based on MIP1b activation</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>global simulation state</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def recruit_macrophages(self, state: State) -&gt; None:
+    &#34;&#34;&#34;
+    Recruit macrophages based on MIP1b activation
+
+    Parameters
+    ----------
+    state : State
+        global simulation state
+
+    Returns
+    -------
+    nothing
+    &#34;&#34;&#34;
+    from nlisim.modules.mip1b import MIP1BState
+    from nlisim.util import activation_function
+
+    macrophage: MacrophageState = state.macrophage
+    mip1b: MIP1BState = state.mip1b
+    voxel_volume: float = state.voxel_volume
+    space_volume: float = state.space_volume
+
+    # 1. compute number of macrophages to recruit
+    num_live_macrophages = len(macrophage.cells.alive())
+    avg = (
+        macrophage.recruitment_rate
+        * np.sum(mip1b.grid)
+        * (1 - num_live_macrophages / macrophage.max_ma)
+        / (mip1b.k_d * space_volume)
+    )
+    number_to_recruit = max(
+        np.random.poisson(avg) if avg &gt; 0 else 0, macrophage.min_ma - num_live_macrophages
+    )
+    # 2. get voxels for new macrophages, based on activation
+    if number_to_recruit &gt; 0:
+        activation_voxels = zip(
+            *np.where(
+                activation_function(
+                    x=mip1b.grid,
+                    kd=mip1b.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=macrophage.rec_bias,
+                )
+                &lt; rg.uniform(size=mip1b.grid.shape)
+            )
+        )
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for coordinates in rg.choice(
+            tuple(activation_voxels), size=number_to_recruit, replace=True
+        ):
+            # TODO: have placement fail due to overcrowding of cells
+            vox_z, vox_y, vox_x = coordinates
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_macrophage(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )</code></pre>
+</details>
+</dd>
+<dt id="nlisim.modules.macrophage.Macrophage.single_step_probabilistic_drift"><code class="name flex">
+<span>def <span class="ident">single_step_probabilistic_drift</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate a 1-step voxel movement of a macrophage</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>global simulation state</dd>
+<dt><strong><code>cell</code></strong> :&ensp;<code><a title="nlisim.modules.macrophage.MacrophageCellData" href="#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></dt>
+<dd>a macrophage cell</dd>
+<dt><strong><code>voxel</code></strong> :&ensp;<code>Voxel</code></dt>
+<dd>current voxel position of the macrophage</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Voxel</code></dt>
+<dd>the new voxel position of the macrophage</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def single_step_probabilistic_drift(
+    self, state: State, cell: PhagocyteCellData, voxel: Voxel
+) -&gt; Voxel:
+    &#34;&#34;&#34;
+    Calculate a 1-step voxel movement of a macrophage
+
+    Parameters
+    ----------
+    state : State
+        global simulation state
+    cell : MacrophageCellData
+        a macrophage cell
+    voxel : Voxel
+        current voxel position of the macrophage
+
+    Returns
+    -------
+    Voxel
+        the new voxel position of the macrophage
+    &#34;&#34;&#34;
+    # macrophages are attracted by MIP1b
+    from nlisim.modules.mip1b import MIP1BState
+    from nlisim.util import TissueType, activation_function
+
+    macrophage: MacrophageState = state.macrophage
+    mip1b: MIP1BState = state.mip1b
+    grid: RectangularGrid = state.grid
+    lung_tissue: np.ndarray = state.lung_tissue
+    voxel_volume: float = state.voxel_volume
+
+    # macrophage has a non-zero probability of moving into non-air voxels.
+    # if not any of these, stay in place. This could happen if e.g. you are
+    # somehow stranded in air.
+    nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+    weights = np.array(
+        [
+            activation_function(
+                x=mip1b.grid[tuple(vxl)],
+                kd=mip1b.k_d,
+                h=self.time_step / 60,
+                volume=voxel_volume,
+                b=1,
+            )
+            + macrophage.drift_bias
+            if lung_tissue[tuple(vxl)] != TissueType.AIR
+            else 0.0
+            for vxl in nearby_voxels
+        ],
+        dtype=np.float64,
+    )
+
+    return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)</code></pre>
+</details>
+</dd>
+<dt id="nlisim.modules.macrophage.Macrophage.update_status"><code class="name flex">
+<span>def <span class="ident">update_status</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, macrophage_cell: <a title="nlisim.modules.macrophage.MacrophageCellData" href="#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a>, num_cells_in_phagosome) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Update the status of the cell, progressing between states after a certain number of ticks.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>State</code></dt>
+<dd>global simulation state</dd>
+<dt><strong><code>macrophage_cell</code></strong> :&ensp;<code><a title="nlisim.modules.macrophage.MacrophageCellData" href="#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>num_cells_in_phagosome</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nothing</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_status(
+    self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome
+) -&gt; None:
+    &#34;&#34;&#34;
+    Update the status of the cell, progressing between states after a certain number of ticks.
+
+    Parameters
+    ----------
+    state : State
+        global simulation state
+    macrophage_cell : MacrophageCellData
+    num_cells_in_phagosome
+
+    Returns
+    -------
+    nothing
+    &#34;&#34;&#34;
+    macrophage: MacrophageState = state.macrophage
+
+    if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.NECROTIC:
+        # TODO: what about APOPTOTIC?
+        self.release_phagosome(state, macrophage_cell)
+
+    elif num_cells_in_phagosome &gt; macrophage.max_conidia:
+        # TODO: how do we get here?
+        macrophage_cell[&#39;status&#39;] = PhagocyteStatus.NECROTIC
+
+    elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+        if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_rest:
+            macrophage_cell[&#39;status_iteration&#39;] = 0
+            macrophage_cell[&#39;tnfa&#39;] = False
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+        else:
+            macrophage_cell[&#39;status_iteration&#39;] += 1
+
+    elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVE:
+        if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+            macrophage_cell[&#39;status_iteration&#39;] = 0
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+        else:
+            macrophage_cell[&#39;status_iteration&#39;] += 1
+
+    elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+        if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+            macrophage_cell[&#39;status_iteration&#39;] = 0
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+        else:
+            macrophage_cell[&#39;status_iteration&#39;] += 1
+
+    elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.INACTIVATING:
+        if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+            macrophage_cell[&#39;status_iteration&#39;] = 0
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.INACTIVE
+        else:
+            macrophage_cell[&#39;status_iteration&#39;] += 1
+
+    elif macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ANERGIC:
+        if macrophage_cell[&#39;status_iteration&#39;] &gt;= macrophage.iter_to_change_state:
+            macrophage_cell[&#39;status_iteration&#39;] = 0
+            macrophage_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+        else:
+            macrophage_cell[&#39;status_iteration&#39;] += 1</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.release_phagosome" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.release_phagosome">release_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.single_step_move" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.single_step_move">single_step_move</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
+</ul>
+</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
 <dt id="nlisim.modules.macrophage.MacrophageCellData"><code class="flex name class">
 <span>class <span class="ident">MacrophageCellData</span></span>
-<span>(</span><span>arg: Union[int, Iterable[numpy.record]], initialize: bool = False, **kwargs)</span>
+<span>(</span><span>arg: Union[int, Iterable[ForwardRef('CellData')]], initialize: bool = False, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A low-level data contain for an array cells.</p>
@@ -536,36 +1312,60 @@ associated with each cell.</p>
     dtype = np.dtype(CellData.FIELDS, align=True)
 
     @classmethod
-    def create_cell_tuple(cls, iron_content=0, **kwargs):
+    def create_cell_tuple(cls, iron_content=0, **kwargs) -&gt; Tuple:
         return CellData.create_cell_tuple(**kwargs) + (iron_content,)
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageCellData(CellData):
+<pre><code class="python">class MacrophageCellData(PhagocyteCellData):
     MACROPHAGE_FIELDS = [
-        (&#39;iteration&#39;, &#39;i4&#39;),
-        (&#39;phagosome&#39;, (np.int32, (MAX_CONIDIA))),
+        (&#39;status&#39;, np.uint8),
+        (&#39;state&#39;, np.uint8),
+        (&#39;fpn&#39;, bool),
+        (&#39;fpn_iteration&#39;, np.int64),
+        (&#39;tf&#39;, bool),  # TODO: descriptive name, transferrin?
+        (&#39;move_step&#39;, np.float64),
+        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
+        (&#39;tnfa&#39;, bool),
+        (&#39;engaged&#39;, bool),
+        (&#39;iron_pool&#39;, np.float64),
+        (&#39;status_iteration&#39;, np.uint64),
     ]
 
-    dtype = np.dtype(CellData.FIELDS + MACROPHAGE_FIELDS, align=True)  # type: ignore
+    # TODO: this implementation of inheritance is not so slick, redo with super?
+    dtype = np.dtype(
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
+    )  # type: ignore
 
     @classmethod
     def create_cell_tuple(
         cls,
         **kwargs,
-    ) -&gt; np.record:
-        iteration = 0
-        phagosome = np.empty(MAX_CONIDIA)
-        phagosome.fill(-1)
-        return CellData.create_cell_tuple(**kwargs) + (
-            iteration,
-            phagosome,
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
+            &#39;state&#39;: kwargs.get(&#39;state&#39;, PhagocyteState.FREE),
+            &#39;fpn&#39;: kwargs.get(&#39;fpn&#39;, True),
+            &#39;fpn_iteration&#39;: kwargs.get(&#39;fpn_iteration&#39;, 0),
+            &#39;tf&#39;: kwargs.get(&#39;tf&#39;, False),
+            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
+            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
+            &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
+            &#39;engaged&#39;: kwargs.get(&#39;engaged&#39;, False),
+            &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
+            &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+        }
+
+        # ensure that these come in the correct order
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in MacrophageCellData.MACROPHAGE_FIELDS]
         )</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
 <li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
 <li>numpy.ndarray</li>
 </ul>
@@ -578,13 +1378,17 @@ associated with each cell.</p>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
 <li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
 <li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
-<li><code><a title="nlisim.cell.CellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
-<li><code><a title="nlisim.cell.CellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
 <li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
-<li><code><a title="nlisim.cell.CellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
 </ul>
 </li>
 </ul>
@@ -623,207 +1427,7 @@ low-level array.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MacrophageCellList(CellList):
-    CellDataClass = MacrophageCellData
-
-    def len_phagosome(self, index):
-        cell = self[index]
-        return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))
-
-    def append_to_phagosome(self, index, pathogen_index, max_size):
-        cell = self[index]
-        index_to_append = MacrophageCellList.len_phagosome(self, index)
-        if (
-            index_to_append &lt; MAX_CONIDIA
-            and index_to_append &lt; max_size
-            and pathogen_index not in cell[&#39;phagosome&#39;]
-        ):
-            cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-            return True
-        else:
-            return False
-
-    def remove_from_phagosome(self, index, pathogen_index):
-        phagosome = self[index][&#39;phagosome&#39;]
-        if pathogen_index in phagosome:
-            itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-            size = MacrophageCellList.len_phagosome(self, index)
-            if itemindex == size - 1:
-                # full phagosome
-                phagosome[itemindex] = -1
-                return True
-            else:
-                phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-                phagosome[-1] = -1
-                return True
-        else:
-            return False
-
-    def clear_all_phagosome(self, index, fungus: FungusCellList):
-        for i in range(0, self.len_phagosome(index)):
-            index = self[index][&#39;phagosome&#39;][i]
-            fungus[index][&#39;internalized&#39;] = False
-        self[index][&#39;phagosome&#39;].fill(-1)
-
-    def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
-        num_reps = rec_rate_ph  # maximum number of macrophages recruited per time step
-
-        cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto &gt;= rec_r))
-        if len(cyto_index) == 0:
-            # nowhere to place cells
-            return
-
-        for _ in range(num_reps):
-            if p_rec_r &gt; rg.random():
-                ii = rg.integers(cyto_index.shape[0])
-                point = Point(
-                    x=grid.x[cyto_index[ii, 2]],
-                    y=grid.y[cyto_index[ii, 1]],
-                    z=grid.z[cyto_index[ii, 0]],
-                )
-                # Do we really want these things to always be in the exact center of the voxel?
-                # No we do not. Should not have any effect on model, but maybe some on
-                # visualization.
-                perturbation = rg.multivariate_normal(
-                    mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
-                )
-                perturbation_magnitude = np.linalg.norm(perturbation)
-                perturbation /= max(1.0, perturbation_magnitude)
-                point += perturbation
-                self.append(MacrophageCellData.create_cell(point=point))
-
-    def absorb_cytokines(self, m_abs, cyto, grid):
-        for index in self.alive():
-            vox = grid.get_voxel(self[index][&#39;point&#39;])
-            x = vox.x
-            y = vox.y
-            z = vox.z
-            cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]
-
-    def produce_cytokines(self, m_det, m_n, grid, fungus: FungusCellList, cyto):
-        for i in self.alive():
-            vox = grid.get_voxel(self[i][&#39;point&#39;])
-
-            hyphae_count = 0
-
-            # Moore neighborhood
-            neighborhood = tuple(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-
-            for dx, dy, dz in neighborhood:
-                zi = vox.z + dz
-                yj = vox.y + dy
-                xk = vox.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                    for index in index_arr:
-                        if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
-                            hyphae_count += 1
-
-            cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count
-
-    def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
-        for cell_index in self.alive():
-            cell = self[cell_index]
-            cell_voxel = grid.get_voxel(cell[&#39;point&#39;])
-
-            valid_voxel_offsets = []
-            above_threshold_voxel_offsets = []
-
-            # iterate over nearby voxels, recording the cytokine levels
-            for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
-                zi = cell_voxel.z + dz
-                yj = cell_voxel.y + dy
-                xk = cell_voxel.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    if tissue[zi, yj, xk] != TissueTypes.AIR.value:
-                        valid_voxel_offsets.append((dx, dy, dz))
-                        if cyto[zi, yj, xk] &gt;= rec_r:
-                            above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))
-
-            # pick a target for the move
-            if len(above_threshold_voxel_offsets) &gt; 0:
-                # shuffle + sort (with _only_ 0-key, not lexicographic as tuples) ensures
-                # randomization when there are equal top cytokine levels
-                # note that numpy&#39;s shuffle will complain about ragged arrays
-                shuffle(above_threshold_voxel_offsets)
-                above_threshold_voxel_offsets = sorted(
-                    above_threshold_voxel_offsets, key=lambda x: x[0], reverse=True
-                )
-                _, target_voxel_offset = above_threshold_voxel_offsets[0]
-            elif len(valid_voxel_offsets) &gt; 0:
-                target_voxel_offset = choice(valid_voxel_offsets)
-            else:
-                raise AssertionError(
-                    &#39;This cell has no valid voxel to move to, including the one that it is in!&#39;
-                )
-
-            # Some nonsense here, b/c jump is happening at the voxel level, not the point level
-            starting_cell_point = Point(x=cell[&#39;point&#39;][2], y=cell[&#39;point&#39;][1], z=cell[&#39;point&#39;][0])
-            starting_cell_voxel = grid.get_voxel(starting_cell_point)
-            ending_cell_voxel = grid.get_voxel(
-                Point(
-                    x=grid.x[cell_voxel.x + target_voxel_offset[0]],
-                    y=grid.y[cell_voxel.y + target_voxel_offset[1]],
-                    z=grid.z[cell_voxel.z + target_voxel_offset[2]],
-                )
-            )
-            ending_cell_point = (
-                starting_cell_point
-                + grid.get_voxel_center(ending_cell_voxel)
-                - grid.get_voxel_center(starting_cell_voxel)
-            )
-
-            cell[&#39;point&#39;] = ending_cell_point
-            self.update_voxel_index([cell_index])
-
-            for i in range(0, self.len_phagosome(cell_index)):
-                f_index = cell[&#39;phagosome&#39;][i]
-                fungus[f_index][&#39;point&#39;] = ending_cell_point
-                fungus.update_voxel_index([f_index])
-
-    def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
-        for i in self.alive():
-            cell = self[i]
-            vox = grid.get_voxel(cell[&#39;point&#39;])
-
-            # Moore neighborhood, but order partially randomized. Closest to furthest order, but
-            # the order of any set of points of equal distance is random
-            neighborhood = list(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-            shuffle(neighborhood)
-            neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-
-            for dx, dy, dz in neighborhood:
-                zi = vox.z + dz
-                yj = vox.y + dy
-                xk = vox.x + dx
-                if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                    for index in index_arr:
-                        if (
-                            fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
-                            and not fungus[index][&#39;internalized&#39;]
-                            and p_in &gt; rg.random()
-                        ):
-                            fungus[index][&#39;internalized&#39;] = True
-                            self.append_to_phagosome(i, index, max_spores)
-
-    def damage_conidia(self, kill, t, health, fungus):
-        for i in self.alive():
-            cell = self[i]
-            for ii in range(0, self.len_phagosome(i)):
-                index = cell[&#39;phagosome&#39;][ii]
-                fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))
-                if fungus[index][&#39;dead&#39;]:
-                    self.remove_from_phagosome(i, index)
-
-    def remove_if_sporeless(self, val):
-        living = self.alive()
-        living_len = len(living)
-        num = int(val * living_len)
-        if num == 0 and living_len &gt; 0:
-            num = 1
-        for _ in range(num):
-            r = rg.integers(living_len)
-            self.cell_data[living[r]][&#39;dead&#39;] = True</code></pre>
+    CellDataClass = MacrophageCellData</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -838,319 +1442,6 @@ low-level array.</p>
 <dt id="nlisim.modules.macrophage.MacrophageCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
-</dd>
-</dl>
-<h3>Methods</h3>
-<dl>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines"><code class="name flex">
-<span>def <span class="ident">absorb_cytokines</span></span>(<span>self, m_abs, cyto, grid)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def absorb_cytokines(self, m_abs, cyto, grid):
-    for index in self.alive():
-        vox = grid.get_voxel(self[index][&#39;point&#39;])
-        x = vox.x
-        y = vox.y
-        z = vox.z
-        cyto[z, y, x] = (1 - m_abs) * cyto[z, y, x]</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome"><code class="name flex">
-<span>def <span class="ident">append_to_phagosome</span></span>(<span>self, index, pathogen_index, max_size)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def append_to_phagosome(self, index, pathogen_index, max_size):
-    cell = self[index]
-    index_to_append = MacrophageCellList.len_phagosome(self, index)
-    if (
-        index_to_append &lt; MAX_CONIDIA
-        and index_to_append &lt; max_size
-        and pathogen_index not in cell[&#39;phagosome&#39;]
-    ):
-        cell[&#39;phagosome&#39;][index_to_append] = pathogen_index
-        return True
-    else:
-        return False</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome"><code class="name flex">
-<span>def <span class="ident">clear_all_phagosome</span></span>(<span>self, index, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def clear_all_phagosome(self, index, fungus: FungusCellList):
-    for i in range(0, self.len_phagosome(index)):
-        index = self[index][&#39;phagosome&#39;][i]
-        fungus[index][&#39;internalized&#39;] = False
-    self[index][&#39;phagosome&#39;].fill(-1)</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.damage_conidia"><code class="name flex">
-<span>def <span class="ident">damage_conidia</span></span>(<span>self, kill, t, health, fungus)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def damage_conidia(self, kill, t, health, fungus):
-    for i in self.alive():
-        cell = self[i]
-        for ii in range(0, self.len_phagosome(i)):
-            index = cell[&#39;phagosome&#39;][ii]
-            fungus[index][&#39;health&#39;] = fungus[index][&#39;health&#39;] - (health * (t / kill))
-            if fungus[index][&#39;dead&#39;]:
-                self.remove_from_phagosome(i, index)</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.internalize_conidia"><code class="name flex">
-<span>def <span class="ident">internalize_conidia</span></span>(<span>self, m_det, max_spores, p_in, grid, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
-    for i in self.alive():
-        cell = self[i]
-        vox = grid.get_voxel(cell[&#39;point&#39;])
-
-        # Moore neighborhood, but order partially randomized. Closest to furthest order, but
-        # the order of any set of points of equal distance is random
-        neighborhood = list(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-        shuffle(neighborhood)
-        neighborhood = sorted(neighborhood, key=lambda v: v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-
-        for dx, dy, dz in neighborhood:
-            zi = vox.z + dz
-            yj = vox.y + dy
-            xk = vox.x + dx
-            if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                for index in index_arr:
-                    if (
-                        fungus[index][&#39;form&#39;] == FungusCellData.Form.CONIDIA
-                        and not fungus[index][&#39;internalized&#39;]
-                        and p_in &gt; rg.random()
-                    ):
-                        fungus[index][&#39;internalized&#39;] = True
-                        self.append_to_phagosome(i, index, max_spores)</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.len_phagosome"><code class="name flex">
-<span>def <span class="ident">len_phagosome</span></span>(<span>self, index)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def len_phagosome(self, index):
-    cell = self[index]
-    return len(np.argwhere(cell[&#39;phagosome&#39;] != -1))</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.move"><code class="name flex">
-<span>def <span class="ident">move</span></span>(<span>self, rec_r, grid, cyto, tissue, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def move(self, rec_r, grid, cyto, tissue, fungus: FungusCellList):
-    for cell_index in self.alive():
-        cell = self[cell_index]
-        cell_voxel = grid.get_voxel(cell[&#39;point&#39;])
-
-        valid_voxel_offsets = []
-        above_threshold_voxel_offsets = []
-
-        # iterate over nearby voxels, recording the cytokine levels
-        for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
-            zi = cell_voxel.z + dz
-            yj = cell_voxel.y + dy
-            xk = cell_voxel.x + dx
-            if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                if tissue[zi, yj, xk] != TissueTypes.AIR.value:
-                    valid_voxel_offsets.append((dx, dy, dz))
-                    if cyto[zi, yj, xk] &gt;= rec_r:
-                        above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))
-
-        # pick a target for the move
-        if len(above_threshold_voxel_offsets) &gt; 0:
-            # shuffle + sort (with _only_ 0-key, not lexicographic as tuples) ensures
-            # randomization when there are equal top cytokine levels
-            # note that numpy&#39;s shuffle will complain about ragged arrays
-            shuffle(above_threshold_voxel_offsets)
-            above_threshold_voxel_offsets = sorted(
-                above_threshold_voxel_offsets, key=lambda x: x[0], reverse=True
-            )
-            _, target_voxel_offset = above_threshold_voxel_offsets[0]
-        elif len(valid_voxel_offsets) &gt; 0:
-            target_voxel_offset = choice(valid_voxel_offsets)
-        else:
-            raise AssertionError(
-                &#39;This cell has no valid voxel to move to, including the one that it is in!&#39;
-            )
-
-        # Some nonsense here, b/c jump is happening at the voxel level, not the point level
-        starting_cell_point = Point(x=cell[&#39;point&#39;][2], y=cell[&#39;point&#39;][1], z=cell[&#39;point&#39;][0])
-        starting_cell_voxel = grid.get_voxel(starting_cell_point)
-        ending_cell_voxel = grid.get_voxel(
-            Point(
-                x=grid.x[cell_voxel.x + target_voxel_offset[0]],
-                y=grid.y[cell_voxel.y + target_voxel_offset[1]],
-                z=grid.z[cell_voxel.z + target_voxel_offset[2]],
-            )
-        )
-        ending_cell_point = (
-            starting_cell_point
-            + grid.get_voxel_center(ending_cell_voxel)
-            - grid.get_voxel_center(starting_cell_voxel)
-        )
-
-        cell[&#39;point&#39;] = ending_cell_point
-        self.update_voxel_index([cell_index])
-
-        for i in range(0, self.len_phagosome(cell_index)):
-            f_index = cell[&#39;phagosome&#39;][i]
-            fungus[f_index][&#39;point&#39;] = ending_cell_point
-            fungus.update_voxel_index([f_index])</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.produce_cytokines"><code class="name flex">
-<span>def <span class="ident">produce_cytokines</span></span>(<span>self, m_det, m_n, grid, fungus: <a title="nlisim.modules.fungus.FungusCellList" href="fungus.html#nlisim.modules.fungus.FungusCellList">FungusCellList</a>, cyto)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def produce_cytokines(self, m_det, m_n, grid, fungus: FungusCellList, cyto):
-    for i in self.alive():
-        vox = grid.get_voxel(self[i][&#39;point&#39;])
-
-        hyphae_count = 0
-
-        # Moore neighborhood
-        neighborhood = tuple(itertools.product(tuple(range(-1 * m_det, m_det + 1)), repeat=3))
-
-        for dx, dy, dz in neighborhood:
-            zi = vox.z + dz
-            yj = vox.y + dy
-            xk = vox.x + dx
-            if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
-                for index in index_arr:
-                    if fungus[index][&#39;form&#39;] == FungusCellData.Form.HYPHAE:
-                        hyphae_count += 1
-
-        cyto[vox.z, vox.y, vox.x] = cyto[vox.z, vox.y, vox.x] + m_n * hyphae_count</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.recruit_new"><code class="name flex">
-<span>def <span class="ident">recruit_new</span></span>(<span>self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def recruit_new(self, rec_rate_ph, rec_r, p_rec_r, tissue, grid, cyto):
-    num_reps = rec_rate_ph  # maximum number of macrophages recruited per time step
-
-    cyto_index = np.argwhere(np.logical_and(tissue == TissueTypes.BLOOD.value, cyto &gt;= rec_r))
-    if len(cyto_index) == 0:
-        # nowhere to place cells
-        return
-
-    for _ in range(num_reps):
-        if p_rec_r &gt; rg.random():
-            ii = rg.integers(cyto_index.shape[0])
-            point = Point(
-                x=grid.x[cyto_index[ii, 2]],
-                y=grid.y[cyto_index[ii, 1]],
-                z=grid.z[cyto_index[ii, 0]],
-            )
-            # Do we really want these things to always be in the exact center of the voxel?
-            # No we do not. Should not have any effect on model, but maybe some on
-            # visualization.
-            perturbation = rg.multivariate_normal(
-                mean=[0.0, 0.0, 0.0], cov=[[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.25]]
-            )
-            perturbation_magnitude = np.linalg.norm(perturbation)
-            perturbation /= max(1.0, perturbation_magnitude)
-            point += perturbation
-            self.append(MacrophageCellData.create_cell(point=point))</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome"><code class="name flex">
-<span>def <span class="ident">remove_from_phagosome</span></span>(<span>self, index, pathogen_index)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def remove_from_phagosome(self, index, pathogen_index):
-    phagosome = self[index][&#39;phagosome&#39;]
-    if pathogen_index in phagosome:
-        itemindex = np.argwhere(phagosome == pathogen_index)[0][0]
-        size = MacrophageCellList.len_phagosome(self, index)
-        if itemindex == size - 1:
-            # full phagosome
-            phagosome[itemindex] = -1
-            return True
-        else:
-            phagosome[itemindex:-1] = phagosome[itemindex + 1 :]
-            phagosome[-1] = -1
-            return True
-    else:
-        return False</code></pre>
-</details>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless"><code class="name flex">
-<span>def <span class="ident">remove_if_sporeless</span></span>(<span>self, val)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def remove_if_sporeless(self, val):
-    living = self.alive()
-    living_len = len(living)
-    num = int(val * living_len)
-    if num == 0 and living_len &gt; 0:
-        num = 1
-    for _ in range(num):
-        r = rg.integers(living_len)
-        self.cell_data[living[r]][&#39;dead&#39;] = True</code></pre>
-</details>
 </dd>
 </dl>
 <h3>Inherited members</h3>
@@ -1187,22 +1478,27 @@ state must override the serialization mechanism with custom behavior.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MacrophageState(ModuleState):
+<pre><code class="python">class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    rec_r: float
-    p_rec_r: float
-    m_abs: float
-    m_n: float
-    kill: float
-    m_det: int
-    rec_rate_ph: int
-    time_m: float
-    max_conidia_in_phag: int
-    p_internalization: float
-    rm: float</code></pre>
+    iter_to_rest: int
+    time_to_change_state: float
+    iter_to_change_state: int
+    ma_internal_iron: float
+    kd_ma_iron: float
+    ma_vol: float
+    ma_half_life: float
+    max_ma: int
+    min_ma: int
+    init_num_macrophages: int
+    recruitment_rate: float
+    rec_bias: float
+    drift_bias: float
+    ma_move_rate_act: float
+    ma_move_rate_rest: float</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></li>
 <li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
 </ul>
 <h3>Class variables</h3>
@@ -1211,59 +1507,75 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.kill"><code class="name">var <span class="ident">kill</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.drift_bias"><code class="name">var <span class="ident">drift_bias</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.m_abs"><code class="name">var <span class="ident">m_abs</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.init_num_macrophages"><code class="name">var <span class="ident">init_num_macrophages</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.m_det"><code class="name">var <span class="ident">m_det</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.iter_to_change_state"><code class="name">var <span class="ident">iter_to_change_state</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.m_n"><code class="name">var <span class="ident">m_n</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.iter_to_rest"><code class="name">var <span class="ident">iter_to_rest</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag"><code class="name">var <span class="ident">max_conidia_in_phag</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.kd_ma_iron"><code class="name">var <span class="ident">kd_ma_iron</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.p_internalization"><code class="name">var <span class="ident">p_internalization</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.ma_half_life"><code class="name">var <span class="ident">ma_half_life</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.p_rec_r"><code class="name">var <span class="ident">p_rec_r</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.ma_internal_iron"><code class="name">var <span class="ident">ma_internal_iron</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.rec_r"><code class="name">var <span class="ident">rec_r</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.ma_move_rate_act"><code class="name">var <span class="ident">ma_move_rate_act</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.rec_rate_ph"><code class="name">var <span class="ident">rec_rate_ph</span> : int</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.ma_move_rate_rest"><code class="name">var <span class="ident">ma_move_rate_rest</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.rm"><code class="name">var <span class="ident">rm</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.ma_vol"><code class="name">var <span class="ident">ma_vol</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.time_m"><code class="name">var <span class="ident">time_m</span> : float</code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageState.max_ma"><code class="name">var <span class="ident">max_ma</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.min_ma"><code class="name">var <span class="ident">min_ma</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.rec_bias"><code class="name">var <span class="ident">rec_bias</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.recruitment_rate"><code class="name">var <span class="ident">recruitment_rate</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.time_to_change_state"><code class="name">var <span class="ident">time_to_change_state</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
-<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
-<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
-<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1291,6 +1603,13 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul>
 <li>
 <h4><code><a title="nlisim.modules.macrophage.Macrophage" href="#nlisim.modules.macrophage.Macrophage">Macrophage</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.macrophage.Macrophage.advance" href="#nlisim.modules.macrophage.Macrophage.advance">advance</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.Macrophage.create_macrophage" href="#nlisim.modules.macrophage.Macrophage.create_macrophage">create_macrophage</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.Macrophage.recruit_macrophages" href="#nlisim.modules.macrophage.Macrophage.recruit_macrophages">recruit_macrophages</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.Macrophage.single_step_probabilistic_drift" href="#nlisim.modules.macrophage.Macrophage.single_step_probabilistic_drift">single_step_probabilistic_drift</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.Macrophage.update_status" href="#nlisim.modules.macrophage.Macrophage.update_status">update_status</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="nlisim.modules.macrophage.MacrophageCellData" href="#nlisim.modules.macrophage.MacrophageCellData">MacrophageCellData</a></code></h4>
@@ -1301,36 +1620,29 @@ state must override the serialization mechanism with custom behavior.</p>
 <li>
 <h4><code><a title="nlisim.modules.macrophage.MacrophageCellList" href="#nlisim.modules.macrophage.MacrophageCellList">MacrophageCellList</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines" href="#nlisim.modules.macrophage.MacrophageCellList.absorb_cytokines">absorb_cytokines</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.append_to_phagosome">append_to_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.clear_all_phagosome">clear_all_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.damage_conidia" href="#nlisim.modules.macrophage.MacrophageCellList.damage_conidia">damage_conidia</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageCellList.grid" href="#nlisim.modules.macrophage.MacrophageCellList.grid">grid</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.internalize_conidia" href="#nlisim.modules.macrophage.MacrophageCellList.internalize_conidia">internalize_conidia</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.len_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.len_phagosome">len_phagosome</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageCellList.max_cells" href="#nlisim.modules.macrophage.MacrophageCellList.max_cells">max_cells</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.move" href="#nlisim.modules.macrophage.MacrophageCellList.move">move</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.produce_cytokines" href="#nlisim.modules.macrophage.MacrophageCellList.produce_cytokines">produce_cytokines</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.recruit_new" href="#nlisim.modules.macrophage.MacrophageCellList.recruit_new">recruit_new</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome" href="#nlisim.modules.macrophage.MacrophageCellList.remove_from_phagosome">remove_from_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless" href="#nlisim.modules.macrophage.MacrophageCellList.remove_if_sporeless">remove_if_sporeless</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="nlisim.modules.macrophage.MacrophageState" href="#nlisim.modules.macrophage.MacrophageState">MacrophageState</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.cells" href="#nlisim.modules.macrophage.MacrophageState.cells">cells</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.kill" href="#nlisim.modules.macrophage.MacrophageState.kill">kill</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_abs" href="#nlisim.modules.macrophage.MacrophageState.m_abs">m_abs</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_det" href="#nlisim.modules.macrophage.MacrophageState.m_det">m_det</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.m_n" href="#nlisim.modules.macrophage.MacrophageState.m_n">m_n</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag" href="#nlisim.modules.macrophage.MacrophageState.max_conidia_in_phag">max_conidia_in_phag</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.p_internalization" href="#nlisim.modules.macrophage.MacrophageState.p_internalization">p_internalization</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.p_rec_r" href="#nlisim.modules.macrophage.MacrophageState.p_rec_r">p_rec_r</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_r" href="#nlisim.modules.macrophage.MacrophageState.rec_r">rec_r</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_rate_ph" href="#nlisim.modules.macrophage.MacrophageState.rec_rate_ph">rec_rate_ph</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.rm" href="#nlisim.modules.macrophage.MacrophageState.rm">rm</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.time_m" href="#nlisim.modules.macrophage.MacrophageState.time_m">time_m</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.drift_bias" href="#nlisim.modules.macrophage.MacrophageState.drift_bias">drift_bias</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.init_num_macrophages" href="#nlisim.modules.macrophage.MacrophageState.init_num_macrophages">init_num_macrophages</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.iter_to_change_state" href="#nlisim.modules.macrophage.MacrophageState.iter_to_change_state">iter_to_change_state</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.iter_to_rest" href="#nlisim.modules.macrophage.MacrophageState.iter_to_rest">iter_to_rest</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.kd_ma_iron" href="#nlisim.modules.macrophage.MacrophageState.kd_ma_iron">kd_ma_iron</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_half_life" href="#nlisim.modules.macrophage.MacrophageState.ma_half_life">ma_half_life</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_internal_iron" href="#nlisim.modules.macrophage.MacrophageState.ma_internal_iron">ma_internal_iron</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_move_rate_act" href="#nlisim.modules.macrophage.MacrophageState.ma_move_rate_act">ma_move_rate_act</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_move_rate_rest" href="#nlisim.modules.macrophage.MacrophageState.ma_move_rate_rest">ma_move_rate_rest</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_vol" href="#nlisim.modules.macrophage.MacrophageState.ma_vol">ma_vol</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.max_ma" href="#nlisim.modules.macrophage.MacrophageState.max_ma">max_ma</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.min_ma" href="#nlisim.modules.macrophage.MacrophageState.min_ma">min_ma</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_bias" href="#nlisim.modules.macrophage.MacrophageState.rec_bias">rec_bias</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.recruitment_rate" href="#nlisim.modules.macrophage.MacrophageState.recruitment_rate">recruitment_rate</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.time_to_change_state" href="#nlisim.modules.macrophage.MacrophageState.time_to_change_state">time_to_change_state</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1339,7 +1651,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

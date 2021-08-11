@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.grid API documentation</title>
 <meta name="description" content="Domain discretization interface …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -82,7 +82,7 @@ for details.
 &#34;&#34;&#34;
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple
+from typing import Iterable, Iterator, List, Tuple, cast
 
 import attr
 from h5py import File as H5File
@@ -112,8 +112,8 @@ class RectangularGrid(object):
     \[
         (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
     \]
-    For a perticular function defined over the domain, \(f\), the
-    descritization is defined relative to this point,
+    For a particular function defined over the domain, \(f\), the
+    discretization is defined relative to this point,
     \[
         f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
     \]
@@ -246,12 +246,12 @@ class RectangularGrid(object):
             return -1
         return indices[0] - 1
 
-    def get_flattened_index(self, voxel: Voxel) -&gt; int:
+    def get_flattened_index(self, voxel: Voxel):
         &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         &#34;&#34;&#34;
-        return np.ravel_multi_index(voxel, self.shape)
+        return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
 
     def voxel_from_flattened_index(self, index: int) -&gt; &#39;Voxel&#39;:
         &#34;&#34;&#34;Create a Voxel from flattened index of the grid.
@@ -259,7 +259,7 @@ class RectangularGrid(object):
         This is a convenience method that wraps numpy.unravel_index.
         &#34;&#34;&#34;
         z, y, x = np.unravel_index(index, self.shape)
-        return Voxel(x=x, y=y, z=z)
+        return Voxel(x=float(x), y=float(y), z=float(z))
 
     def get_voxel(self, point: Point) -&gt; Voxel:
         &#34;&#34;&#34;Return the voxel containing the given point.
@@ -297,7 +297,7 @@ class RectangularGrid(object):
             and (self.zv[0] &lt;= point.z &lt;= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
+    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
         &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
 
         Parameters
@@ -426,8 +426,8 @@ grid element,
 </span><script type="math/tex; mode=display">
 (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
 </script></span>
-For a perticular function defined over the domain, <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span>, the
-descritization is defined relative to this point,
+For a particular function defined over the domain, <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span>, the
+discretization is defined relative to this point,
 <span><span class="MathJax_Preview">
 f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
 </span><script type="math/tex; mode=display">
@@ -490,8 +490,8 @@ right edge of the previous element.</p>
     \[
         (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
     \]
-    For a perticular function defined over the domain, \(f\), the
-    descritization is defined relative to this point,
+    For a particular function defined over the domain, \(f\), the
+    discretization is defined relative to this point,
     \[
         f_{i,j,k} := f(\bar{x}_i, \bar{y}_j, \bar{z}_k)
     \]
@@ -624,12 +624,12 @@ right edge of the previous element.</p>
             return -1
         return indices[0] - 1
 
-    def get_flattened_index(self, voxel: Voxel) -&gt; int:
+    def get_flattened_index(self, voxel: Voxel):
         &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         &#34;&#34;&#34;
-        return np.ravel_multi_index(voxel, self.shape)
+        return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
 
     def voxel_from_flattened_index(self, index: int) -&gt; &#39;Voxel&#39;:
         &#34;&#34;&#34;Create a Voxel from flattened index of the grid.
@@ -637,7 +637,7 @@ right edge of the previous element.</p>
         This is a convenience method that wraps numpy.unravel_index.
         &#34;&#34;&#34;
         z, y, x = np.unravel_index(index, self.shape)
-        return Voxel(x=x, y=y, z=z)
+        return Voxel(x=float(x), y=float(y), z=float(z))
 
     def get_voxel(self, point: Point) -&gt; Voxel:
         &#34;&#34;&#34;Return the voxel containing the given point.
@@ -675,7 +675,7 @@ right edge of the previous element.</p>
             and (self.zv[0] &lt;= point.z &lt;= self.zv[-1])
         )
 
-    def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
+    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
         &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
 
         Parameters
@@ -925,8 +925,8 @@ def shape(self) -&gt; ShapeType:
     return np.diff(meshgrid, axis=axis)</code></pre>
 </details>
 </dd>
-<dt id="nlisim.grid.RectangularGrid.get_adjecent_voxels"><code class="name flex">
-<span>def <span class="ident">get_adjecent_voxels</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, corners: bool = False) ‑> Iterator[<a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>]</span>
+<dt id="nlisim.grid.RectangularGrid.get_adjacent_voxels"><code class="name flex">
+<span>def <span class="ident">get_adjacent_voxels</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, corners: bool = False) ‑> Iterator[<a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return an iterator over all neighbors of a given voxel.</p>
@@ -941,7 +941,7 @@ def shape(self) -&gt; ShapeType:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_adjecent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
+<pre><code class="python">def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -&gt; Iterator[Voxel]:
     &#34;&#34;&#34;Return an iterator over all neighbors of a given voxel.
 
     Parameters
@@ -969,7 +969,7 @@ def shape(self) -&gt; ShapeType:
 </details>
 </dd>
 <dt id="nlisim.grid.RectangularGrid.get_flattened_index"><code class="name flex">
-<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> int</span>
+<span>def <span class="ident">get_flattened_index</span></span>(<span>self, voxel: <a title="nlisim.coordinates.Voxel" href="coordinates.html#nlisim.coordinates.Voxel">Voxel</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the flattened index of a voxel inside the grid.</p>
@@ -978,12 +978,12 @@ def shape(self) -&gt; ShapeType:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_flattened_index(self, voxel: Voxel) -&gt; int:
+<pre><code class="python">def get_flattened_index(self, voxel: Voxel):
     &#34;&#34;&#34;Return the flattened index of a voxel inside the grid.
 
     This is a convenience method that wraps numpy.ravel_multi_index.
     &#34;&#34;&#34;
-    return np.ravel_multi_index(voxel, self.shape)</code></pre>
+    return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)</code></pre>
 </details>
 </dd>
 <dt id="nlisim.grid.RectangularGrid.get_nearest_voxel"><code class="name flex">
@@ -1179,7 +1179,7 @@ iterated.</p>
 </details>
 </dd>
 <dt id="nlisim.grid.RectangularGrid.save"><code class="name flex">
-<span>def <span class="ident">save</span></span>(<span>self, file: h5py._hl.files.File) ‑> NoneType</span>
+<span>def <span class="ident">save</span></span>(<span>self, file: h5py._hl.files.File) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Save the grid state into an HDF5 file.</p></div>
@@ -1210,7 +1210,7 @@ iterated.</p>
     This is a convenience method that wraps numpy.unravel_index.
     &#34;&#34;&#34;
     z, y, x = np.unravel_index(index, self.shape)
-    return Voxel(x=x, y=y, z=z)</code></pre>
+    return Voxel(x=float(x), y=float(y), z=float(z))</code></pre>
 </details>
 </dd>
 </dl>
@@ -1237,7 +1237,7 @@ iterated.</p>
 <li><code><a title="nlisim.grid.RectangularGrid.allocate_variable" href="#nlisim.grid.RectangularGrid.allocate_variable">allocate_variable</a></code></li>
 <li><code><a title="nlisim.grid.RectangularGrid.construct_uniform" href="#nlisim.grid.RectangularGrid.construct_uniform">construct_uniform</a></code></li>
 <li><code><a title="nlisim.grid.RectangularGrid.delta" href="#nlisim.grid.RectangularGrid.delta">delta</a></code></li>
-<li><code><a title="nlisim.grid.RectangularGrid.get_adjecent_voxels" href="#nlisim.grid.RectangularGrid.get_adjecent_voxels">get_adjecent_voxels</a></code></li>
+<li><code><a title="nlisim.grid.RectangularGrid.get_adjacent_voxels" href="#nlisim.grid.RectangularGrid.get_adjacent_voxels">get_adjacent_voxels</a></code></li>
 <li><code><a title="nlisim.grid.RectangularGrid.get_flattened_index" href="#nlisim.grid.RectangularGrid.get_flattened_index">get_flattened_index</a></code></li>
 <li><code><a title="nlisim.grid.RectangularGrid.get_nearest_voxel" href="#nlisim.grid.RectangularGrid.get_nearest_voxel">get_nearest_voxel</a></code></li>
 <li><code><a title="nlisim.grid.RectangularGrid.get_voxel" href="#nlisim.grid.RectangularGrid.get_voxel">get_voxel</a></code></li>
@@ -1264,7 +1264,7 @@ iterated.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>nlisim.modules.tafc API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>nlisim.modules.tafc</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from typing import Any, Dict
+
+import attr
+import numpy as np
+
+from nlisim.coordinates import Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.state import State
+from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
+
+
+def molecule_grid_factory(self: &#39;TAFCState&#39;) -&gt; np.ndarray:
+    # note the expansion to another axis to account for 0, 1, or 2 bound Fe&#39;s.
+    return np.zeros(
+        shape=self.global_state.grid.shape, dtype=[(&#39;TAFC&#39;, np.float64), (&#39;TAFCBI&#39;, np.float64)]
+    )
+
+
+@attr.s(kw_only=True, repr=False)
+class TAFCState(ModuleState):
+    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    k_m_tf_tafc: float
+    tafc_up: float
+    threshold: float
+    tafc_qtty: float
+
+
+class TAFC(MoleculeModel):
+    # noinspection SpellCheckingInspection
+    &#34;&#34;&#34;TAFC: (T)ri(A)cetyl(F)usarinine C&#34;&#34;&#34;
+
+    name = &#39;tafc&#39;
+    StateClass = TAFCState
+
+    def initialize(self, state: State) -&gt; State:
+        tafc: TAFCState = state.tafc
+        voxel_volume: float = state.voxel_volume
+
+        # config file values
+        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+
+        # computed values
+        tafc.tafc_qtty = self.config.getfloat(&#39;tafc_qtty&#39;) * 15  # TODO: unit_t
+        tafc.tafc_up = self.config.getfloat(&#39;tafc_up&#39;) / voxel_volume / 15
+        tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
+
+        return state
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        from nlisim.modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellState,
+            AfumigatusCellStatus,
+            AfumigatusState,
+            NetworkSpecies,
+        )
+        from nlisim.modules.iron import IronState
+        from nlisim.modules.transferrin import TransferrinState
+
+        tafc: TAFCState = state.tafc
+        transferrin: TransferrinState = state.transferrin
+        iron: IronState = state.iron
+        molecules: MoleculesState = state.molecules
+        afumigatus: AfumigatusState = state.afumigatus
+        grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
+
+        # interaction with transferrin
+        # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
+        dfe2dt = michaelian_kinetics(
+            substrate=transferrin.grid[&#34;TfFe2&#34;],
+            enzyme=tafc.grid[&#34;TAFC&#34;],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            k_cat=1.0,  # default
+            voxel_volume=voxel_volume,
+        )
+        dfedt = michaelian_kinetics(
+            substrate=transferrin.grid[&#34;TfFe&#34;],
+            enzyme=tafc.grid[&#34;TAFC&#34;],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            k_cat=1.0,  # default
+            voxel_volume=voxel_volume,
+        )
+
+        # - enforce bounds from TAFC quantity
+        total_change = dfe2dt + dfedt
+        rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
+        # enforce bounds and zero out problem divides
+        rel[total_change == 0] = 0.0
+        np.minimum(rel, 1.0, out=rel)
+        np.maximum(rel, 0.0, out=rel)
+
+        dfe2dt = dfe2dt * rel
+        dfedt = dfedt * rel
+
+        # transferrin+2Fe loses an iron, becomes transferrin+Fe
+        transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
+        transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+
+        # transferrin+Fe loses an iron, becomes transferrin
+        transferrin.grid[&#39;TfFe&#39;] -= dfedt
+        transferrin.grid[&#39;Tf&#39;] += dfedt
+
+        # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
+        tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
+        tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+
+        # interaction with iron, all available iron is bound to TAFC
+        potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
+        tafc.grid[&#39;TAFC&#39;] -= potential_reactive_quantity
+        tafc.grid[&#39;TAFCBI&#39;] += potential_reactive_quantity
+        iron.grid -= potential_reactive_quantity
+
+        # interaction with fungus
+        for afumigatus_cell_index in afumigatus.cells.alive():
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
+
+            if (
+                afumigatus_cell[&#39;state&#39;] != AfumigatusCellState.FREE
+                or afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.DYING
+            ):
+                continue
+
+            afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+            afumigatus_bool_net: np.ndarray = afumigatus_cell[&#39;boolean_network&#39;]
+
+            # uptake iron from TAFCBI
+            if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
+                qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
+                # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
+                # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
+                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
+                afumigatus_cell[&#39;iron_pool&#39;] += qtty
+
+            # secrete TAFC
+            if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
+                AfumigatusCellStatus.SWELLING_CONIDIA,
+                AfumigatusCellStatus.HYPHAE,
+                AfumigatusCellStatus.GERM_TUBE,
+            }:
+                tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+
+        # Degrade TAFC
+        trnvr_rt = turnover_rate(
+            x=np.array(1.0, dtype=np.float64),
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+        tafc.grid[&#39;TAFC&#39;] *= trnvr_rt
+        tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
+
+        # Diffusion of TAFC
+        self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
+        self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        tafc: TAFCState = state.tafc
+        voxel_volume = state.voxel_volume
+
+        return {
+            &#39;concentration TAFC&#39;: float(np.mean(tafc.grid[&#39;TAFC&#39;]) / voxel_volume),
+            &#39;concentration TAFCBI&#39;: float(np.mean(tafc.grid[&#39;TAFCBI&#39;]) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State):
+        tafc: TAFCState = state.tafc
+        return &#39;molecule&#39;, tafc.grid</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="nlisim.modules.tafc.molecule_grid_factory"><code class="name flex">
+<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="nlisim.modules.tafc.TAFCState" href="#nlisim.modules.tafc.TAFCState">TAFCState</a>) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def molecule_grid_factory(self: &#39;TAFCState&#39;) -&gt; np.ndarray:
+    # note the expansion to another axis to account for 0, 1, or 2 bound Fe&#39;s.
+    return np.zeros(
+        shape=self.global_state.grid.shape, dtype=[(&#39;TAFC&#39;, np.float64), (&#39;TAFCBI&#39;, np.float64)]
+    )</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="nlisim.modules.tafc.TAFC"><code class="flex name class">
+<span>class <span class="ident">TAFC</span></span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>TAFC: (T)ri(A)cetyl(F)usarinine C</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TAFC(MoleculeModel):
+    # noinspection SpellCheckingInspection
+    &#34;&#34;&#34;TAFC: (T)ri(A)cetyl(F)usarinine C&#34;&#34;&#34;
+
+    name = &#39;tafc&#39;
+    StateClass = TAFCState
+
+    def initialize(self, state: State) -&gt; State:
+        tafc: TAFCState = state.tafc
+        voxel_volume: float = state.voxel_volume
+
+        # config file values
+        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+
+        # computed values
+        tafc.tafc_qtty = self.config.getfloat(&#39;tafc_qtty&#39;) * 15  # TODO: unit_t
+        tafc.tafc_up = self.config.getfloat(&#39;tafc_up&#39;) / voxel_volume / 15
+        tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
+
+        return state
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        from nlisim.modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellState,
+            AfumigatusCellStatus,
+            AfumigatusState,
+            NetworkSpecies,
+        )
+        from nlisim.modules.iron import IronState
+        from nlisim.modules.transferrin import TransferrinState
+
+        tafc: TAFCState = state.tafc
+        transferrin: TransferrinState = state.transferrin
+        iron: IronState = state.iron
+        molecules: MoleculesState = state.molecules
+        afumigatus: AfumigatusState = state.afumigatus
+        grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
+
+        # interaction with transferrin
+        # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
+        dfe2dt = michaelian_kinetics(
+            substrate=transferrin.grid[&#34;TfFe2&#34;],
+            enzyme=tafc.grid[&#34;TAFC&#34;],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            k_cat=1.0,  # default
+            voxel_volume=voxel_volume,
+        )
+        dfedt = michaelian_kinetics(
+            substrate=transferrin.grid[&#34;TfFe&#34;],
+            enzyme=tafc.grid[&#34;TAFC&#34;],
+            km=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,
+            k_cat=1.0,  # default
+            voxel_volume=voxel_volume,
+        )
+
+        # - enforce bounds from TAFC quantity
+        total_change = dfe2dt + dfedt
+        rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
+        # enforce bounds and zero out problem divides
+        rel[total_change == 0] = 0.0
+        np.minimum(rel, 1.0, out=rel)
+        np.maximum(rel, 0.0, out=rel)
+
+        dfe2dt = dfe2dt * rel
+        dfedt = dfedt * rel
+
+        # transferrin+2Fe loses an iron, becomes transferrin+Fe
+        transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
+        transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+
+        # transferrin+Fe loses an iron, becomes transferrin
+        transferrin.grid[&#39;TfFe&#39;] -= dfedt
+        transferrin.grid[&#39;Tf&#39;] += dfedt
+
+        # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
+        tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
+        tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+
+        # interaction with iron, all available iron is bound to TAFC
+        potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
+        tafc.grid[&#39;TAFC&#39;] -= potential_reactive_quantity
+        tafc.grid[&#39;TAFCBI&#39;] += potential_reactive_quantity
+        iron.grid -= potential_reactive_quantity
+
+        # interaction with fungus
+        for afumigatus_cell_index in afumigatus.cells.alive():
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
+
+            if (
+                afumigatus_cell[&#39;state&#39;] != AfumigatusCellState.FREE
+                or afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.DYING
+            ):
+                continue
+
+            afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+            afumigatus_bool_net: np.ndarray = afumigatus_cell[&#39;boolean_network&#39;]
+
+            # uptake iron from TAFCBI
+            if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
+                qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
+                # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
+                # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
+                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
+                afumigatus_cell[&#39;iron_pool&#39;] += qtty
+
+            # secrete TAFC
+            if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
+                AfumigatusCellStatus.SWELLING_CONIDIA,
+                AfumigatusCellStatus.HYPHAE,
+                AfumigatusCellStatus.GERM_TUBE,
+            }:
+                tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+
+        # Degrade TAFC
+        trnvr_rt = turnover_rate(
+            x=np.array(1.0, dtype=np.float64),
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+        tafc.grid[&#39;TAFC&#39;] *= trnvr_rt
+        tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
+
+        # Diffusion of TAFC
+        self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
+        self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        tafc: TAFCState = state.tafc
+        voxel_volume = state.voxel_volume
+
+        return {
+            &#39;concentration TAFC&#39;: float(np.mean(tafc.grid[&#39;TAFC&#39;]) / voxel_volume),
+            &#39;concentration TAFCBI&#39;: float(np.mean(tafc.grid[&#39;TAFCBI&#39;]) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State):
+        tafc: TAFCState = state.tafc
+        return &#39;molecule&#39;, tafc.grid</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="nlisim.modules.tafc.TAFC.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float) ‑> <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance the state by a single time step.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def advance(self, state: State, previous_time: float) -&gt; State:
+    &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+    from nlisim.modules.afumigatus import (
+        AfumigatusCellData,
+        AfumigatusCellState,
+        AfumigatusCellStatus,
+        AfumigatusState,
+        NetworkSpecies,
+    )
+    from nlisim.modules.iron import IronState
+    from nlisim.modules.transferrin import TransferrinState
+
+    tafc: TAFCState = state.tafc
+    transferrin: TransferrinState = state.transferrin
+    iron: IronState = state.iron
+    molecules: MoleculesState = state.molecules
+    afumigatus: AfumigatusState = state.afumigatus
+    grid: RectangularGrid = state.grid
+    voxel_volume: float = state.voxel_volume
+
+    # interaction with transferrin
+    # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
+    dfe2dt = michaelian_kinetics(
+        substrate=transferrin.grid[&#34;TfFe2&#34;],
+        enzyme=tafc.grid[&#34;TAFC&#34;],
+        km=tafc.k_m_tf_tafc,
+        h=self.time_step / 60,
+        k_cat=1.0,  # default
+        voxel_volume=voxel_volume,
+    )
+    dfedt = michaelian_kinetics(
+        substrate=transferrin.grid[&#34;TfFe&#34;],
+        enzyme=tafc.grid[&#34;TAFC&#34;],
+        km=tafc.k_m_tf_tafc,
+        h=self.time_step / 60,
+        k_cat=1.0,  # default
+        voxel_volume=voxel_volume,
+    )
+
+    # - enforce bounds from TAFC quantity
+    total_change = dfe2dt + dfedt
+    rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
+    # enforce bounds and zero out problem divides
+    rel[total_change == 0] = 0.0
+    np.minimum(rel, 1.0, out=rel)
+    np.maximum(rel, 0.0, out=rel)
+
+    dfe2dt = dfe2dt * rel
+    dfedt = dfedt * rel
+
+    # transferrin+2Fe loses an iron, becomes transferrin+Fe
+    transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
+    transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+
+    # transferrin+Fe loses an iron, becomes transferrin
+    transferrin.grid[&#39;TfFe&#39;] -= dfedt
+    transferrin.grid[&#39;Tf&#39;] += dfedt
+
+    # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
+    tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
+    tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+
+    # interaction with iron, all available iron is bound to TAFC
+    potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
+    tafc.grid[&#39;TAFC&#39;] -= potential_reactive_quantity
+    tafc.grid[&#39;TAFCBI&#39;] += potential_reactive_quantity
+    iron.grid -= potential_reactive_quantity
+
+    # interaction with fungus
+    for afumigatus_cell_index in afumigatus.cells.alive():
+        afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
+
+        if (
+            afumigatus_cell[&#39;state&#39;] != AfumigatusCellState.FREE
+            or afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.DYING
+        ):
+            continue
+
+        afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+        afumigatus_bool_net: np.ndarray = afumigatus_cell[&#39;boolean_network&#39;]
+
+        # uptake iron from TAFCBI
+        if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
+            qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
+            # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
+            # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
+            tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
+            afumigatus_cell[&#39;iron_pool&#39;] += qtty
+
+        # secrete TAFC
+        if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
+            AfumigatusCellStatus.SWELLING_CONIDIA,
+            AfumigatusCellStatus.HYPHAE,
+            AfumigatusCellStatus.GERM_TUBE,
+        }:
+            tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+
+    # Degrade TAFC
+    trnvr_rt = turnover_rate(
+        x=np.array(1.0, dtype=np.float64),
+        x_system=0.0,
+        base_turnover_rate=molecules.turnover_rate,
+        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+    )
+    tafc.grid[&#39;TAFC&#39;] *= trnvr_rt
+    tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
+
+    # Diffusion of TAFC
+    self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
+    self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+
+    return state</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
+</ul>
+</li>
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState"><code class="flex name class">
+<span>class <span class="ident">TAFCState</span></span>
+<span>(</span><span>*, global_state: State, grid: numpy.ndarray = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p>
+<p>Method generated by attrs for class TAFCState.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TAFCState(ModuleState):
+    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    k_m_tf_tafc: float
+    tafc_up: float
+    threshold: float
+    tafc_qtty: float</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.tafc.TAFCState.grid"><code class="name">var <span class="ident">grid</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState.k_m_tf_tafc"><code class="name">var <span class="ident">k_m_tf_tafc</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState.tafc_qtty"><code class="name">var <span class="ident">tafc_qtty</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState.tafc_up"><code class="name">var <span class="ident">tafc_up</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState.threshold"><code class="name">var <span class="ident">threshold</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.module.ModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.module.ModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="nlisim.modules.tafc.molecule_grid_factory" href="#nlisim.modules.tafc.molecule_grid_factory">molecule_grid_factory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="nlisim.modules.tafc.TAFC" href="#nlisim.modules.tafc.TAFC">TAFC</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.tafc.TAFC.advance" href="#nlisim.modules.tafc.TAFC.advance">advance</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.tafc.TAFCState" href="#nlisim.modules.tafc.TAFCState">TAFCState</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.tafc.TAFCState.grid" href="#nlisim.modules.tafc.TAFCState.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.k_m_tf_tafc" href="#nlisim.modules.tafc.TAFCState.k_m_tf_tafc">k_m_tf_tafc</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.tafc_qtty" href="#nlisim.modules.tafc.TAFCState.tafc_qtty">tafc_qtty</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.tafc_up" href="#nlisim.modules.tafc.TAFCState.tafc_up">tafc_up</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.threshold" href="#nlisim.modules.tafc.TAFCState.threshold">threshold</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

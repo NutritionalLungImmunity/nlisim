@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.diffusion API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -34,9 +34,11 @@ from scipy.sparse.linalg import cg
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 
+_dtype_float64 = np.dtype(&#39;float64&#39;)
+
 
 def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
 ) -&gt; csr_matrix:
     &#34;&#34;&#34;Return a discrete laplacian operator for the given restricted grid.
 
@@ -57,7 +59,7 @@ def discrete_laplacian(
         voxel_index = grid.get_flattened_index(voxel)
         normalization = 0
 
-        for neighbor in grid.get_adjecent_voxels(voxel, corners=False):
+        for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
             nj = neighbor.y
             nk = neighbor.z
@@ -85,8 +87,11 @@ def apply_diffusion(
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 
-    Solves laplaces equation in 3D using implicit time steps.  The variable is
+    Solves Laplace&#39;s equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
+
+    Notes that the output of this function might contain negative values caused by
+    rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.
 
     The intended use case for this method is to perform &#34;surface diffusion&#34; generated
     by a mask from the `lung_tissue` variable, e.g.
@@ -114,9 +119,11 @@ def apply_diffusion(
 </code></dt>
 <dd>
 <div class="desc"><p>Apply diffusion to a variable.</p>
-<p>Solves laplaces equation in 3D using implicit time steps.
+<p>Solves Laplace's equation in 3D using implicit time steps.
 The variable is
 advanced in time by <code>dt</code> time units using GMRES.</p>
+<p>Notes that the output of this function might contain negative values caused by
+rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.</p>
 <p>The intended use case for this method is to perform "surface diffusion" generated
 by a mask from the <code>lung_tissue</code> variable, e.g.</p>
 <pre><code>surface_mask = lung_tissue == TissueTypes.EPITHELIUM
@@ -132,8 +139,11 @@ iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivi
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 
-    Solves laplaces equation in 3D using implicit time steps.  The variable is
+    Solves Laplace&#39;s equation in 3D using implicit time steps.  The variable is
     advanced in time by `dt` time units using GMRES.
+
+    Notes that the output of this function might contain negative values caused by
+    rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.
 
     The intended use case for this method is to perform &#34;surface diffusion&#34; generated
     by a mask from the `lung_tissue` variable, e.g.
@@ -150,7 +160,7 @@ iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivi
 </details>
 </dd>
 <dt id="nlisim.diffusion.discrete_laplacian"><code class="name flex">
-<span>def <span class="ident">discrete_laplacian</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, mask: numpy.ndarray, dtype: numpy.dtype = numpy.float64) ‑> scipy.sparse.csr.csr_matrix</span>
+<span>def <span class="ident">discrete_laplacian</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, mask: numpy.ndarray, dtype: numpy.dtype = dtype('float64')) ‑> scipy.sparse.csr.csr_matrix</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a discrete laplacian operator for the given restricted grid.</p>
@@ -165,7 +175,7 @@ variable.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = np.float64
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
 ) -&gt; csr_matrix:
     &#34;&#34;&#34;Return a discrete laplacian operator for the given restricted grid.
 
@@ -186,7 +196,7 @@ variable.</p></div>
         voxel_index = grid.get_flattened_index(voxel)
         normalization = 0
 
-        for neighbor in grid.get_adjecent_voxels(voxel, corners=False):
+        for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
             nj = neighbor.y
             nk = neighbor.z
@@ -235,7 +245,7 @@ variable.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

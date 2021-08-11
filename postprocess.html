@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.postprocess API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -39,8 +39,6 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
-from nlisim.modules.geometry import GeometryState
-from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 
 
@@ -63,13 +61,14 @@ def convert_cells_to_vtk(cells: CellList) -&gt; vtkPolyData:
     points.SetData(numpy_to_vtk(np.flip(cell_data[&#39;point&#39;], axis=1)))
     point_data = poly.GetPointData()
 
-    for field, (dtype, _) in fields.items():
+    for field, (dtype, *_) in fields.items():
         data = cell_data[field]
 
         # numpy_to_vtk doesn&#39;t handle bool for some reason
         if dtype == np.dtype(&#39;bool&#39;):
             data = data.astype(np.dtype(&#39;uint8&#39;))
 
+        # noinspection PyBroadException
         try:
             scalar = numpy_to_vtk(data)
         except Exception:
@@ -97,23 +96,41 @@ def create_vtk_volume(grid: RectangularGrid) -&gt; vtkStructuredPoints:
     return vtk_grid
 
 
-def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -&gt; vtkStructuredPoints:
     vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
+    tissue = lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
     return vtk_grid
 
 
-def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt; vtkStructuredPoints:
-    vtk_grid = create_vtk_volume(grid)
+# def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt; vtkStructuredPoints:
+#     vtk_grid = create_vtk_volume(grid)
+#     point_data = vtk_grid.GetPointData()
+#     for name in molecules.grid.concentrations.dtype.names:
+#         data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+#         data.SetName(name)
+#         point_data.AddArray(data)
+#
+#     return vtk_grid
+
+
+def add_vtk_molecules(
+    molecules: np.ndarray, module_name: str, vtk_grid: vtkStructuredPoints
+) -&gt; vtkStructuredPoints:
     point_data = vtk_grid.GetPointData()
-    for name in molecules.grid.concentrations.dtype.names:
-        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
-        data.SetName(name)
+    # the x-ferrin molecules have a record type which has several names, others do not
+    if molecules.dtype.names:
+        for name in molecules.dtype.names:
+            data = numpy_to_vtk(molecules[name].ravel())
+            data.SetName(name)  # TODO: should we put the module name as part?
+            point_data.AddArray(data)
+    else:
+        data = numpy_to_vtk(molecules.ravel())
+        data.SetName(module_name)
         point_data.AddArray(data)
 
     return vtk_grid
@@ -122,16 +139,20 @@ def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt;
 def generate_vtk_objects(
     state: State,
 ) -&gt; Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_geometry(state.grid, state.geometry)
-    molecules = create_vtk_molecules(state.grid, state.molecules)
-    cells = {
-        &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
-        &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
-        &#39;macrophage&#39;: convert_cells_to_vtk(state.macrophage.cells),
-        &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
-    }
+    &#34;&#34;&#34;Generate the vtk objects for each module. (e.g. for upload)&#34;&#34;&#34;
+    volume = create_vtk_geometry(state.grid, state.lung_tissue)
+    molecules_grid = create_vtk_volume(state.grid)
+    cells = dict()
+    for module in state.config.modules:
+        data_type, content = module.visualization_data(state)
+        if data_type == &#39;molecule&#39;:
+            assert type(content) == np.ndarray
+            add_vtk_molecules(content, module.name, molecules_grid)
+        elif data_type == &#39;cells&#39;:
+            assert type(content) == CellList
+            cells[module.name] = convert_cells_to_vtk(content)
 
-    return volume, molecules, cells
+    return volume, molecules_grid, cells
 
 
 def generate_vtk(state: State, postprocess_step_dir: Path):
@@ -187,6 +208,33 @@ def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="nlisim.postprocess.add_vtk_molecules"><code class="name flex">
+<span>def <span class="ident">add_vtk_molecules</span></span>(<span>molecules: numpy.ndarray, module_name: str, vtk_grid: vtkmodules.vtkCommonDataModel.vtkStructuredPoints) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_vtk_molecules(
+    molecules: np.ndarray, module_name: str, vtk_grid: vtkStructuredPoints
+) -&gt; vtkStructuredPoints:
+    point_data = vtk_grid.GetPointData()
+    # the x-ferrin molecules have a record type which has several names, others do not
+    if molecules.dtype.names:
+        for name in molecules.dtype.names:
+            data = numpy_to_vtk(molecules[name].ravel())
+            data.SetName(name)  # TODO: should we put the module name as part?
+            point_data.AddArray(data)
+    else:
+        data = numpy_to_vtk(molecules.ravel())
+        data.SetName(module_name)
+        point_data.AddArray(data)
+
+    return vtk_grid</code></pre>
+</details>
+</dd>
 <dt id="nlisim.postprocess.convert_cells_to_vtk"><code class="name flex">
 <span>def <span class="ident">convert_cells_to_vtk</span></span>(<span>cells: <a title="nlisim.cell.CellList" href="cell.html#nlisim.cell.CellList">CellList</a>) ‑> vtkmodules.vtkCommonDataModel.vtkPolyData</span>
 </code></dt>
@@ -215,13 +263,14 @@ def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
     points.SetData(numpy_to_vtk(np.flip(cell_data[&#39;point&#39;], axis=1)))
     point_data = poly.GetPointData()
 
-    for field, (dtype, _) in fields.items():
+    for field, (dtype, *_) in fields.items():
         data = cell_data[field]
 
         # numpy_to_vtk doesn&#39;t handle bool for some reason
         if dtype == np.dtype(&#39;bool&#39;):
             data = data.astype(np.dtype(&#39;uint8&#39;))
 
+        # noinspection PyBroadException
         try:
             scalar = numpy_to_vtk(data)
         except Exception:
@@ -235,7 +284,7 @@ def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
 </details>
 </dd>
 <dt id="nlisim.postprocess.create_vtk_geometry"><code class="name flex">
-<span>def <span class="ident">create_vtk_geometry</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, geometry: <a title="nlisim.modules.geometry.GeometryState" href="modules/geometry.html#nlisim.modules.geometry.GeometryState">GeometryState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
+<span>def <span class="ident">create_vtk_geometry</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, lung_tissue: numpy.ndarray) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -243,34 +292,14 @@ def generate_summary_stats(state: State) -&gt; Dict[str, Dict[str, Any]]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_vtk_geometry(grid: RectangularGrid, geometry: GeometryState) -&gt; vtkStructuredPoints:
+<pre><code class="python">def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -&gt; vtkStructuredPoints:
     vtk_grid = create_vtk_volume(grid)
     point_data = vtk_grid.GetPointData()
 
     # transform color values to get around categorical interpolation issue in visualization
-    tissue = geometry.lung_tissue.copy()  # copy required as postprocessing can be live
+    tissue = lung_tissue.copy()  # copy required as postprocessing can be live
     tissue[tissue == 0] = 4
     point_data.SetScalars(numpy_to_vtk(tissue.ravel()))
-    return vtk_grid</code></pre>
-</details>
-</dd>
-<dt id="nlisim.postprocess.create_vtk_molecules"><code class="name flex">
-<span>def <span class="ident">create_vtk_molecules</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, molecules: <a title="nlisim.modules.molecules.MoleculesState" href="modules/molecules.html#nlisim.modules.molecules.MoleculesState">MoleculesState</a>) ‑> vtkmodules.vtkCommonDataModel.vtkStructuredPoints</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -&gt; vtkStructuredPoints:
-    vtk_grid = create_vtk_volume(grid)
-    point_data = vtk_grid.GetPointData()
-    for name in molecules.grid.concentrations.dtype.names:
-        data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
-        data.SetName(name)
-        point_data.AddArray(data)
-
     return vtk_grid</code></pre>
 </details>
 </dd>
@@ -361,7 +390,7 @@ modules reporting no statistics are omitted</p></div>
 <span>def <span class="ident">generate_vtk_objects</span></span>(<span>state: <a title="nlisim.state.State" href="state.html#nlisim.state.State">State</a>) ‑> Tuple[vtkmodules.vtkCommonDataModel.vtkStructuredPoints, vtkmodules.vtkCommonDataModel.vtkStructuredPoints, Dict[str, vtkmodules.vtkCommonDataModel.vtkPolyData]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Generate the vtk objects for each module. (e.g. for upload)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -369,20 +398,24 @@ modules reporting no statistics are omitted</p></div>
 <pre><code class="python">def generate_vtk_objects(
     state: State,
 ) -&gt; Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    volume = create_vtk_geometry(state.grid, state.geometry)
-    molecules = create_vtk_molecules(state.grid, state.molecules)
-    cells = {
-        &#39;spore&#39;: convert_cells_to_vtk(state.fungus.cells),
-        &#39;epithelium&#39;: convert_cells_to_vtk(state.epithelium.cells),
-        &#39;macrophage&#39;: convert_cells_to_vtk(state.macrophage.cells),
-        &#39;neutrophil&#39;: convert_cells_to_vtk(state.neutrophil.cells),
-    }
+    &#34;&#34;&#34;Generate the vtk objects for each module. (e.g. for upload)&#34;&#34;&#34;
+    volume = create_vtk_geometry(state.grid, state.lung_tissue)
+    molecules_grid = create_vtk_volume(state.grid)
+    cells = dict()
+    for module in state.config.modules:
+        data_type, content = module.visualization_data(state)
+        if data_type == &#39;molecule&#39;:
+            assert type(content) == np.ndarray
+            add_vtk_molecules(content, module.name, molecules_grid)
+        elif data_type == &#39;cells&#39;:
+            assert type(content) == CellList
+            cells[module.name] = convert_cells_to_vtk(content)
 
-    return volume, molecules, cells</code></pre>
+    return volume, molecules_grid, cells</code></pre>
 </details>
 </dd>
 <dt id="nlisim.postprocess.process_output"><code class="name flex">
-<span>def <span class="ident">process_output</span></span>(<span>state_files: Iterable[pathlib.Path], postprocess_dir: pathlib.Path) ‑> NoneType</span>
+<span>def <span class="ident">process_output</span></span>(<span>state_files: Iterable[pathlib.Path], postprocess_dir: pathlib.Path) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -417,9 +450,9 @@ modules reporting no statistics are omitted</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="nlisim.postprocess.add_vtk_molecules" href="#nlisim.postprocess.add_vtk_molecules">add_vtk_molecules</a></code></li>
 <li><code><a title="nlisim.postprocess.convert_cells_to_vtk" href="#nlisim.postprocess.convert_cells_to_vtk">convert_cells_to_vtk</a></code></li>
 <li><code><a title="nlisim.postprocess.create_vtk_geometry" href="#nlisim.postprocess.create_vtk_geometry">create_vtk_geometry</a></code></li>
-<li><code><a title="nlisim.postprocess.create_vtk_molecules" href="#nlisim.postprocess.create_vtk_molecules">create_vtk_molecules</a></code></li>
 <li><code><a title="nlisim.postprocess.create_vtk_volume" href="#nlisim.postprocess.create_vtk_volume">create_vtk_volume</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_summary_stats" href="#nlisim.postprocess.generate_summary_stats">generate_summary_stats</a></code></li>
 <li><code><a title="nlisim.postprocess.generate_vtk" href="#nlisim.postprocess.generate_vtk">generate_vtk</a></code></li>
@@ -431,7 +464,7 @@ modules reporting no statistics are omitted</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

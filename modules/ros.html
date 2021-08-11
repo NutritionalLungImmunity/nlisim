@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>nlisim.modules.state_output API documentation</title>
+<title>nlisim.modules.ros API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,76 +20,82 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>nlisim.modules.state_output</code></h1>
+<h1 class="title">Module <code>nlisim.modules.ros</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from pathlib import Path
-import shutil
+<pre><code class="python">from typing import Any, Dict
 
-from attr import attrib, attrs
+import attr
+import numpy as np
 
-from nlisim.module import ModuleModel, ModuleState
+from nlisim.module import ModuleState
+from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
 
 
-@attrs(kw_only=True)
-class StateOutputState(ModuleState):
-    last_save: float = attrib(default=0)
+def molecule_grid_factory(self: &#39;ROSState&#39;) -&gt; np.ndarray:
+    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-class StateOutput(ModuleModel):
-    &#34;&#34;&#34;
-    After time steps, serialize the simulation state to an HDF5 file.
+@attr.s(kw_only=True, repr=False)
+class ROSState(ModuleState):
+    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
 
-    When registered for execution, this module should always be placed last in the ordering.
-    &#34;&#34;&#34;
 
-    name = &#39;state_output&#39;
+class ROS(MoleculeModel):
+    &#34;&#34;&#34;Reactive Oxygen Species&#34;&#34;&#34;
 
-    StateClass = StateOutputState
-
-    @property
-    def _output_dir(self) -&gt; Path:
-        return Path(self.config.get(&#39;output_dir&#39;))
-
-    def _write_output(self, state: State) -&gt; None:
-        now = state.time
-        output_file_name = f&#39;simulation-{now:010.3f}.hdf5&#39;
-        output_file_path = self._output_dir / output_file_name
-
-        state.save(output_file_path)
-
-        state.state_output.last_save = now
-
-    @staticmethod
-    def _clear_directory(directory: Path) -&gt; None:
-        &#34;&#34;&#34;Clear the contents of a directory, without removing the directory itself.&#34;&#34;&#34;
-        for file in directory.iterdir():
-            if file.is_file():
-                file.unlink()
-            elif file.is_dir():
-                shutil.rmtree(file)
+    name = &#39;ros&#39;
+    StateClass = ROSState
 
     def initialize(self, state: State) -&gt; State:
-        output_dir = self._output_dir
-        if output_dir.exists():
-            # Since output_dir may be a Docker mount point, don&#39;t remove the directory itself.
-            print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
-            self._clear_directory(output_dir)
-        else:
-            output_dir.mkdir(parents=True)
+        # ros: ROSState = state.ros
+        # geometry: GeometryState = state.geometry
+        # voxel_volume = geometry.voxel_volume
 
-        # Initial time is typically 0, but it can be read from state
-        self._write_output(state)
+        # config file values
+
+        # computed values
+
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        self._write_output(state)
-        return state</code></pre>
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        ros: ROSState = state.ros
+        # molecules: MoleculesState = state.molecules
+
+        # TODO: code below adds zero, omitting until we have a non-trivial model
+
+        # elif type(interactable) is Macrophage:
+        #     assert isinstance(interactable, Macrophage)
+        #     macrophage: Macrophage = interactable
+        #
+        #     if macrophage.status == Macrophage.ACTIVE:
+        #         self.increase(0, x, y, z)
+        #     return True
+
+        # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
+
+        # Diffusion of ros
+        self.diffuse(ros.grid, state)
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        ros: ROSState = state.ros
+        voxel_volume = state.voxel_volume
+
+        return {
+            &#39;concentration&#39;: float(np.mean(ros.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State):
+        ros: ROSState = state.ros
+        return &#39;molecule&#39;, ros.grid</code></pre>
 </details>
 </section>
 <section>
@@ -97,96 +103,151 @@ class StateOutput(ModuleModel):
 <section>
 </section>
 <section>
-</section>
-<section>
-<h2 class="section-title" id="header-classes">Classes</h2>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="nlisim.modules.state_output.StateOutput"><code class="flex name class">
-<span>class <span class="ident">StateOutput</span></span>
-<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
+<dt id="nlisim.modules.ros.molecule_grid_factory"><code class="name flex">
+<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="nlisim.modules.ros.ROSState" href="#nlisim.modules.ros.ROSState">ROSState</a>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
-<div class="desc"><p>After time steps, serialize the simulation state to an HDF5 file.</p>
-<p>When registered for execution, this module should always be placed last in the ordering.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class StateOutput(ModuleModel):
-    &#34;&#34;&#34;
-    After time steps, serialize the simulation state to an HDF5 file.
+<pre><code class="python">def molecule_grid_factory(self: &#39;ROSState&#39;) -&gt; np.ndarray:
+    return np.zeros(shape=self.global_state.grid.shape, dtype=float)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="nlisim.modules.ros.ROS"><code class="flex name class">
+<span>class <span class="ident">ROS</span></span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reactive Oxygen Species</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ROS(MoleculeModel):
+    &#34;&#34;&#34;Reactive Oxygen Species&#34;&#34;&#34;
 
-    When registered for execution, this module should always be placed last in the ordering.
-    &#34;&#34;&#34;
-
-    name = &#39;state_output&#39;
-
-    StateClass = StateOutputState
-
-    @property
-    def _output_dir(self) -&gt; Path:
-        return Path(self.config.get(&#39;output_dir&#39;))
-
-    def _write_output(self, state: State) -&gt; None:
-        now = state.time
-        output_file_name = f&#39;simulation-{now:010.3f}.hdf5&#39;
-        output_file_path = self._output_dir / output_file_name
-
-        state.save(output_file_path)
-
-        state.state_output.last_save = now
-
-    @staticmethod
-    def _clear_directory(directory: Path) -&gt; None:
-        &#34;&#34;&#34;Clear the contents of a directory, without removing the directory itself.&#34;&#34;&#34;
-        for file in directory.iterdir():
-            if file.is_file():
-                file.unlink()
-            elif file.is_dir():
-                shutil.rmtree(file)
+    name = &#39;ros&#39;
+    StateClass = ROSState
 
     def initialize(self, state: State) -&gt; State:
-        output_dir = self._output_dir
-        if output_dir.exists():
-            # Since output_dir may be a Docker mount point, don&#39;t remove the directory itself.
-            print(f&#39;File output directory {output_dir.resolve()} exists. Clearing it.&#39;)
-            self._clear_directory(output_dir)
-        else:
-            output_dir.mkdir(parents=True)
+        # ros: ROSState = state.ros
+        # geometry: GeometryState = state.geometry
+        # voxel_volume = geometry.voxel_volume
 
-        # Initial time is typically 0, but it can be read from state
-        self._write_output(state)
+        # config file values
+
+        # computed values
+
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
-        self._write_output(state)
-        return state</code></pre>
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        ros: ROSState = state.ros
+        # molecules: MoleculesState = state.molecules
+
+        # TODO: code below adds zero, omitting until we have a non-trivial model
+
+        # elif type(interactable) is Macrophage:
+        #     assert isinstance(interactable, Macrophage)
+        #     macrophage: Macrophage = interactable
+        #
+        #     if macrophage.status == Macrophage.ACTIVE:
+        #         self.increase(0, x, y, z)
+        #     return True
+
+        # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
+
+        # Diffusion of ros
+        self.diffuse(ros.grid, state)
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        ros: ROSState = state.ros
+        voxel_volume = state.voxel_volume
+
+        return {
+            &#39;concentration&#39;: float(np.mean(ros.grid) / voxel_volume),
+        }
+
+    def visualization_data(self, state: State):
+        ros: ROSState = state.ros
+        return &#39;molecule&#39;, ros.grid</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
+<h3>Methods</h3>
+<dl>
+<dt id="nlisim.modules.ros.ROS.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float) ‑> <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance the state by a single time step.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def advance(self, state: State, previous_time: float) -&gt; State:
+    &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+    ros: ROSState = state.ros
+    # molecules: MoleculesState = state.molecules
+
+    # TODO: code below adds zero, omitting until we have a non-trivial model
+
+    # elif type(interactable) is Macrophage:
+    #     assert isinstance(interactable, Macrophage)
+    #     macrophage: Macrophage = interactable
+    #
+    #     if macrophage.status == Macrophage.ACTIVE:
+    #         self.increase(0, x, y, z)
+    #     return True
+
+    # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
+
+    # Diffusion of ros
+    self.diffuse(ros.grid, state)
+
+    return state</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
+<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
+</ul>
+</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.state_output.StateOutputState"><code class="flex name class">
-<span>class <span class="ident">StateOutputState</span></span>
-<span>(</span><span>*, global_state: State, last_save: float = 0)</span>
+<dt id="nlisim.modules.ros.ROSState"><code class="flex name class">
+<span>class <span class="ident">ROSState</span></span>
+<span>(</span><span>*, global_state: State, grid: numpy.ndarray = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -194,13 +255,13 @@ class StateOutput(ModuleModel):
 bool) and numpy arrays of those types.
 Modules containing more complicated
 state must override the serialization mechanism with custom behavior.</p>
-<p>Method generated by attrs for class StateOutputState.</p></div>
+<p>Method generated by attrs for class ROSState.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class StateOutputState(ModuleState):
-    last_save: float = attrib(default=0)</code></pre>
+<pre><code class="python">class ROSState(ModuleState):
+    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -208,7 +269,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.state_output.StateOutputState.last_save"><code class="name">var <span class="ident">last_save</span> : float</code></dt>
+<dt id="nlisim.modules.ros.ROSState.grid"><code class="name">var <span class="ident">grid</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -239,15 +300,23 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="nlisim.modules.ros.molecule_grid_factory" href="#nlisim.modules.ros.molecule_grid_factory">molecule_grid_factory</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.state_output.StateOutput" href="#nlisim.modules.state_output.StateOutput">StateOutput</a></code></h4>
+<h4><code><a title="nlisim.modules.ros.ROS" href="#nlisim.modules.ros.ROS">ROS</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.ros.ROS.advance" href="#nlisim.modules.ros.ROS.advance">advance</a></code></li>
+</ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.state_output.StateOutputState" href="#nlisim.modules.state_output.StateOutputState">StateOutputState</a></code></h4>
+<h4><code><a title="nlisim.modules.ros.ROSState" href="#nlisim.modules.ros.ROSState">ROSState</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.state_output.StateOutputState.last_save" href="#nlisim.modules.state_output.StateOutputState.last_save">last_save</a></code></li>
+<li><code><a title="nlisim.modules.ros.ROSState.grid" href="#nlisim.modules.ros.ROSState.grid">grid</a></code></li>
 </ul>
 </li>
 </ul>

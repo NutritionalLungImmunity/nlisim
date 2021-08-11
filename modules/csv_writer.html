@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>nlisim.modules.geometry API documentation</title>
+<title>nlisim.modules.csv_writer API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,70 +20,60 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>nlisim.modules.geometry</code></h1>
+<h1 class="title">Module <code>nlisim.modules.csv_writer</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from enum import Enum
-from pathlib import Path
+<pre><code class="python">import csv
+import itertools
 
 import attr
-import h5py
-import numpy as np
 
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.state import State, grid_variable
-from nlisim.validation import ValidationError
-
-
-# I am not quite sure if we should put the definition of the lung tissue types here
-class TissueTypes(Enum):
-    AIR = 0
-    BLOOD = 1
-    OTHER = 2
-    EPITHELIUM = 3
-    SURFACTANT = 4
-    PORE = 5
-
-    @classmethod
-    def validate(cls, value: np.ndarray):
-        return np.logical_and(value &gt;= 0, value &lt;= 5).all() and np.issubclass_(
-            value.dtype.type, np.integer
-        )
+from nlisim.postprocess import generate_summary_stats
+from nlisim.state import State
 
 
 @attr.s(kw_only=True, repr=False)
-class GeometryState(ModuleState):
-    lung_tissue = grid_variable(np.dtype(&#39;int&#39;))
-
-    @lung_tissue.validator
-    def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -&gt; None:
-        if not TissueTypes.validate(value):
-            raise ValidationError(&#39;input illegal&#39;)
-
+class CSVWriterState(ModuleState):
     def __repr__(self):
-        return &#39;GeometryState(lung_tissue)&#39;
+        return &#39;CSVWriterState()&#39;
 
 
-class Geometry(ModuleModel):
-    name = &#39;geometry&#39;
-    StateClass = GeometryState
+class CSVWriter(ModuleModel):
+    name = &#39;csv_writer&#39;
 
-    def initialize(self, state: State):
-        geometry: GeometryState = state.geometry
-        # The geometry data file is included next to this one
-        path = Path(__file__).parent / &#39;geometry.hdf5&#39;
-        try:
-            with h5py.File(path, &#39;r&#39;) as f:
-                if f[&#39;geometry&#39;][:].shape != state.grid.shape:
-                    raise ValidationError(&#34;shape doesn\&#39;t match&#34;)
-                geometry.lung_tissue[:] = f[&#39;geometry&#39;][:]
-        except Exception:
-            print(f&#39;Error loading geometry file at {path}.&#39;)
-            raise
+    StateClass = CSVWriterState
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        now = state.time
+
+        summary_stats = generate_summary_stats(state)
+        data_columns = [now,] + list(
+            itertools.chain.from_iterable(
+                list(module_stats.values()) for module, module_stats in summary_stats.items()
+            )
+        )
+        with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
+            csvwriter = csv.writer(file)
+            csvwriter.writerow(data_columns)
+
+        return state
+
+    def initialize(self, state: State) -&gt; State:
+        summary_stats = generate_summary_stats(state)
+        column_names = [&#39;time&#39;] + list(
+            itertools.chain.from_iterable(
+                [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                for module, module_stats in summary_stats.items()
+            )
+        )
+        with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+            csvwriter = csv.writer(file)
+            csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -97,8 +87,8 @@ class Geometry(ModuleModel):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="nlisim.modules.geometry.Geometry"><code class="flex name class">
-<span>class <span class="ident">Geometry</span></span>
+<dt id="nlisim.modules.csv_writer.CSVWriter"><code class="flex name class">
+<span>class <span class="ident">CSVWriter</span></span>
 <span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
@@ -107,22 +97,37 @@ class Geometry(ModuleModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Geometry(ModuleModel):
-    name = &#39;geometry&#39;
-    StateClass = GeometryState
+<pre><code class="python">class CSVWriter(ModuleModel):
+    name = &#39;csv_writer&#39;
 
-    def initialize(self, state: State):
-        geometry: GeometryState = state.geometry
-        # The geometry data file is included next to this one
-        path = Path(__file__).parent / &#39;geometry.hdf5&#39;
-        try:
-            with h5py.File(path, &#39;r&#39;) as f:
-                if f[&#39;geometry&#39;][:].shape != state.grid.shape:
-                    raise ValidationError(&#34;shape doesn\&#39;t match&#34;)
-                geometry.lung_tissue[:] = f[&#39;geometry&#39;][:]
-        except Exception:
-            print(f&#39;Error loading geometry file at {path}.&#39;)
-            raise
+    StateClass = CSVWriterState
+
+    def advance(self, state: State, previous_time: float) -&gt; State:
+        now = state.time
+
+        summary_stats = generate_summary_stats(state)
+        data_columns = [now,] + list(
+            itertools.chain.from_iterable(
+                list(module_stats.values()) for module, module_stats in summary_stats.items()
+            )
+        )
+        with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
+            csvwriter = csv.writer(file)
+            csvwriter.writerow(data_columns)
+
+        return state
+
+    def initialize(self, state: State) -&gt; State:
+        summary_stats = generate_summary_stats(state)
+        column_names = [&#39;time&#39;] + list(
+            itertools.chain.from_iterable(
+                [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                for module, module_stats in summary_stats.items()
+            )
+        )
+        with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+            csvwriter = csv.writer(file)
+            csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -148,9 +153,9 @@ class Geometry(ModuleModel):
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.geometry.GeometryState"><code class="flex name class">
-<span>class <span class="ident">GeometryState</span></span>
-<span>(</span><span>*, global_state: State, lung_tissue=NOTHING)</span>
+<dt id="nlisim.modules.csv_writer.CSVWriterState"><code class="flex name class">
+<span>class <span class="ident">CSVWriterState</span></span>
+<span>(</span><span>*, global_state: State)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base type intended to store the state for simulation modules.</p>
@@ -158,21 +163,14 @@ class Geometry(ModuleModel):
 bool) and numpy arrays of those types.
 Modules containing more complicated
 state must override the serialization mechanism with custom behavior.</p>
-<p>Method generated by attrs for class GeometryState.</p></div>
+<p>Method generated by attrs for class CSVWriterState.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GeometryState(ModuleState):
-    lung_tissue = grid_variable(np.dtype(&#39;int&#39;))
-
-    @lung_tissue.validator
-    def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -&gt; None:
-        if not TissueTypes.validate(value):
-            raise ValidationError(&#39;input illegal&#39;)
-
+<pre><code class="python">class CSVWriterState(ModuleState):
     def __repr__(self):
-        return &#39;GeometryState(lung_tissue)&#39;</code></pre>
+        return &#39;CSVWriterState()&#39;</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -180,7 +178,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.geometry.GeometryState.global_state"><code class="name">var <span class="ident">global_state</span> : <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a></code></dt>
+<dt id="nlisim.modules.csv_writer.CSVWriterState.global_state"><code class="name">var <span class="ident">global_state</span> : <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -196,81 +194,6 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 </li>
 </ul>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes"><code class="flex name class">
-<span>class <span class="ident">TissueTypes</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>An enumeration.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class TissueTypes(Enum):
-    AIR = 0
-    BLOOD = 1
-    OTHER = 2
-    EPITHELIUM = 3
-    SURFACTANT = 4
-    PORE = 5
-
-    @classmethod
-    def validate(cls, value: np.ndarray):
-        return np.logical_and(value &gt;= 0, value &lt;= 5).all() and np.issubclass_(
-            value.dtype.type, np.integer
-        )</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>enum.Enum</li>
-</ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="nlisim.modules.geometry.TissueTypes.AIR"><code class="name">var <span class="ident">AIR</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes.BLOOD"><code class="name">var <span class="ident">BLOOD</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes.EPITHELIUM"><code class="name">var <span class="ident">EPITHELIUM</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes.OTHER"><code class="name">var <span class="ident">OTHER</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes.PORE"><code class="name">var <span class="ident">PORE</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.geometry.TissueTypes.SURFACTANT"><code class="name">var <span class="ident">SURFACTANT</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-<h3>Static methods</h3>
-<dl>
-<dt id="nlisim.modules.geometry.TissueTypes.validate"><code class="name flex">
-<span>def <span class="ident">validate</span></span>(<span>value: numpy.ndarray)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@classmethod
-def validate(cls, value: np.ndarray):
-    return np.logical_and(value &gt;= 0, value &lt;= 5).all() and np.issubclass_(
-        value.dtype.type, np.integer
-    )</code></pre>
-</details>
-</dd>
-</dl>
 </dd>
 </dl>
 </section>
@@ -289,24 +212,12 @@ def validate(cls, value: np.ndarray):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.geometry.Geometry" href="#nlisim.modules.geometry.Geometry">Geometry</a></code></h4>
+<h4><code><a title="nlisim.modules.csv_writer.CSVWriter" href="#nlisim.modules.csv_writer.CSVWriter">CSVWriter</a></code></h4>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.geometry.GeometryState" href="#nlisim.modules.geometry.GeometryState">GeometryState</a></code></h4>
+<h4><code><a title="nlisim.modules.csv_writer.CSVWriterState" href="#nlisim.modules.csv_writer.CSVWriterState">CSVWriterState</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.geometry.GeometryState.global_state" href="#nlisim.modules.geometry.GeometryState.global_state">global_state</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="nlisim.modules.geometry.TissueTypes" href="#nlisim.modules.geometry.TissueTypes">TissueTypes</a></code></h4>
-<ul class="two-column">
-<li><code><a title="nlisim.modules.geometry.TissueTypes.AIR" href="#nlisim.modules.geometry.TissueTypes.AIR">AIR</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.BLOOD" href="#nlisim.modules.geometry.TissueTypes.BLOOD">BLOOD</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.EPITHELIUM" href="#nlisim.modules.geometry.TissueTypes.EPITHELIUM">EPITHELIUM</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.OTHER" href="#nlisim.modules.geometry.TissueTypes.OTHER">OTHER</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.PORE" href="#nlisim.modules.geometry.TissueTypes.PORE">PORE</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.SURFACTANT" href="#nlisim.modules.geometry.TissueTypes.SURFACTANT">SURFACTANT</a></code></li>
-<li><code><a title="nlisim.modules.geometry.TissueTypes.validate" href="#nlisim.modules.geometry.TissueTypes.validate">validate</a></code></li>
+<li><code><a title="nlisim.modules.csv_writer.CSVWriterState.global_state" href="#nlisim.modules.csv_writer.CSVWriterState.global_state">global_state</a></code></li>
 </ul>
 </li>
 </ul>

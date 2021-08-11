@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>nlisim.modules.pneumocyte API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>nlisim.modules.pneumocyte</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import math
+from typing import Any, Dict, Tuple
+
+import attr
+from attr import attrib, attrs
+import numpy as np
+
+from nlisim.cell import CellData, CellList
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
+from nlisim.modules.phagocyte import (
+    PhagocyteCellData,
+    PhagocyteModel,
+    PhagocyteModuleState,
+    PhagocyteStatus,
+)
+from nlisim.random import rg
+from nlisim.state import State
+from nlisim.util import TissueType, activation_function
+
+
+class PneumocyteCellData(PhagocyteCellData):
+    PNEUMOCYTE_FIELDS = [
+        (&#39;status&#39;, np.uint8),
+        (&#39;status_iteration&#39;, np.uint),
+        (&#39;tnfa&#39;, bool),
+    ]
+
+    dtype = np.dtype(
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + PNEUMOCYTE_FIELDS, align=True
+    )  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        **kwargs,
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
+            &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+            &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
+        }
+
+        # ensure that these come in the correct order
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+        )
+
+
+@attrs(kw_only=True, frozen=True, repr=False)
+class PneumocyteCellList(CellList):
+    CellDataClass = PneumocyteCellData
+
+
+def cell_list_factory(self: &#39;PneumocyteState&#39;) -&gt; PneumocyteCellList:
+    return PneumocyteCellList(grid=self.global_state.grid)
+
+
+@attrs(kw_only=True)
+class PneumocyteState(PhagocyteModuleState):
+    cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
+    time_to_rest: float
+    iter_to_rest: int
+    time_to_change_state: float
+    iter_to_change_state: int
+    p_il6_qtty: float
+    p_il8_qtty: float
+    p_tnf_qtty: float
+    pr_p_int: float
+
+
+class Pneumocyte(PhagocyteModel):
+    name = &#39;pneumocyte&#39;
+    StateClass = PneumocyteState
+
+    def initialize(self, state: State):
+        pneumocyte: PneumocyteState = state.pneumocyte
+        voxel_volume: float = state.voxel_volume
+        time_step_size: float = self.time_step
+        lung_tissue: np.ndarray = state.lung_tissue
+
+        pneumocyte.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        pneumocyte.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)
+        pneumocyte.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
+
+        pneumocyte.p_il6_qtty = self.config.getfloat(&#39;p_il6_qtty&#39;)
+        pneumocyte.p_il8_qtty = self.config.getfloat(&#39;p_il8_qtty&#39;)
+        pneumocyte.p_tnf_qtty = self.config.getfloat(&#39;p_tnf_qtty&#39;)
+
+        # computed values
+        pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
+        pneumocyte.iter_to_change_state = int(
+            pneumocyte.time_to_change_state * (60 / time_step_size)
+        )
+
+        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
+        pneumocyte.pr_p_int = 1 - math.exp(
+            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_p_int_param&#39;))
+        )
+
+        # initialize cells, placing one per epithelial voxel
+        # TODO: Any changes due to ongoing conversation with Henrique
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            pneumocyte.cells.append(
+                PneumocyteCellData.create_cell(
+                    point=Point(
+                        x=x + rg.uniform(-dx / 2, dx / 2),
+                        y=y + rg.uniform(-dy / 2, dy / 2),
+                        z=z + rg.uniform(-dz / 2, dz / 2),
+                    )
+                )
+            )
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        from nlisim.modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellStatus,
+            AfumigatusState,
+        )
+        from nlisim.modules.il6 import IL6State
+        from nlisim.modules.il8 import IL8State
+        from nlisim.modules.tnfa import TNFaState
+
+        pneumocyte: PneumocyteState = state.pneumocyte
+        afumigatus: AfumigatusState = state.afumigatus
+        il6: IL6State = state.il6
+        il8: IL8State = state.il8
+        tnfa: TNFaState = state.tnfa
+        grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
+
+        for pneumocyte_cell_index in pneumocyte.cells.alive():
+            pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
+            pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell[&#39;point&#39;])
+
+            # self update
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_rest:
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+                    pneumocyte_cell[&#39;tnfa&#39;] = False
+                else:
+                    pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+            elif pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+                if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_change_state:
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+                else:
+                    pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+            # ----------- interactions
+
+            # interact with fungus
+            if pneumocyte_cell[&#39;status&#39;] not in {
+                PhagocyteStatus.APOPTOTIC,
+                PhagocyteStatus.NECROTIC,
+                PhagocyteStatus.DEAD,
+            }:
+                local_aspergillus = afumigatus.cells.get_cells_in_voxel(pneumocyte_cell_voxel)
+                for aspergillus_index in local_aspergillus:
+                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+
+                    # skip resting conidia
+                    if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
+                        continue
+
+                    if pneumocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+                        if rg.uniform() &lt; pneumocyte.pr_p_int:
+                            pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+                    else:
+                        # TODO: I don&#39;t get this, looks like it zeros out the iteration
+                        #  when activating
+                        pneumocyte_cell[&#39;status_iteration&#39;] = 0
+
+            # secrete IL6
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
+
+            # secrete IL8
+            if pneumocyte_cell[&#39;tnfa&#39;]:  # TODO: and active?
+                il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
+
+            # interact with TNFa
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                if (
+                    activation_function(
+                        x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
+                        kd=tnfa.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                        b=1,
+                    )
+                    &lt; rg.uniform()
+                ):
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;tnfa&#39;] = True
+
+                # secrete TNFa
+                tnfa.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        pneumocyte: PneumocyteState = state.pneumocyte
+        live_pneumocytes = pneumocyte.cells.alive()
+
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    pneumocyte.cells[pneumocyte_cell_index][&#39;status&#39;]
+                    for pneumocyte_cell_index in live_pneumocytes
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
+        return {
+            &#39;count&#39;: len(pneumocyte.cells.alive()),
+            &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
+            &#39;inactivating&#39;: int(status_counts[PhagocyteStatus.INACTIVATING]),
+            &#39;resting&#39;: int(status_counts[PhagocyteStatus.RESTING]),
+            &#39;activating&#39;: int(status_counts[PhagocyteStatus.ACTIVATING]),
+            &#39;active&#39;: int(status_counts[PhagocyteStatus.ACTIVE]),
+            &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
+            &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
+            &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+        }
+
+    def visualization_data(self, state: State):
+        return &#39;cells&#39;, state.pneumocyte.cells</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="nlisim.modules.pneumocyte.cell_list_factory"><code class="name flex">
+<span>def <span class="ident">cell_list_factory</span></span>(<span>self: <a title="nlisim.modules.pneumocyte.PneumocyteState" href="#nlisim.modules.pneumocyte.PneumocyteState">PneumocyteState</a>) ‑> <a title="nlisim.modules.pneumocyte.PneumocyteCellList" href="#nlisim.modules.pneumocyte.PneumocyteCellList">PneumocyteCellList</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cell_list_factory(self: &#39;PneumocyteState&#39;) -&gt; PneumocyteCellList:
+    return PneumocyteCellList(grid=self.global_state.grid)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="nlisim.modules.pneumocyte.Pneumocyte"><code class="flex name class">
+<span>class <span class="ident">Pneumocyte</span></span>
+<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Pneumocyte(PhagocyteModel):
+    name = &#39;pneumocyte&#39;
+    StateClass = PneumocyteState
+
+    def initialize(self, state: State):
+        pneumocyte: PneumocyteState = state.pneumocyte
+        voxel_volume: float = state.voxel_volume
+        time_step_size: float = self.time_step
+        lung_tissue: np.ndarray = state.lung_tissue
+
+        pneumocyte.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        pneumocyte.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)
+        pneumocyte.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
+
+        pneumocyte.p_il6_qtty = self.config.getfloat(&#39;p_il6_qtty&#39;)
+        pneumocyte.p_il8_qtty = self.config.getfloat(&#39;p_il8_qtty&#39;)
+        pneumocyte.p_tnf_qtty = self.config.getfloat(&#39;p_tnf_qtty&#39;)
+
+        # computed values
+        pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
+        pneumocyte.iter_to_change_state = int(
+            pneumocyte.time_to_change_state * (60 / time_step_size)
+        )
+
+        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
+        pneumocyte.pr_p_int = 1 - math.exp(
+            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_p_int_param&#39;))
+        )
+
+        # initialize cells, placing one per epithelial voxel
+        # TODO: Any changes due to ongoing conversation with Henrique
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            pneumocyte.cells.append(
+                PneumocyteCellData.create_cell(
+                    point=Point(
+                        x=x + rg.uniform(-dx / 2, dx / 2),
+                        y=y + rg.uniform(-dy / 2, dy / 2),
+                        z=z + rg.uniform(-dz / 2, dz / 2),
+                    )
+                )
+            )
+
+        return state
+
+    def advance(self, state: State, previous_time: float):
+        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+        from nlisim.modules.afumigatus import (
+            AfumigatusCellData,
+            AfumigatusCellStatus,
+            AfumigatusState,
+        )
+        from nlisim.modules.il6 import IL6State
+        from nlisim.modules.il8 import IL8State
+        from nlisim.modules.tnfa import TNFaState
+
+        pneumocyte: PneumocyteState = state.pneumocyte
+        afumigatus: AfumigatusState = state.afumigatus
+        il6: IL6State = state.il6
+        il8: IL8State = state.il8
+        tnfa: TNFaState = state.tnfa
+        grid: RectangularGrid = state.grid
+        voxel_volume: float = state.voxel_volume
+
+        for pneumocyte_cell_index in pneumocyte.cells.alive():
+            pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
+            pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell[&#39;point&#39;])
+
+            # self update
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_rest:
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+                    pneumocyte_cell[&#39;tnfa&#39;] = False
+                else:
+                    pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+            elif pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+                if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_change_state:
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+                else:
+                    pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+            # ----------- interactions
+
+            # interact with fungus
+            if pneumocyte_cell[&#39;status&#39;] not in {
+                PhagocyteStatus.APOPTOTIC,
+                PhagocyteStatus.NECROTIC,
+                PhagocyteStatus.DEAD,
+            }:
+                local_aspergillus = afumigatus.cells.get_cells_in_voxel(pneumocyte_cell_voxel)
+                for aspergillus_index in local_aspergillus:
+                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+
+                    # skip resting conidia
+                    if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
+                        continue
+
+                    if pneumocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+                        if rg.uniform() &lt; pneumocyte.pr_p_int:
+                            pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+                    else:
+                        # TODO: I don&#39;t get this, looks like it zeros out the iteration
+                        #  when activating
+                        pneumocyte_cell[&#39;status_iteration&#39;] = 0
+
+            # secrete IL6
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
+
+            # secrete IL8
+            if pneumocyte_cell[&#39;tnfa&#39;]:  # TODO: and active?
+                il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
+
+            # interact with TNFa
+            if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+                if (
+                    activation_function(
+                        x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
+                        kd=tnfa.k_d,
+                        h=self.time_step / 60,
+                        volume=voxel_volume,
+                        b=1,
+                    )
+                    &lt; rg.uniform()
+                ):
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                    pneumocyte_cell[&#39;tnfa&#39;] = True
+
+                # secrete TNFa
+                tnfa.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
+
+        return state
+
+    def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        pneumocyte: PneumocyteState = state.pneumocyte
+        live_pneumocytes = pneumocyte.cells.alive()
+
+        max_index = max(map(int, PhagocyteStatus))
+        status_counts = np.bincount(
+            np.fromiter(
+                (
+                    pneumocyte.cells[pneumocyte_cell_index][&#39;status&#39;]
+                    for pneumocyte_cell_index in live_pneumocytes
+                ),
+                dtype=np.uint8,
+            ),
+            minlength=max_index + 1,
+        )
+        return {
+            &#39;count&#39;: len(pneumocyte.cells.alive()),
+            &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
+            &#39;inactivating&#39;: int(status_counts[PhagocyteStatus.INACTIVATING]),
+            &#39;resting&#39;: int(status_counts[PhagocyteStatus.RESTING]),
+            &#39;activating&#39;: int(status_counts[PhagocyteStatus.ACTIVATING]),
+            &#39;active&#39;: int(status_counts[PhagocyteStatus.ACTIVE]),
+            &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
+            &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
+            &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+        }
+
+    def visualization_data(self, state: State):
+        return &#39;cells&#39;, state.pneumocyte.cells</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></li>
+<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="nlisim.modules.pneumocyte.Pneumocyte.advance"><code class="name flex">
+<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance the state by a single time step.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def advance(self, state: State, previous_time: float):
+    &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
+    from nlisim.modules.afumigatus import (
+        AfumigatusCellData,
+        AfumigatusCellStatus,
+        AfumigatusState,
+    )
+    from nlisim.modules.il6 import IL6State
+    from nlisim.modules.il8 import IL8State
+    from nlisim.modules.tnfa import TNFaState
+
+    pneumocyte: PneumocyteState = state.pneumocyte
+    afumigatus: AfumigatusState = state.afumigatus
+    il6: IL6State = state.il6
+    il8: IL8State = state.il8
+    tnfa: TNFaState = state.tnfa
+    grid: RectangularGrid = state.grid
+    voxel_volume: float = state.voxel_volume
+
+    for pneumocyte_cell_index in pneumocyte.cells.alive():
+        pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
+        pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell[&#39;point&#39;])
+
+        # self update
+        if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_rest:
+                pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.RESTING
+                pneumocyte_cell[&#39;tnfa&#39;] = False
+            else:
+                pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+        elif pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVATING:
+            if pneumocyte_cell[&#39;status_iteration&#39;] &gt;= pneumocyte.iter_to_change_state:
+                pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVE
+            else:
+                pneumocyte_cell[&#39;status_iteration&#39;] += 1
+
+        # ----------- interactions
+
+        # interact with fungus
+        if pneumocyte_cell[&#39;status&#39;] not in {
+            PhagocyteStatus.APOPTOTIC,
+            PhagocyteStatus.NECROTIC,
+            PhagocyteStatus.DEAD,
+        }:
+            local_aspergillus = afumigatus.cells.get_cells_in_voxel(pneumocyte_cell_voxel)
+            for aspergillus_index in local_aspergillus:
+                aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+
+                # skip resting conidia
+                if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
+                    continue
+
+                if pneumocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+                    if rg.uniform() &lt; pneumocyte.pr_p_int:
+                        pneumocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+                else:
+                    # TODO: I don&#39;t get this, looks like it zeros out the iteration
+                    #  when activating
+                    pneumocyte_cell[&#39;status_iteration&#39;] = 0
+
+        # secrete IL6
+        if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
+
+        # secrete IL8
+        if pneumocyte_cell[&#39;tnfa&#39;]:  # TODO: and active?
+            il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
+
+        # interact with TNFa
+        if pneumocyte_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
+            if (
+                activation_function(
+                    x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
+                    kd=tnfa.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
+                )
+                &lt; rg.uniform()
+            ):
+                pneumocyte_cell[&#39;status_iteration&#39;] = 0
+                pneumocyte_cell[&#39;tnfa&#39;] = True
+
+            # secrete TNFa
+            tnfa.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
+
+    return state</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.release_phagosome" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.release_phagosome">release_phagosome</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.single_step_move" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.single_step_move">single_step_move</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
+</ul>
+</li>
+<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellData"><code class="flex name class">
+<span>class <span class="ident">PneumocyteCellData</span></span>
+<span>(</span><span>arg: Union[int, Iterable[ForwardRef('CellData')]], initialize: bool = False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A low-level data contain for an array cells.</p>
+<p>This class is a subtype of
+<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>
+containing the lowest level representation of a list of "cells" in a
+simulation.
+The underlying data format of this type are identical to a
+simple array of C structures with the fields given in the static "dtype"
+variable.</p>
+<p>The base class contains only a single coordinate representing the location
+of the center of the cell.
+Most implementations will want to override this
+class to append more fields.
+Subclasses must also override the base
+implementation of <code>create_cell</code> to construct a single record containing
+the additional fields.</p>
+<p>For example, the following derived class adds an addition floating point value
+associated with each cell.</p>
+<pre><code class="language-python">class DerivedCell(CellData):
+    FIELDS = CellData.FIELDS + [
+        ('iron_content', 'f8')
+    ]
+
+    dtype = np.dtype(CellData.FIELDS, align=True)
+
+    @classmethod
+    def create_cell_tuple(cls, iron_content=0, **kwargs) -&gt; Tuple:
+        return CellData.create_cell_tuple(**kwargs) + (iron_content,)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PneumocyteCellData(PhagocyteCellData):
+    PNEUMOCYTE_FIELDS = [
+        (&#39;status&#39;, np.uint8),
+        (&#39;status_iteration&#39;, np.uint),
+        (&#39;tnfa&#39;, bool),
+    ]
+
+    dtype = np.dtype(
+        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + PNEUMOCYTE_FIELDS, align=True
+    )  # type: ignore
+
+    @classmethod
+    def create_cell_tuple(
+        cls,
+        **kwargs,
+    ) -&gt; Tuple:
+        initializer = {
+            &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
+            &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+            &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
+        }
+
+        # ensure that these come in the correct order
+        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></li>
+<li><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></li>
+<li>numpy.ndarray</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellData.PNEUMOCYTE_FIELDS"><code class="name">var <span class="ident">PNEUMOCYTE_FIELDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
+</ul>
+</li>
+<li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
+<li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellList"><code class="flex name class">
+<span>class <span class="ident">PneumocyteCellList</span></span>
+<span>(</span><span>*, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, max_cells: int = 1000000, cell_data: <a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A python view on top of a CellData array.</p>
+<p>This class represents a pythonic interface to the data contained in a
+CellData array.
+Because the CellData class is a low-level object, it does
+not allow dynamically appending new elements.
+Objects of this class get
+around this limitation by pre-allocating a large block of memory that is
+transparently available.
+User-facing properties are sliced to make it
+appear as if the extra data is not there.</p>
+<p>Subclassed types are expected to set the <code>CellDataClass</code> attribute to
+a subclass of <code>CellData</code>.
+This provides information about the underlying
+low-level array.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>grid</code></strong> :&ensp;<code>simulation.grid.RectangularGrid</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cells</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cells</code></strong> :&ensp;<code>simulation.cell.CellData</code>, optional</dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Method generated by attrs for class PneumocyteCellList.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PneumocyteCellList(CellList):
+    CellDataClass = PneumocyteCellData</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellList.grid"><code class="name">var <span class="ident">grid</span> : <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellList.max_cells"><code class="name">var <span class="ident">max_cells</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.cell.CellList.CellDataClass" href="../cell.html#nlisim.cell.CellList.CellDataClass">CellDataClass</a></code></li>
+<li><code><a title="nlisim.cell.CellList.alive" href="../cell.html#nlisim.cell.CellList.alive">alive</a></code></li>
+<li><code><a title="nlisim.cell.CellList.append" href="../cell.html#nlisim.cell.CellList.append">append</a></code></li>
+<li><code><a title="nlisim.cell.CellList.cell_data" href="../cell.html#nlisim.cell.CellList.cell_data">cell_data</a></code></li>
+<li><code><a title="nlisim.cell.CellList.create_from_seed" href="../cell.html#nlisim.cell.CellList.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="nlisim.cell.CellList.extend" href="../cell.html#nlisim.cell.CellList.extend">extend</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_cells_in_voxel" href="../cell.html#nlisim.cell.CellList.get_cells_in_voxel">get_cells_in_voxel</a></code></li>
+<li><code><a title="nlisim.cell.CellList.get_neighboring_cells" href="../cell.html#nlisim.cell.CellList.get_neighboring_cells">get_neighboring_cells</a></code></li>
+<li><code><a title="nlisim.cell.CellList.load" href="../cell.html#nlisim.cell.CellList.load">load</a></code></li>
+<li><code><a title="nlisim.cell.CellList.save" href="../cell.html#nlisim.cell.CellList.save">save</a></code></li>
+<li><code><a title="nlisim.cell.CellList.update_voxel_index" href="../cell.html#nlisim.cell.CellList.update_voxel_index">update_voxel_index</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState"><code class="flex name class">
+<span>class <span class="ident">PneumocyteState</span></span>
+<span>(</span><span>*, global_state: State, cells: <a title="nlisim.modules.pneumocyte.PneumocyteCellList" href="#nlisim.modules.pneumocyte.PneumocyteCellList">PneumocyteCellList</a> = NOTHING)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base type intended to store the state for simulation modules.</p>
+<p>This class contains serialization support for basic types (float, int, str,
+bool) and numpy arrays of those types.
+Modules containing more complicated
+state must override the serialization mechanism with custom behavior.</p>
+<p>Method generated by attrs for class PneumocyteState.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PneumocyteState(PhagocyteModuleState):
+    cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
+    time_to_rest: float
+    iter_to_rest: int
+    time_to_change_state: float
+    iter_to_change_state: int
+    p_il6_qtty: float
+    p_il8_qtty: float
+    p_tnf_qtty: float
+    pr_p_int: float</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></li>
+<li><a title="nlisim.module.ModuleState" href="../module.html#nlisim.module.ModuleState">ModuleState</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.cells"><code class="name">var <span class="ident">cells</span> : <a title="nlisim.modules.pneumocyte.PneumocyteCellList" href="#nlisim.modules.pneumocyte.PneumocyteCellList">PneumocyteCellList</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.iter_to_change_state"><code class="name">var <span class="ident">iter_to_change_state</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.iter_to_rest"><code class="name">var <span class="ident">iter_to_rest</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.p_il6_qtty"><code class="name">var <span class="ident">p_il6_qtty</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.p_il8_qtty"><code class="name">var <span class="ident">p_il8_qtty</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.p_tnf_qtty"><code class="name">var <span class="ident">p_tnf_qtty</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int"><code class="name">var <span class="ident">pr_p_int</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.time_to_change_state"><code class="name">var <span class="ident">time_to_change_state</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.time_to_rest"><code class="name">var <span class="ident">time_to_rest</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a></b></code>:
+<ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.load_attribute" href="../module.html#nlisim.module.ModuleState.load_attribute">load_attribute</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.load_state" href="../module.html#nlisim.module.ModuleState.load_state">load_state</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.save_attribute" href="../module.html#nlisim.module.ModuleState.save_attribute">save_attribute</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteModuleState.save_state" href="../module.html#nlisim.module.ModuleState.save_state">save_state</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="nlisim.modules.pneumocyte.cell_list_factory" href="#nlisim.modules.pneumocyte.cell_list_factory">cell_list_factory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="nlisim.modules.pneumocyte.Pneumocyte" href="#nlisim.modules.pneumocyte.Pneumocyte">Pneumocyte</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.pneumocyte.Pneumocyte.advance" href="#nlisim.modules.pneumocyte.Pneumocyte.advance">advance</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.pneumocyte.PneumocyteCellData" href="#nlisim.modules.pneumocyte.PneumocyteCellData">PneumocyteCellData</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteCellData.PNEUMOCYTE_FIELDS" href="#nlisim.modules.pneumocyte.PneumocyteCellData.PNEUMOCYTE_FIELDS">PNEUMOCYTE_FIELDS</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.pneumocyte.PneumocyteCellList" href="#nlisim.modules.pneumocyte.PneumocyteCellList">PneumocyteCellList</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteCellList.grid" href="#nlisim.modules.pneumocyte.PneumocyteCellList.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteCellList.max_cells" href="#nlisim.modules.pneumocyte.PneumocyteCellList.max_cells">max_cells</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="nlisim.modules.pneumocyte.PneumocyteState" href="#nlisim.modules.pneumocyte.PneumocyteState">PneumocyteState</a></code></h4>
+<ul class="">
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.cells" href="#nlisim.modules.pneumocyte.PneumocyteState.cells">cells</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.iter_to_change_state" href="#nlisim.modules.pneumocyte.PneumocyteState.iter_to_change_state">iter_to_change_state</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.iter_to_rest" href="#nlisim.modules.pneumocyte.PneumocyteState.iter_to_rest">iter_to_rest</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.p_il6_qtty" href="#nlisim.modules.pneumocyte.PneumocyteState.p_il6_qtty">p_il6_qtty</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.p_il8_qtty" href="#nlisim.modules.pneumocyte.PneumocyteState.p_il8_qtty">p_il8_qtty</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.p_tnf_qtty" href="#nlisim.modules.pneumocyte.PneumocyteState.p_tnf_qtty">p_tnf_qtty</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int" href="#nlisim.modules.pneumocyte.PneumocyteState.pr_p_int">pr_p_int</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.time_to_change_state" href="#nlisim.modules.pneumocyte.PneumocyteState.time_to_change_state">time_to_change_state</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.time_to_rest" href="#nlisim.modules.pneumocyte.PneumocyteState.time_to_rest">time_to_rest</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>nlisim.modules.visualization API documentation</title>
+<title>nlisim.oldmodules.visualization API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,14 +20,16 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>nlisim.modules.visualization</code></h1>
+<h1 class="title">Module <code>nlisim.oldmodules.visualization</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from enum import Enum
+<pre><code class="python">import csv
+from enum import Enum
+import itertools
 import json
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
@@ -46,6 +48,7 @@ from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
@@ -137,10 +140,7 @@ class Visualization(ModuleModel):
         module_name = json_config[&#39;module&#39;]
         var_name = json_config[&#39;variable&#39;]
         vtk_type = json_config[&#39;vtk_type&#39;]
-        try:
-            attr_names = json_config[&#39;attributes&#39;]
-        except KeyError:
-            attr_names = None
+        attr_names = json_config[&#39;attributes&#39;]
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -151,8 +151,7 @@ class Visualization(ModuleModel):
             )
             if attr_names:
                 for attr_name in attr_names:
-                    # var_attr = getattr(var, attr_name)
-                    var_attr = var[attr_name]
+                    var_attr = getattr(var, attr_name)
 
                     # composite data
                     if var_attr.dtype.names:
@@ -162,7 +161,7 @@ class Visualization(ModuleModel):
                                 var_attr[name], file_name, spacing[2], spacing[1], spacing[0]
                             )
                     else:
-                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr_name)
+                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_attr)
                         Visualization.write_structured_points(
                             var_attr, file_name, spacing[2], spacing[1], spacing[0]
                         )
@@ -178,7 +177,7 @@ class Visualization(ModuleModel):
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
-            raise NotImplementedError(&#39;structured_grid is not supported yet&#39;)
+            raise NotImplementedError(&#39;structred_grid is not supported yet&#39;)
 
         elif vtk_type == VTKTypes.RECTILINEAR_GRID.name:
             raise NotImplementedError(&#39;rectilinear_grid is not supported yet&#39;)
@@ -192,13 +191,41 @@ class Visualization(ModuleModel):
     def advance(self, state: State, previous_time: float) -&gt; State:
         visualization_file_name = self.config.get(&#39;visualization_file_name&#39;)
         variables = self.config.get(&#39;visual_variables&#39;)
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
         json_config = json.loads(variables)
         now = state.time
+
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
+            )
+            with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%005.0f&#39; % now).strip())
             self.visualize(state, variable, file_name)
             state.visualization.last_visualize = now
+
+        return state
+
+    def initialize(self, state: State) -&gt; State:
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = [&#39;time&#39;] + list(
+                itertools.chain.from_iterable(
+                    [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
+            )
+            with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -212,7 +239,7 @@ class Visualization(ModuleModel):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="nlisim.modules.visualization.VTKTypes"><code class="flex name class">
+<dt id="nlisim.oldmodules.visualization.VTKTypes"><code class="flex name class">
 <span>class <span class="ident">VTKTypes</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
@@ -237,29 +264,29 @@ class Visualization(ModuleModel):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.visualization.VTKTypes.POLY_DATA"><code class="name">var <span class="ident">POLY_DATA</span></code></dt>
+<dt id="nlisim.oldmodules.visualization.VTKTypes.POLY_DATA"><code class="name">var <span class="ident">POLY_DATA</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID"><code class="name">var <span class="ident">RECTILINEAR_GRID</span></code></dt>
+<dt id="nlisim.oldmodules.visualization.VTKTypes.RECTILINEAR_GRID"><code class="name">var <span class="ident">RECTILINEAR_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID"><code class="name">var <span class="ident">STRUCTURED_GRID</span></code></dt>
+<dt id="nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_GRID"><code class="name">var <span class="ident">STRUCTURED_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS"><code class="name">var <span class="ident">STRUCTURED_POINTS</span></code></dt>
+<dt id="nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_POINTS"><code class="name">var <span class="ident">STRUCTURED_POINTS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID"><code class="name">var <span class="ident">UNSTRUCTURED_GRID</span></code></dt>
+<dt id="nlisim.oldmodules.visualization.VTKTypes.UNSTRUCTURED_GRID"><code class="name">var <span class="ident">UNSTRUCTURED_GRID</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="nlisim.modules.visualization.Visualization"><code class="flex name class">
+<dt id="nlisim.oldmodules.visualization.Visualization"><code class="flex name class">
 <span>class <span class="ident">Visualization</span></span>
 <span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
@@ -339,10 +366,7 @@ class Visualization(ModuleModel):
         module_name = json_config[&#39;module&#39;]
         var_name = json_config[&#39;variable&#39;]
         vtk_type = json_config[&#39;vtk_type&#39;]
-        try:
-            attr_names = json_config[&#39;attributes&#39;]
-        except KeyError:
-            attr_names = None
+        attr_names = json_config[&#39;attributes&#39;]
         var = getattr(getattr(state, module_name), var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -353,8 +377,7 @@ class Visualization(ModuleModel):
             )
             if attr_names:
                 for attr_name in attr_names:
-                    # var_attr = getattr(var, attr_name)
-                    var_attr = var[attr_name]
+                    var_attr = getattr(var, attr_name)
 
                     # composite data
                     if var_attr.dtype.names:
@@ -364,7 +387,7 @@ class Visualization(ModuleModel):
                                 var_attr[name], file_name, spacing[2], spacing[1], spacing[0]
                             )
                     else:
-                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr_name)
+                        file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_attr)
                         Visualization.write_structured_points(
                             var_attr, file_name, spacing[2], spacing[1], spacing[0]
                         )
@@ -380,7 +403,7 @@ class Visualization(ModuleModel):
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
-            raise NotImplementedError(&#39;structured_grid is not supported yet&#39;)
+            raise NotImplementedError(&#39;structred_grid is not supported yet&#39;)
 
         elif vtk_type == VTKTypes.RECTILINEAR_GRID.name:
             raise NotImplementedError(&#39;rectilinear_grid is not supported yet&#39;)
@@ -394,13 +417,41 @@ class Visualization(ModuleModel):
     def advance(self, state: State, previous_time: float) -&gt; State:
         visualization_file_name = self.config.get(&#39;visualization_file_name&#39;)
         variables = self.config.get(&#39;visual_variables&#39;)
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
         json_config = json.loads(variables)
         now = state.time
+
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            data_columns = [now,] + list(
+                itertools.chain.from_iterable(
+                    list(module_stats.values()) for module, module_stats in summary_stats.items()
+                )
+            )
+            with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(data_columns)
 
         for variable in json_config:
             file_name = visualization_file_name.replace(&#39;&lt;time&gt;&#39;, (&#39;%005.0f&#39; % now).strip())
             self.visualize(state, variable, file_name)
             state.visualization.last_visualize = now
+
+        return state
+
+    def initialize(self, state: State) -&gt; State:
+        csv_output: bool = self.config.getboolean(&#39;csv_output&#39;)
+        if csv_output:
+            summary_stats = generate_summary_stats(state)
+            column_names = [&#39;time&#39;] + list(
+                itertools.chain.from_iterable(
+                    [module + &#39;-&#39; + statistic_name for statistic_name in module_stats.keys()]
+                    for module, module_stats in summary_stats.items()
+                )
+            )
+            with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
+                csvwriter = csv.writer(file)
+                csvwriter.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -410,7 +461,7 @@ class Visualization(ModuleModel):
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="nlisim.modules.visualization.Visualization.write_poly_data"><code class="name flex">
+<dt id="nlisim.oldmodules.visualization.Visualization.write_poly_data"><code class="name flex">
 <span>def <span class="ident">write_poly_data</span></span>(<span>var, filename: str, attr_names: str) ‑> None</span>
 </code></dt>
 <dd>
@@ -462,7 +513,7 @@ def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
     writer.Write()</code></pre>
 </details>
 </dd>
-<dt id="nlisim.modules.visualization.Visualization.write_structured_points"><code class="name flex">
+<dt id="nlisim.oldmodules.visualization.Visualization.write_structured_points"><code class="name flex">
 <span>def <span class="ident">write_structured_points</span></span>(<span>var: numpy.ndarray, filename: str, dx: float, dy: float, dz: float) ‑> None</span>
 </code></dt>
 <dd>
@@ -494,7 +545,7 @@ def write_structured_points(
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="nlisim.modules.visualization.Visualization.visualize"><code class="name flex">
+<dt id="nlisim.oldmodules.visualization.Visualization.visualize"><code class="name flex">
 <span>def <span class="ident">visualize</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, json_config: dict, filename: str) ‑> None</span>
 </code></dt>
 <dd>
@@ -507,10 +558,7 @@ def write_structured_points(
     module_name = json_config[&#39;module&#39;]
     var_name = json_config[&#39;variable&#39;]
     vtk_type = json_config[&#39;vtk_type&#39;]
-    try:
-        attr_names = json_config[&#39;attributes&#39;]
-    except KeyError:
-        attr_names = None
+    attr_names = json_config[&#39;attributes&#39;]
     var = getattr(getattr(state, module_name), var_name)
 
     if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
@@ -521,8 +569,7 @@ def write_structured_points(
         )
         if attr_names:
             for attr_name in attr_names:
-                # var_attr = getattr(var, attr_name)
-                var_attr = var[attr_name]
+                var_attr = getattr(var, attr_name)
 
                 # composite data
                 if var_attr.dtype.names:
@@ -532,7 +579,7 @@ def write_structured_points(
                             var_attr[name], file_name, spacing[2], spacing[1], spacing[0]
                         )
                 else:
-                    file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + attr_name)
+                    file_name = filename.replace(&#39;&lt;variable&gt;&#39;, module_name + &#39;-&#39; + var_attr)
                     Visualization.write_structured_points(
                         var_attr, file_name, spacing[2], spacing[1], spacing[0]
                     )
@@ -548,7 +595,7 @@ def write_structured_points(
         Visualization.write_poly_data(var, file_name, attr_names)
 
     elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
-        raise NotImplementedError(&#39;structured_grid is not supported yet&#39;)
+        raise NotImplementedError(&#39;structred_grid is not supported yet&#39;)
 
     elif vtk_type == VTKTypes.RECTILINEAR_GRID.name:
         raise NotImplementedError(&#39;rectilinear_grid is not supported yet&#39;)
@@ -579,7 +626,7 @@ def write_structured_points(
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.visualization.VisualizationState"><code class="flex name class">
+<dt id="nlisim.oldmodules.visualization.VisualizationState"><code class="flex name class">
 <span>class <span class="ident">VisualizationState</span></span>
 <span>(</span><span>*, global_state: State, last_visualize: float = 0)</span>
 </code></dt>
@@ -606,7 +653,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.visualization.VisualizationState.last_visualize"><code class="name">var <span class="ident">last_visualize</span> : float</code></dt>
+<dt id="nlisim.oldmodules.visualization.VisualizationState.last_visualize"><code class="name">var <span class="ident">last_visualize</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -634,33 +681,33 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="nlisim.modules" href="index.html">nlisim.modules</a></code></li>
+<li><code><a title="nlisim.oldmodules" href="index.html">nlisim.oldmodules</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.visualization.VTKTypes" href="#nlisim.modules.visualization.VTKTypes">VTKTypes</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.visualization.VTKTypes" href="#nlisim.oldmodules.visualization.VTKTypes">VTKTypes</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.visualization.VTKTypes.POLY_DATA" href="#nlisim.modules.visualization.VTKTypes.POLY_DATA">POLY_DATA</a></code></li>
-<li><code><a title="nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID" href="#nlisim.modules.visualization.VTKTypes.RECTILINEAR_GRID">RECTILINEAR_GRID</a></code></li>
-<li><code><a title="nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID" href="#nlisim.modules.visualization.VTKTypes.STRUCTURED_GRID">STRUCTURED_GRID</a></code></li>
-<li><code><a title="nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS" href="#nlisim.modules.visualization.VTKTypes.STRUCTURED_POINTS">STRUCTURED_POINTS</a></code></li>
-<li><code><a title="nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID" href="#nlisim.modules.visualization.VTKTypes.UNSTRUCTURED_GRID">UNSTRUCTURED_GRID</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VTKTypes.POLY_DATA" href="#nlisim.oldmodules.visualization.VTKTypes.POLY_DATA">POLY_DATA</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VTKTypes.RECTILINEAR_GRID" href="#nlisim.oldmodules.visualization.VTKTypes.RECTILINEAR_GRID">RECTILINEAR_GRID</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_GRID" href="#nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_GRID">STRUCTURED_GRID</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_POINTS" href="#nlisim.oldmodules.visualization.VTKTypes.STRUCTURED_POINTS">STRUCTURED_POINTS</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VTKTypes.UNSTRUCTURED_GRID" href="#nlisim.oldmodules.visualization.VTKTypes.UNSTRUCTURED_GRID">UNSTRUCTURED_GRID</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.visualization.Visualization" href="#nlisim.modules.visualization.Visualization">Visualization</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.visualization.Visualization" href="#nlisim.oldmodules.visualization.Visualization">Visualization</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.visualization.Visualization.visualize" href="#nlisim.modules.visualization.Visualization.visualize">visualize</a></code></li>
-<li><code><a title="nlisim.modules.visualization.Visualization.write_poly_data" href="#nlisim.modules.visualization.Visualization.write_poly_data">write_poly_data</a></code></li>
-<li><code><a title="nlisim.modules.visualization.Visualization.write_structured_points" href="#nlisim.modules.visualization.Visualization.write_structured_points">write_structured_points</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.Visualization.visualize" href="#nlisim.oldmodules.visualization.Visualization.visualize">visualize</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.Visualization.write_poly_data" href="#nlisim.oldmodules.visualization.Visualization.write_poly_data">write_poly_data</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.Visualization.write_structured_points" href="#nlisim.oldmodules.visualization.Visualization.write_structured_points">write_structured_points</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.visualization.VisualizationState" href="#nlisim.modules.visualization.VisualizationState">VisualizationState</a></code></h4>
+<h4><code><a title="nlisim.oldmodules.visualization.VisualizationState" href="#nlisim.oldmodules.visualization.VisualizationState">VisualizationState</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.visualization.VisualizationState.last_visualize" href="#nlisim.modules.visualization.VisualizationState.last_visualize">last_visualize</a></code></li>
+<li><code><a title="nlisim.oldmodules.visualization.VisualizationState.last_visualize" href="#nlisim.oldmodules.visualization.VisualizationState.last_visualize">last_visualize</a></code></li>
 </ul>
 </li>
 </ul>

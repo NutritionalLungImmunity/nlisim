@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>nlisim.state API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -28,10 +28,12 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from io import BytesIO, StringIO
-from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Dict, Type, Union, cast
+from pathlib import Path, PurePath
+from typing import IO, TYPE_CHECKING, Any, Dict, Tuple, Type, Union, cast
 
 import attr
+from attr import attrib, attrs
+import h5py
 from h5py import File as H5File
 import numpy as np
 
@@ -47,19 +49,22 @@ _dtype_float = np.dtype(&#39;float&#39;)
 _dtype_float64 = np.dtype(&#39;float64&#39;)
 
 
-@attr.s(auto_attribs=True, repr=False)
+@attrs(auto_attribs=True, repr=False)
 class State(object):
     &#34;&#34;&#34;A container for storing the simulation state at a single time step.&#34;&#34;&#34;
 
     time: float
     grid: RectangularGrid
+    lung_tissue: np.ndarray
+    voxel_volume: float
+    space_volume: float
 
     # simulation configuration
     config: &#39;SimulationConfig&#39;
 
     # a private container for module state, users of this class should use the
     # public API instead
-    _extra: Dict[str, &#39;ModuleState&#39;] = attr.ib(factory=dict)
+    _extra: Dict[str, &#39;ModuleState&#39;] = attrib(factory=dict)
 
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;:
@@ -76,8 +81,18 @@ class State(object):
             with StringIO(hf.attrs[&#39;config&#39;]) as cf:
                 config = SimulationConfig(cf)
 
-            state = cls(time=time, grid=grid, config=config)
+            voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+            lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+            space_volume = voxel_volume * np.product(lung_tissue.shape)
 
+            state = cls(
+                time=time,
+                grid=grid,
+                config=config,
+                lung_tissue=lung_tissue,
+                voxel_volume=voxel_volume,
+                space_volume=space_volume,
+            )
             for module in config.modules:
                 group = hf.get(module.name)
                 if group is None:
@@ -117,18 +132,30 @@ class State(object):
     @classmethod
     def create(cls, config: &#39;SimulationConfig&#39;):
         &#34;&#34;&#34;Generate a new state object from a config.&#34;&#34;&#34;
-        shape = (
-            config.getint(&#39;simulation&#39;, &#39;nz&#39;),
-            config.getint(&#39;simulation&#39;, &#39;ny&#39;),
-            config.getint(&#39;simulation&#39;, &#39;nx&#39;),
-        )
+        voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+        lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+
+        # python type checker isn&#39;t enough to understand this
+        assert len(lung_tissue.shape) == 3
+        # noinspection PyTypeChecker
+        shape: Tuple[int, int, int] = lung_tissue.shape
+
+        space_volume = voxel_volume * np.product(shape)
+
         spacing = (
             config.getfloat(&#39;simulation&#39;, &#39;dz&#39;),
             config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
             config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
         )
         grid = RectangularGrid.construct_uniform(shape, spacing)
-        state = State(time=0.0, grid=grid, config=config)
+        state = State(
+            time=0.0,
+            grid=grid,
+            config=config,
+            lung_tissue=lung_tissue,
+            voxel_volume=voxel_volume,
+            space_volume=space_volume,
+        )
 
         for module in state.config.modules:
             if hasattr(state, module.name):
@@ -152,7 +179,7 @@ class State(object):
         return super().__getattribute__(module_name)
 
     def __dir__(self):
-        return sorted(super().__dir__() + list(self._extra.keys()))
+        return sorted(list(super().__dir__()) + list(self._extra.keys()))
 
 
 def grid_variable(dtype: np.dtype = _dtype_float) -&gt; np.ndarray:
@@ -198,7 +225,18 @@ def cell_list(list_class: Type[&#39;CellList&#39;]) -&gt; &#39;CellList&#39;:
 
 def get_class_path(instance: Any) -&gt; str:
     class_ = instance.__class__
-    return f&#39;{class_.__module__}:{class_.__name__}&#39;</code></pre>
+    return f&#39;{class_.__module__}:{class_.__name__}&#39;
+
+
+def get_geometry_file(filename: str):
+    # The geometry data file is included next to this one
+    path = Path(__file__).parent / filename
+    try:
+        with h5py.File(path, &#39;r&#39;) as file:
+            return np.array(file[&#39;geometry&#39;])
+    except Exception:
+        print(f&#39;Error loading geometry file at {path}.&#39;)
+        raise</code></pre>
 </details>
 </section>
 <section>
@@ -237,6 +275,26 @@ def get_class_path(instance: Any) -&gt; str:
 <pre><code class="python">def get_class_path(instance: Any) -&gt; str:
     class_ = instance.__class__
     return f&#39;{class_.__module__}:{class_.__name__}&#39;</code></pre>
+</details>
+</dd>
+<dt id="nlisim.state.get_geometry_file"><code class="name flex">
+<span>def <span class="ident">get_geometry_file</span></span>(<span>filename: str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_geometry_file(filename: str):
+    # The geometry data file is included next to this one
+    path = Path(__file__).parent / filename
+    try:
+        with h5py.File(path, &#39;r&#39;) as file:
+            return np.array(file[&#39;geometry&#39;])
+    except Exception:
+        print(f&#39;Error loading geometry file at {path}.&#39;)
+        raise</code></pre>
 </details>
 </dd>
 <dt id="nlisim.state.grid_variable"><code class="name flex">
@@ -292,7 +350,7 @@ initialization and a default validation that checks for NaN's.</p></div>
 <dl>
 <dt id="nlisim.state.State"><code class="flex name class">
 <span>class <span class="ident">State</span></span>
-<span>(</span><span>time: float, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, config: SimulationConfig, extra: Dict[str, ForwardRef('ModuleState')] = NOTHING)</span>
+<span>(</span><span>time: float, grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, lung_tissue: numpy.ndarray, voxel_volume: float, space_volume: float, config: SimulationConfig, extra: Dict[str, ForwardRef('ModuleState')] = NOTHING)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A container for storing the simulation state at a single time step.</p>
@@ -306,13 +364,16 @@ initialization and a default validation that checks for NaN's.</p></div>
 
     time: float
     grid: RectangularGrid
+    lung_tissue: np.ndarray
+    voxel_volume: float
+    space_volume: float
 
     # simulation configuration
     config: &#39;SimulationConfig&#39;
 
     # a private container for module state, users of this class should use the
     # public API instead
-    _extra: Dict[str, &#39;ModuleState&#39;] = attr.ib(factory=dict)
+    _extra: Dict[str, &#39;ModuleState&#39;] = attrib(factory=dict)
 
     @classmethod
     def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;:
@@ -329,8 +390,18 @@ initialization and a default validation that checks for NaN's.</p></div>
             with StringIO(hf.attrs[&#39;config&#39;]) as cf:
                 config = SimulationConfig(cf)
 
-            state = cls(time=time, grid=grid, config=config)
+            voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+            lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+            space_volume = voxel_volume * np.product(lung_tissue.shape)
 
+            state = cls(
+                time=time,
+                grid=grid,
+                config=config,
+                lung_tissue=lung_tissue,
+                voxel_volume=voxel_volume,
+                space_volume=space_volume,
+            )
             for module in config.modules:
                 group = hf.get(module.name)
                 if group is None:
@@ -370,18 +441,30 @@ initialization and a default validation that checks for NaN's.</p></div>
     @classmethod
     def create(cls, config: &#39;SimulationConfig&#39;):
         &#34;&#34;&#34;Generate a new state object from a config.&#34;&#34;&#34;
-        shape = (
-            config.getint(&#39;simulation&#39;, &#39;nz&#39;),
-            config.getint(&#39;simulation&#39;, &#39;ny&#39;),
-            config.getint(&#39;simulation&#39;, &#39;nx&#39;),
-        )
+        voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+        lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+
+        # python type checker isn&#39;t enough to understand this
+        assert len(lung_tissue.shape) == 3
+        # noinspection PyTypeChecker
+        shape: Tuple[int, int, int] = lung_tissue.shape
+
+        space_volume = voxel_volume * np.product(shape)
+
         spacing = (
             config.getfloat(&#39;simulation&#39;, &#39;dz&#39;),
             config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
             config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
         )
         grid = RectangularGrid.construct_uniform(shape, spacing)
-        state = State(time=0.0, grid=grid, config=config)
+        state = State(
+            time=0.0,
+            grid=grid,
+            config=config,
+            lung_tissue=lung_tissue,
+            voxel_volume=voxel_volume,
+            space_volume=space_volume,
+        )
 
         for module in state.config.modules:
             if hasattr(state, module.name):
@@ -405,7 +488,7 @@ initialization and a default validation that checks for NaN's.</p></div>
         return super().__getattribute__(module_name)
 
     def __dir__(self):
-        return sorted(super().__dir__() + list(self._extra.keys()))</code></pre>
+        return sorted(list(super().__dir__()) + list(self._extra.keys()))</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -417,7 +500,19 @@ initialization and a default validation that checks for NaN's.</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="nlisim.state.State.lung_tissue"><code class="name">var <span class="ident">lung_tissue</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.state.State.space_volume"><code class="name">var <span class="ident">space_volume</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.state.State.time"><code class="name">var <span class="ident">time</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.state.State.voxel_volume"><code class="name">var <span class="ident">voxel_volume</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -436,18 +531,30 @@ initialization and a default validation that checks for NaN's.</p></div>
 <pre><code class="python">@classmethod
 def create(cls, config: &#39;SimulationConfig&#39;):
     &#34;&#34;&#34;Generate a new state object from a config.&#34;&#34;&#34;
-    shape = (
-        config.getint(&#39;simulation&#39;, &#39;nz&#39;),
-        config.getint(&#39;simulation&#39;, &#39;ny&#39;),
-        config.getint(&#39;simulation&#39;, &#39;nx&#39;),
-    )
+    voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+    lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+
+    # python type checker isn&#39;t enough to understand this
+    assert len(lung_tissue.shape) == 3
+    # noinspection PyTypeChecker
+    shape: Tuple[int, int, int] = lung_tissue.shape
+
+    space_volume = voxel_volume * np.product(shape)
+
     spacing = (
         config.getfloat(&#39;simulation&#39;, &#39;dz&#39;),
         config.getfloat(&#39;simulation&#39;, &#39;dy&#39;),
         config.getfloat(&#39;simulation&#39;, &#39;dx&#39;),
     )
     grid = RectangularGrid.construct_uniform(shape, spacing)
-    state = State(time=0.0, grid=grid, config=config)
+    state = State(
+        time=0.0,
+        grid=grid,
+        config=config,
+        lung_tissue=lung_tissue,
+        voxel_volume=voxel_volume,
+        space_volume=space_volume,
+    )
 
     for module in state.config.modules:
         if hasattr(state, module.name):
@@ -485,8 +592,18 @@ def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;
         with StringIO(hf.attrs[&#39;config&#39;]) as cf:
             config = SimulationConfig(cf)
 
-        state = cls(time=time, grid=grid, config=config)
+        voxel_volume = config.getfloat(&#39;simulation&#39;, &#39;voxel_volume&#39;)
+        lung_tissue = get_geometry_file(config.get(&#39;simulation&#39;, &#39;geometry_path&#39;))
+        space_volume = voxel_volume * np.product(lung_tissue.shape)
 
+        state = cls(
+            time=time,
+            grid=grid,
+            config=config,
+            lung_tissue=lung_tissue,
+            voxel_volume=voxel_volume,
+            space_volume=space_volume,
+        )
         for module in config.modules:
             group = hf.get(module.name)
             if group is None:
@@ -506,7 +623,7 @@ def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;
 <h3>Methods</h3>
 <dl>
 <dt id="nlisim.state.State.save"><code class="name flex">
-<span>def <span class="ident">save</span></span>(<span>self, arg: Union[str, pathlib.PurePath, IO[bytes]]) ‑> NoneType</span>
+<span>def <span class="ident">save</span></span>(<span>self, arg: Union[str, pathlib.PurePath, IO[bytes]]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Save the current state to the file system.</p></div>
@@ -567,6 +684,7 @@ def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;
 <ul class="">
 <li><code><a title="nlisim.state.cell_list" href="#nlisim.state.cell_list">cell_list</a></code></li>
 <li><code><a title="nlisim.state.get_class_path" href="#nlisim.state.get_class_path">get_class_path</a></code></li>
+<li><code><a title="nlisim.state.get_geometry_file" href="#nlisim.state.get_geometry_file">get_geometry_file</a></code></li>
 <li><code><a title="nlisim.state.grid_variable" href="#nlisim.state.grid_variable">grid_variable</a></code></li>
 </ul>
 </li>
@@ -579,9 +697,12 @@ def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;
 <li><code><a title="nlisim.state.State.create" href="#nlisim.state.State.create">create</a></code></li>
 <li><code><a title="nlisim.state.State.grid" href="#nlisim.state.State.grid">grid</a></code></li>
 <li><code><a title="nlisim.state.State.load" href="#nlisim.state.State.load">load</a></code></li>
+<li><code><a title="nlisim.state.State.lung_tissue" href="#nlisim.state.State.lung_tissue">lung_tissue</a></code></li>
 <li><code><a title="nlisim.state.State.save" href="#nlisim.state.State.save">save</a></code></li>
 <li><code><a title="nlisim.state.State.serialize" href="#nlisim.state.State.serialize">serialize</a></code></li>
+<li><code><a title="nlisim.state.State.space_volume" href="#nlisim.state.State.space_volume">space_volume</a></code></li>
 <li><code><a title="nlisim.state.State.time" href="#nlisim.state.State.time">time</a></code></li>
+<li><code><a title="nlisim.state.State.voxel_volume" href="#nlisim.state.State.voxel_volume">voxel_volume</a></code></li>
 </ul>
 </li>
 </ul>
@@ -590,7 +711,7 @@ def load(cls, arg: Union[str, bytes, PurePath, IO[bytes]]) -&gt; &#39;State&#39;
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>
