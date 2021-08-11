@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -241,5 +241,5 @@ class Pneumocyte(PhagocyteModel):
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         return 'cells', state.pneumocyte.cells

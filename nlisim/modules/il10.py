@@ -1,10 +1,9 @@
 import math
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict
 
 import attr
 import numpy as np
 
-from nlisim.cell import CellData
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
@@ -113,6 +112,6 @@ class IL10(MoleculeModel):
             'concentration': float(np.mean(il10.grid) / voxel_volume),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         il10: IL10State = state.il10
         return 'molecule', il10.grid

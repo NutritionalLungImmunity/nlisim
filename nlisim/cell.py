@@ -64,7 +64,7 @@ class CellData(np.ndarray):
     cell record.
     """
 
-    def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
+    def __new__(cls, arg: Union[int, Iterable['CellData']], initialize: bool = False, **kwargs):
         if isinstance(arg, (int, np.int64, np.int32)):
             arg = cast(int, arg)
             array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
@@ -91,7 +91,7 @@ class CellData(np.ndarray):
         return point, dead
 
     @classmethod
-    def create_cell(cls, **kwargs) -> np.record:
+    def create_cell(cls, **kwargs) -> 'CellData':
         """Create a single record with type `cls.dtype`.
 
         Subclasses appending fields must override this with custom default

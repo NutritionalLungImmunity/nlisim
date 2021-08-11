@@ -2,7 +2,7 @@ from enum import IntEnum, auto, unique
 import math
 from queue import SimpleQueue
 import random
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import attr
 from attr import attrib, attrs
@@ -414,7 +414,7 @@ class Afumigatus(ModuleModel):
             'hyphae': int(status_counts[AfumigatusCellStatus.HYPHAE]),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         return 'cells', state.afumigatus.cells
 
 
@@ -602,7 +602,7 @@ def elongate(
             next_septa_root = afumigatus_cell['root'] + afumigatus_cell['vec']
 
             # create the new septa
-            next_septa: np.record = AfumigatusCellData.create_cell(
+            next_septa: CellData = AfumigatusCellData.create_cell(
                 point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
                 root=next_septa_root,
                 tip=next_septa_root + afumigatus_cell['vec'],
@@ -647,7 +647,7 @@ def branch(
         root = afumigatus_cell['root']
 
         # create the new septa
-        next_branch: np.record = AfumigatusCellData.create_cell(
+        next_branch: CellData = AfumigatusCellData.create_cell(
             point=Point(x=root[2], y=root[1], z=root[0]),
             root=root,
             tip=root + branch_vector,

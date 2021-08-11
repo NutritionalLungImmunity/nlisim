@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrs
@@ -229,7 +229,7 @@ class Macrophage(PhagocyteModel):
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         return 'cells', state.macrophage.cells
 
     def recruit_macrophages(self, state: State) -> None:

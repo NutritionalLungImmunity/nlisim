@@ -134,7 +134,7 @@ def choose_voxel_by_prob(
     normalized_weights = np.concatenate((np.array([0.0]), weights / normalization_constant))
 
     # sample from distribution given by normalized weights
-    random_voxel_idx = np.argmax(np.cumsum(normalized_weights) - rg.uniform() > 0.0) - 1
+    random_voxel_idx: int = int(np.argmax(np.cumsum(normalized_weights) - rg.uniform() > 0.0) - 1)
     if random_voxel_idx < 0:
         # the only way the 0th could be chosen is by argmax failing
         return default_value

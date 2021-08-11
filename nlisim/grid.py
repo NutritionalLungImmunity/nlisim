@@ -201,7 +201,7 @@ class RectangularGrid(object):
         This is a convenience method that wraps numpy.unravel_index.
         """
         z, y, x = np.unravel_index(index, self.shape)
-        return Voxel(x=x, y=y, z=z)
+        return Voxel(x=float(x), y=float(y), z=float(z))
 
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.

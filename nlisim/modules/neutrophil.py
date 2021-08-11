@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
@@ -299,7 +299,7 @@ class Neutrophil(PhagocyteModel):
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         return 'cells', state.neutrophil.cells
 
     def single_step_probabilistic_drift(

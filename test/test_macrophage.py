@@ -303,7 +303,7 @@ def test_internalize_conidia_0(
 
     assert len(fungus_list.get_cells_in_voxel(vox)) == 1
 
-    f_index = fungus_list.get_cells_in_voxel(vox)  # 0
+    f_index = int(fungus_list.get_cells_in_voxel(vox))  # 0
     assert f_index == 0
 
     fungus_list[f_index]['form'] = FungusCellData.Form.CONIDIA

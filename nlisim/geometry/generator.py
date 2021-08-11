@@ -77,8 +77,8 @@ class Geometry(object):
         # normalize direction, just in case
         direction = direction / np.linalg.norm(direction)
 
-        relative_coords = coords - center
-        distance_along_axis = relative_coords @ direction
+        relative_coords: np.ndarray = coords - center
+        distance_along_axis: np.ndarray = relative_coords @ direction
         distance_from_axis = np.linalg.norm(
             relative_coords - np.multiply.outer(relative_coords @ direction, direction), axis=3
         )

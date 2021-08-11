@@ -1,10 +1,9 @@
 import math
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict
 
 import attr
 import numpy as np
 
-from nlisim.cell import CellData
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
@@ -96,6 +95,6 @@ class AntiTNFa(MoleculeModel):
             'concentration': float(np.mean(anti_tnf_a.grid) / voxel_volume),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         anti_tnf_a: AntiTNFaState = state.antitnfa
         return 'molecule', anti_tnf_a.grid

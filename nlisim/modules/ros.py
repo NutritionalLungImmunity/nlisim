@@ -1,9 +1,8 @@
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict
 
 import attr
 import numpy as np
 
-from nlisim.cell import CellData
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
@@ -65,6 +64,6 @@ class ROS(MoleculeModel):
             'concentration': float(np.mean(ros.grid) / voxel_volume),
         }
 
-    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellData, np.ndarray]]]:
+    def visualization_data(self, state: State):
         ros: ROSState = state.ros
         return 'molecule', ros.grid
