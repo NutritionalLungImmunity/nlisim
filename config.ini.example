@@ -16,14 +16,14 @@ dz = 10
 validate = True
 
 # a list of modules to run with the simulation
-modules = nlisim.modules.geometry.Geometry
-          nlisim.modules.molecules.Molecules
-          nlisim.modules.fungus.Fungus
-          nlisim.modules.epithelium.Epithelium
-          nlisim.modules.macrophage.Macrophage
-          nlisim.modules.neutrophil.Neutrophil
-          nlisim.modules.state_output.StateOutput
-          nlisim.modules.visualization.Visualization
+modules = nlisim.oldmodules.geometry.Geometry
+          nlisim.oldmodules.molecules.Molecules
+          nlisim.oldmodules.fungus.Fungus
+          nlisim.oldmodules.epithelium.Epithelium
+          nlisim.oldmodules.macrophage.Macrophage
+          nlisim.oldmodules.neutrophil.Neutrophil
+          nlisim.oldmodules.state_output.StateOutput
+          nlisim.oldmodules.visualization.Visualization
 
 
 [file_output]

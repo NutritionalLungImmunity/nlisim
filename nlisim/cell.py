@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Set, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
 import attr
 from h5py import Group
@@ -9,7 +9,7 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.state import State, get_class_path
 
-MAX_CELL_LIST_SIZE = 1000000
+MAX_CELL_LIST_SIZE = 1_000_000
 
 # the way numpy types single records is strange...
 CellType = Any
@@ -43,7 +43,7 @@ class CellData(np.ndarray):
         dtype = np.dtype(CellData.FIELDS, align=True)
 
         @classmethod
-        def create_cell_tuple(cls, iron_content=0, **kwargs):
+        def create_cell_tuple(cls, iron_content=0, **kwargs) -> Tuple:
             return CellData.create_cell_tuple(**kwargs) + (iron_content,)
     ```
     """
@@ -64,7 +64,7 @@ class CellData(np.ndarray):
     cell record.
     """
 
-    def __new__(cls, arg: Union[int, Iterable[np.record]], initialize: bool = False, **kwargs):
+    def __new__(cls, arg: Union[int, Iterable['CellData']], initialize: bool = False, **kwargs):
         if isinstance(arg, (int, np.int64, np.int32)):
             arg = cast(int, arg)
             array = np.ndarray(shape=(arg,), dtype=cls.dtype).view(cls)
@@ -76,7 +76,7 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False):
+    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
         The base class version of this method returns the fields associated with
@@ -88,10 +88,10 @@ class CellData(np.ndarray):
         if point is None:
             point = Point()
 
-        return (point, dead)
+        return point, dead
 
     @classmethod
-    def create_cell(cls, **kwargs) -> np.record:
+    def create_cell(cls, **kwargs) -> 'CellData':
         """Create a single record with type `cls.dtype`.
 
         Subclasses appending fields must override this with custom default
@@ -122,6 +122,7 @@ class CellData(np.ndarray):
 
 @attr.s(kw_only=True, frozen=True, repr=False)
 class CellList(object):
+    # noinspection PyUnresolvedReferences
     """A python view on top of a CellData array.
 
     This class represents a pythonic interface to the data contained in a
@@ -209,6 +210,8 @@ class CellList(object):
 
         return cls(grid=grid, cell_data=cell_data)
 
+    # TODO: this is inconsistent with iterating over the whole CellList, why does this give indices
+    #  while the other gives the records
     def alive(self, sample: Iterable = None) -> np.ndarray:
         """Get a list of indices containing cells that are alive.
 
@@ -253,7 +256,7 @@ class CellList(object):
         mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
         return sample_indices[mask]
 
-    def append(self, cell: CellType) -> None:
+    def append(self, cell: CellType) -> int:
         """Append a new cell the the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
@@ -264,6 +267,7 @@ class CellList(object):
         voxel = self.grid.get_voxel(cell['point'])
         self._voxel_index[voxel].add(index)
         self._reverse_voxel_index.append(voxel)
+        return index
 
     def extend(self, cells: Iterable[CellData]) -> None:
         """Extend the cell list by multiple cells."""

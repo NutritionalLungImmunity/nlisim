@@ -7,8 +7,7 @@ import re
 from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
 
 if TYPE_CHECKING:
-    from nlisim.module import ModuleModel  # noqa
-    from nlisim.state import State  # noqa
+    from nlisim.module import ModuleModel
 
 
 class SimulationConfig(ConfigParser):
@@ -55,7 +54,7 @@ class SimulationConfig(ConfigParser):
     def load_module(cls, path: str) -> Type['ModuleModel']:
         """Load a module class, returning the class constructor."""
         module_path, func_name = path.rsplit('.', 1)
-        module = import_module(module_path, 'simulation')
+        module = import_module(module_path)
         func = getattr(module, func_name, None)
 
         cls.validate_module(func, path)
@@ -70,7 +69,7 @@ class SimulationConfig(ConfigParser):
         if path is None:
             path = repr(func)
 
-        if not issubclass(func, ModuleModel):
+        if func is None or not issubclass(func, ModuleModel):
             raise TypeError(f'Invalid module class for "{path}"')
         if not func.name.isidentifier() or func.name.startswith('_'):
             raise ValueError(f'Invalid module name "{func.name}" for "{path}')

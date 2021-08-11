@@ -66,6 +66,6 @@ class Plot(ModuleModel):
             plt.plot(time_steps, y_val)
             plt.ylabel(y_label)
             plt.title(title)
-            plt.savefig(f'{filename }.png')
+            plt.savefig(f'{filename}.png')
 
         return state

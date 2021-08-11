@@ -3,8 +3,8 @@ from pytest import fixture
 
 from nlisim.coordinates import Point
 from nlisim.grid import RectangularGrid
-from nlisim.modules.fungus import FungusCellData, FungusCellList
-from nlisim.modules.macrophage import MacrophageCellData, MacrophageCellList
+from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
+from nlisim.oldmodules.macrophage import MacrophageCellData, MacrophageCellList
 
 
 @fixture
@@ -303,7 +303,7 @@ def test_internalize_conidia_0(
 
     assert len(fungus_list.get_cells_in_voxel(vox)) == 1
 
-    f_index = fungus_list.get_cells_in_voxel(vox)  # 0
+    f_index = int(fungus_list.get_cells_in_voxel(vox))  # 0
     assert f_index == 0
 
     fungus_list[f_index]['form'] = FungusCellData.Form.CONIDIA

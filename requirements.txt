@@ -1,0 +1,17 @@
+pip>=21.0.0
+py~=1.10.0
+attrs>=20.3.0
+toml~=0.10.2
+click~=7.1.2
+setuptools>=53.0.0
+pytest~=6.2.4
+numpy>=1.20.0
+h5py~=3.1.0
+tqdm~=4.57.0
+matplotlib>=3.3.0
+scipy>=1.6.0
+click-pathlib
+dataclasses;python_version<"3.8"
+importlib-metadata;python_version<"3.8"
+vtk
+numba>=0.53.1

@@ -1,5 +1,5 @@
 from enum import Enum, unique
-from typing import List
+from typing import Dict, List
 
 import attr
 from h5py import Group
@@ -41,6 +41,7 @@ class MoleculeGrid(object):
     grid: RectangularGrid = attr.ib()
     _concentrations = attr.ib()
     _sources = attr.ib()
+    _diffusivity: Dict[str, int] = {}
     _molecule_type: List[str] = attr.ib(factory=list)
 
     @_concentrations.default
@@ -76,6 +77,10 @@ class MoleculeGrid(object):
         )
 
     @property
+    def diffusivity(self):
+        return self._diffusivity
+
+    @property
     def concentrations(self):
         return self._concentrations[[name for name in self._molecule_type]].view(np.recarray)
 
@@ -98,6 +103,9 @@ class MoleculeGrid(object):
         if molecule not in self._concentrations.dtype.names:
             raise KeyError(f'Molecule {molecule} is not declared')
         self._molecule_type.append(molecule)
+
+    def set_diffusivity(self, molecule: str, diffusivity: int):
+        self._diffusivity[molecule] = diffusivity
 
     def incr(self):
         concentrations = self._concentrations

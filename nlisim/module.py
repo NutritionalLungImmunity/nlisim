@@ -1,10 +1,11 @@
 from importlib import import_module
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import attr
 from h5py import Dataset, Group
 import numpy as np
 
+from nlisim.cell import CellList
 from nlisim.config import SimulationConfig
 from nlisim.state import State
 
@@ -173,3 +174,12 @@ class ModuleModel(object):
         is important to cast these values to standard python types.
         """
         return dict()
+
+    def visualization_data(self, state: State) -> Tuple[str, Optional[Union[CellList, np.ndarray]]]:
+        """Return any 3d visualization data associated with the module.
+
+        This is returned as a tuple of the form (datatype, data) where datatype should be one of
+        'molecule', 'cells', or ''. The last, empty string, should be reported by modules which do
+        not report data.
+        """
+        return '', None
