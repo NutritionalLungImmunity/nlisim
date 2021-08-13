@@ -201,9 +201,9 @@ class Transferrin(MoleculeModel):
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
 
-        concentration_0fe = np.mean(transferrin.grid['Lactoferrin']) / voxel_volume
-        concentration_1fe = np.mean(transferrin.grid['LactoferrinFe']) / voxel_volume
-        concentration_2fe = np.mean(transferrin.grid['LactoferrinFe2']) / voxel_volume
+        concentration_0fe = np.mean(transferrin.grid['Tf']) / voxel_volume
+        concentration_1fe = np.mean(transferrin.grid['TfFe']) / voxel_volume
+        concentration_2fe = np.mean(transferrin.grid['TfFe2']) / voxel_volume
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
