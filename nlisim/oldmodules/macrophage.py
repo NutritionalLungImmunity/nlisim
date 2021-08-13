@@ -16,7 +16,7 @@ from nlisim.util import TissueType
 
 MAX_CONIDIA = 100
 
-np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+# np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
 
 class MacrophageCellData(CellData):

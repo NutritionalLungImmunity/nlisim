@@ -165,9 +165,15 @@ class TAFC(MoleculeModel):
         tafc: TAFCState = state.tafc
         voxel_volume = state.voxel_volume
 
+        concentration_no_fe = np.mean(tafc.grid['TAFC']) / voxel_volume
+        concentration_fe = np.mean(tafc.grid['TAFCBI']) / voxel_volume
+
+        concentration = concentration_no_fe + concentration_fe
+
         return {
-            'concentration TAFC': float(np.mean(tafc.grid['TAFC']) / voxel_volume),
-            'concentration TAFCBI': float(np.mean(tafc.grid['TAFCBI']) / voxel_volume),
+            'concentration any': float(concentration),
+            'concentration TAFC': float(concentration_no_fe),
+            'concentration TAFCBI': float(concentration_fe),
         }
 
     def visualization_data(self, state: State):
