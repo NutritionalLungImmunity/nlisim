@@ -258,6 +258,19 @@ class Pneumocyte(PhagocyteModel):
             ),
             minlength=max_index + 1,
         )
+
+        tnfa_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        pneumocyte.cells[pneumocyte_cell_index][&#39;tnfa&#39;]
+                        for pneumocyte_cell_index in live_pneumocytes
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             &#39;count&#39;: len(pneumocyte.cells.alive()),
             &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
@@ -268,6 +281,7 @@ class Pneumocyte(PhagocyteModel):
             &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
             &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
             &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+            &#39;TNFa active&#39;: tnfa_active,
         }
 
     def visualization_data(self, state: State):
@@ -469,6 +483,19 @@ class Pneumocyte(PhagocyteModel):
             ),
             minlength=max_index + 1,
         )
+
+        tnfa_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        pneumocyte.cells[pneumocyte_cell_index][&#39;tnfa&#39;]
+                        for pneumocyte_cell_index in live_pneumocytes
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             &#39;count&#39;: len(pneumocyte.cells.alive()),
             &#39;inactive&#39;: int(status_counts[PhagocyteStatus.INACTIVE]),
@@ -479,6 +506,7 @@ class Pneumocyte(PhagocyteModel):
             &#39;apoptotic&#39;: int(status_counts[PhagocyteStatus.APOPTOTIC]),
             &#39;necrotic&#39;: int(status_counts[PhagocyteStatus.NECROTIC]),
             &#39;interacting&#39;: int(status_counts[PhagocyteStatus.INTERACTING]),
+            &#39;TNFa active&#39;: tnfa_active,
         }
 
     def visualization_data(self, state: State):

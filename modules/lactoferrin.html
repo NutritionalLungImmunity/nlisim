@@ -260,10 +260,17 @@ class Lactoferrin(MoleculeModel):
         lactoferrin: LactoferrinState = state.lactoferrin
         voxel_volume = state.voxel_volume
 
+        concentration_0fe = np.mean(lactoferrin.grid[&#39;Lactoferrin&#39;]) / voxel_volume
+        concentration_1fe = np.mean(lactoferrin.grid[&#39;LactoferrinFe&#39;]) / voxel_volume
+        concentration_2fe = np.mean(lactoferrin.grid[&#39;LactoferrinFe2&#39;]) / voxel_volume
+
+        concentration = concentration_0fe + concentration_1fe + concentration_2fe
+
         return {
-            &#39;+0Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;Lactoferrin&#39;]) / voxel_volume),
-            &#39;+1Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;LactoferrinFe&#39;]) / voxel_volume),
-            &#39;+2Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;LactoferrinFe2&#39;]) / voxel_volume),
+            &#39;concentration&#39;: float(concentration),
+            &#39;+0Fe concentration&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):
@@ -509,10 +516,17 @@ class Lactoferrin(MoleculeModel):
         lactoferrin: LactoferrinState = state.lactoferrin
         voxel_volume = state.voxel_volume
 
+        concentration_0fe = np.mean(lactoferrin.grid[&#39;Lactoferrin&#39;]) / voxel_volume
+        concentration_1fe = np.mean(lactoferrin.grid[&#39;LactoferrinFe&#39;]) / voxel_volume
+        concentration_2fe = np.mean(lactoferrin.grid[&#39;LactoferrinFe2&#39;]) / voxel_volume
+
+        concentration = concentration_0fe + concentration_1fe + concentration_2fe
+
         return {
-            &#39;+0Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;Lactoferrin&#39;]) / voxel_volume),
-            &#39;+1Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;LactoferrinFe&#39;]) / voxel_volume),
-            &#39;+2Fe concentration&#39;: float(np.mean(lactoferrin.grid[&#39;LactoferrinFe2&#39;]) / voxel_volume),
+            &#39;concentration&#39;: float(concentration),
+            &#39;+0Fe concentration&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):

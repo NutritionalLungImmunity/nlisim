@@ -27,7 +27,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from enum import IntEnum, auto, unique
+<pre><code class="python">from enum import IntEnum, unique
 import math
 from queue import SimpleQueue
 import random
@@ -61,34 +61,52 @@ class AfumigatusCellStatus(IntEnum):
 @unique
 class NetworkSpecies(IntEnum):
     hapX = 0  # gene # noqa: N815
-    sreA = auto()  # gene # noqa: N815
-    HapX = auto()  # protein
-    SreA = auto()  # protein
-    RIA = auto()
-    EstB = auto()
-    MirB = auto()
-    SidA = auto()
-    TAFC = auto()
-    ICP = auto()
-    LIP = auto()
-    CccA = auto()
-    FC0fe = auto()
-    FC1fe = auto()
-    VAC = auto()
-    ROS = auto()
-    Yap1 = auto()
-    SOD2_3 = auto()
-    Cat1_2 = auto()
-    ThP = auto()
-    Fe = auto()
-    Oxygen = auto()
+    sreA = 1  # gene # noqa: N815
+    HapX = 2  # protein
+    SreA = 3  # protein
+    RIA = 4
+    EstB = 5
+    MirB = 6
+    SidA = 7
+    TAFC = 8
+    ICP = 9
+    LIP = 10
+    CccA = 11
+    FC0fe = 12
+    FC1fe = 13
+    VAC = 14
+    ROS = 15
+    Yap1 = 16
+    SOD2_3 = 17
+    Cat1_2 = 18
+    ThP = 19
+    Fe = 20
+    Oxygen = 21
 
 
 @unique
 class AfumigatusCellState(IntEnum):
     FREE = 0
-    INTERNALIZING = auto()
-    RELEASING = auto()
+    INTERNALIZING = 1
+    RELEASING = 2
+
+
+def random_sphere_point() -&gt; np.ndarray:
+    &#34;&#34;&#34;Generate a random point on the 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
+    # generate vector in unit disc
+    u: np.ndarray = rg.random(size=2)
+    while np.linalg.norm(u) &gt; 1.0:
+        u = rg.random(size=2)
+
+    normsq_u = float(np.dot(u, u))
+    return np.array(
+        [
+            2 * u[0] * np.sqrt(1 - normsq_u),
+            2 * u[1] * np.sqrt(1 - normsq_u),
+            1 - 2 * normsq_u,
+        ],
+        dtype=np.float64,
+    )
 
 
 class AfumigatusCellData(CellData):
@@ -123,7 +141,7 @@ class AfumigatusCellData(CellData):
             &#39;is_root&#39;: kwargs.get(&#39;is_root&#39;, True),
             &#39;root&#39;: kwargs.get(&#39;root&#39;, np.zeros(3, dtype=np.float64)),
             &#39;tip&#39;: kwargs.get(&#39;tip&#39;, np.zeros(3, dtype=np.float64)),
-            &#39;vec&#39;: kwargs.get(&#39;vec&#39;, np.zeros(3, dtype=np.float64)),  # dx, dy, dz
+            &#39;vec&#39;: kwargs.get(&#39;vec&#39;, random_sphere_point()),  # dx, dy, dz
             &#39;growable&#39;: kwargs.get(&#39;growable&#39;, True),
             &#39;branchable&#39;: kwargs.get(&#39;branchable&#39;, False),
             &#39;activation_iteration&#39;: kwargs.get(&#39;activation_iteration&#39;, 0),
@@ -201,8 +219,8 @@ class AfumigatusState(ModuleState):
     init_iron: float
     conidia_vol: float
     rel_n_hyphae_int_unit_t: float
-    rel_phag_afnt_unit_t: float
-    phag_afnt_t: float
+    rel_phag_affinity_unit_t: float
+    phag_affinity_t: float
     aspergillus_change_half_life: float
 
 
@@ -235,13 +253,13 @@ class Afumigatus(ModuleModel):
             &#39;aspergillus_change_half_life&#39;
         )
 
-        afumigatus.phag_afnt_t = self.config.getfloat(&#39;phag_afnt_t&#39;)
+        afumigatus.phag_affinity_t = self.config.getfloat(&#39;phag_affinity_t&#39;)
 
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
 
         afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
-        afumigatus.rel_phag_afnt_unit_t = time_step_size / afumigatus.phag_afnt_t
+        afumigatus.rel_phag_affinity_unit_t = time_step_size / afumigatus.phag_affinity_t
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(
             -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
@@ -250,11 +268,11 @@ class Afumigatus(ModuleModel):
         #  kd ~10x neut. (ref 71)
         #  and below
         afumigatus.pr_ma_phag = 1 - math.exp(
-            -afumigatus.rel_phag_afnt_unit_t
+            -afumigatus.rel_phag_affinity_unit_t
             / (voxel_volume * self.config.getfloat(&#39;pr_ma_phag_param&#39;))
         )
         # pr_ma_phag = 1 - math.exp(-(
-        #            1 / voxel_vol) * rel_phag_afnt_unit_t / 1.32489230813214e+10)
+        #            1 / voxel_vol) * rel_phag_affinity_unit_t / 1.32489230813214e+10)
         # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
 
         afumigatus.iter_to_swelling = int(
@@ -312,7 +330,9 @@ class Afumigatus(ModuleModel):
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
             voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+            # ------------ update cell
+
+            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
 
             # ------------ cell growth
             if (
@@ -324,6 +344,7 @@ class Afumigatus(ModuleModel):
 
             # ------------ interactions after this point
 
+            # interact with iron
             # TODO: this should never be reached?! Make sure that we release iron when we kill
             #  the fungal cell and release cell&#39;s iron pool back to voxel
             if afumigatus_cell[&#39;status&#39;] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
@@ -367,56 +388,48 @@ class Afumigatus(ModuleModel):
             else afumigatus.pr_ma_phag
         )
 
-        if rg.random() &lt; probability_of_interaction:
-            internalize_aspergillus(
-                macrophage_cell,
-                afumigatus_cell,
-                afumigatus_cell_index,
-                macrophage,
-                phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
-            )
+        # return if they do not interact
+        if rg.random() &gt;= probability_of_interaction:
+            return
 
-            # unlink the fungal cell from its tree
-            if (
-                afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-                and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-            ):
-                afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-                if afumigatus_cell[&#39;next_septa&#39;] != -1:
-                    afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-                if afumigatus_cell[&#39;next_branch&#39;] != -1:
-                    afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+        # now they interact
 
-                # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-                #  macrophage gets them? I haven&#39;t done anything with that.
-                # TODO: this really should be spun off into its own method
-                parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-                if parent_id != -1:
-                    parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                    if parent_cell[&#39;next_septa&#39;] == afumigatus_cell:
-                        parent_cell[&#39;next_septa&#39;] = -1
-                    elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell:
-                        parent_cell[&#39;next_branch&#39;] = -1
-                    else:
-                        raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+        internalize_aspergillus(
+            macrophage_cell,
+            afumigatus_cell,
+            afumigatus_cell_index,
+            macrophage,
+            phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
+        )
 
-            if (
-                afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-                and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-            ):
-                afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-                # TODO: careful cell tree deletion
-                if afumigatus_cell[&#39;next_septa&#39;] == -1:
-                    afumigatus_cell[&#39;next_septa&#39;][&#39;is_root&#39;] = True
-                    afumigatus_cell[&#39;next_septa&#39;][&#39;previous_septa&#39;] = -1
-                if afumigatus_cell[&#39;next_branch&#39;] == -1:
-                    afumigatus_cell[&#39;next_branch&#39;][&#39;is_root&#39;] = True
-                    afumigatus_cell[&#39;next_branch&#39;][&#39;previous_septa&#39;] = -1
+        # unlink the fungal cell from its tree
+        if (
+            afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
+            and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
+        ):
+            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+            if afumigatus_cell[&#39;next_septa&#39;] != -1:
+                afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+            if afumigatus_cell[&#39;next_branch&#39;] != -1:
+                afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
 
-            # TODO: Ask about this dead code.
-            # else:
-            #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-            #         interactable.engaged = True
+            # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
+            #  macrophage gets them? I haven&#39;t done anything with that.
+            # TODO: this really should be spun off into its own method
+            parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+            if parent_id != -1:
+                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+                if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+                    parent_cell[&#39;next_septa&#39;] = -1
+                elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+                    parent_cell[&#39;next_branch&#39;] = -1
+                else:
+                    raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+
+        # TODO: Ask about this dead code.
+        # else:
+        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+        #         interactable.engaged = True
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -434,6 +447,62 @@ class Afumigatus(ModuleModel):
             minlength=max_index + 1,
         )
 
+        lip_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.LIP
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        mirb_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.MirB
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        estb_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.EstB
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        tafc_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.TAFC
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             &#39;count&#39;: len(live_fungus),
             &#39;resting conidia&#39;: int(status_counts[AfumigatusCellStatus.RESTING_CONIDIA]),
@@ -441,6 +510,10 @@ class Afumigatus(ModuleModel):
             &#39;sterile conidia&#39;: int(status_counts[AfumigatusCellStatus.STERILE_CONIDIA]),
             &#39;germ tube&#39;: int(status_counts[AfumigatusCellStatus.GERM_TUBE]),
             &#39;hyphae&#39;: int(status_counts[AfumigatusCellStatus.HYPHAE]),
+            &#39;LIP active&#39;: lip_active,
+            &#39;MirB active&#39;: mirb_active,
+            &#39;EstB active&#39;: estb_active,
+            &#39;TAFC active&#39;: tafc_active,
         }
 
     def visualization_data(self, state: State):
@@ -448,9 +521,21 @@ class Afumigatus(ModuleModel):
 
 
 def cell_self_update(
-    afumigatus: AfumigatusState, afumigatus_cell: AfumigatusCellData, afumigatus_index: int
+    state: State,
+    afumigatus: AfumigatusState,
+    afumigatus_cell: AfumigatusCellData,
+    afumigatus_index: int,
+    voxel: Voxel,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
+
+    process_boolean_network(
+        state=state,
+        afumigatus_cell=afumigatus_cell,
+        voxel=voxel,
+        steps_to_eval=afumigatus.steps_to_bn_eval,
+        afumigatus=afumigatus,
+    )
 
     # resting conidia become swelling conidia after a number of iterations
     # (with some probability)
@@ -494,70 +579,64 @@ def cell_self_update(
 
 
 def process_boolean_network(
-    state: State, boolean_network: np.ndarray, bn_iteration: np.ndarray, steps_to_eval: int
+    state: State,
+    afumigatus: AfumigatusState,
+    afumigatus_cell: AfumigatusCellData,
+    voxel: Voxel,
+    steps_to_eval: int,
 ):
-    bn_iteration += 1
-    bn_iteration %= steps_to_eval
+    afumigatus_cell[&#39;bn_iteration&#39;] += 1
+    afumigatus_cell[&#39;bn_iteration&#39;] %= steps_to_eval
 
-    active_bool_net: np.ndarray = boolean_network[bn_iteration == 0, :]
-    temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=bool)
+    if afumigatus_cell[&#39;bn_iteration&#39;] != 0:
+        return
 
-    temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.sreA] = ~active_bool_net[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.HapX] = (
-        active_bool_net[:, NetworkSpecies.hapX] &amp; ~active_bool_net[:, NetworkSpecies.LIP]
+    bool_net = afumigatus_cell[&#39;boolean_network&#39;]
+
+    temp: np.ndarray = np.zeros(shape=bool_net.shape, dtype=bool)
+
+    temp[NetworkSpecies.hapX] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.sreA] = ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.HapX] = bool_net[NetworkSpecies.hapX] &amp; ~bool_net[NetworkSpecies.LIP]
+    temp[NetworkSpecies.SreA] = bool_net[NetworkSpecies.sreA] &amp; bool_net[NetworkSpecies.LIP]
+    temp[NetworkSpecies.RIA] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.EstB] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.MirB] = bool_net[NetworkSpecies.HapX] &amp; ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.SidA] = bool_net[NetworkSpecies.HapX] &amp; ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.TAFC] = bool_net[NetworkSpecies.SidA]
+    temp[NetworkSpecies.ICP] = ~bool_net[NetworkSpecies.HapX] &amp; (
+        bool_net[NetworkSpecies.VAC] | bool_net[NetworkSpecies.FC1fe]
     )
-    temp[:, NetworkSpecies.SreA] = (
-        active_bool_net[:, NetworkSpecies.sreA] &amp; active_bool_net[:, NetworkSpecies.LIP]
-    )
-    temp[:, NetworkSpecies.RIA] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.EstB] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.MirB] = (
-        active_bool_net[:, NetworkSpecies.HapX] &amp; ~active_bool_net[:, NetworkSpecies.SreA]
-    )
-    temp[:, NetworkSpecies.SidA] = (
-        active_bool_net[:, NetworkSpecies.HapX] &amp; ~active_bool_net[:, NetworkSpecies.SreA]
-    )
-    temp[:, NetworkSpecies.TAFC] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] &amp; (
-        active_bool_net[:, NetworkSpecies.VAC] | active_bool_net[:, NetworkSpecies.FC1fe]
-    )
-    temp[:, NetworkSpecies.LIP] = (
-        active_bool_net[:, NetworkSpecies.Fe] &amp; active_bool_net[:, NetworkSpecies.RIA]
-    ) | lip_activation(state=state, shape=temp.shape)
-    temp[:, NetworkSpecies.CccA] = ~active_bool_net[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.FC0fe] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.FC1fe] = (
-        active_bool_net[:, NetworkSpecies.LIP] &amp; active_bool_net[:, NetworkSpecies.FC0fe]
-    )
-    temp[:, NetworkSpecies.VAC] = (
-        active_bool_net[:, NetworkSpecies.LIP] &amp; active_bool_net[:, NetworkSpecies.CccA]
-    )
-    temp[:, NetworkSpecies.ROS] = (
-        active_bool_net[:, NetworkSpecies.Oxygen]
+    temp[NetworkSpecies.LIP] = (
+        bool_net[NetworkSpecies.Fe] &amp; bool_net[NetworkSpecies.RIA]
+    ) | lip_activation(afumigatus=afumigatus, iron_pool=afumigatus_cell[&#39;iron_pool&#39;])
+    temp[NetworkSpecies.CccA] = ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.FC0fe] = bool_net[NetworkSpecies.SidA]
+    temp[NetworkSpecies.FC1fe] = bool_net[NetworkSpecies.LIP] &amp; bool_net[NetworkSpecies.FC0fe]
+    temp[NetworkSpecies.VAC] = bool_net[NetworkSpecies.LIP] &amp; bool_net[NetworkSpecies.CccA]
+    temp[NetworkSpecies.ROS] = (
+        bool_net[NetworkSpecies.Oxygen]
         &amp; ~(
-            active_bool_net[:, NetworkSpecies.SOD2_3]
-            &amp; active_bool_net[:, NetworkSpecies.ThP]
-            &amp; active_bool_net[:, NetworkSpecies.Cat1_2]
+            bool_net[NetworkSpecies.SOD2_3]
+            &amp; bool_net[NetworkSpecies.ThP]
+            &amp; bool_net[NetworkSpecies.Cat1_2]
         )
     ) | (
-        active_bool_net[:, NetworkSpecies.ROS]
+        bool_net[NetworkSpecies.ROS]
         &amp; ~(
-            active_bool_net[:, NetworkSpecies.SOD2_3]
-            &amp; (active_bool_net[:, NetworkSpecies.ThP] | active_bool_net[:, NetworkSpecies.Cat1_2])
+            bool_net[NetworkSpecies.SOD2_3]
+            &amp; (bool_net[NetworkSpecies.ThP] | bool_net[NetworkSpecies.Cat1_2])
         )
     )
-    temp[:, NetworkSpecies.Yap1] = active_bool_net[:, NetworkSpecies.ROS]
-    temp[:, NetworkSpecies.SOD2_3] = active_bool_net[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Cat1_2] = (
-        active_bool_net[:, NetworkSpecies.Yap1] &amp; ~active_bool_net[:, NetworkSpecies.HapX]
-    )
-    temp[:, NetworkSpecies.ThP] = active_bool_net[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
-    temp[:, NetworkSpecies.Oxygen] = 0
+    temp[NetworkSpecies.Yap1] = bool_net[NetworkSpecies.ROS]
+    temp[NetworkSpecies.SOD2_3] = bool_net[NetworkSpecies.Yap1]
+    temp[NetworkSpecies.Cat1_2] = bool_net[NetworkSpecies.Yap1] &amp; ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.ThP] = bool_net[NetworkSpecies.Yap1]
+    temp[NetworkSpecies.Fe] = 0  # might change according to iron environment?
+    temp[NetworkSpecies.Oxygen] = 0
 
-    # copy temp back to active_bool_net&#39;s mask
-    boolean_network[bn_iteration == 0, :] = temp
+    # copy temp back to bool_net
+    np.copyto(dst=bool_net, src=temp)
 
 
 def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -&gt; None:
@@ -601,13 +680,10 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -&gt; None:
         afumigatus.cells[tree_cell_index][&#39;iron_pool&#39;] = iron_per_cell
 
 
-def lip_activation(state: State, shape) -&gt; np.ndarray:
-    afumigatus: AfumigatusState = state.afumigatus
-    iron: IronState = state.iron
-
-    molar_concentration = iron.grid / afumigatus.hyphae_volume
+def lip_activation(afumigatus: AfumigatusState, iron_pool: float) -&gt; bool:
+    molar_concentration = iron_pool / afumigatus.hyphae_volume
     activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
-    return np.random.rand(*shape) &lt; activation
+    return bool(rg.random() &lt; activation)
 
 
 def elongate(
@@ -623,7 +699,9 @@ def elongate(
         return
 
     if afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
-        if afumigatus_cell[&#39;growth_iteration&#39;] &gt;= iter_to_grow:
+        if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
+            afumigatus_cell[&#39;growth_iteration&#39;] += 1
+        else:
             afumigatus_cell[&#39;growth_iteration&#39;] = 0
             afumigatus_cell[&#39;growable&#39;] = False
             afumigatus_cell[&#39;branchable&#39;] = True
@@ -648,11 +726,11 @@ def elongate(
             next_septa[&#39;previous_septa&#39;] = afumigatus_cell_index
 
     elif afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.GERM_TUBE:
-        if afumigatus_cell[&#39;growth_iteration&#39;] &gt;= iter_to_grow:
+        if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
+            afumigatus_cell[&#39;growth_iteration&#39;] += 1
+        else:
             afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.HYPHAE
             afumigatus_cell[&#39;tip&#39;] = afumigatus_cell[&#39;root&#39;] + afumigatus_cell[&#39;vec&#39;]
-        else:
-            afumigatus_cell[&#39;growth_iteration&#39;] += 1
 
 
 def branch(
@@ -670,9 +748,7 @@ def branch(
 
     if rg.random() &lt; pr_branch:
         # now we branch
-
-        branch_vector = generate_branch_direction(afumigatus_cell)
-
+        branch_vector = generate_branch_direction(cell_vec=afumigatus_cell[&#39;vec&#39;])
         root = afumigatus_cell[&#39;root&#39;]
 
         # create the new septa
@@ -697,12 +773,11 @@ def branch(
     afumigatus_cell[&#39;branchable&#39;] = False
 
 
-def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndarray:
+def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     # form a random unit vector on a 45 degree cone
     theta = rg.random() * 2 * np.pi
 
     # create orthogonal basis adapted to cell&#39;s direction
-    cell_vec: np.ndarray = afumigatus_cell[&#39;vec&#39;]
     cell_vec_norm = np.linalg.norm(cell_vec)
     normed_cell_vec = cell_vec / cell_vec_norm
 
@@ -727,7 +802,7 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
     # change of coordinates matrix
     p_matrix = np.array([normed_cell_vec, u, v]).T
     branch_direction = (
-        cell_vec_norm * p_matrix * np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+        cell_vec_norm * p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
     )
 
     return branch_direction</code></pre>
@@ -764,9 +839,7 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 
     if rg.random() &lt; pr_branch:
         # now we branch
-
-        branch_vector = generate_branch_direction(afumigatus_cell)
-
+        branch_vector = generate_branch_direction(cell_vec=afumigatus_cell[&#39;vec&#39;])
         root = afumigatus_cell[&#39;root&#39;]
 
         # create the new septa
@@ -805,7 +878,7 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.cell_self_update"><code class="name flex">
-<span>def <span class="ident">cell_self_update</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_index: int) ‑> None</span>
+<span>def <span class="ident">cell_self_update</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_index: int, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -814,9 +887,21 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cell_self_update(
-    afumigatus: AfumigatusState, afumigatus_cell: AfumigatusCellData, afumigatus_index: int
+    state: State,
+    afumigatus: AfumigatusState,
+    afumigatus_cell: AfumigatusCellData,
+    afumigatus_index: int,
+    voxel: Voxel,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
+
+    process_boolean_network(
+        state=state,
+        afumigatus_cell=afumigatus_cell,
+        voxel=voxel,
+        steps_to_eval=afumigatus.steps_to_bn_eval,
+        afumigatus=afumigatus,
+    )
 
     # resting conidia become swelling conidia after a number of iterations
     # (with some probability)
@@ -939,7 +1024,9 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
         return
 
     if afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
-        if afumigatus_cell[&#39;growth_iteration&#39;] &gt;= iter_to_grow:
+        if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
+            afumigatus_cell[&#39;growth_iteration&#39;] += 1
+        else:
             afumigatus_cell[&#39;growth_iteration&#39;] = 0
             afumigatus_cell[&#39;growable&#39;] = False
             afumigatus_cell[&#39;branchable&#39;] = True
@@ -964,15 +1051,15 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             next_septa[&#39;previous_septa&#39;] = afumigatus_cell_index
 
     elif afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.GERM_TUBE:
-        if afumigatus_cell[&#39;growth_iteration&#39;] &gt;= iter_to_grow:
-            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell[&#39;tip&#39;] = afumigatus_cell[&#39;root&#39;] + afumigatus_cell[&#39;vec&#39;]
+        if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
+            afumigatus_cell[&#39;growth_iteration&#39;] += 1
         else:
-            afumigatus_cell[&#39;growth_iteration&#39;] += 1</code></pre>
+            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.HYPHAE
+            afumigatus_cell[&#39;tip&#39;] = afumigatus_cell[&#39;root&#39;] + afumigatus_cell[&#39;vec&#39;]</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.generate_branch_direction"><code class="name flex">
-<span>def <span class="ident">generate_branch_direction</span></span>(<span>afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>) ‑> numpy.ndarray</span>
+<span>def <span class="ident">generate_branch_direction</span></span>(<span>cell_vec: numpy.ndarray) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -980,12 +1067,11 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndarray:
+<pre><code class="python">def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     # form a random unit vector on a 45 degree cone
     theta = rg.random() * 2 * np.pi
 
     # create orthogonal basis adapted to cell&#39;s direction
-    cell_vec: np.ndarray = afumigatus_cell[&#39;vec&#39;]
     cell_vec_norm = np.linalg.norm(cell_vec)
     normed_cell_vec = cell_vec / cell_vec_norm
 
@@ -1010,14 +1096,14 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
     # change of coordinates matrix
     p_matrix = np.array([normed_cell_vec, u, v]).T
     branch_direction = (
-        cell_vec_norm * p_matrix * np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+        cell_vec_norm * p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
     )
 
     return branch_direction</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.lip_activation"><code class="name flex">
-<span>def <span class="ident">lip_activation</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, shape) ‑> numpy.ndarray</span>
+<span>def <span class="ident">lip_activation</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, iron_pool: float) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1025,17 +1111,14 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def lip_activation(state: State, shape) -&gt; np.ndarray:
-    afumigatus: AfumigatusState = state.afumigatus
-    iron: IronState = state.iron
-
-    molar_concentration = iron.grid / afumigatus.hyphae_volume
+<pre><code class="python">def lip_activation(afumigatus: AfumigatusState, iron_pool: float) -&gt; bool:
+    molar_concentration = iron_pool / afumigatus.hyphae_volume
     activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
-    return np.random.rand(*shape) &lt; activation</code></pre>
+    return bool(rg.random() &lt; activation)</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.process_boolean_network"><code class="name flex">
-<span>def <span class="ident">process_boolean_network</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, boolean_network: numpy.ndarray, bn_iteration: numpy.ndarray, steps_to_eval: int)</span>
+<span>def <span class="ident">process_boolean_network</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, steps_to_eval: int)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1044,70 +1127,91 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def process_boolean_network(
-    state: State, boolean_network: np.ndarray, bn_iteration: np.ndarray, steps_to_eval: int
+    state: State,
+    afumigatus: AfumigatusState,
+    afumigatus_cell: AfumigatusCellData,
+    voxel: Voxel,
+    steps_to_eval: int,
 ):
-    bn_iteration += 1
-    bn_iteration %= steps_to_eval
+    afumigatus_cell[&#39;bn_iteration&#39;] += 1
+    afumigatus_cell[&#39;bn_iteration&#39;] %= steps_to_eval
 
-    active_bool_net: np.ndarray = boolean_network[bn_iteration == 0, :]
-    temp: np.ndarray = np.zeros(shape=active_bool_net.shape, dtype=bool)
+    if afumigatus_cell[&#39;bn_iteration&#39;] != 0:
+        return
 
-    temp[:, NetworkSpecies.hapX] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.sreA] = ~active_bool_net[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.HapX] = (
-        active_bool_net[:, NetworkSpecies.hapX] &amp; ~active_bool_net[:, NetworkSpecies.LIP]
+    bool_net = afumigatus_cell[&#39;boolean_network&#39;]
+
+    temp: np.ndarray = np.zeros(shape=bool_net.shape, dtype=bool)
+
+    temp[NetworkSpecies.hapX] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.sreA] = ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.HapX] = bool_net[NetworkSpecies.hapX] &amp; ~bool_net[NetworkSpecies.LIP]
+    temp[NetworkSpecies.SreA] = bool_net[NetworkSpecies.sreA] &amp; bool_net[NetworkSpecies.LIP]
+    temp[NetworkSpecies.RIA] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.EstB] = ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.MirB] = bool_net[NetworkSpecies.HapX] &amp; ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.SidA] = bool_net[NetworkSpecies.HapX] &amp; ~bool_net[NetworkSpecies.SreA]
+    temp[NetworkSpecies.TAFC] = bool_net[NetworkSpecies.SidA]
+    temp[NetworkSpecies.ICP] = ~bool_net[NetworkSpecies.HapX] &amp; (
+        bool_net[NetworkSpecies.VAC] | bool_net[NetworkSpecies.FC1fe]
     )
-    temp[:, NetworkSpecies.SreA] = (
-        active_bool_net[:, NetworkSpecies.sreA] &amp; active_bool_net[:, NetworkSpecies.LIP]
-    )
-    temp[:, NetworkSpecies.RIA] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.EstB] = ~active_bool_net[:, NetworkSpecies.SreA]
-    temp[:, NetworkSpecies.MirB] = (
-        active_bool_net[:, NetworkSpecies.HapX] &amp; ~active_bool_net[:, NetworkSpecies.SreA]
-    )
-    temp[:, NetworkSpecies.SidA] = (
-        active_bool_net[:, NetworkSpecies.HapX] &amp; ~active_bool_net[:, NetworkSpecies.SreA]
-    )
-    temp[:, NetworkSpecies.TAFC] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.ICP] = ~active_bool_net[:, NetworkSpecies.HapX] &amp; (
-        active_bool_net[:, NetworkSpecies.VAC] | active_bool_net[:, NetworkSpecies.FC1fe]
-    )
-    temp[:, NetworkSpecies.LIP] = (
-        active_bool_net[:, NetworkSpecies.Fe] &amp; active_bool_net[:, NetworkSpecies.RIA]
-    ) | lip_activation(state=state, shape=temp.shape)
-    temp[:, NetworkSpecies.CccA] = ~active_bool_net[:, NetworkSpecies.HapX]
-    temp[:, NetworkSpecies.FC0fe] = active_bool_net[:, NetworkSpecies.SidA]
-    temp[:, NetworkSpecies.FC1fe] = (
-        active_bool_net[:, NetworkSpecies.LIP] &amp; active_bool_net[:, NetworkSpecies.FC0fe]
-    )
-    temp[:, NetworkSpecies.VAC] = (
-        active_bool_net[:, NetworkSpecies.LIP] &amp; active_bool_net[:, NetworkSpecies.CccA]
-    )
-    temp[:, NetworkSpecies.ROS] = (
-        active_bool_net[:, NetworkSpecies.Oxygen]
+    temp[NetworkSpecies.LIP] = (
+        bool_net[NetworkSpecies.Fe] &amp; bool_net[NetworkSpecies.RIA]
+    ) | lip_activation(afumigatus=afumigatus, iron_pool=afumigatus_cell[&#39;iron_pool&#39;])
+    temp[NetworkSpecies.CccA] = ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.FC0fe] = bool_net[NetworkSpecies.SidA]
+    temp[NetworkSpecies.FC1fe] = bool_net[NetworkSpecies.LIP] &amp; bool_net[NetworkSpecies.FC0fe]
+    temp[NetworkSpecies.VAC] = bool_net[NetworkSpecies.LIP] &amp; bool_net[NetworkSpecies.CccA]
+    temp[NetworkSpecies.ROS] = (
+        bool_net[NetworkSpecies.Oxygen]
         &amp; ~(
-            active_bool_net[:, NetworkSpecies.SOD2_3]
-            &amp; active_bool_net[:, NetworkSpecies.ThP]
-            &amp; active_bool_net[:, NetworkSpecies.Cat1_2]
+            bool_net[NetworkSpecies.SOD2_3]
+            &amp; bool_net[NetworkSpecies.ThP]
+            &amp; bool_net[NetworkSpecies.Cat1_2]
         )
     ) | (
-        active_bool_net[:, NetworkSpecies.ROS]
+        bool_net[NetworkSpecies.ROS]
         &amp; ~(
-            active_bool_net[:, NetworkSpecies.SOD2_3]
-            &amp; (active_bool_net[:, NetworkSpecies.ThP] | active_bool_net[:, NetworkSpecies.Cat1_2])
+            bool_net[NetworkSpecies.SOD2_3]
+            &amp; (bool_net[NetworkSpecies.ThP] | bool_net[NetworkSpecies.Cat1_2])
         )
     )
-    temp[:, NetworkSpecies.Yap1] = active_bool_net[:, NetworkSpecies.ROS]
-    temp[:, NetworkSpecies.SOD2_3] = active_bool_net[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Cat1_2] = (
-        active_bool_net[:, NetworkSpecies.Yap1] &amp; ~active_bool_net[:, NetworkSpecies.HapX]
-    )
-    temp[:, NetworkSpecies.ThP] = active_bool_net[:, NetworkSpecies.Yap1]
-    temp[:, NetworkSpecies.Fe] = 0  # might change according to iron environment?
-    temp[:, NetworkSpecies.Oxygen] = 0
+    temp[NetworkSpecies.Yap1] = bool_net[NetworkSpecies.ROS]
+    temp[NetworkSpecies.SOD2_3] = bool_net[NetworkSpecies.Yap1]
+    temp[NetworkSpecies.Cat1_2] = bool_net[NetworkSpecies.Yap1] &amp; ~bool_net[NetworkSpecies.HapX]
+    temp[NetworkSpecies.ThP] = bool_net[NetworkSpecies.Yap1]
+    temp[NetworkSpecies.Fe] = 0  # might change according to iron environment?
+    temp[NetworkSpecies.Oxygen] = 0
 
-    # copy temp back to active_bool_net&#39;s mask
-    boolean_network[bn_iteration == 0, :] = temp</code></pre>
+    # copy temp back to bool_net
+    np.copyto(dst=bool_net, src=temp)</code></pre>
+</details>
+</dd>
+<dt id="nlisim.modules.afumigatus.random_sphere_point"><code class="name flex">
+<span>def <span class="ident">random_sphere_point</span></span>(<span>) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a random point on the 2-sphere in R^3 using Marsaglia's method</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def random_sphere_point() -&gt; np.ndarray:
+    &#34;&#34;&#34;Generate a random point on the 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
+    # generate vector in unit disc
+    u: np.ndarray = rg.random(size=2)
+    while np.linalg.norm(u) &gt; 1.0:
+        u = rg.random(size=2)
+
+    normsq_u = float(np.dot(u, u))
+    return np.array(
+        [
+            2 * u[0] * np.sqrt(1 - normsq_u),
+            2 * u[1] * np.sqrt(1 - normsq_u),
+            1 - 2 * normsq_u,
+        ],
+        dtype=np.float64,
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -1154,13 +1258,13 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             &#39;aspergillus_change_half_life&#39;
         )
 
-        afumigatus.phag_afnt_t = self.config.getfloat(&#39;phag_afnt_t&#39;)
+        afumigatus.phag_affinity_t = self.config.getfloat(&#39;phag_affinity_t&#39;)
 
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
 
         afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
-        afumigatus.rel_phag_afnt_unit_t = time_step_size / afumigatus.phag_afnt_t
+        afumigatus.rel_phag_affinity_unit_t = time_step_size / afumigatus.phag_affinity_t
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(
             -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
@@ -1169,11 +1273,11 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
         #  kd ~10x neut. (ref 71)
         #  and below
         afumigatus.pr_ma_phag = 1 - math.exp(
-            -afumigatus.rel_phag_afnt_unit_t
+            -afumigatus.rel_phag_affinity_unit_t
             / (voxel_volume * self.config.getfloat(&#39;pr_ma_phag_param&#39;))
         )
         # pr_ma_phag = 1 - math.exp(-(
-        #            1 / voxel_vol) * rel_phag_afnt_unit_t / 1.32489230813214e+10)
+        #            1 / voxel_vol) * rel_phag_affinity_unit_t / 1.32489230813214e+10)
         # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
 
         afumigatus.iter_to_swelling = int(
@@ -1231,7 +1335,9 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
             voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+            # ------------ update cell
+
+            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
 
             # ------------ cell growth
             if (
@@ -1243,6 +1349,7 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
 
             # ------------ interactions after this point
 
+            # interact with iron
             # TODO: this should never be reached?! Make sure that we release iron when we kill
             #  the fungal cell and release cell&#39;s iron pool back to voxel
             if afumigatus_cell[&#39;status&#39;] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
@@ -1286,56 +1393,48 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             else afumigatus.pr_ma_phag
         )
 
-        if rg.random() &lt; probability_of_interaction:
-            internalize_aspergillus(
-                macrophage_cell,
-                afumigatus_cell,
-                afumigatus_cell_index,
-                macrophage,
-                phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
-            )
+        # return if they do not interact
+        if rg.random() &gt;= probability_of_interaction:
+            return
 
-            # unlink the fungal cell from its tree
-            if (
-                afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-                and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-            ):
-                afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-                if afumigatus_cell[&#39;next_septa&#39;] != -1:
-                    afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-                if afumigatus_cell[&#39;next_branch&#39;] != -1:
-                    afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+        # now they interact
 
-                # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-                #  macrophage gets them? I haven&#39;t done anything with that.
-                # TODO: this really should be spun off into its own method
-                parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-                if parent_id != -1:
-                    parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                    if parent_cell[&#39;next_septa&#39;] == afumigatus_cell:
-                        parent_cell[&#39;next_septa&#39;] = -1
-                    elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell:
-                        parent_cell[&#39;next_branch&#39;] = -1
-                    else:
-                        raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+        internalize_aspergillus(
+            macrophage_cell,
+            afumigatus_cell,
+            afumigatus_cell_index,
+            macrophage,
+            phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
+        )
 
-            if (
-                afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-                and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-            ):
-                afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-                # TODO: careful cell tree deletion
-                if afumigatus_cell[&#39;next_septa&#39;] == -1:
-                    afumigatus_cell[&#39;next_septa&#39;][&#39;is_root&#39;] = True
-                    afumigatus_cell[&#39;next_septa&#39;][&#39;previous_septa&#39;] = -1
-                if afumigatus_cell[&#39;next_branch&#39;] == -1:
-                    afumigatus_cell[&#39;next_branch&#39;][&#39;is_root&#39;] = True
-                    afumigatus_cell[&#39;next_branch&#39;][&#39;previous_septa&#39;] = -1
+        # unlink the fungal cell from its tree
+        if (
+            afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
+            and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
+        ):
+            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+            if afumigatus_cell[&#39;next_septa&#39;] != -1:
+                afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+            if afumigatus_cell[&#39;next_branch&#39;] != -1:
+                afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
 
-            # TODO: Ask about this dead code.
-            # else:
-            #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-            #         interactable.engaged = True
+            # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
+            #  macrophage gets them? I haven&#39;t done anything with that.
+            # TODO: this really should be spun off into its own method
+            parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+            if parent_id != -1:
+                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+                if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+                    parent_cell[&#39;next_septa&#39;] = -1
+                elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+                    parent_cell[&#39;next_branch&#39;] = -1
+                else:
+                    raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+
+        # TODO: Ask about this dead code.
+        # else:
+        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+        #         interactable.engaged = True
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -1353,6 +1452,62 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             minlength=max_index + 1,
         )
 
+        lip_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.LIP
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        mirb_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.MirB
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        estb_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.EstB
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
+        tafc_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        afumigatus.cells[afumigatus_cell_index][&#39;boolean_network&#39;][
+                            NetworkSpecies.TAFC
+                        ]
+                        for afumigatus_cell_index in live_fungus
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             &#39;count&#39;: len(live_fungus),
             &#39;resting conidia&#39;: int(status_counts[AfumigatusCellStatus.RESTING_CONIDIA]),
@@ -1360,6 +1515,10 @@ def generate_branch_direction(afumigatus_cell: AfumigatusCellData) -&gt; np.ndar
             &#39;sterile conidia&#39;: int(status_counts[AfumigatusCellStatus.STERILE_CONIDIA]),
             &#39;germ tube&#39;: int(status_counts[AfumigatusCellStatus.GERM_TUBE]),
             &#39;hyphae&#39;: int(status_counts[AfumigatusCellStatus.HYPHAE]),
+            &#39;LIP active&#39;: lip_active,
+            &#39;MirB active&#39;: mirb_active,
+            &#39;EstB active&#39;: estb_active,
+            &#39;TAFC active&#39;: tafc_active,
         }
 
     def visualization_data(self, state: State):
@@ -1438,56 +1597,48 @@ def fungus_macrophage_interaction(
         else afumigatus.pr_ma_phag
     )
 
-    if rg.random() &lt; probability_of_interaction:
-        internalize_aspergillus(
-            macrophage_cell,
-            afumigatus_cell,
-            afumigatus_cell_index,
-            macrophage,
-            phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
-        )
+    # return if they do not interact
+    if rg.random() &gt;= probability_of_interaction:
+        return
 
-        # unlink the fungal cell from its tree
-        if (
-            afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-            and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-        ):
-            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-            if afumigatus_cell[&#39;next_septa&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-            if afumigatus_cell[&#39;next_branch&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+    # now they interact
 
-            # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-            #  macrophage gets them? I haven&#39;t done anything with that.
-            # TODO: this really should be spun off into its own method
-            parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-            if parent_id != -1:
-                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                if parent_cell[&#39;next_septa&#39;] == afumigatus_cell:
-                    parent_cell[&#39;next_septa&#39;] = -1
-                elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell:
-                    parent_cell[&#39;next_branch&#39;] = -1
-                else:
-                    raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+    internalize_aspergillus(
+        macrophage_cell,
+        afumigatus_cell,
+        afumigatus_cell_index,
+        macrophage,
+        phagocytize=afumigatus_cell[&#39;status&#39;] != AfumigatusCellStatus.HYPHAE,
+    )
 
-        if (
-            afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
-            and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
-        ):
-            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-            # TODO: careful cell tree deletion
-            if afumigatus_cell[&#39;next_septa&#39;] == -1:
-                afumigatus_cell[&#39;next_septa&#39;][&#39;is_root&#39;] = True
-                afumigatus_cell[&#39;next_septa&#39;][&#39;previous_septa&#39;] = -1
-            if afumigatus_cell[&#39;next_branch&#39;] == -1:
-                afumigatus_cell[&#39;next_branch&#39;][&#39;is_root&#39;] = True
-                afumigatus_cell[&#39;next_branch&#39;][&#39;previous_septa&#39;] = -1
+    # unlink the fungal cell from its tree
+    if (
+        afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
+        and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
+    ):
+        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+        if afumigatus_cell[&#39;next_septa&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+        if afumigatus_cell[&#39;next_branch&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
 
-        # TODO: Ask about this dead code.
-        # else:
-        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-        #         interactable.engaged = True</code></pre>
+        # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
+        #  macrophage gets them? I haven&#39;t done anything with that.
+        # TODO: this really should be spun off into its own method
+        parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+        if parent_id != -1:
+            parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+            if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_septa&#39;] = -1
+            elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_branch&#39;] = -1
+            else:
+                raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+
+    # TODO: Ask about this dead code.
+    # else:
+    #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
+    #         interactable.engaged = True</code></pre>
 </details>
 </dd>
 </dl>
@@ -1578,7 +1729,7 @@ associated with each cell.</p>
             &#39;is_root&#39;: kwargs.get(&#39;is_root&#39;, True),
             &#39;root&#39;: kwargs.get(&#39;root&#39;, np.zeros(3, dtype=np.float64)),
             &#39;tip&#39;: kwargs.get(&#39;tip&#39;, np.zeros(3, dtype=np.float64)),
-            &#39;vec&#39;: kwargs.get(&#39;vec&#39;, np.zeros(3, dtype=np.float64)),  # dx, dy, dz
+            &#39;vec&#39;: kwargs.get(&#39;vec&#39;, random_sphere_point()),  # dx, dy, dz
             &#39;growable&#39;: kwargs.get(&#39;growable&#39;, True),
             &#39;branchable&#39;: kwargs.get(&#39;branchable&#39;, False),
             &#39;activation_iteration&#39;: kwargs.get(&#39;activation_iteration&#39;, 0),
@@ -1775,8 +1926,8 @@ low-level array.</p>
 </summary>
 <pre><code class="python">class AfumigatusCellState(IntEnum):
     FREE = 0
-    INTERNALIZING = auto()
-    RELEASING = auto()</code></pre>
+    INTERNALIZING = 1
+    RELEASING = 2</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1892,8 +2043,8 @@ state must override the serialization mechanism with custom behavior.</p>
     init_iron: float
     conidia_vol: float
     rel_n_hyphae_int_unit_t: float
-    rel_phag_afnt_unit_t: float
-    phag_afnt_t: float
+    rel_phag_affinity_unit_t: float
+    phag_affinity_t: float
     aspergillus_change_half_life: float</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -1938,7 +2089,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.afumigatus.AfumigatusState.phag_afnt_t"><code class="name">var <span class="ident">phag_afnt_t</span> : float</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.phag_affinity_t"><code class="name">var <span class="ident">phag_affinity_t</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1970,7 +2121,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.afumigatus.AfumigatusState.rel_phag_afnt_unit_t"><code class="name">var <span class="ident">rel_phag_afnt_unit_t</span> : float</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.rel_phag_affinity_unit_t"><code class="name">var <span class="ident">rel_phag_affinity_unit_t</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2015,27 +2166,27 @@ state must override the serialization mechanism with custom behavior.</p>
 </summary>
 <pre><code class="python">class NetworkSpecies(IntEnum):
     hapX = 0  # gene # noqa: N815
-    sreA = auto()  # gene # noqa: N815
-    HapX = auto()  # protein
-    SreA = auto()  # protein
-    RIA = auto()
-    EstB = auto()
-    MirB = auto()
-    SidA = auto()
-    TAFC = auto()
-    ICP = auto()
-    LIP = auto()
-    CccA = auto()
-    FC0fe = auto()
-    FC1fe = auto()
-    VAC = auto()
-    ROS = auto()
-    Yap1 = auto()
-    SOD2_3 = auto()
-    Cat1_2 = auto()
-    ThP = auto()
-    Fe = auto()
-    Oxygen = auto()</code></pre>
+    sreA = 1  # gene # noqa: N815
+    HapX = 2  # protein
+    SreA = 3  # protein
+    RIA = 4
+    EstB = 5
+    MirB = 6
+    SidA = 7
+    TAFC = 8
+    ICP = 9
+    LIP = 10
+    CccA = 11
+    FC0fe = 12
+    FC1fe = 13
+    VAC = 14
+    ROS = 15
+    Yap1 = 16
+    SOD2_3 = 17
+    Cat1_2 = 18
+    ThP = 19
+    Fe = 20
+    Oxygen = 21</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2159,6 +2310,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.generate_branch_direction" href="#nlisim.modules.afumigatus.generate_branch_direction">generate_branch_direction</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.lip_activation" href="#nlisim.modules.afumigatus.lip_activation">lip_activation</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.process_boolean_network" href="#nlisim.modules.afumigatus.process_boolean_network">process_boolean_network</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.random_sphere_point" href="#nlisim.modules.afumigatus.random_sphere_point">random_sphere_point</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -2217,7 +2369,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.iter_to_grow" href="#nlisim.modules.afumigatus.AfumigatusState.iter_to_grow">iter_to_grow</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.iter_to_swelling" href="#nlisim.modules.afumigatus.AfumigatusState.iter_to_swelling">iter_to_swelling</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.kd_lip" href="#nlisim.modules.afumigatus.AfumigatusState.kd_lip">kd_lip</a></code></li>
-<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.phag_afnt_t" href="#nlisim.modules.afumigatus.AfumigatusState.phag_afnt_t">phag_afnt_t</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.phag_affinity_t" href="#nlisim.modules.afumigatus.AfumigatusState.phag_affinity_t">phag_affinity_t</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_aspergillus_change" href="#nlisim.modules.afumigatus.AfumigatusState.pr_aspergillus_change">pr_aspergillus_change</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_branch" href="#nlisim.modules.afumigatus.AfumigatusState.pr_branch">pr_branch</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_hyphae" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_hyphae">pr_ma_hyphae</a></code></li>
@@ -2225,7 +2377,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag">pr_ma_phag</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag_param" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag_param">pr_ma_phag_param</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.rel_n_hyphae_int_unit_t" href="#nlisim.modules.afumigatus.AfumigatusState.rel_n_hyphae_int_unit_t">rel_n_hyphae_int_unit_t</a></code></li>
-<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.rel_phag_afnt_unit_t" href="#nlisim.modules.afumigatus.AfumigatusState.rel_phag_afnt_unit_t">rel_phag_afnt_unit_t</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.rel_phag_affinity_unit_t" href="#nlisim.modules.afumigatus.AfumigatusState.rel_phag_affinity_unit_t">rel_phag_affinity_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.steps_to_bn_eval" href="#nlisim.modules.afumigatus.AfumigatusState.steps_to_bn_eval">steps_to_bn_eval</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.time_to_germinate" href="#nlisim.modules.afumigatus.AfumigatusState.time_to_germinate">time_to_germinate</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.time_to_grow" href="#nlisim.modules.afumigatus.AfumigatusState.time_to_grow">time_to_grow</a></code></li>

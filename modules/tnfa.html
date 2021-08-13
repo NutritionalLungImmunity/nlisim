@@ -163,7 +163,7 @@ class TNFa(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
         voxel_volume = state.voxel_volume
 
         return {
@@ -171,7 +171,7 @@ class TNFa(MoleculeModel):
         }
 
     def visualization_data(self, state: State):
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
         return &#39;molecule&#39;, tnfa.grid</code></pre>
 </details>
 </section>
@@ -313,7 +313,7 @@ class TNFa(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
         voxel_volume = state.voxel_volume
 
         return {
@@ -321,7 +321,7 @@ class TNFa(MoleculeModel):
         }
 
     def visualization_data(self, state: State):
-        tnfa: TNFaState = state.antitnfa
+        tnfa: TNFaState = state.tnfa
         return &#39;molecule&#39;, tnfa.grid</code></pre>
 </details>
 <h3>Ancestors</h3>

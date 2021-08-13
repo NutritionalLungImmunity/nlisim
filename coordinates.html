@@ -33,7 +33,7 @@
 class Coordinate(np.ndarray):
     &#34;&#34;&#34;A base class for representing 3D vectors as numpy arrays.&#34;&#34;&#34;
 
-    def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -&gt; &#39;Coordinate&#39;:
+    def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs) -&gt; &#39;Coordinate&#39;:
         return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)
 
     def __repr__(self):
@@ -113,7 +113,7 @@ class Voxel(Coordinate):
 <dl>
 <dt id="nlisim.coordinates.Coordinate"><code class="flex name class">
 <span>class <span class="ident">Coordinate</span></span>
-<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0)</span>
+<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A base class for representing 3D vectors as numpy arrays.</p></div>
@@ -124,7 +124,7 @@ class Voxel(Coordinate):
 <pre><code class="python">class Coordinate(np.ndarray):
     &#34;&#34;&#34;A base class for representing 3D vectors as numpy arrays.&#34;&#34;&#34;
 
-    def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -&gt; &#39;Coordinate&#39;:
+    def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs) -&gt; &#39;Coordinate&#39;:
         return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)
 
     def __repr__(self):
@@ -259,7 +259,7 @@ def z(self) -&gt; float:
 </dd>
 <dt id="nlisim.coordinates.Point"><code class="flex name class">
 <span>class <span class="ident">Point</span></span>
-<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0)</span>
+<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An array subclass representing a point or vector in 3D space.</p></div>
@@ -299,7 +299,7 @@ def z(self) -&gt; float:
 </dd>
 <dt id="nlisim.coordinates.Voxel"><code class="flex name class">
 <span>class <span class="ident">Voxel</span></span>
-<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0)</span>
+<span>(</span><span>*, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An array subclass representing the coordinates of a voxel in a 3D array.</p></div>

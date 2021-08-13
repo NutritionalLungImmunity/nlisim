@@ -156,9 +156,7 @@ class ErythrocyteModel(PhagocyteModel):
             fungal_cell = afumigatus.cells[fungal_cell_index]
             if fungal_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
                 fungal_voxel: Voxel = grid.get_voxel(fungal_cell[&#39;point&#39;])
-                erythrocyte.cells[&#39;hemorrhage&#39;][
-                    fungal_voxel.z, fungal_voxel.y, fungal_voxel.x
-                ] = True
+                erythrocyte.cells[&#39;hemorrhage&#39;][tuple(fungal_voxel)] = True
 
         return state
 
@@ -305,9 +303,7 @@ class ErythrocyteModel(PhagocyteModel):
             fungal_cell = afumigatus.cells[fungal_cell_index]
             if fungal_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
                 fungal_voxel: Voxel = grid.get_voxel(fungal_cell[&#39;point&#39;])
-                erythrocyte.cells[&#39;hemorrhage&#39;][
-                    fungal_voxel.z, fungal_voxel.y, fungal_voxel.x
-                ] = True
+                erythrocyte.cells[&#39;hemorrhage&#39;][tuple(fungal_voxel)] = True
 
         return state
 

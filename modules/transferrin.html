@@ -230,10 +230,17 @@ class Transferrin(MoleculeModel):
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
 
+        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume
+        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume
+        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume
+
+        concentration = concentration_0fe + concentration_1fe + concentration_2fe
+
         return {
-            &#39;+0Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume),
-            &#39;+1Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume),
-            &#39;+2Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume),
+            &#39;concentration&#39;: float(concentration),
+            &#39;+0Fe concentration&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):
@@ -435,10 +442,17 @@ class Transferrin(MoleculeModel):
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
 
+        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume
+        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume
+        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume
+
+        concentration = concentration_0fe + concentration_1fe + concentration_2fe
+
         return {
-            &#39;+0Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume),
-            &#39;+1Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume),
-            &#39;+2Fe concentration&#39;: float(np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume),
+            &#39;concentration&#39;: float(concentration),
+            &#39;+0Fe concentration&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):
