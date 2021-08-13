@@ -287,6 +287,19 @@ class Neutrophil(PhagocyteModel):
             ),
             minlength=max_index + 1,
         )
+
+        tnfa_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        neutrophil.cells[neutrophil_cell_index]['tnfa']
+                        for neutrophil_cell_index in live_neutrophils
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             'count': len(neutrophil.cells.alive()),
             'inactive': int(status_counts[PhagocyteStatus.INACTIVE]),
@@ -297,6 +310,7 @@ class Neutrophil(PhagocyteModel):
             'apoptotic': int(status_counts[PhagocyteStatus.APOPTOTIC]),
             'necrotic': int(status_counts[PhagocyteStatus.NECROTIC]),
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
+            'TNFa active': tnfa_active,
         }
 
     def visualization_data(self, state: State):
@@ -405,9 +419,11 @@ class Neutrophil(PhagocyteModel):
         nothing
         """
         from nlisim.modules.mip2 import MIP2State
+        from nlisim.util import TissueType, activation_function
 
         neutrophil: NeutrophilState = state.neutrophil
         mip2: MIP2State = state.mip2
+        lung_tissue = state.lung_tissue
 
         # 1. compute number of neutrophils to recruit
         num_live_neutrophils = len(neutrophil.cells.alive())
@@ -423,14 +439,17 @@ class Neutrophil(PhagocyteModel):
         if number_to_recruit > 0:
             activation_voxels = zip(
                 *np.where(
-                    activation_function(
-                        x=mip2.grid,
-                        kd=mip2.k_d,
-                        h=self.time_step / 60,
-                        volume=voxel_volume,
-                        b=neutrophil.rec_bias,
+                    np.logical_and(
+                        activation_function(
+                            x=mip2.grid,
+                            kd=mip2.k_d,
+                            h=self.time_step / 60,
+                            volume=voxel_volume,
+                            b=neutrophil.rec_bias,
+                        )
+                        < rg.uniform(size=mip2.grid.shape),
+                        lung_tissue != TissueType.AIR,
                     )
-                    < rg.uniform(size=mip2.grid.shape)
                 )
             )
 

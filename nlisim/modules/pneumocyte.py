@@ -229,6 +229,19 @@ class Pneumocyte(PhagocyteModel):
             ),
             minlength=max_index + 1,
         )
+
+        tnfa_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        pneumocyte.cells[pneumocyte_cell_index]['tnfa']
+                        for pneumocyte_cell_index in live_pneumocytes
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             'count': len(pneumocyte.cells.alive()),
             'inactive': int(status_counts[PhagocyteStatus.INACTIVE]),
@@ -239,6 +252,7 @@ class Pneumocyte(PhagocyteModel):
             'apoptotic': int(status_counts[PhagocyteStatus.APOPTOTIC]),
             'necrotic': int(status_counts[PhagocyteStatus.NECROTIC]),
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
+            'TNFa active': tnfa_active,
         }
 
     def visualization_data(self, state: State):

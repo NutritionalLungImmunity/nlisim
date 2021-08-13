@@ -34,8 +34,11 @@ class EstB(MoleculeModel):
     StateClass = EstBState
 
     def initialize(self, state: State) -> State:
+        from nlisim.util import TissueType
+
         estb: EstBState = state.estb
         voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
 
         # config file values
         estb.half_life = self.config.getfloat('half_life')
@@ -46,6 +49,10 @@ class EstB(MoleculeModel):
         # computed values
         estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
+
+        # initialize concentration field
+        estb.grid.fill(estb.system_amount_per_voxel)
+        estb.grid[lung_tissue == TissueType.AIR] = 0.0
 
         return state
 

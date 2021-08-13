@@ -31,8 +31,11 @@ class AntiTNFa(MoleculeModel):
     StateClass = AntiTNFaState
 
     def initialize(self, state: State) -> State:
+        from nlisim.util import TissueType
+
         anti_tnf_a: AntiTNFaState = state.antitnfa
         voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')
@@ -48,6 +51,7 @@ class AntiTNFa(MoleculeModel):
 
         # initialize concentration field
         anti_tnf_a.grid.fill(anti_tnf_a.system_amount_per_voxel)
+        anti_tnf_a.grid[lung_tissue == TissueType.AIR] = 0.0
 
         return state
 

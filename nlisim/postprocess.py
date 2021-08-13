@@ -117,10 +117,10 @@ def generate_vtk_objects(
     for module in state.config.modules:
         data_type, content = module.visualization_data(state)
         if data_type == 'molecule':
-            assert type(content) == np.ndarray
+            assert isinstance(content, np.ndarray)
             add_vtk_molecules(content, module.name, molecules_grid)
         elif data_type == 'cells':
-            assert type(content) == CellList
+            assert isinstance(content, CellList)
             cells[module.name] = convert_cells_to_vtk(content)
 
     return volume, molecules_grid, cells

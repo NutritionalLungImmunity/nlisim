@@ -216,6 +216,18 @@ class Macrophage(PhagocyteModel):
             minlength=max_index + 1,
         )
 
+        tnfa_active = int(
+            np.sum(
+                np.fromiter(
+                    (
+                        macrophage.cells[macrophage_cell_index]['tnfa']
+                        for macrophage_cell_index in live_macrophages
+                    ),
+                    dtype=bool,
+                )
+            )
+        )
+
         return {
             'count': len(live_macrophages),
             'inactive': int(status_counts[PhagocyteStatus.INACTIVE]),
@@ -227,6 +239,7 @@ class Macrophage(PhagocyteModel):
             'necrotic': int(status_counts[PhagocyteStatus.NECROTIC]),
             'anergic': int(status_counts[PhagocyteStatus.ANERGIC]),
             'interacting': int(status_counts[PhagocyteStatus.INTERACTING]),
+            'TNFa active': tnfa_active,
         }
 
     def visualization_data(self, state: State):
@@ -246,12 +259,13 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         from nlisim.modules.mip1b import MIP1BState
-        from nlisim.util import activation_function
+        from nlisim.util import TissueType, activation_function
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
         voxel_volume: float = state.voxel_volume
         space_volume: float = state.space_volume
+        lung_tissue = state.lung_tissue
 
         # 1. compute number of macrophages to recruit
         num_live_macrophages = len(macrophage.cells.alive())
@@ -268,14 +282,17 @@ class Macrophage(PhagocyteModel):
         if number_to_recruit > 0:
             activation_voxels = zip(
                 *np.where(
-                    activation_function(
-                        x=mip1b.grid,
-                        kd=mip1b.k_d,
-                        h=self.time_step / 60,
-                        volume=voxel_volume,
-                        b=macrophage.rec_bias,
+                    np.logical_and(
+                        activation_function(
+                            x=mip1b.grid,
+                            kd=mip1b.k_d,
+                            h=self.time_step / 60,
+                            volume=voxel_volume,
+                            b=macrophage.rec_bias,
+                        )
+                        < rg.uniform(size=mip1b.grid.shape),
+                        lung_tissue != TissueType.AIR,
                     )
-                    < rg.uniform(size=mip1b.grid.shape)
                 )
             )
             dz_field: np.ndarray = state.grid.delta(axis=0)
