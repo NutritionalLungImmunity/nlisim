@@ -207,7 +207,6 @@ class Neutrophil(PhagocyteModel):
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
                 for aspergillus_index in local_aspergillus:
-                    print('tick')
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
                     if aspergillus_cell['dead']:
                         continue
@@ -251,9 +250,7 @@ class Neutrophil(PhagocyteModel):
                     if macrophage_num_cells_in_phagosome == 0:
                         macrophage_cell['phagosome'] = neutrophil_cell['phagosome']
                         macrophage_cell['iron_pool'] += neutrophil_cell['iron_pool']
-                        neutrophil_cell[
-                            'iron_pool'
-                        ] = 0.0  # TODO: verify, Henrique's code looks odd
+                        neutrophil_cell['iron_pool'] = 0.0
                         neutrophil_cell['status'] = PhagocyteStatus.DEAD
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVE
 
@@ -265,6 +262,7 @@ class Neutrophil(PhagocyteModel):
             move_step: int = rg.poisson(max_move_step)  # TODO: verify
             for _ in range(move_step):
                 self.single_step_move(state, neutrophil_cell)
+            neutrophil.cells.update_voxel_index([neutrophil_cell_index])
 
         # Recruitment
         self.recruit_neutrophils(state, space_volume, voxel_volume)
@@ -497,14 +495,15 @@ class Neutrophil(PhagocyteModel):
         """
         neutrophil: NeutrophilState = state.neutrophil
 
-        if 'iron_pool' in kwargs:
-            neutrophil.cells.append(
-                NeutrophilCellData.create_cell(point=Point(x=x, y=y, z=z), **kwargs)
+        # use default value of iron pool if not present
+        iron_pool = kwargs.get('iron_pool', 0.0)
+        kwargs.pop('iron_pool', None)
+
+        neutrophil.cells.append(
+            NeutrophilCellData.create_cell(
+                point=Point(x=x, y=y, z=z), iron_pool=iron_pool, **kwargs
             )
-        else:
-            neutrophil.cells.append(
-                NeutrophilCellData.create_cell(point=Point(x=x, y=y, z=z), iron_pool=0.0, **kwargs)
-            )
+        )
 
 
 # def get_max_move_steps(self):  ##REVIEW

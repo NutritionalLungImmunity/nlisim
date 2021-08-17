@@ -69,12 +69,12 @@ def random_sphere_point() -> np.ndarray:
     while np.linalg.norm(u) > 1.0:
         u = 2 * rg.random(size=2) - 1
 
-    normsq_u = float(np.dot(u, u))
+    norm_squared_u = float(np.dot(u, u))
     return np.array(
         [
-            2 * u[0] * np.sqrt(1 - normsq_u),
-            2 * u[1] * np.sqrt(1 - normsq_u),
-            1 - 2 * normsq_u,
+            2 * u[0] * np.sqrt(1 - norm_squared_u),
+            2 * u[1] * np.sqrt(1 - norm_squared_u),
+            1 - 2 * norm_squared_u,
         ],
         dtype=np.float64,
     )
@@ -303,7 +303,7 @@ class Afumigatus(ModuleModel):
 
             # ------------ update cell
 
-            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
 
             # ------------ cell growth
             if (
@@ -487,18 +487,14 @@ class Afumigatus(ModuleModel):
 
 
 def cell_self_update(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
     afumigatus_index: int,
-    voxel: Voxel,
 ) -> None:
     afumigatus_cell['activation_iteration'] += 1
 
     process_boolean_network(
-        state=state,
         afumigatus_cell=afumigatus_cell,
-        voxel=voxel,
         steps_to_eval=afumigatus.steps_to_bn_eval,
         afumigatus=afumigatus,
     )
@@ -545,10 +541,8 @@ def cell_self_update(
 
 
 def process_boolean_network(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    voxel: Voxel,
     steps_to_eval: int,
 ):
     afumigatus_cell['bn_iteration'] += 1

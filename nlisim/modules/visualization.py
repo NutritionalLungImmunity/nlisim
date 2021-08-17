@@ -47,6 +47,7 @@ class Visualization(ModuleModel):
     def write_poly_data(cls, var, filename: str, attr_names: str) -> None:
         vol = vtkPolyData()
         verts = vtkPoints()
+        # noinspection PyArgumentList
         lines = vtkCellArray()
 
         # Retained, but not used. 'Fungus' is current, not 'Afumigatus'
@@ -69,6 +70,7 @@ class Visualization(ModuleModel):
 
         for index in var.alive():
             cell = var[index]
+            # noinspection PyArgumentList
             verts.InsertNextPoint(cell['point'][2], cell['point'][1], cell['point'][0])
 
         alive_cells = np.take(var.cell_data, var.alive())
