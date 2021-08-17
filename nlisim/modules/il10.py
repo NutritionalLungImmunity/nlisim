@@ -50,7 +50,7 @@ class IL10(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modules.macrophage import MacrophageState
+        from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.phagocyte import PhagocyteState, PhagocyteStatus
 
         il10: IL10State = state.il10
@@ -60,7 +60,8 @@ class IL10(MoleculeModel):
         grid: RectangularGrid = state.grid
 
         # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
-        for macrophage_cell in macrophage.cells:
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
             if (
@@ -73,22 +74,20 @@ class IL10(MoleculeModel):
                 PhagocyteStatus.DEAD,
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.NECROTIC,
-            }:
-                if (
-                    activation_function(
-                        x=il10.grid[tuple(macrophage_cell_voxel)],
-                        kd=il10.k_d,
-                        h=self.time_step / 60,
-                        volume=voxel_volume,
-                        b=1,
-                    )
-                    > rg.uniform()
-                ):
-                    if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
-                        macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
-                    macrophage_cell[
-                        'status_iteration'
-                    ] = 0  # TODO: ask about this, why is it reset each time?
+            } and (
+                activation_function(
+                    x=il10.grid[tuple(macrophage_cell_voxel)],
+                    kd=il10.k_d,
+                    h=self.time_step / 60,
+                    volume=voxel_volume,
+                    b=1,
+                )
+                > rg.uniform()
+            ):
+                # inactive cells stay inactive, others become inactivating
+                if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
+                    macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
+                macrophage_cell['status_iteration'] = 0
 
         # Degrade IL10
         il10.grid *= il10.half_life_multiplier

@@ -35,7 +35,6 @@ class NeutrophilCellData(PhagocyteCellData):
         ('move_step', np.float64),
         ('max_move_step', np.float64),  # TODO: double check, might be int
         ('tnfa', bool),
-        ('engaged', bool),
         ('status_iteration', np.uint),
     ]
 
@@ -55,7 +54,6 @@ class NeutrophilCellData(PhagocyteCellData):
             'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
             'max_move_step': kwargs.get('max_move_step', 1.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
-            'engaged': kwargs.get('engaged', False),
             'status_iteration': kwargs.get('status_iteration', 0),
         }
 
@@ -77,7 +75,7 @@ def cell_list_factory(self: 'NeutrophilState') -> NeutrophilCellList:
 @attrs(kw_only=True)
 class NeutrophilState(PhagocyteModuleState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    half_life: float
+    apoptosis_probability: float
     time_to_change_state: float
     iter_to_change_state: int
     pr_n_hyphae: float
@@ -117,8 +115,7 @@ class Neutrophil(PhagocyteModel):
         neutrophil.n_move_rate_rest = self.config.getfloat('n_move_rate_rest')
 
         # computed values
-        # TODO: not a real half life
-        neutrophil.half_life = -math.log(0.5) / (
+        neutrophil.apoptosis_probability = -math.log(0.5) / (
             self.config.getfloat('half_life') * (60 / time_step_size)
         )
 
@@ -185,12 +182,11 @@ class Neutrophil(PhagocyteModel):
             neutrophil_cell['move_step'] = 0
             # TODO: -1 below was 'None'. this looks like something which needs to be reworked
             neutrophil_cell['max_move_step'] = -1
-            neutrophil_cell['engaged'] = False  # TODO: find out what 'engaged' means
+            neutrophil_cell['state'] = PhagocyteState.FREE
 
             # ---------- interactions
 
             # dead and dying cells release iron
-            # TODO: can move this to a numpy operation if it ends up more performant
             if neutrophil_cell['status'] in {
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.APOPTOTIC,
@@ -201,7 +197,9 @@ class Neutrophil(PhagocyteModel):
                 neutrophil_cell['dead'] = True
 
             # interact with fungus
-            if not neutrophil_cell['engaged'] and neutrophil_cell['status'] not in {
+            if neutrophil_cell['state'] == PhagocyteState.FREE and neutrophil_cell[
+                'status'
+            ] not in {
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.DEAD,
@@ -209,6 +207,7 @@ class Neutrophil(PhagocyteModel):
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
                 for aspergillus_index in local_aspergillus:
+                    print('tick')
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
                     if aspergillus_cell['dead']:
                         continue
@@ -227,7 +226,7 @@ class Neutrophil(PhagocyteModel):
                             )
                             aspergillus_cell['status'] = AfumigatusCellStatus.DYING
                         else:
-                            neutrophil_cell['engaged'] = True
+                            neutrophil_cell['state'] = PhagocyteState.INTERACTING
 
                     elif aspergillus_cell['status'] == AfumigatusCellStatus.SWELLING_CONIDIA:
                         if rg.uniform() < neutrophil.pr_n_phagocyte:
@@ -383,8 +382,9 @@ class Neutrophil(PhagocyteModel):
 
         if neutrophil_cell['status'] in {PhagocyteStatus.NECROTIC, PhagocyteStatus.APOPTOTIC}:
             self.release_phagosome(state, neutrophil_cell)
+            # releases iron & dies later
 
-        elif rg.uniform() < neutrophil.half_life:
+        elif rg.uniform() < neutrophil.apoptosis_probability:
             neutrophil_cell['status'] = PhagocyteStatus.APOPTOTIC
 
         elif neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
@@ -392,7 +392,7 @@ class Neutrophil(PhagocyteModel):
                 neutrophil_cell['status_iteration'] = 0
                 neutrophil_cell['tnfa'] = False
                 neutrophil_cell['status'] = PhagocyteStatus.RESTING
-                neutrophil_cell['state'] = PhagocyteState.FREE  # TODO: was not part of macrophage
+                neutrophil_cell['state'] = PhagocyteState.FREE
             else:
                 neutrophil_cell['status_iteration'] += 1
 

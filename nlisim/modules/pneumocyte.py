@@ -136,8 +136,8 @@ class Pneumocyte(PhagocyteModel):
 
         pneumocyte: PneumocyteState = state.pneumocyte
         afumigatus: AfumigatusState = state.afumigatus
-        il6: IL6State = state.il6
-        il8: IL8State = state.il8
+        il6: IL6State = getattr(state, 'il6', None)
+        il8: IL8State = getattr(state, 'il8', None)
         tnfa: TNFaState = state.tnfa
         grid: RectangularGrid = state.grid
         voxel_volume: float = state.voxel_volume
@@ -187,11 +187,11 @@ class Pneumocyte(PhagocyteModel):
                         pneumocyte_cell['status_iteration'] = 0
 
             # secrete IL6
-            if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
+            if il6 is not None and pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
                 il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
 
             # secrete IL8
-            if pneumocyte_cell['tnfa']:  # TODO: and active?
+            if il8 is not None and pneumocyte_cell['tnfa']:  # TODO: and active?
                 il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
 
             # interact with TNFa

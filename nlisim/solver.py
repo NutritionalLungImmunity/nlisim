@@ -7,6 +7,7 @@ import attr
 
 from nlisim.config import SimulationConfig
 from nlisim.module import ModuleModel
+from nlisim.random import rg
 from nlisim.state import State
 from nlisim.validation import context as validation_context
 
@@ -57,22 +58,33 @@ def advance(state: State, target_time: float) -> Iterator[State]:
     # modules are run on final iteration
     previous_time: float = initial_time
     while previous_time < target_time and not queue.empty():
-        update_event = queue.get()
+        # fill a list with update events that are concurrent, and randomize their order
+        concurrent_update_events = [queue.get()]
+        event_time = concurrent_update_events[0].event_time
+        while not queue.empty():
+            update_event = queue.get()
+            if update_event.event_time == event_time:
+                concurrent_update_events.append(update_event)
+            else:
+                queue.put(update_event)
+                break
+        rg.shuffle(concurrent_update_events)
 
-        m: ModuleModel = update_event.module
-        previous_time = update_event.previous_update
-        state.time = update_event.event_time
+        for update_event in concurrent_update_events:
+            m: ModuleModel = update_event.module
+            previous_time = update_event.previous_update
+            state.time = update_event.event_time
 
-        with validation_context(m.name):
-            state = m.advance(state, previous_time)
-            attr.validate(state)
+            with validation_context(m.name):
+                state = m.advance(state, previous_time)
+                attr.validate(state)
 
-        # reinsert module with updated time
-        queue.put(
-            ModuleUpdateEvent(
-                event_time=state.time + m.time_step, previous_update=state.time, module=m
+            # reinsert module with updated time
+            queue.put(
+                ModuleUpdateEvent(
+                    event_time=state.time + m.time_step, previous_update=state.time, module=m
+                )
             )
-        )
         yield state
 
 
