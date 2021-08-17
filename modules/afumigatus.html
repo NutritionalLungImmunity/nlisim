@@ -92,11 +92,11 @@ class AfumigatusCellState(IntEnum):
 
 
 def random_sphere_point() -&gt; np.ndarray:
-    &#34;&#34;&#34;Generate a random point on the 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
+    &#34;&#34;&#34;Generate a random point on the unit 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
     # generate vector in unit disc
-    u: np.ndarray = rg.random(size=2)
+    u: np.ndarray = 2 * rg.random(size=2) - 1
     while np.linalg.norm(u) &gt; 1.0:
-        u = rg.random(size=2)
+        u = 2 * rg.random(size=2) - 1
 
     normsq_u = float(np.dot(u, u))
     return np.array(
@@ -425,11 +425,6 @@ class Afumigatus(ModuleModel):
                     parent_cell[&#39;next_branch&#39;] = -1
                 else:
                     raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
-
-        # TODO: Ask about this dead code.
-        # else:
-        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-        #         interactable.engaged = True
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -1191,17 +1186,17 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 <span>def <span class="ident">random_sphere_point</span></span>(<span>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Generate a random point on the 2-sphere in R^3 using Marsaglia's method</p></div>
+<div class="desc"><p>Generate a random point on the unit 2-sphere in R^3 using Marsaglia's method</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def random_sphere_point() -&gt; np.ndarray:
-    &#34;&#34;&#34;Generate a random point on the 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
+    &#34;&#34;&#34;Generate a random point on the unit 2-sphere in R^3 using Marsaglia&#39;s method&#34;&#34;&#34;
     # generate vector in unit disc
-    u: np.ndarray = rg.random(size=2)
+    u: np.ndarray = 2 * rg.random(size=2) - 1
     while np.linalg.norm(u) &gt; 1.0:
-        u = rg.random(size=2)
+        u = 2 * rg.random(size=2) - 1
 
     normsq_u = float(np.dot(u, u))
     return np.array(
@@ -1431,11 +1426,6 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
                 else:
                     raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
 
-        # TODO: Ask about this dead code.
-        # else:
-        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-        #         interactable.engaged = True
-
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
         live_fungus = afumigatus.cells.alive()
@@ -1633,12 +1623,7 @@ def fungus_macrophage_interaction(
             elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
                 parent_cell[&#39;next_branch&#39;] = -1
             else:
-                raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
-
-    # TODO: Ask about this dead code.
-    # else:
-    #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-    #         interactable.engaged = True</code></pre>
+                raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)</code></pre>
 </details>
 </dd>
 </dl>

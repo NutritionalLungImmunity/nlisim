@@ -155,11 +155,11 @@ class PhagocyteModel(ModuleModel):
         phagocyte_cell[&#39;phagosome&#39;].fill(-1)
 
 
-# TODO: name
+# TODO: better name
 @unique
 class PhagocyteState(IntEnum):
     FREE = 0
-    INTERACTING = 1  # TODO: is this dead code?
+    INTERACTING = 1
 
 
 # TODO: name
@@ -727,7 +727,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </summary>
 <pre><code class="python">class PhagocyteState(IntEnum):
     FREE = 0
-    INTERACTING = 1  # TODO: is this dead code?</code></pre>
+    INTERACTING = 1</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">

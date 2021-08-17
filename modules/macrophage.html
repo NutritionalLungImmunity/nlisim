@@ -60,7 +60,6 @@ class MacrophageCellData(PhagocyteCellData):
         (&#39;move_step&#39;, np.float64),
         (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
         (&#39;tnfa&#39;, bool),
-        (&#39;engaged&#39;, bool),
         (&#39;iron_pool&#39;, np.float64),
         (&#39;status_iteration&#39;, np.uint64),
     ]
@@ -84,7 +83,6 @@ class MacrophageCellData(PhagocyteCellData):
             &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
             &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
-            &#39;engaged&#39;: kwargs.get(&#39;engaged&#39;, False),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
         }
@@ -1367,7 +1365,6 @@ associated with each cell.</p>
         (&#39;move_step&#39;, np.float64),
         (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
         (&#39;tnfa&#39;, bool),
-        (&#39;engaged&#39;, bool),
         (&#39;iron_pool&#39;, np.float64),
         (&#39;status_iteration&#39;, np.uint64),
     ]
@@ -1391,7 +1388,6 @@ associated with each cell.</p>
             &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
             &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
-            &#39;engaged&#39;: kwargs.get(&#39;engaged&#39;, False),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
         }
