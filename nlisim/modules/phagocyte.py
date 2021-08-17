@@ -126,11 +126,11 @@ class PhagocyteModel(ModuleModel):
         phagocyte_cell['phagosome'].fill(-1)
 
 
-# TODO: name
+# TODO: better name
 @unique
 class PhagocyteState(IntEnum):
     FREE = 0
-    INTERACTING = 1  # TODO: is this dead code?
+    INTERACTING = 1
 
 
 # TODO: name

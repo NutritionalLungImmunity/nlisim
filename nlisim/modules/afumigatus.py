@@ -63,11 +63,11 @@ class AfumigatusCellState(IntEnum):
 
 
 def random_sphere_point() -> np.ndarray:
-    """Generate a random point on the 2-sphere in R^3 using Marsaglia's method"""
+    """Generate a random point on the unit 2-sphere in R^3 using Marsaglia's method"""
     # generate vector in unit disc
-    u: np.ndarray = rg.random(size=2)
+    u: np.ndarray = 2 * rg.random(size=2) - 1
     while np.linalg.norm(u) > 1.0:
-        u = rg.random(size=2)
+        u = 2 * rg.random(size=2) - 1
 
     normsq_u = float(np.dot(u, u))
     return np.array(
@@ -396,11 +396,6 @@ class Afumigatus(ModuleModel):
                     parent_cell['next_branch'] = -1
                 else:
                     raise AssertionError("The fungal tree structure must be screwed up somehow")
-
-        # TODO: Ask about this dead code.
-        # else:
-        #     if self.status == Afumigatus.HYPHAE and interactable.status == Macrophage.ACTIVE:
-        #         interactable.engaged = True
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus

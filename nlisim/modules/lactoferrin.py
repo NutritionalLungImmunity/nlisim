@@ -134,12 +134,11 @@ class Lactoferrin(MoleculeModel):
         mask = dfexdt > lactoferrin.grid['Lactoferrin']
 
         rel = lactoferrin.grid['Lactoferrin'] / (dfe2dt + dfedt + EPSILON)
-        # enforce bounds and zero out problem divides
+        # enforce bounds
         rel[dfexdt == 0] = 0.0
         np.minimum(rel, 1.0, out=rel)
         np.maximum(rel, 0.0, out=rel)
 
-        np.nan_to_num(rel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         dfe2dt[mask] = (dfe2dt * rel)[mask]
         dfedt[mask] = (dfedt * rel)[mask]
 
@@ -165,7 +164,7 @@ class Lactoferrin(MoleculeModel):
         mask = dfexdt_fe > lactoferrin.grid['LactoferrinFe']
 
         rel = lactoferrin.grid['LactoferrinFe'] / (dfe2dt_fe + dfedt_fe + EPSILON)
-        # enforce bounds and zero out problem divides
+        # enforce bounds
         rel[dfexdt_fe == 0] = 0.0
         np.minimum(rel, 1.0, out=rel)
         np.maximum(rel, 0.0, out=rel)

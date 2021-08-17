@@ -31,7 +31,6 @@ class MacrophageCellData(PhagocyteCellData):
         ('move_step', np.float64),
         ('max_move_step', np.float64),  # TODO: double check, might be int
         ('tnfa', bool),
-        ('engaged', bool),
         ('iron_pool', np.float64),
         ('status_iteration', np.uint64),
     ]
@@ -55,7 +54,6 @@ class MacrophageCellData(PhagocyteCellData):
             'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
             'max_move_step': kwargs.get('max_move_step', 10.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
-            'engaged': kwargs.get('engaged', False),
             'iron_pool': kwargs.get('iron_pool', 0.0),
             'status_iteration': kwargs.get('status_iteration', 0),
         }
