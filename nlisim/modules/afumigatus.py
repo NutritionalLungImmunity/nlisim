@@ -1,6 +1,6 @@
 from enum import IntEnum, unique
 import math
-from queue import SimpleQueue
+from queue import Queue
 import random
 from typing import Any, Dict, List, Tuple, Union
 
@@ -303,7 +303,7 @@ class Afumigatus(ModuleModel):
 
             # ------------ update cell
 
-            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
 
             # ------------ cell growth
             if (
@@ -487,18 +487,14 @@ class Afumigatus(ModuleModel):
 
 
 def cell_self_update(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
     afumigatus_index: int,
-    voxel: Voxel,
 ) -> None:
     afumigatus_cell['activation_iteration'] += 1
 
     process_boolean_network(
-        state=state,
         afumigatus_cell=afumigatus_cell,
-        voxel=voxel,
         steps_to_eval=afumigatus.steps_to_bn_eval,
         afumigatus=afumigatus,
     )
@@ -545,10 +541,8 @@ def cell_self_update(
 
 
 def process_boolean_network(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    voxel: Voxel,
     steps_to_eval: int,
 ):
     afumigatus_cell['bn_iteration'] += 1
@@ -626,7 +620,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
     total_iron: float = 0.0
 
     # walk along the tree, collecting iron
-    q: SimpleQueue = SimpleQueue()
+    q: Queue = Queue()
     q.put(root_cell_index)
     while not q.empty():
         next_cell_index = q.get()
