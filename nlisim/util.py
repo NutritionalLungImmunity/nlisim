@@ -31,7 +31,7 @@ def turnover_rate(
     result = y / (x + EPSILON)
 
     # enforce bounds and zero out problem divides
-    result[x == 0].fill(0.0)
+    result[x == 0] = 0.0
     np.minimum(result, 1.0, out=result)
     np.maximum(result, 0.0, out=result)
 
