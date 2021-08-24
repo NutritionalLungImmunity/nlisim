@@ -121,11 +121,14 @@ class MIP2(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        mip2: MIP2State = state.mip1b
+        mip2: MIP2State = state.mip2
         voxel_volume = state.voxel_volume
 
         return {
             'concentration': float(np.mean(mip2.grid) / voxel_volume),
+            'max': float(np.max(mip2.grid)),
+            'min': float(np.min(mip2.grid)),
+            'var': float(np.std(mip2.grid)),
         }
 
     def visualization_data(self, state: State):

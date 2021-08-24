@@ -54,7 +54,7 @@ def discrete_laplacian(
 
 
 def apply_diffusion(
-    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
+    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float, tolerance: float = 1e-64
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 
@@ -72,7 +72,7 @@ def apply_diffusion(
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     """
     operator = eye(*laplacian.shape) - (diffusivity * dt) * laplacian
-    var_next, info = cg(operator, variable.ravel())
+    var_next, info = cg(operator, variable.ravel(), tol=tolerance)
     if info != 0:
         raise Exception(f'GMRES failed ({info})')
     return var_next.reshape(variable.shape)

@@ -107,11 +107,11 @@ class Molecules(ModuleModel):
 
 class MoleculeModel(ModuleModel):
     @staticmethod
-    def diffuse(grid: np.ndarray, state: State):
+    def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
         molecules: MoleculesState = state.molecules
 
-        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=1e-32)
+        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=tolerance)
         if info != 0:
             raise Exception(f'GMRES failed ({info})')
 
-        np.copyto(grid, var_next.reshape(grid.shape))
+        grid[:] = var_next.reshape(grid.shape)

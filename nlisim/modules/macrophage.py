@@ -352,7 +352,9 @@ class Macrophage(PhagocyteModel):
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
-                activation_function(
+                0.0
+                if lung_tissue[tuple(vxl)] == TissueType.AIR
+                else activation_function(
                     x=mip1b.grid[tuple(vxl)],
                     kd=mip1b.k_d,
                     h=self.time_step / 60,
@@ -360,8 +362,6 @@ class Macrophage(PhagocyteModel):
                     b=1,
                 )
                 + macrophage.drift_bias
-                if lung_tissue[tuple(vxl)] != TissueType.AIR
-                else 0.0
                 for vxl in nearby_voxels
             ],
             dtype=np.float64,

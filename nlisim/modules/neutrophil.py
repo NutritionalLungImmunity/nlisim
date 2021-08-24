@@ -3,8 +3,8 @@ import random
 from typing import Any, Dict, Tuple
 
 import attr
-from attr import attrib, attrs
 import numpy as np
+from attr import attrib, attrs
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
@@ -345,7 +345,9 @@ class Neutrophil(PhagocyteModel):
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
-                activation_function(
+                0.0
+                if lung_tissue[tuple(vxl)] == TissueType.AIR
+                else activation_function(
                     x=mip2.grid[tuple(vxl)],
                     kd=mip2.k_d,
                     h=self.time_step / 60,
@@ -353,8 +355,6 @@ class Neutrophil(PhagocyteModel):
                     b=1,
                 )
                 + neutrophil.drift_bias
-                if lung_tissue[tuple(vxl)] != TissueType.AIR
-                else 0.0
                 for vxl in nearby_voxels
             ],
             dtype=np.float64,
