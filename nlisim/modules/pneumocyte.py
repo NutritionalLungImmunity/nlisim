@@ -99,7 +99,6 @@ class Pneumocyte(PhagocyteModel):
         )
 
         # initialize cells, placing one per epithelial voxel
-        # TODO: Any changes due to ongoing conversation with Henrique
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
@@ -122,6 +121,12 @@ class Pneumocyte(PhagocyteModel):
             )
 
         return state
+
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -> Voxel:
+        # pneumocytes do not move
+        pass
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""

@@ -192,6 +192,7 @@ class Macrophage(PhagocyteModel):
             move_step: int = rg.poisson(max_move_step)  # TODO: verify
             for _ in range(move_step):
                 self.single_step_move(state, macrophage_cell)
+            macrophage.cells.update_voxel_index([macrophage_cell_index])
 
         # Recruitment
         self.recruit_macrophages(state)
@@ -351,7 +352,9 @@ class Macrophage(PhagocyteModel):
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
-                activation_function(
+                0.0
+                if lung_tissue[tuple(vxl)] == TissueType.AIR
+                else activation_function(
                     x=mip1b.grid[tuple(vxl)],
                     kd=mip1b.k_d,
                     h=self.time_step / 60,
@@ -359,8 +362,6 @@ class Macrophage(PhagocyteModel):
                     b=1,
                 )
                 + macrophage.drift_bias
-                if lung_tissue[tuple(vxl)] != TissueType.AIR
-                else 0.0
                 for vxl in nearby_voxels
             ],
             dtype=np.float64,
@@ -389,21 +390,18 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         macrophage: MacrophageState = state.macrophage
-        if 'iron_pool' in kwargs:
-            macrophage.cells.append(
-                MacrophageCellData.create_cell(
-                    point=Point(x=x, y=y, z=z),
-                    **kwargs,
-                )
+
+        # use default value of iron pool if not present
+        iron_pool = kwargs.get('iron_pool', macrophage.ma_internal_iron)
+        kwargs.pop('iron_pool', None)
+
+        macrophage.cells.append(
+            MacrophageCellData.create_cell(
+                point=Point(x=x, y=y, z=z),
+                iron_pool=iron_pool,
+                **kwargs,
             )
-        else:
-            macrophage.cells.append(
-                MacrophageCellData.create_cell(
-                    point=Point(x=x, y=y, z=z),
-                    iron_pool=macrophage.ma_internal_iron,
-                    **kwargs,
-                )
-            )
+        )
 
     def update_status(
         self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome

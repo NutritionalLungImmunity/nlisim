@@ -12,8 +12,7 @@ from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
 from nlisim.modules.hemolysin import HemolysinState
 from nlisim.modules.macrophage import MacrophageState
-from nlisim.modules.molecules import MoleculesState
-from nlisim.modules.phagocyte import PhagocyteModel
+from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
 from nlisim.util import TissueType, activation_function
 
@@ -36,7 +35,7 @@ class ErythrocyteState(ModuleState):
     pr_ma_phag_eryt: float
 
 
-class ErythrocyteModel(PhagocyteModel):
+class ErythrocyteModel(MoleculeModel):
     name = 'erythrocyte'
     StateClass = ErythrocyteState
 

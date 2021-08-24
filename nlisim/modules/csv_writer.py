@@ -29,8 +29,8 @@ class CSVWriter(ModuleModel):
             )
         )
         with open('data.csv', 'a') as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(data_columns)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(data_columns)
 
         return state
 
@@ -43,7 +43,7 @@ class CSVWriter(ModuleModel):
             )
         )
         with open('data.csv', 'w') as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(column_names)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(column_names)
 
         return state

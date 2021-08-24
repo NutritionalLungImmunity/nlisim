@@ -69,12 +69,12 @@ def random_sphere_point() -> np.ndarray:
     while np.linalg.norm(u) > 1.0:
         u = 2 * rg.random(size=2) - 1
 
-    normsq_u = float(np.dot(u, u))
+    norm_squared_u = float(np.dot(u, u))
     return np.array(
         [
-            2 * u[0] * np.sqrt(1 - normsq_u),
-            2 * u[1] * np.sqrt(1 - normsq_u),
-            1 - 2 * normsq_u,
+            2 * u[0] * np.sqrt(1 - norm_squared_u),
+            2 * u[1] * np.sqrt(1 - norm_squared_u),
+            1 - 2 * norm_squared_u,
         ],
         dtype=np.float64,
     )
