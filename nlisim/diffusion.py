@@ -19,7 +19,7 @@ def discrete_laplacian(
     variable.
     """
     graph_shape = len(grid), len(grid)
-    laplacian = dok_matrix(graph_shape)
+    laplacian = dok_matrix(graph_shape, dtype=dtype)
 
     delta_z = grid.delta(0)
     delta_y = grid.delta(1)
@@ -43,10 +43,10 @@ def discrete_laplacian(
             dx = delta_x[k, j, i] * (i - ni)
             dy = delta_y[k, j, i] * (j - nj)
             dz = delta_z[k, j, i] * (k - nk)
-            distance2 = 1 / (dx * dx + dy * dy + dz * dz)
+            inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
 
-            normalization -= distance2
-            laplacian[voxel_index, neighbor_index] = distance2
+            normalization -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] = inverse_distance2
 
         laplacian[voxel_index, voxel_index] = normalization
 
