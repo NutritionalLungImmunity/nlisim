@@ -88,7 +88,7 @@ class AfumigatusCellData(CellData):
         ('is_root', bool),
         ('root', np.float64, 3),
         ('tip', np.float64, 3),
-        ('vec', np.float64, 3),
+        ('vec', np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
         ('growable', bool),
         ('branchable', bool),
         ('activation_iteration', np.int64),
@@ -179,6 +179,7 @@ class AfumigatusState(ModuleState):
     pr_branch: float
     steps_to_bn_eval: int
     hyphae_volume: float
+    hyphal_length: float
     kd_lip: float
     time_to_swelling: float
     iter_to_swelling: int
@@ -215,6 +216,8 @@ class Afumigatus(ModuleModel):
 
         afumigatus.conidia_vol = self.config.getfloat('conidia_vol')
         afumigatus.hyphae_volume = self.config.getfloat('hyphae_volume')
+        afumigatus.hyphal_length = self.config.getfloat('hyphal_length')
+
         afumigatus.kd_lip = self.config.getfloat('kd_lip')
 
         afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')
@@ -658,6 +661,7 @@ def elongate(
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE:
         if afumigatus_cell['growth_iteration'] < iter_to_grow:
             afumigatus_cell['growth_iteration'] += 1
@@ -672,7 +676,7 @@ def elongate(
             next_septa: CellData = AfumigatusCellData.create_cell(
                 point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
                 root=next_septa_root,
-                tip=next_septa_root + afumigatus_cell['vec'],
+                tip=next_septa_root + hyphal_length * afumigatus_cell['vec'],
                 vec=afumigatus_cell['vec'],
                 iron_pool=0,
                 status=AfumigatusCellStatus.HYPHAE,
@@ -690,7 +694,9 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell['tip'] = afumigatus_cell['root'] + afumigatus_cell['vec']
+            afumigatus_cell['tip'] = (
+                afumigatus_cell['root'] + hyphal_length * afumigatus_cell['vec']
+            )
 
 
 def branch(
@@ -706,6 +712,7 @@ def branch(
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if rg.random() < pr_branch:
         # now we branch
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell['vec'])
@@ -715,7 +722,7 @@ def branch(
         next_branch: CellData = AfumigatusCellData.create_cell(
             point=Point(x=root[2], y=root[1], z=root[0]),
             root=root,
-            tip=root + branch_vector,
+            tip=root + hyphal_length * branch_vector,
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,

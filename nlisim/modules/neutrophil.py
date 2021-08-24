@@ -3,8 +3,8 @@ import random
 from typing import Any, Dict, Tuple
 
 import attr
-import numpy as np
 from attr import attrib, attrs
+import numpy as np
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel

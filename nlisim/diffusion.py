@@ -54,7 +54,11 @@ def discrete_laplacian(
 
 
 def apply_diffusion(
-    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float, tolerance: float = 1e-64
+    variable: np.ndarray,
+    laplacian: csr_matrix,
+    diffusivity: float,
+    dt: float,
+    tolerance: float = 1e-64,
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 
