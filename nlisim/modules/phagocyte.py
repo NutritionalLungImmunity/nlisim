@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Tuple
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData
+from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -49,26 +49,11 @@ class PhagocyteModuleState(ModuleState):
 
 
 class PhagocyteModel(ModuleModel):
-
-    # def move(self, old_voxel, steps):
-    #     if steps < self.get_max_move_steps():
-    #         calc_drift_probability(old_voxel, self)
-    #         new_voxel = get_voxel(old_voxel, random())
-    #
-    #         old_voxel.remove_cell(self.id)
-    #         new_voxel.set_cell(self)
-    #         steps += 1
-    #
-    #         for _, a in self.phagosome.items():
-    #             a.x = new_voxel.x + random()
-    #             a.y = new_voxel.y + random()
-    #             a.z = new_voxel.z + random()
-    #
-    #         return self.move(new_voxel, steps)
-
-    def single_step_move(self, state: State, cell: PhagocyteCellData) -> None:
+    def single_step_move(
+        self, state: State, cell: PhagocyteCellData, cell_index: int, cell_list: CellList
+    ) -> None:
         """
-        Move the phagocyte one step (voxel) probabilistically.
+        Move the phagocyte one 1 µm, probabilistically.
 
         depending on single_step_probabilistic_drift
 
@@ -85,18 +70,16 @@ class PhagocyteModel(ModuleModel):
         """
         grid: RectangularGrid = state.grid
 
-        # At this moment, there is no inter-voxel geometry, but I'm keeping the offset around
-        # just in case.
-        cell_point: Point = cell['point']
+        # At this moment, there is no inter-voxel geometry.
         cell_voxel: Voxel = grid.get_voxel(cell['point'])
-        offset: np.ndarray = cell_point - cell_voxel
-        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
-        cell['point'] = new_voxel + offset
+        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell['point'] = new_point
+        cell_list.update_voxel_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -> Voxel:
+    ) -> Point:
         ...
 
     @staticmethod

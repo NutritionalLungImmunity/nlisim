@@ -259,10 +259,14 @@ class Neutrophil(PhagocyteModel):
                 max_move_step = neutrophil.n_move_rate_act * self.time_step
             else:
                 max_move_step = neutrophil.n_move_rate_rest * self.time_step
-            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+            move_step: int = rg.poisson(max_move_step)
+            # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
-                self.single_step_move(state, neutrophil_cell)
-            neutrophil.cells.update_voxel_index([neutrophil_cell_index])
+                self.single_step_move(
+                    state, neutrophil_cell, neutrophil_cell_index, neutrophil.cells
+                )
+            # TODO: understand the meaning of the parameter here: moving randomly n steps is
+            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_neutrophils(state, space_volume, voxel_volume)
@@ -315,9 +319,9 @@ class Neutrophil(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -> Voxel:
+    ) -> Point:
         """
-        Calculate a 1-step voxel movement of a neutrophil
+        Calculate a 1µm movement of a neutrophil
 
         Parameters
         ----------
@@ -330,8 +334,8 @@ class Neutrophil(PhagocyteModel):
 
         Returns
         -------
-        Voxel
-            the new voxel position of the neutrophil
+        Point
+            the new position of the neutrophil
         """
         # neutrophils are attracted by MIP2
 
@@ -360,7 +364,19 @@ class Neutrophil(PhagocyteModel):
             dtype=np.float64,
         )
 
-        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
+        voxel_movement_direction: Voxel = choose_voxel_by_prob(
+            voxels=nearby_voxels, default_value=voxel, weights=weights
+        )
+
+        # get normalized direction vector
+        dp_dt: np.ndarray = grid.get_voxel_center(voxel_movement_direction) - grid.get_voxel_center(
+            voxel
+        )
+        norm = np.linalg.norm(dp_dt)
+        if norm > 0.0:
+            dp_dt /= norm
+
+        return cell['point'] + dp_dt
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """
