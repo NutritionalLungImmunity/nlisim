@@ -116,7 +116,7 @@ class Lactoferrin(MoleculeModel):
         dfe2dt = michaelian_kinetics(
             substrate=transferrin.grid['TfFe2'],
             enzyme=lactoferrin.grid["Lactoferrin"],
-            km=lactoferrin.k_m_tf_lac,
+            k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
             k_cat=1.0,
             voxel_volume=voxel_volume,
@@ -124,7 +124,7 @@ class Lactoferrin(MoleculeModel):
         dfedt = michaelian_kinetics(
             substrate=transferrin.grid['TfFe'],
             enzyme=lactoferrin.grid['Lactoferrin'],
-            km=lactoferrin.k_m_tf_lac,
+            k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
             k_cat=1.0,
             voxel_volume=voxel_volume,
@@ -146,7 +146,7 @@ class Lactoferrin(MoleculeModel):
         dfe2dt_fe = michaelian_kinetics(
             substrate=transferrin.grid['TfFe2'],
             enzyme=lactoferrin.grid['LactoferrinFe'],
-            km=lactoferrin.k_m_tf_lac,
+            k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
             k_cat=1.0,
             voxel_volume=voxel_volume,
@@ -154,7 +154,7 @@ class Lactoferrin(MoleculeModel):
         dfedt_fe = michaelian_kinetics(
             substrate=transferrin.grid['TfFe'],
             enzyme=lactoferrin.grid['LactoferrinFe'],
-            km=lactoferrin.k_m_tf_lac,
+            k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,
             k_cat=1.0,
             voxel_volume=voxel_volume,

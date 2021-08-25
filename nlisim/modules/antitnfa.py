@@ -68,7 +68,7 @@ class AntiTNFa(MoleculeModel):
         reacted_quantity = michaelian_kinetics(
             substrate=anti_tnf_a.grid,
             enzyme=tnf_a.grid,
-            km=anti_tnf_a.k_m,
+            k_m=anti_tnf_a.k_m,
             h=anti_tnf_a.react_time_unit,
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,

@@ -78,7 +78,7 @@ def michaelian_kinetics(
     *,
     substrate: np.ndarray,
     enzyme: np.ndarray,
-    km: float,
+    k_m: float,
     h: float,
     k_cat: float = 1.0,
     voxel_volume: float,
@@ -86,7 +86,7 @@ def michaelian_kinetics(
     # Note: was originally h*k_cat*enzyme*substrate/(substrate+km), but with
     # enzyme /= voxel_volume and substrate /= voxel_volume.
     # This is algebraically equivalent and reduces the number of operations.
-    return h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)
+    return h * k_cat * enzyme * substrate / (substrate + k_m * voxel_volume)
 
 
 class TissueType(IntEnum):

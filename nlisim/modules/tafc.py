@@ -73,7 +73,7 @@ class TAFC(MoleculeModel):
         dfe2dt = michaelian_kinetics(
             substrate=transferrin.grid["TfFe2"],
             enzyme=tafc.grid["TAFC"],
-            km=tafc.k_m_tf_tafc,
+            k_m=tafc.k_m_tf_tafc,
             h=self.time_step / 60,
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
@@ -81,7 +81,7 @@ class TAFC(MoleculeModel):
         dfedt = michaelian_kinetics(
             substrate=transferrin.grid["TfFe"],
             enzyme=tafc.grid["TAFC"],
-            km=tafc.k_m_tf_tafc,
+            k_m=tafc.k_m_tf_tafc,
             h=self.time_step / 60,
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,

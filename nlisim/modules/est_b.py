@@ -75,7 +75,7 @@ class EstB(MoleculeModel):
         v1 = michaelian_kinetics(
             substrate=tafc.grid["TAFC"],
             enzyme=estb.grid,
-            km=estb.k_m,
+            k_m=estb.k_m,
             k_cat=estb.kcat,
             h=self.time_step / 60,
             voxel_volume=voxel_volume,
@@ -83,7 +83,7 @@ class EstB(MoleculeModel):
         v2 = michaelian_kinetics(
             substrate=tafc.grid["TAFCBI"],
             enzyme=estb.grid,
-            km=estb.k_m,
+            k_m=estb.k_m,
             k_cat=estb.kcat,
             h=self.time_step / 60,
             voxel_volume=voxel_volume,
