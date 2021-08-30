@@ -5,6 +5,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
@@ -18,14 +19,16 @@ def molecule_grid_factory(self: 'MIP1BState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class MIP1BState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
     half_life: float
     half_life_multiplier: float
-    macrophage_secretion_rate: float
-    pneumocyte_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    pneumocyte_secretion_rate_unit_t: float
-    k_d: float
+    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
+    pneumocyte_secretion_rate: float  # units: atto-mol/(cell*h)
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    k_d: float  # units: aM
 
 
 class MIP1B(MoleculeModel):
@@ -39,18 +42,23 @@ class MIP1B(MoleculeModel):
 
         # config file values
         mip1b.half_life = self.config.getfloat('half_life')
-        mip1b.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        mip1b.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
-        mip1b.k_d = self.config.getfloat('k_d')
+        mip1b.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        mip1b.pneumocyte_secretion_rate = self.config.getfloat(
+            'pneumocyte_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        mip1b.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
         mip1b.half_life_multiplier = 1 + math.log(0.5) / (mip1b.half_life / self.time_step)
         # time unit conversions
+        # units: ((atto-mol/(cell*h))/(60 min/hour)) * (min/step) = atto-mol/(cell*step)
         mip1b.macrophage_secretion_rate_unit_t = (
-            mip1b.macrophage_secretion_rate * 60 * self.time_step
+            mip1b.macrophage_secretion_rate / 60 * self.time_step
         )
         mip1b.pneumocyte_secretion_rate_unit_t = (
-            mip1b.pneumocyte_secretion_rate * 60 * self.time_step
+            mip1b.pneumocyte_secretion_rate / 60 * self.time_step
         )
 
         return state
@@ -92,16 +100,24 @@ class MIP1B(MoleculeModel):
         )
 
         # Diffusion of MIP1b
-        self.diffuse(mip1b.grid, state)
+        mip1b.grid[:] = apply_diffusion(
+            variable=mip1b.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=molecules.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         mip1b: MIP1BState = state.mip1b
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(mip1b.grid) / voxel_volume),
+            'concentration (aM/L)': float(np.mean(mip1b.grid[mask]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):
