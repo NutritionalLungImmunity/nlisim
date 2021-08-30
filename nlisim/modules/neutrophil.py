@@ -340,7 +340,7 @@ class Neutrophil(PhagocyteModel):
         # neutrophils are attracted by MIP2
 
         neutrophil: NeutrophilState = state.neutrophil
-        mip2: MIP2State = state.mip1b
+        mip2: MIP2State = state.mip2
         grid: RectangularGrid = state.grid
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
