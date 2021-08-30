@@ -28,7 +28,6 @@ def discrete_laplacian(
     for k, j, i in zip(*(mask).nonzero()):
         voxel = Voxel(x=i, y=j, z=k)
         voxel_index = grid.get_flattened_index(voxel)
-        normalization = 0
 
         for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
@@ -45,10 +44,8 @@ def discrete_laplacian(
             dz = delta_z[k, j, i] * (k - nk)
             inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
 
-            normalization -= inverse_distance2
-            laplacian[voxel_index, neighbor_index] = inverse_distance2
-
-        laplacian[voxel_index, voxel_index] = normalization
+            laplacian[voxel_index, voxel_index] -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] += inverse_distance2
 
     return laplacian.tocsr()
 
@@ -58,15 +55,15 @@ def apply_diffusion(
     laplacian: csr_matrix,
     diffusivity: float,
     dt: float,
-    tolerance: float = 1e-64,
+    tolerance: float = 1e-5,
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 
-    Solves Laplace's equation in 3D using implicit time steps.  The variable is
-    advanced in time by `dt` time units using GMRES.
+    Solves Laplace's equation in 3D using Crank-Nicholson.  The variable is
+    advanced in time by `dt` time units using the conjugate gradient method.
 
-    Notes that the output of this function might contain negative values caused by
-    rounding error. You can truncate the result by var_next[var_next < 0] = 0.
+    Note that, due to numerical error, we cannot guarantee that the quantity
+    of the molecule will remain constant.
 
     The intended use case for this method is to perform "surface diffusion" generated
     by a mask from the `lung_tissue` variable, e.g.
@@ -75,8 +72,12 @@ def apply_diffusion(
         laplacian = discrete_laplacian(grid, mask)
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     """
-    operator = eye(*laplacian.shape) - (diffusivity * dt) * laplacian
-    var_next, info = cg(operator, variable.ravel(), tol=tolerance)
-    if info != 0:
-        raise Exception(f'GMRES failed ({info})')
-    return var_next.reshape(variable.shape)
+    A = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
+    B = eye(*laplacian.shape) + (diffusivity * dt / 2.0) * laplacian
+    var_next, info = cg(A, B @ variable.ravel(), tol=tolerance)
+    if info > 0:
+        raise Exception(f'CG failed (after {info} iterations)')
+    elif info < 0:
+        raise Exception(f'CG failed ({info})')
+
+    return np.maximum(0.0, var_next.reshape(variable.shape))

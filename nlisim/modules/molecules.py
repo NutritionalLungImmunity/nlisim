@@ -4,11 +4,9 @@ from operator import mul
 
 from attr import attrs
 import numpy as np
-import scipy
 from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import cg
 
-from nlisim.diffusion import discrete_laplacian
+from nlisim.diffusion import apply_diffusion, discrete_laplacian
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -18,8 +16,9 @@ class MoleculesState(ModuleState):
     turnover_rate: float
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
-    diffusion_constant_timestep: float
-    implicit_euler_matrix: np.ndarray
+    diffusion_constant: float
+    laplacian: csr_matrix
+    time_step: float
 
 
 class Molecules(ModuleModel):
@@ -44,20 +43,13 @@ class Molecules(ModuleModel):
         #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
         molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        molecules.diffusion_constant_timestep = (
-            self.config.getfloat('diffusion_constant') * self.time_step
-        )  # units: (µm^2/min) * (min/step) = µm^2/step
+        molecules.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
+        molecules.time_step = self.time_step  # units: min/step
 
         # construct the laplacian
-        grid_cardinality = reduce(mul, state.grid.shape)
         tissue = state.lung_tissue
         # laplacian units: 1/(µm^2)
-        laplacian: csr_matrix = discrete_laplacian(grid=state.grid, mask=tissue != TissueType.AIR)
-
-        molecules.implicit_euler_matrix = (
-            scipy.sparse.identity(grid_cardinality)
-            - molecules.diffusion_constant_timestep * 1 * laplacian
-        )  # units: (µm^2/step) * (step) * (1/(µm^2)) = 1
+        molecules.laplacian = discrete_laplacian(grid=state.grid, mask=tissue != TissueType.AIR)
 
         # Note: Henrique's code did things a little differently here:
         #  1) three 1D laplacians instead of one 3D laplacian
@@ -72,11 +64,12 @@ class Molecules(ModuleModel):
 
 class MoleculeModel(ModuleModel):
     @staticmethod
-    def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
+    def diffuse(grid: np.ndarray, state: State):
         molecules: MoleculesState = state.molecules
 
-        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=tolerance)
-        if info != 0:
-            raise Exception(f'GMRES failed ({info})')
-
-        grid[:] = var_next.reshape(grid.shape)
+        grid[:] = apply_diffusion(
+            variable=grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=molecules.time_step,
+        )
