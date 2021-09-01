@@ -196,7 +196,7 @@ class Pneumocyte(PhagocyteModel):
                 il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
 
             # secrete IL8
-            if il8 is not None and pneumocyte_cell['tnfa']:  # TODO: and active?
+            if il8 is not None and pneumocyte_cell['tnfa']:
                 il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
 
             # interact with TNFa
