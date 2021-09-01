@@ -1,6 +1,4 @@
-from functools import reduce
 import math
-from operator import mul
 
 from attr import attrs
 import numpy as np

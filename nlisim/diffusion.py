@@ -72,9 +72,9 @@ def apply_diffusion(
         laplacian = discrete_laplacian(grid, mask)
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     """
-    A = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
-    B = eye(*laplacian.shape) + (diffusivity * dt / 2.0) * laplacian
-    var_next, info = cg(A, B @ variable.ravel(), tol=tolerance)
+    a = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
+    b = eye(*laplacian.shape) + (diffusivity * dt / 2.0) * laplacian
+    var_next, info = cg(a, b @ variable.ravel(), tol=tolerance)
     if info > 0:
         raise Exception(f'CG failed (after {info} iterations)')
     elif info < 0:
