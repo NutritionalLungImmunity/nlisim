@@ -24,15 +24,17 @@ def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class LactoferrinState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_lac: float
-    p1: float
-    p2: float
-    p3: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_lac: float  # units: aM
+    p1: float  # units: none
+    p2: float  # units: none
+    p3: float  # units: none
     ma_iron_import_rate: float
     iron_imp_exp_t: float
     rel_iron_imp_exp_unit_t: float
-    lac_qtty: float
+    lac_qtty: float  # units: atto-mol/(cell*h)
     threshold: float
 
 
@@ -44,10 +46,10 @@ class Lactoferrin(MoleculeModel):
 
     def initialize(self, state: State) -> State:
         lactoferrin: LactoferrinState = state.lactoferrin
-        voxel_volume: float = state.voxel_volume
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # config file values
-        lactoferrin.k_m_tf_lac = self.config.getfloat('k_m_tf_lac')
+        lactoferrin.k_m_tf_lac = self.config.getfloat('k_m_tf_lac')  # units: aM
         lactoferrin.p1 = self.config.getfloat('p1')
         lactoferrin.p2 = self.config.getfloat('p2')
         lactoferrin.p3 = self.config.getfloat('p3')

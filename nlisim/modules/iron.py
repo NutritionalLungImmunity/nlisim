@@ -16,7 +16,9 @@ def molecule_grid_factory(self: 'IronState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
 
 
 class Iron(MoleculeModel):
@@ -68,7 +70,7 @@ class Iron(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(iron.grid) / voxel_volume),
+            'concentration (aM)': float(np.mean(iron.grid) / voxel_volume),
         }
 
     def visualization_data(self, state: State):

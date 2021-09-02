@@ -204,7 +204,7 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        voxel_volume = state.voxel_volume
+        voxel_volume = state.voxel_volume # units: L
         lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 

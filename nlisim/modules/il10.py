@@ -4,6 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
@@ -18,12 +19,14 @@ def molecule_grid_factory(self: 'IL10State') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class IL10State(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: aM
+    half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
-    macrophage_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    k_d: float
+    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    k_d: float  # units: aM
 
 
 class IL10(MoleculeModel):
@@ -36,16 +39,20 @@ class IL10(MoleculeModel):
         il10: IL10State = state.il10
 
         # config file values
-        il10.half_life = self.config.getfloat('half_life')
-        il10.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        il10.k_d = self.config.getfloat('k_d')
+        il10.half_life = self.config.getfloat('half_life')  # units: min
+        il10.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        il10.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
         il10.half_life_multiplier = 0.5 ** (
             self.time_step / il10.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
-        il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * 60 * self.time_step
+        il10.macrophage_secretion_rate_unit_t = (
+            il10.macrophage_secretion_rate / 60 * self.time_step
+        )  # units: atto-mol/(cell*h) / (min/hour) * (min/step)
 
         return state
 
@@ -79,7 +86,7 @@ class IL10(MoleculeModel):
                 activation_function(
                     x=il10.grid[tuple(macrophage_cell_voxel)],
                     k_d=il10.k_d,
-                    h=self.time_step / 60,
+                    h=self.time_step * 60,  # units: (min/step) * (sec/min)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -100,16 +107,24 @@ class IL10(MoleculeModel):
         )
 
         # Diffusion of IL10
-        self.diffuse(il10.grid, state)
+        il10.grid[:] = apply_diffusion(
+            variable=il10.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         il10: IL10State = state.il10
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(il10.grid) / voxel_volume),
+            'concentration': float(np.mean(il10.grid[mask]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):
