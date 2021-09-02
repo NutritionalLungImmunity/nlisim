@@ -1,4 +1,3 @@
-import math
 from typing import Any, Dict
 
 import attr
