@@ -86,7 +86,7 @@ class IL10(MoleculeModel):
                 activation_function(
                     x=il10.grid[tuple(macrophage_cell_voxel)],
                     k_d=il10.k_d,
-                    h=self.time_step * 60,  # units: (min/step) * (sec/min)
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )

@@ -205,7 +205,7 @@ class Pneumocyte(PhagocyteModel):
                     activation_function(
                         x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
                         k_d=tnfa.k_d,
-                        h=self.time_step / 60,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )

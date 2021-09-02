@@ -90,7 +90,7 @@ class TNFa(MoleculeModel):
                     activation_function(
                         x=tnfa.grid[tuple(macrophage_cell_voxel)],
                         k_d=tnfa.k_d,
-                        h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -116,7 +116,7 @@ class TNFa(MoleculeModel):
                     activation_function(
                         x=tnfa.grid[tuple(neutrophil_cell_voxel)],
                         k_d=tnfa.k_d,
-                        h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )

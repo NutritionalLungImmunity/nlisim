@@ -24,12 +24,12 @@ class MIP2State(ModuleState):
     )  # units: atto-mol
     half_life: float
     half_life_multiplier: float  # units: proportion
-    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
-    neutrophil_secretion_rate: float  # units: atto-mol/(cell*h)
-    pneumocyte_secretion_rate: float  # units: atto-mol/(cell*h)
-    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
-    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
-    neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    neutrophil_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    pneumocyte_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # aM
 
 
@@ -46,21 +46,22 @@ class MIP2(MoleculeModel):
         mip2.half_life = self.config.getfloat('half_life')
         mip2.macrophage_secretion_rate = self.config.getfloat(
             'macrophage_secretion_rate'
-        )  # units: atto-mol/(cell*h)
+        )  # units: atto-mol * cell^-1 * h^-1
         mip2.neutrophil_secretion_rate = self.config.getfloat(
             'neutrophil_secretion_rate'
-        )  # units: atto-mol/(cell*h)
+        )  # units: atto-mol * cell^-1 * h^-1
         mip2.pneumocyte_secretion_rate = self.config.getfloat(
             'pneumocyte_secretion_rate'
-        )  # units: atto-mol/(cell*h)
-        mip2.k_d = self.config.getfloat('k_d')  # units: atto-mol/(cell*h)
+        )  # units: atto-mol * cell^-1 * h^-1
+        mip2.k_d = self.config.getfloat('k_d')  # units: atto-mol * cell^-1 * h^-1
 
         # computed values
         mip2.half_life_multiplier = 0.5 ** (
             self.time_step / mip2.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions.
-        # units: ((atto-mol/(cell*h))/(60 min/hour)) * (min/step) = atto-mol/(cell*step)
+        # units: (atto-mol * cell^-1 * h^-1 / (min * hour^-1) * (min * step^-1)
+        #        = atto-mol * cell^-1 * step^-1
         mip2.macrophage_secretion_rate_unit_t = mip2.macrophage_secretion_rate / 60 * self.time_step
         mip2.neutrophil_secretion_rate_unit_t = mip2.neutrophil_secretion_rate / 60 * self.time_step
         mip2.pneumocyte_secretion_rate_unit_t = mip2.pneumocyte_secretion_rate / 60 * self.time_step
@@ -84,7 +85,11 @@ class MIP2(MoleculeModel):
 
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(
-            x=mip2.grid, k_d=mip2.k_d, h=self.time_step / 60, volume=voxel_volume, b=1
+            x=mip2.grid,
+            k_d=mip2.k_d,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            volume=voxel_volume,
+            b=1,
         )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]

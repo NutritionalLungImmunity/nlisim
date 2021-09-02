@@ -21,7 +21,7 @@ class AntiTNFaState(ModuleState):
     )  # units: atto-mol
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
-    react_time_unit: float  # units: sec
+    react_time_unit: float  # units: hour/step
     k_m: float  # units: aM
     system_concentration: float  # units: aM
     system_amount_per_voxel: float  # units: atto-mol
@@ -73,7 +73,7 @@ class AntiTNFa(MoleculeModel):
             substrate=anti_tnf_a.grid,
             enzyme=tnf_a.grid,
             k_m=anti_tnf_a.k_m,
-            h=anti_tnf_a.react_time_unit,
+            h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )

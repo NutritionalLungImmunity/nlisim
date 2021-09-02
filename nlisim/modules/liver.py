@@ -29,7 +29,6 @@ class Liver(MoleculeModel):
         liver: LiverState = state.liver
 
         # config file values
-        # TODO: consider moving to hepcidin
         liver.hep_slope = self.config.getfloat('hep_slope')
         liver.hep_intercept = self.config.getfloat('hep_intercept')
         liver.il6_threshold = self.config.getfloat('il6_threshold')

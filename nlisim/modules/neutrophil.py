@@ -354,7 +354,7 @@ class Neutrophil(PhagocyteModel):
                 else activation_function(
                     x=mip2.grid[tuple(vxl)],
                     k_d=mip2.k_d,
-                    h=self.time_step / 60,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -457,7 +457,7 @@ class Neutrophil(PhagocyteModel):
                         activation_function(
                             x=mip2.grid,
                             k_d=mip2.k_d,
-                            h=self.time_step / 60,
+                            h=self.time_step / 60,  # units: (min/step) / (min/hour)
                             volume=voxel_volume,
                             b=neutrophil.rec_bias,
                         )

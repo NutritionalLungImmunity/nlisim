@@ -92,7 +92,7 @@ class ErythrocyteModel(MoleculeModel):
         avg = erythrocyte.cells['count'] * activation_function(
             x=hemolysin.grid,
             k_d=erythrocyte.kd_hemo,
-            h=self.time_step / 60,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=voxel_volume,
             b=1,
         )

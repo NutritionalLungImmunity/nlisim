@@ -119,7 +119,7 @@ class Lactoferrin(MoleculeModel):
             substrate=transferrin.grid['TfFe2'],
             enzyme=lactoferrin.grid["Lactoferrin"],
             k_m=lactoferrin.k_m_tf_lac,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
             voxel_volume=voxel_volume,
         )
@@ -127,7 +127,7 @@ class Lactoferrin(MoleculeModel):
             substrate=transferrin.grid['TfFe'],
             enzyme=lactoferrin.grid['Lactoferrin'],
             k_m=lactoferrin.k_m_tf_lac,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
             voxel_volume=voxel_volume,
         )
@@ -149,7 +149,7 @@ class Lactoferrin(MoleculeModel):
             substrate=transferrin.grid['TfFe2'],
             enzyme=lactoferrin.grid['LactoferrinFe'],
             k_m=lactoferrin.k_m_tf_lac,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
             voxel_volume=voxel_volume,
         )
@@ -157,7 +157,7 @@ class Lactoferrin(MoleculeModel):
             substrate=transferrin.grid['TfFe'],
             enzyme=lactoferrin.grid['LactoferrinFe'],
             k_m=lactoferrin.k_m_tf_lac,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
             voxel_volume=voxel_volume,
         )

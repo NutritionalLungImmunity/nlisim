@@ -4,6 +4,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
+from nlisim.diffusion import apply_diffusion
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
 from nlisim.state import State
@@ -52,8 +53,7 @@ class EstB(MoleculeModel):
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
-        estb.grid.fill(estb.system_amount_per_voxel)
-        estb.grid[lung_tissue == TissueType.AIR] = 0.0
+        estb.grid[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
 
         return state
 
@@ -70,7 +70,7 @@ class EstB(MoleculeModel):
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer
-        estb.iron_buffer.fill(0.0)
+        estb.iron_buffer[:] = 0.0
 
         # interact with TAFC
         v1 = michaelian_kinetics(
@@ -78,7 +78,7 @@ class EstB(MoleculeModel):
             enzyme=estb.grid,
             k_m=estb.k_m,
             k_cat=estb.kcat,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
@@ -86,7 +86,7 @@ class EstB(MoleculeModel):
             enzyme=estb.grid,
             k_m=estb.k_m,
             k_cat=estb.kcat,
-            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         tafc.grid["TAFC"] -= v1
@@ -103,7 +103,12 @@ class EstB(MoleculeModel):
         )
 
         # Diffusion of EstB
-        self.diffuse(estb.grid, state)
+        estb.grid[:] = apply_diffusion(
+            variable=estb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 

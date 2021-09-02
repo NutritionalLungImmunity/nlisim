@@ -70,7 +70,7 @@ class TGFB(MoleculeModel):
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
                         k_d=tgfb.k_d,
-                        h=self.time_step / 60,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -87,7 +87,7 @@ class TGFB(MoleculeModel):
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
                         k_d=tgfb.k_d,
-                        h=self.time_step / 60,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )

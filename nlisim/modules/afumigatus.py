@@ -204,9 +204,8 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        voxel_volume = state.voxel_volume # units: L
+        voxel_volume = state.voxel_volume  # units: L
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
         afumigatus.pr_ma_phag_param = self.config.getfloat('pr_ma_phag_param')
@@ -232,8 +231,8 @@ class Afumigatus(ModuleModel):
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
 
-        afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
-        afumigatus.rel_phag_affinity_unit_t = time_step_size / afumigatus.phag_affinity_t
+        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
+        afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(
             -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
@@ -250,14 +249,14 @@ class Afumigatus(ModuleModel):
         # 30 min --> 1 - exp(-cells*t/kd) --> kd = 1.32489230813214e+10
 
         afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / time_step_size) - 2
+            afumigatus.time_to_swelling * (60 / self.time_step) - 2
         )  # TODO: -2?
         afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / time_step_size) - 2
+            afumigatus.time_to_germinate * (60 / self.time_step) - 2
         )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / time_step_size) - 1
+        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
-            afumigatus.aspergillus_change_half_life * (60 / time_step_size)
+            afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
 
         # place cells for initial infection
