@@ -50,9 +50,9 @@ class IL10(MoleculeModel):
             self.time_step / il10.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
-        il10.macrophage_secretion_rate_unit_t = (
-            il10.macrophage_secretion_rate / 60 * self.time_step
-        )  # units: atto-mol/(cell*h) / (min/hour) * (min/step)
+        il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * (
+            self.time_step / 60
+        )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
 
         return state
 

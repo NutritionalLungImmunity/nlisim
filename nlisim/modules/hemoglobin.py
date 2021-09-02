@@ -5,6 +5,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel, MoleculesState
@@ -76,7 +77,12 @@ class Hemoglobin(MoleculeModel):
         )
 
         # Diffusion of Hemoglobin
-        self.diffuse(hemoglobin.grid, state)
+        hemoglobin.grid[:] = apply_diffusion(
+            variable=hemoglobin.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 

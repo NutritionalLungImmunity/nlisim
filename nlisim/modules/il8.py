@@ -41,10 +41,16 @@ class IL8(MoleculeModel):
         il8: IL8State = state.il8
 
         # config file values
-        il8.half_life = self.config.getfloat('half_life')
-        il8.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        il8.neutrophil_secretion_rate = self.config.getfloat('neutrophil_secretion_rate')
-        il8.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
+        il8.half_life = self.config.getfloat('half_life')  # units: min
+        il8.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        il8.neutrophil_secretion_rate = self.config.getfloat(
+            'neutrophil_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        il8.pneumocyte_secretion_rate = self.config.getfloat(
+            'pneumocyte_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
         il8.k_d = self.config.getfloat('k_d')
 
         # computed values
@@ -52,11 +58,11 @@ class IL8(MoleculeModel):
             1 * self.time_step / il8.half_life
         )  # units: step * (min/step) / min -> 1
         # time unit conversions
-        # units: (atto-mol * cell^-1 * h^-1 / (min * hour^-1) * (min * step^-1)
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
-        il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate / 60 * self.time_step
-        il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate / 60 * self.time_step
-        il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate / 60 * self.time_step
+        il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * (self.time_step / 60)
+        il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * (self.time_step / 60)
+        il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate * (self.time_step / 60)
 
         return state
 

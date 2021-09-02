@@ -60,11 +60,11 @@ class IL6(MoleculeModel):
             self.time_step / il6.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
-        # units: (atto-mol * cell^-1 * h^-1 / (min * hour^-1) * (min * step^-1)
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
-        il6.macrophage_secretion_rate_unit_t = il6.macrophage_secretion_rate / 60 * self.time_step
-        il6.neutrophil_secretion_rate_unit_t = il6.neutrophil_secretion_rate / 60 * self.time_step
-        il6.pneumocyte_secretion_rate_unit_t = il6.pneumocyte_secretion_rate / 60 * self.time_step
+        il6.macrophage_secretion_rate_unit_t = il6.macrophage_secretion_rate * (self.time_step / 60)
+        il6.neutrophil_secretion_rate_unit_t = il6.neutrophil_secretion_rate * (self.time_step / 60)
+        il6.pneumocyte_secretion_rate_unit_t = il6.pneumocyte_secretion_rate * (self.time_step / 60)
 
         return state
 
@@ -96,7 +96,6 @@ class IL6(MoleculeModel):
                 neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
                 il6.grid[tuple(neutrophil_cell_voxel)] += il6.neutrophil_secretion_rate_unit_t
 
-        # TODO: verify
         # active Pneumocytes secrete il6
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]

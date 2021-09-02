@@ -3,6 +3,7 @@ from typing import Any, Dict
 import attr
 import numpy as np
 
+from nlisim.diffusion import apply_diffusion
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
 from nlisim.state import State
@@ -14,7 +15,9 @@ def molecule_grid_factory(self: 'ROSState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class ROSState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
 
 
 class ROS(MoleculeModel):
@@ -36,8 +39,10 @@ class ROS(MoleculeModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        from nlisim.modules.molecules import MoleculesState
+
         ros: ROSState = state.ros
-        # molecules: MoleculesState = state.molecules
+        molecules: MoleculesState = state.molecules
 
         # TODO: code below adds zero, omitting until we have a non-trivial model
 
@@ -52,7 +57,12 @@ class ROS(MoleculeModel):
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
 
         # Diffusion of ros
-        self.diffuse(ros.grid, state)
+        ros.grid[:] = apply_diffusion(
+            variable=ros.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 

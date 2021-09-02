@@ -58,10 +58,17 @@ class TNFa(MoleculeModel):
             self.time_step / tnfa.half_life
         )  # units: (min/step) / min -> 1/step
         # time unit conversions
-        # units: ((atto-mol/(cell*h))/(60 min/hour)) * (min/step) = atto-mol/(cell*step)
-        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate / 60 * self.time_step
-        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate / 60 * self.time_step
-        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate / 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 

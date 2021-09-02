@@ -47,8 +47,14 @@ class MCP1(MoleculeModel):
             self.time_step / mcp1.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
-        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * self.time_step
-        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 

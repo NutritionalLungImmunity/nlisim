@@ -17,12 +17,14 @@ def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class EstBState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
+    half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     k_m: float
-    kcat: float
+    k_cat: float
     system_concentration: float
     system_amount_per_voxel: float
 
@@ -42,8 +44,8 @@ class EstB(MoleculeModel):
 
         # config file values
         estb.half_life = self.config.getfloat('half_life')
-        estb.k_m = self.config.getfloat('km')
-        estb.kcat = self.config.getfloat('kcat')
+        estb.k_m = self.config.getfloat('k_m')
+        estb.k_cat = self.config.getfloat('k_cat')
         estb.system_concentration = self.config.getfloat('system_concentration')
 
         # computed values
@@ -77,7 +79,7 @@ class EstB(MoleculeModel):
             substrate=tafc.grid["TAFC"],
             enzyme=estb.grid,
             k_m=estb.k_m,
-            k_cat=estb.kcat,
+            k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
@@ -85,7 +87,7 @@ class EstB(MoleculeModel):
             substrate=tafc.grid["TAFCBI"],
             enzyme=estb.grid,
             k_m=estb.k_m,
-            k_cat=estb.kcat,
+            k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
