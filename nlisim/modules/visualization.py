@@ -114,7 +114,10 @@ class Visualization(ModuleModel):
             attr_names = json_config['attributes']
         except KeyError:
             attr_names = None
-        var = getattr(getattr(state, module_name), var_name)
+        module = getattr(state, module_name, None)
+        if module is None:
+            return
+        var = getattr(module, var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
             spacing = (
