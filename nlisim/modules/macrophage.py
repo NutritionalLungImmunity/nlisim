@@ -288,7 +288,7 @@ class Macrophage(PhagocyteModel):
                     np.logical_and(
                         activation_function(
                             x=mip1b.grid,
-                            kd=mip1b.k_d,
+                            k_d=mip1b.k_d,
                             h=self.time_step / 60,
                             volume=voxel_volume,
                             b=macrophage.rec_bias,
@@ -360,7 +360,7 @@ class Macrophage(PhagocyteModel):
                 if lung_tissue[tuple(vxl)] == TissueType.AIR
                 else activation_function(
                     x=mip1b.grid[tuple(vxl)],
-                    kd=mip1b.k_d,
+                    k_d=mip1b.k_d,
                     h=self.time_step / 60,
                     volume=voxel_volume,
                     b=1,

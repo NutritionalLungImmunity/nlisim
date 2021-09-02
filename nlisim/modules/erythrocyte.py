@@ -91,7 +91,7 @@ class ErythrocyteModel(MoleculeModel):
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells['count'] * activation_function(
             x=hemolysin.grid,
-            kd=erythrocyte.kd_hemo,
+            k_d=erythrocyte.kd_hemo,
             h=self.time_step / 60,
             volume=voxel_volume,
             b=1,

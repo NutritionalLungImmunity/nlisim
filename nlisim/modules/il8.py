@@ -21,7 +21,7 @@ def molecule_grid_factory(self: 'IL8State') -> np.ndarray:
 class IL8State(ModuleState):
     grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float
-    half_life_multiplier: float
+    half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float
     neutrophil_secretion_rate: float
     pneumocyte_secretion_rate: float
@@ -48,7 +48,9 @@ class IL8(MoleculeModel):
         il8.k_d = self.config.getfloat('k_d')
 
         # computed values
-        il8.half_life_multiplier = 1 + math.log(0.5) / (il8.half_life / self.time_step)
+        il8.half_life_multiplier = 0.5 ** (
+            self.time_step / il8.half_life
+        )  # units: (min/step) / min -> 1/step
         # time unit conversions
         il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * 60 * self.time_step
         il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * 60 * self.time_step
@@ -75,7 +77,7 @@ class IL8(MoleculeModel):
                 if (
                     activation_function(
                         x=il8.grid[tuple(neutrophil_cell_voxel)],
-                        kd=il8.k_d,
+                        k_d=il8.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
                         b=1,

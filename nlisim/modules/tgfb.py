@@ -21,7 +21,7 @@ def molecule_grid_factory(self: 'TGFBState') -> np.ndarray:
 class TGFBState(ModuleState):
     grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float
-    half_life_multiplier: float
+    half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float
     macrophage_secretion_rate_unit_t: float
     k_d: float
@@ -42,7 +42,9 @@ class TGFB(MoleculeModel):
         tgfb.k_d = self.config.getfloat('k_d')
 
         # computed values
-        tgfb.half_life_multiplier = 1 + math.log(0.5) / (tgfb.half_life / self.time_step)
+        tgfb.half_life_multiplier = 0.5 ** (
+            self.time_step / tgfb.half_life
+        )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
         tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * 60 * self.time_step
 
@@ -68,7 +70,7 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
+                        k_d=tgfb.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
                         b=1,
@@ -85,7 +87,7 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
+                        k_d=tgfb.k_d,
                         h=self.time_step / 60,
                         volume=voxel_volume,
                         b=1,

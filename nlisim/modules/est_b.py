@@ -20,7 +20,7 @@ class EstBState(ModuleState):
     grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float
-    half_life_multiplier: float
+    half_life_multiplier: float  # units: proportion
     k_m: float
     kcat: float
     system_concentration: float
@@ -47,7 +47,9 @@ class EstB(MoleculeModel):
         estb.system_concentration = self.config.getfloat('system_concentration')
 
         # computed values
-        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
+        estb.half_life_multiplier = 0.5 ** (
+            self.time_step / estb.half_life
+        )  # units: (min/step) / min -> 1/step
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
@@ -77,7 +79,7 @@ class EstB(MoleculeModel):
             enzyme=estb.grid,
             k_m=estb.k_m,
             k_cat=estb.kcat,
-            h=self.time_step / 60,
+            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
             voxel_volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
@@ -85,7 +87,7 @@ class EstB(MoleculeModel):
             enzyme=estb.grid,
             k_m=estb.k_m,
             k_cat=estb.kcat,
-            h=self.time_step / 60,
+            h=self.time_step * 60,  # units: (min/step) * (60 sec/min) = sec/step
             voxel_volume=voxel_volume,
         )
         tafc.grid["TAFC"] -= v1

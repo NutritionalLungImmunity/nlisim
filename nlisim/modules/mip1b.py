@@ -23,7 +23,7 @@ class MIP1BState(ModuleState):
         default=attr.Factory(molecule_grid_factory, takes_self=True)
     )  # units: atto-mols
     half_life: float
-    half_life_multiplier: float
+    half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
     pneumocyte_secretion_rate: float  # units: atto-mol/(cell*h)
     macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
@@ -51,7 +51,9 @@ class MIP1B(MoleculeModel):
         mip1b.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
-        mip1b.half_life_multiplier = 1 + math.log(0.5) / (mip1b.half_life / self.time_step)
+        mip1b.half_life_multiplier = 0.5 ** (
+            self.time_step / mip1b.half_life
+        )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
         # units: ((atto-mol/(cell*h))/(60 min/hour)) * (min/step) = atto-mol/(cell*step)
         mip1b.macrophage_secretion_rate_unit_t = (
@@ -104,7 +106,7 @@ class MIP1B(MoleculeModel):
             variable=mip1b.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
-            dt=molecules.time_step,
+            dt=self.time_step,
         )
 
         return state
@@ -117,7 +119,7 @@ class MIP1B(MoleculeModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (aM/L)': float(np.mean(mip1b.grid[mask]) / voxel_volume),
+            'concentration (aM)': float(np.mean(mip1b.grid[mask]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):

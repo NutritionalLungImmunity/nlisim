@@ -7,6 +7,7 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.module import ModuleState
 from nlisim.modules.molecules import MoleculeModel
+from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -50,12 +51,12 @@ class Hepcidin(MoleculeModel):
             *np.where(
                 activation_function(
                     x=hepcidin.grid,
-                    kd=hepcidin.kd_hep,
+                    k_d=hepcidin.kd_hep,
                     h=self.time_step / 60,
                     volume=voxel_volume,
                     b=1,
                 )
-                > np.random.random(hepcidin.grid.shape)
+                > rg.random(size=hepcidin.grid.shape)
             )
         )
         for z, y, x in activated_voxels:
@@ -71,11 +72,14 @@ class Hepcidin(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         hepcidin: HepcidinState = state.hepcidin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(hepcidin.grid) / voxel_volume),
+            'concentration (aM?)': float(np.mean(hepcidin.grid[mask]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):

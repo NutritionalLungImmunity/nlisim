@@ -15,9 +15,12 @@ EPSILON = 5.57e-309
 
 
 @jit(cache=True)
-def activation_function(*, x, kd, h, volume, b=1):
-    # x -> x / volume CONVERT MOL TO MOLAR
-    return h * (1 - b * np.exp(-(x / volume) / kd))
+def activation_function(*, x, k_d, h, volume, b=1):
+    # units:
+    # x: atto-mol
+    # k_d: aM
+    # volume: L
+    return h * (1 - b * np.exp(-x / k_d / volume))
 
 
 def turnover_rate(
@@ -83,9 +86,21 @@ def michaelian_kinetics(
     k_cat: float = 1.0,
     voxel_volume: float,
 ) -> np.ndarray:
-    # Note: was originally h*k_cat*enzyme*substrate/(substrate+km), but with
-    # enzyme /= voxel_volume and substrate /= voxel_volume.
-    # This is algebraically equivalent and reduces the number of operations.
+    """
+    Compute Michaelis–Menten kinetics.
+
+    units:
+    substrate : atto-mol
+    enzyme : atto-mol
+    k_m : aM
+    h: sec/step
+    k_cat: 1/sec
+    voxel_volume: L
+
+    result: atto-mol/step
+    """
+    # Note: was originally defined by converting to molarity, but can be redefined in terms
+    # of mols. This is algebraically equivalent and reduces the number of operations.
     return h * k_cat * enzyme * substrate / (substrate + k_m * voxel_volume)
 
 

@@ -21,7 +21,7 @@ def molecule_grid_factory(self: 'IL10State') -> np.ndarray:
 class IL10State(ModuleState):
     grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float
-    half_life_multiplier: float
+    half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float
     macrophage_secretion_rate_unit_t: float
     k_d: float
@@ -42,7 +42,9 @@ class IL10(MoleculeModel):
         il10.k_d = self.config.getfloat('k_d')
 
         # computed values
-        il10.half_life_multiplier = 1 + math.log(0.5) / (il10.half_life / self.time_step)
+        il10.half_life_multiplier = 0.5 ** (
+            self.time_step / il10.half_life
+        )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
         il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * 60 * self.time_step
 
@@ -77,7 +79,7 @@ class IL10(MoleculeModel):
             } and (
                 activation_function(
                     x=il10.grid[tuple(macrophage_cell_voxel)],
-                    kd=il10.k_d,
+                    k_d=il10.k_d,
                     h=self.time_step / 60,
                     volume=voxel_volume,
                     b=1,

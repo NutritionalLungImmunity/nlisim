@@ -353,7 +353,7 @@ class Neutrophil(PhagocyteModel):
                 if lung_tissue[tuple(vxl)] == TissueType.AIR
                 else activation_function(
                     x=mip2.grid[tuple(vxl)],
-                    kd=mip2.k_d,
+                    k_d=mip2.k_d,
                     h=self.time_step / 60,
                     volume=voxel_volume,
                     b=1,
@@ -456,7 +456,7 @@ class Neutrophil(PhagocyteModel):
                     np.logical_and(
                         activation_function(
                             x=mip2.grid,
-                            kd=mip2.k_d,
+                            k_d=mip2.k_d,
                             h=self.time_step / 60,
                             volume=voxel_volume,
                             b=neutrophil.rec_bias,
