@@ -18,14 +18,16 @@ def molecule_grid_factory(self: 'MCP1State') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class MCP1State(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
-    macrophage_secretion_rate: float
-    pneumocyte_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    pneumocyte_secretion_rate_unit_t: float
-    k_d: float
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    pneumocyte_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # units: aM
 
 
 class MCP1(ModuleModel):
@@ -38,10 +40,14 @@ class MCP1(ModuleModel):
         mcp1: MCP1State = state.mcp1
 
         # config file values
-        mcp1.half_life = self.config.getfloat('half_life')
-        mcp1.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        mcp1.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
-        mcp1.k_d = self.config.getfloat('k_d')
+        mcp1.half_life = self.config.getfloat('half_life')  # units: min
+        mcp1.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.pneumocyte_secretion_rate = self.config.getfloat(
+            'pneumocyte_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
         mcp1.half_life_multiplier = 0.5 ** (
@@ -106,11 +112,14 @@ class MCP1(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         mcp1: MCP1State = state.mcp1
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(mcp1.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(mcp1.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

@@ -108,7 +108,7 @@ class AntiTNFa(ModuleModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (aM)': float(np.mean(anti_tnf_a.grid[mask]) / voxel_volume),
+            'concentration (nM)': float(np.mean(anti_tnf_a.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

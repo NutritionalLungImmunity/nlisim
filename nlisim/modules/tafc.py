@@ -21,11 +21,14 @@ def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TAFCState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    tafc_up: float
-    threshold: float
-    tafc_qtty: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
+    tafcbi_uptake_rate: float  # units: L * cell^-1 * h^-1
+    tafcbi_uptake_rate_unit_t: float  # units: proportion * cell^-1 * step^-1
+    afumigatus_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    afumigatus_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
 
 
 class TAFC(ModuleModel):
@@ -40,12 +43,27 @@ class TAFC(ModuleModel):
         voxel_volume: float = state.voxel_volume
 
         # config file values
-        tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
+        tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
+        tafc.afumigatus_secretion_rate = self.config.getfloat(
+            'afumigatus_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        tafc.tafcbi_uptake_rate = self.config.getfloat(
+            'tafcbi_uptake_rate'
+        )  # units: L * cell^-1 * h^-1
 
         # computed values
-        tafc.tafc_qtty = self.config.getfloat('tafc_qtty') * 15  # TODO: unit_t
-        tafc.tafc_up = self.config.getfloat('tafc_up') / voxel_volume / 15
-        tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
+        tafc.afumigatus_secretion_rate_unit_t = tafc.afumigatus_secretion_rate * (
+            self.time_step / 60
+        )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
+        tafc.tafcbi_uptake_rate_unit_t = (
+            tafc.tafcbi_uptake_rate
+            / voxel_volume
+            * (self.time_step / 60)
+            # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
+            # = proportion * cell^-1 * step^-1
+        )
+        # TODO: this has to be unnecessary:
+        tafc.tafcbi_uptake_rate_unit_t = min(1.0, tafc.tafcbi_uptake_rate_unit_t)
 
         return state
 
@@ -131,11 +149,12 @@ class TAFC(ModuleModel):
 
             # uptake iron from TAFCBI
             if afumigatus_bool_net[NetworkSpecies.MirB] & afumigatus_bool_net[NetworkSpecies.EstB]:
-                qtty = tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
-                # TODO: can't be bigger, unless tafc.tafc_up > 1. Am I missing something?
-                # qtty = qtty if qtty < self.get("TAFCBI", x, y, z) else self.get("TAFCBI", x, y, z)
-                tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)] -= qtty
-                afumigatus_cell['iron_pool'] += qtty
+                quantity = (
+                    tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)]
+                    * tafc.tafcbi_uptake_rate_unit_t
+                )
+                tafc.grid['TAFCBI'][tuple(afumigatus_cell_voxel)] -= quantity
+                afumigatus_cell['iron_pool'] += quantity
 
             # secrete TAFC
             if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell['status'] in {
@@ -143,7 +162,9 @@ class TAFC(ModuleModel):
                 AfumigatusCellStatus.HYPHAE,
                 AfumigatusCellStatus.GERM_TUBE,
             }:
-                tafc.grid['TAFC'][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+                tafc.grid['TAFC'][
+                    tuple(afumigatus_cell_voxel)
+                ] += tafc.afumigatus_secretion_rate_unit_t
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(
@@ -176,9 +197,9 @@ class TAFC(ModuleModel):
         concentration = concentration_no_fe + concentration_fe
 
         return {
-            'concentration any': float(concentration),
-            'concentration TAFC': float(concentration_no_fe),
-            'concentration TAFCBI': float(concentration_fe),
+            'concentration (nM)': float(concentration  / 1e9),
+            'concentration TAFC (nM)': float(concentration_no_fe / 1e9),
+            'concentration TAFCBI (nM)': float(concentration_fe / 1e9),
         }
 
     def visualization_data(self, state: State):

@@ -22,17 +22,18 @@ def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class TransferrinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    threshold: float
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
     p1: float
     p2: float
     p3: float
     threshold_log_hep: float
     threshold_hep: float
-    default_apotf_rel_concentration: float
-    default_tffe_rel_concentration: float
-    default_tffe2_rel_concentration: float
+    default_apotf_rel_concentration: float  # units: proportion
+    default_tffe_rel_concentration: float  # units: proportion
+    default_tffe2_rel_concentration: float  # units: proportion
     default_tf_concentration: float
     default_apotf_concentration: float
     default_tffe_concentration: float
@@ -56,7 +57,7 @@ class Transferrin(ModuleModel):
         voxel_volume = state.voxel_volume
 
         # config file values
-        transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')
+        transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
         transferrin.p1 = self.config.getfloat('p1')
         transferrin.p2 = self.config.getfloat('p2')
         transferrin.p3 = self.config.getfloat('p3')
@@ -67,33 +68,34 @@ class Transferrin(ModuleModel):
 
         transferrin.default_apotf_rel_concentration = self.config.getfloat(
             'default_apotf_rel_concentration'
-        )
+        )  # units: proportion
         transferrin.default_tffe_rel_concentration = self.config.getfloat(
             'default_tffe_rel_concentration'
-        )
+        )  # units: proportion
         transferrin.default_tffe2_rel_concentration = self.config.getfloat(
             'default_tffe2_rel_concentration'
-        )
+        )  # units: proportion
 
         transferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
 
         # computed values
-        transferrin.threshold = transferrin.k_m_tf_tafc * voxel_volume / 1.0e6
         transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume
+        ) * voxel_volume  # units: aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = self.time_step / transferrin.iron_imp_exp_t
+        transferrin.rel_iron_imp_exp_unit_t = (
+            transferrin.iron_imp_exp_t / self.time_step
+        )  # units: ? / (min/step) = ? * step / min TODO: units
         # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
         #  Adjust comments in config?
         transferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate') / voxel_volume

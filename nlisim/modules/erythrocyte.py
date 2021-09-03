@@ -136,7 +136,6 @@ class ErythrocyteModel(ModuleModel):
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),
-            'concentration': float(np.mean(erythrocyte.cells['count']) / voxel_volume),
         }
 
     def visualization_data(self, state: State):

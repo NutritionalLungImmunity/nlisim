@@ -86,7 +86,7 @@ class Hemolysin(ModuleModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (aM)': float(np.mean(hemolysin.grid[mask]) / voxel_volume),
+            'concentration (nM)': float(np.mean(hemolysin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

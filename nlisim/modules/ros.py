@@ -70,7 +70,7 @@ class ROS(ModuleModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(ros.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(ros.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

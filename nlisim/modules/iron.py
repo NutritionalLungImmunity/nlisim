@@ -69,7 +69,7 @@ class Iron(ModuleModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration (aM)': float(np.mean(iron.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(iron.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

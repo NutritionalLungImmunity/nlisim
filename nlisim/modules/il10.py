@@ -24,8 +24,8 @@ class IL10State(ModuleState):
     )  # units: aM
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
-    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
-    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * h^-1
     k_d: float  # units: aM
 
 
@@ -42,7 +42,7 @@ class IL10(ModuleModel):
         il10.half_life = self.config.getfloat('half_life')  # units: min
         il10.macrophage_secretion_rate = self.config.getfloat(
             'macrophage_secretion_rate'
-        )  # units: atto-mol/(cell*h)
+        )  # units: atto-mol * cell^-1 * h^-1
         il10.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
@@ -52,7 +52,7 @@ class IL10(ModuleModel):
         # time unit conversions
         il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * (
             self.time_step / 60
-        )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
+        )  # units: atto-mol * cell^-1 * h^-1 * (min/step) / (min/hour)
 
         return state
 
@@ -124,7 +124,7 @@ class IL10(ModuleModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(il10.grid[mask]) / voxel_volume),
+            'concentration (nM)': float(np.mean(il10.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

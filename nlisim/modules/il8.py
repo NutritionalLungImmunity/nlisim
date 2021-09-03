@@ -121,7 +121,7 @@ class IL8(ModuleModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(il8.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(il8.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

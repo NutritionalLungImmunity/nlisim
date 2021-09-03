@@ -35,8 +35,7 @@ def turnover_rate(
 
     # enforce bounds and zero out problem divides
     result[x == 0] = 0.0
-    np.minimum(result, 1.0, out=result)
-    np.maximum(result, 0.0, out=result)
+    result[:] = np.maximum(0.0, np.minimum(1.0, result))
 
     return result
 
@@ -60,15 +59,11 @@ def iron_tf_reaction(
     rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)
     # enforce bounds and zero out problem divides
     rel_total_iron[total_binding_site == 0] = 0.0
-    np.minimum(rel_total_iron, 1.0, out=rel_total_iron)
-    np.maximum(rel_total_iron, 0.0, out=rel_total_iron)
+    rel_total_iron[:] = np.maximum(np.minimum(rel_total_iron, 1.0), 0.0)
 
-    rel_tf_fe: np.ndarray = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
-
-    rel_tf_fe = np.maximum(
-        0.0, rel_tf_fe
-    )  # one root of the polynomial is at ~0.99897 and goes neg after
-    # rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof it?
+    rel_tf_fe: np.ndarray = np.maximum(
+        0.0, ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
+    )  # maximum used as one root of the polynomial is at ~0.99897 and goes neg after
 
     rel_tf_fe[total_iron == 0] = 0.0
     rel_tf_fe[total_binding_site == 0] = 0.0
