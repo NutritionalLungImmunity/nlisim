@@ -3,8 +3,8 @@ import math
 from attr import attrs
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -19,7 +19,7 @@ class LiverState(ModuleState):
     threshold_hep: float
 
 
-class Liver(MoleculeModel):
+class Liver(ModuleModel):
     """Liver"""
 
     name = 'liver'

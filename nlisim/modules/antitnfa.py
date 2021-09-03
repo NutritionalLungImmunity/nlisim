@@ -4,8 +4,8 @@ import attr
 import numpy as np
 
 from nlisim.diffusion import apply_diffusion
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -27,7 +27,7 @@ class AntiTNFaState(ModuleState):
     system_amount_per_voxel: float  # units: atto-mol
 
 
-class AntiTNFa(MoleculeModel):
+class AntiTNFa(ModuleModel):
     name = 'antitnfa'
     StateClass = AntiTNFaState
 

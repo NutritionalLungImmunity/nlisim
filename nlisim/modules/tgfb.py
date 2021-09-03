@@ -6,8 +6,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -29,7 +29,7 @@ class TGFBState(ModuleState):
     k_d: float  # aM
 
 
-class TGFB(MoleculeModel):
+class TGFB(ModuleModel):
     """TGFB"""
 
     name = 'tgfb'

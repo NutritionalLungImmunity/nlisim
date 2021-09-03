@@ -5,8 +5,8 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.diffusion import apply_diffusion
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -23,13 +23,13 @@ class EstBState(ModuleState):
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
-    k_m: float
+    k_m: float  # units: aM
     k_cat: float
     system_concentration: float
     system_amount_per_voxel: float
 
 
-class EstB(MoleculeModel):
+class EstB(ModuleModel):
     """Esterase B"""
 
     name = 'estb'

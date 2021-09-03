@@ -4,9 +4,9 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 from nlisim.util import EPSILON, iron_tf_reaction, michaelian_kinetics, turnover_rate
 
@@ -38,7 +38,7 @@ class LactoferrinState(ModuleState):
     threshold: float
 
 
-class Lactoferrin(MoleculeModel):
+class Lactoferrin(ModuleModel):
     """Lactoferrin"""
 
     name = 'lactoferrin'
@@ -222,9 +222,13 @@ class Lactoferrin(MoleculeModel):
         lactoferrin.grid['LactoferrinFe2'] *= trnvr_rt
 
         # Diffusion of lactoferrin
-        self.diffuse(lactoferrin.grid['Lactoferrin'], state)
-        self.diffuse(lactoferrin.grid['LactoferrinFe'], state)
-        self.diffuse(lactoferrin.grid['LactoferrinFe2'], state)
+        for component in {'Lactoferrin', 'LactoferrinFe', 'LactoferrinFe2'}:
+            lactoferrin.grid[component][:] = apply_diffusion(
+                variable=lactoferrin.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 

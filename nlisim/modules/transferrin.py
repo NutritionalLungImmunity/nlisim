@@ -6,9 +6,9 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -45,7 +45,7 @@ class TransferrinState(ModuleState):
     rel_iron_imp_exp_unit_t: float
 
 
-class Transferrin(MoleculeModel):
+class Transferrin(ModuleModel):
     """Transferrin"""
 
     name = 'transferrin'
@@ -110,11 +110,13 @@ class Transferrin(MoleculeModel):
         """Advance the state by a single time step."""
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.modules.molecules import MoleculesState
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
         # molecules: MoleculesState = state.molecules
 
@@ -191,9 +193,13 @@ class Transferrin(MoleculeModel):
         # Degrade transferrin: done in liver
 
         # Diffusion of transferrin
-        self.diffuse(transferrin.grid['Tf'], state)
-        self.diffuse(transferrin.grid['TfFe'], state)
-        self.diffuse(transferrin.grid['TfFe2'], state)
+        for component in {'Tf', 'TfFe', 'TfFe2'}:
+            transferrin.grid[component][:] = apply_diffusion(
+                variable=transferrin.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 

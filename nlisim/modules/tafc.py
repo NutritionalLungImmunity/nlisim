@@ -4,9 +4,10 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
 
@@ -27,7 +28,7 @@ class TAFCState(ModuleState):
     tafc_qtty: float
 
 
-class TAFC(MoleculeModel):
+class TAFC(ModuleModel):
     # noinspection SpellCheckingInspection
     """TAFC: (T)ri(A)cetyl(F)usarinine C"""
 
@@ -66,11 +67,11 @@ class TAFC(MoleculeModel):
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
         grid: RectangularGrid = state.grid
-        voxel_volume: float = state.voxel_volume
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = michaelian_kinetics(
+        dfe2_dt = michaelian_kinetics(
             substrate=transferrin.grid["TfFe2"],
             enzyme=tafc.grid["TAFC"],
             k_m=tafc.k_m_tf_tafc,
@@ -78,7 +79,7 @@ class TAFC(MoleculeModel):
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
-        dfedt = michaelian_kinetics(
+        dfe_dt = michaelian_kinetics(
             substrate=transferrin.grid["TfFe"],
             enzyme=tafc.grid["TAFC"],
             k_m=tafc.k_m_tf_tafc,
@@ -88,27 +89,26 @@ class TAFC(MoleculeModel):
         )
 
         # - enforce bounds from TAFC quantity
-        total_change = dfe2dt + dfedt
+        total_change = dfe2_dt + dfe_dt
         rel = tafc.grid['TAFC'] / (total_change + EPSILON)
         # enforce bounds and zero out problem divides
         rel[total_change == 0] = 0.0
-        np.minimum(rel, 1.0, out=rel)
-        np.maximum(rel, 0.0, out=rel)
+        rel[:] = np.maximum(np.minimum(rel, 1.0), 0.0)
 
-        dfe2dt = dfe2dt * rel
-        dfedt = dfedt * rel
+        dfe2_dt = dfe2_dt * rel
+        dfe_dt = dfe_dt * rel
 
         # transferrin+2Fe loses an iron, becomes transferrin+Fe
-        transferrin.grid['TfFe2'] -= dfe2dt
-        transferrin.grid['TfFe'] += dfe2dt
+        transferrin.grid['TfFe2'] -= dfe2_dt
+        transferrin.grid['TfFe'] += dfe2_dt
 
         # transferrin+Fe loses an iron, becomes transferrin
-        transferrin.grid['TfFe'] -= dfedt
-        transferrin.grid['Tf'] += dfedt
+        transferrin.grid['TfFe'] -= dfe_dt
+        transferrin.grid['Tf'] += dfe_dt
 
         # iron from transferrin becomes bound to TAFC (TAFC->TAFCBI)
-        tafc.grid['TAFC'] -= dfe2dt + dfedt
-        tafc.grid['TAFCBI'] += dfe2dt + dfedt
+        tafc.grid['TAFC'] -= dfe2_dt + dfe_dt
+        tafc.grid['TAFCBI'] += dfe2_dt + dfe_dt
 
         # interaction with iron, all available iron is bound to TAFC
         potential_reactive_quantity = np.minimum(iron.grid, tafc.grid['TAFC'])
@@ -156,8 +156,13 @@ class TAFC(MoleculeModel):
         tafc.grid['TAFCBI'] *= trnvr_rt
 
         # Diffusion of TAFC
-        self.diffuse(tafc.grid['TAFC'], state)
-        self.diffuse(tafc.grid['TAFCBI'], state)
+        for component in {'TAFC', 'TAFCBI'}:
+            tafc.grid[component][:] = apply_diffusion(
+                variable=tafc.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 

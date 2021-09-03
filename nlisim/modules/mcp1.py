@@ -4,9 +4,10 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -27,7 +28,7 @@ class MCP1State(ModuleState):
     k_d: float
 
 
-class MCP1(MoleculeModel):
+class MCP1(ModuleModel):
     """MCP1"""
 
     name = 'mcp1'
@@ -95,7 +96,12 @@ class MCP1(MoleculeModel):
         )
 
         # Diffusion of MCP1
-        self.diffuse(mcp1.grid, state)
+        mcp1.grid[:] = apply_diffusion(
+            variable=mcp1.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 

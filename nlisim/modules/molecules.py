@@ -1,10 +1,9 @@
 import math
 
 from attr import attrs
-import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import apply_diffusion, discrete_laplacian
+from nlisim.diffusion import discrete_laplacian
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -58,16 +57,3 @@ class Molecules(ModuleModel):
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         return state
-
-
-class MoleculeModel(ModuleModel):
-    @staticmethod
-    def diffuse(grid: np.ndarray, state: State):
-        molecules: MoleculesState = state.molecules
-
-        grid[:] = apply_diffusion(
-            variable=grid,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=molecules.time_step,
-        )

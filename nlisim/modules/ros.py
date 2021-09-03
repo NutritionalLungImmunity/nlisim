@@ -4,8 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.diffusion import apply_diffusion
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
@@ -20,7 +19,7 @@ class ROSState(ModuleState):
     )  # units: atto-mol
 
 
-class ROS(MoleculeModel):
+class ROS(ModuleModel):
     """Reactive Oxygen Species"""
 
     name = 'ros'

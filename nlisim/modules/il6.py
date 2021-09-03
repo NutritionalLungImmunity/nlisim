@@ -6,8 +6,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -32,7 +32,7 @@ class IL6State(ModuleState):
     k_d: float  # units: aM
 
 
-class IL6(MoleculeModel):
+class IL6(ModuleModel):
     """IL6"""
 
     name = 'il6'

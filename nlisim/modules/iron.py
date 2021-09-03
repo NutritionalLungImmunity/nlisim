@@ -5,8 +5,7 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
@@ -21,7 +20,7 @@ class IronState(ModuleState):
     )  # units: atto-mols
 
 
-class Iron(MoleculeModel):
+class Iron(ModuleModel):
     """Iron"""
 
     name = 'iron'

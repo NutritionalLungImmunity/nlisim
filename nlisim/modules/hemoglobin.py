@@ -7,8 +7,8 @@ import numpy as np
 from nlisim.coordinates import Voxel
 from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -24,7 +24,7 @@ class HemoglobinState(ModuleState):
     ma_heme_import_rate: float
 
 
-class Hemoglobin(MoleculeModel):
+class Hemoglobin(ModuleModel):
     """Hemoglobin"""
 
     name = 'hemoglobin'

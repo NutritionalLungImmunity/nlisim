@@ -5,8 +5,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -24,7 +23,7 @@ class HepcidinState(ModuleState):
     k_d: float  # units: aM
 
 
-class Hepcidin(MoleculeModel):
+class Hepcidin(ModuleModel):
     """Hepcidin"""
 
     name = 'hepcidin'
