@@ -66,7 +66,7 @@ class PneumocyteState(PhagocyteModuleState):
     iter_to_change_state: int  # units: steps
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
     # p_il8_qtty: float
-    # p_tnf_qtty: float
+    p_tnf_qtty: float
     pr_p_int: float
 
 
@@ -86,7 +86,7 @@ class Pneumocyte(PhagocyteModel):
 
         # pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
         # pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
-        # pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
+        pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
 
         # computed values
         pneumocyte.iter_to_rest = int(
