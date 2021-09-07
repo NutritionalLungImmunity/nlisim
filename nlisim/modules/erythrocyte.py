@@ -107,11 +107,12 @@ class ErythrocyteModel(ModuleModel):
         # TODO: python for loop, possible performance issue
         zs, ys, xs = np.where(erythrocytes_to_hemorrhage > 0)
         for z, y, x in zip(zs, ys, xs):
-            # TODO: make sure that these macrophages are alive!
             local_macrophages = macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z))
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
+                if macrophage_cell['dead']:
+                    continue
                 # TODO: what's the 4 all about?
                 macrophage_cell['iron_pool'] += (
                     4
