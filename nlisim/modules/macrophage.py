@@ -35,7 +35,6 @@ class MacrophageCellData(PhagocyteCellData):
         ('status_iteration', np.uint64),
     ]
 
-    # TODO: this implementation of inheritance is not so slick, redo with super?
     dtype = np.dtype(
         CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
     )  # type: ignore
@@ -76,21 +75,23 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 @attr.s(kw_only=True)
 class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    iter_to_rest: int
-    time_to_change_state: float
-    iter_to_change_state: int
-    ma_internal_iron: float
-    kd_ma_iron: float
-    ma_vol: float
-    ma_half_life: float
-    max_ma: int
-    min_ma: int
-    init_num_macrophages: int
+    iter_to_rest: int  # units: steps
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    ma_internal_iron: float  # units: atto-mols
+    prob_death_per_timestep: float  # units: probability * step^-1
+    max_ma: int  # units: count
+    min_ma: int  # units: count
+    init_num_macrophages: int  # units: count
     recruitment_rate: float
     rec_bias: float
     drift_bias: float
     ma_move_rate_act: float  # µm/min
     ma_move_rate_rest: float  # µm/min
+    half_life: float  # units: hours
+    # UNUSED:
+    # kd_ma_iron: float
+    # ma_vol: float  # units: pL
 
 
 class Macrophage(PhagocyteModel):
@@ -104,32 +105,38 @@ class Macrophage(PhagocyteModel):
         lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
-        macrophage.max_conidia = self.config.getint('max_conidia')
-        macrophage.iter_to_rest = self.config.getint('iter_to_rest')
-        macrophage.time_to_change_state = self.config.getint('time_to_change_state')
-        macrophage.ma_internal_iron = self.config.getfloat('ma_internal_iron')
-        macrophage.kd_ma_iron = self.config.getfloat('kd_ma_iron')
-        macrophage.ma_vol = self.config.getfloat('ma_vol')
+        macrophage.max_conidia = self.config.getint(
+            'max_conidia'
+        )  # (from phagocyte model) units: count
+        macrophage.iter_to_rest = self.config.getint('iter_to_rest')  # units: steps
+        macrophage.time_to_change_state = self.config.getint('time_to_change_state')  # units: hours
+        macrophage.ma_internal_iron = self.config.getfloat('ma_internal_iron')  # units: atto-mols
 
-        macrophage.max_ma = self.config.getint('max_ma')
-        macrophage.min_ma = self.config.getint('min_ma')
+        macrophage.max_ma = self.config.getint('max_ma')  # units: count
+        macrophage.min_ma = self.config.getint('min_ma')  # units: count
+        macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')  # units: count
 
-        macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')
         macrophage.recruitment_rate = self.config.getfloat('recruitment_rate')
         macrophage.rec_bias = self.config.getfloat('rec_bias')
-
         macrophage.drift_bias = self.config.getfloat('drift_bias')
+
         macrophage.ma_move_rate_act = self.config.getfloat('ma_move_rate_act')  # µm/min
         macrophage.ma_move_rate_rest = self.config.getfloat('ma_move_rate_rest')  # µm/min
+
+        macrophage.half_life = self.config.getfloat('ma_half_life')  # units: hours
+
+        # UNUSED:
+        # macrophage.kd_ma_iron = self.config.getfloat('kd_ma_iron')
+        # macrophage.ma_vol = self.config.getfloat('ma_vol')
 
         # computed values
         macrophage.iter_to_change_state = int(
             macrophage.time_to_change_state * (60 / time_step_size)
-        )  # 4
+        )  # units: hours * (min/hour) / (min/step) = step
 
-        macrophage.ma_half_life = -math.log(0.5) / (
-            self.config.getfloat('ma_half_life') * (60 / time_step_size)
-        )
+        macrophage.prob_death_per_timestep = -math.log(0.5) / (
+            macrophage.half_life * (60 / time_step_size)
+        )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
 
         # initialize cells, placing them randomly
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -164,10 +171,9 @@ class Macrophage(PhagocyteModel):
 
             self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-            # TODO: this usage suggests 'half life' should be 'prob death', real half life is 1/prob
             if (
                 num_cells_in_phagosome == 0
-                and rg.uniform() < macrophage.ma_half_life
+                and rg.uniform() < macrophage.prob_death_per_timestep
                 and len(macrophage.cells.alive()) > macrophage.min_ma
             ):
                 macrophage_cell['status'] = PhagocyteStatus.DEAD
@@ -184,11 +190,11 @@ class Macrophage(PhagocyteModel):
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
                 max_move_step = (
                     macrophage.ma_move_rate_act * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             else:
                 max_move_step = (
                     macrophage.ma_move_rate_rest * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             move_step: int = rg.poisson(max_move_step)
             # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
@@ -304,7 +310,6 @@ class Macrophage(PhagocyteModel):
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
-                # TODO: have placement fail due to overcrowding of cells
                 vox_z, vox_y, vox_x = coordinates
                 # the x,y,z coordinates are in the centers of the grids
                 z = state.grid.z[vox_z]

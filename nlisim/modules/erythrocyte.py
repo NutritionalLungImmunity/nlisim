@@ -30,9 +30,11 @@ def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
 class ErythrocyteState(ModuleState):
     cells: np.ndarray = attrib(default=attr.Factory(cell_grid_factory, takes_self=True))
     kd_hemo: float
-    max_erythrocyte_voxel: int
-    hemoglobin_concentration: float
-    pr_ma_phag_eryt: float
+    init_erythrocyte_level: int  # units: count
+    max_erythrocyte_voxel: int  # units: count
+    hemoglobin_quantity: float  # units: atto-mols
+    pr_macrophage_phagocytize_erythrocyte_param: float
+    pr_macrophage_phagocytize_erythrocyte: float  # units: probability
 
 
 class ErythrocyteModel(ModuleModel):
@@ -46,18 +48,28 @@ class ErythrocyteModel(ModuleModel):
         time_step_size: float = self.time_step
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
-        erythrocyte.max_erythrocyte_voxel = self.config.getint('max_erythrocyte_voxel')
-        erythrocyte.hemoglobin_concentration = self.config.getfloat('hemoglobin_concentration')
+        erythrocyte.init_erythrocyte_level = self.config.getint(
+            'init_erythrocyte_level'
+        )  # units: count
+        erythrocyte.max_erythrocyte_voxel = self.config.getint(
+            'max_erythrocyte_voxel'
+        )  # units: count
+        erythrocyte.hemoglobin_quantity = self.config.getfloat(
+            'hemoglobin_concentration'
+        )  # units: atto-mols
+        erythrocyte.pr_macrophage_phagocytize_erythrocyte_param = self.config.getfloat(
+            'pr_macrophage_phagocytize_erythrocyte_param'
+        )
 
         # initialize cells
         # TODO: discuss
-        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = self.config.getfloat(
-            'init_erythrocyte_level'
+        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = erythrocyte.init_erythrocyte_level
+        erythrocyte.pr_macrophage_phagocytize_erythrocyte = -math.expm1(
+            -time_step_size
+            / 60
+            / voxel_volume
+            / erythrocyte.pr_macrophage_phagocytize_erythrocyte_param
         )
-        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
-        erythrocyte.pr_ma_phag_eryt = 1 - math.exp(
-            -rel_n_hyphae_int_unit_t / (voxel_volume * self.config.getfloat('pr_ma_phag_eryt'))
-        )  # TODO: -expm1?
 
         return state
 
@@ -74,12 +86,13 @@ class ErythrocyteModel(ModuleModel):
         shape = erythrocyte.cells['count'].shape
 
         # erythrocytes replenish themselves
-        # TODO: avg? variable name improvement?
-        avg = (1 - molecules.turnover_rate) * (
+        avg_number_of_new_erythrocytes = (1 - molecules.turnover_rate) * (
             1 - erythrocyte.cells['count'] / erythrocyte.max_erythrocyte_voxel
         )
-        mask = avg > 0
-        erythrocyte.cells['count'][mask] += np.random.poisson(avg[mask], avg[mask].shape)
+        mask = avg_number_of_new_erythrocytes > 0
+        erythrocyte.cells['count'][mask] += np.random.poisson(
+            avg_number_of_new_erythrocytes[mask], avg_number_of_new_erythrocytes[mask].shape
+        )
 
         # ---------- interactions
 
@@ -89,34 +102,34 @@ class ErythrocyteModel(ModuleModel):
 
         # interact with hemolysin. pop goes the blood cell
         # TODO: avg? variable name improvement?
-        avg = erythrocyte.cells['count'] * activation_function(
+        avg_lysed_erythrocytes = erythrocyte.cells['count'] * activation_function(
             x=hemolysin.grid,
             k_d=erythrocyte.kd_hemo,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=voxel_volume,
             b=1,
         )
-        num = np.minimum(np.random.poisson(avg, shape), erythrocyte.cells['count'])
-        erythrocyte.cells['hemoglobin'] += num * erythrocyte.hemoglobin_concentration
-        erythrocyte.cells['count'] -= num
+        number_lysed = np.minimum(
+            np.random.poisson(avg_lysed_erythrocytes, shape), erythrocyte.cells['count']
+        )
+        erythrocyte.cells['hemoglobin'] += number_lysed * erythrocyte.hemoglobin_quantity
+        erythrocyte.cells['count'] -= number_lysed
 
         # interact with Macrophage
         erythrocytes_to_hemorrhage = erythrocyte.cells['hemorrhage'] * np.random.poisson(
-            erythrocyte.pr_ma_phag_eryt * erythrocyte.cells['count'], shape
+            erythrocyte.pr_macrophage_phagocytize_erythrocyte * erythrocyte.cells['count'], shape
         )
-        # TODO: python for loop, possible performance issue
-        zs, ys, xs = np.where(erythrocytes_to_hemorrhage > 0)
-        for z, y, x in zip(zs, ys, xs):
+
+        for z, y, x in zip(*np.where(erythrocytes_to_hemorrhage > 0)):
             local_macrophages = macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z))
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
                 if macrophage_cell['dead']:
                     continue
-                # TODO: what's the 4 all about?
                 macrophage_cell['iron_pool'] += (
-                    4
-                    * erythrocyte.hemoglobin_concentration
+                    4  # number of iron atoms in hemoglobin
+                    * erythrocyte.hemoglobin_quantity
                     * erythrocytes_to_hemorrhage[z, y, x]
                     / num_local_macrophages
                 )

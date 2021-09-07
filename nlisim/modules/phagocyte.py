@@ -45,7 +45,7 @@ class PhagocyteCellData(CellData):
 
 @attrs(kw_only=True)
 class PhagocyteModuleState(ModuleState):
-    max_conidia: int
+    max_conidia: int  # units: count
 
 
 class PhagocyteModel(ModuleModel):

@@ -82,7 +82,7 @@ def random_sphere_point() -> np.ndarray:
 
 class AfumigatusCellData(CellData):
     AFUMIGATUS_FIELDS: List[Union[Tuple[str, Any], Tuple[str, Any, Any]]] = [
-        ('iron_pool', np.float64),
+        ('iron_pool', np.float64),  # units: atto-mol
         ('state', np.uint8),
         ('status', np.uint8),
         ('is_root', bool),
@@ -176,24 +176,24 @@ class AfumigatusState(ModuleState):
     pr_ma_hyphae_param: float
     pr_ma_phag: float
     pr_ma_phag_param: float
-    pr_branch: float
-    steps_to_bn_eval: int
-    hyphae_volume: float
-    hyphal_length: float
-    kd_lip: float
-    time_to_swelling: float
-    iter_to_swelling: int
-    time_to_germinate: float
-    iter_to_germinate: int
-    time_to_grow: float
-    iter_to_grow: int
+    pr_branch: float  # units: probability
+    steps_to_bn_eval: int  # units: steps
+    hyphal_length: float  # units: µm
+    hyphae_volume: float  # units: L
+    conidia_vol: float  # units: L
+    kd_lip: float  # units: aM
+    init_iron: float  # units: atto-mol
+    time_to_swelling: float  # units: hours
+    iter_to_swelling: int  # units: steps
+    time_to_germinate: float  # units: hours
+    iter_to_germinate: int  # units: steps
+    time_to_grow: float  # units: hours
+    iter_to_grow: int  # units: steps
     pr_aspergillus_change: float
-    init_iron: float
-    conidia_vol: float
     rel_n_hyphae_int_unit_t: float
     rel_phag_affinity_unit_t: float
     phag_affinity_t: float
-    aspergillus_change_half_life: float
+    aspergillus_change_half_life: float  # units: hours
 
 
 class Afumigatus(ModuleModel):
@@ -209,27 +209,26 @@ class Afumigatus(ModuleModel):
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
         afumigatus.pr_ma_phag_param = self.config.getfloat('pr_ma_phag_param')
-
-        afumigatus.pr_branch = self.config.getfloat('pr_branch')
-        afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')
-
-        afumigatus.conidia_vol = self.config.getfloat('conidia_vol')
-        afumigatus.hyphae_volume = self.config.getfloat('hyphae_volume')
-        afumigatus.hyphal_length = self.config.getfloat('hyphal_length')
-
-        afumigatus.kd_lip = self.config.getfloat('kd_lip')
-
-        afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')
-        afumigatus.time_to_germinate = self.config.getfloat('time_to_germinate')
-        afumigatus.time_to_grow = self.config.getfloat('time_to_grow')
-        afumigatus.aspergillus_change_half_life = self.config.getfloat(
-            'aspergillus_change_half_life'
-        )
-
         afumigatus.phag_affinity_t = self.config.getfloat('phag_affinity_t')
 
+        afumigatus.pr_branch = self.config.getfloat('pr_branch')  # units: probability
+        afumigatus.steps_to_bn_eval = self.config.getint('steps_to_bn_eval')  # units: steps
+
+        afumigatus.conidia_vol = self.config.getfloat('conidia_vol')  # units: L
+        afumigatus.hyphae_volume = self.config.getfloat('hyphae_volume')  # units: L
+        afumigatus.hyphal_length = self.config.getfloat('hyphal_length')  # units: µm
+
+        afumigatus.kd_lip = self.config.getfloat('kd_lip')  # units: aM
+
+        afumigatus.time_to_swelling = self.config.getfloat('time_to_swelling')  # units: hours
+        afumigatus.time_to_germinate = self.config.getfloat('time_to_germinate')  # units: hours
+        afumigatus.time_to_grow = self.config.getfloat('time_to_grow')  # units: hours
+        afumigatus.aspergillus_change_half_life = self.config.getfloat(
+            'aspergillus_change_half_life'
+        )  # units: hours
+
         # computed values
-        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
+        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol  # units: aM*L = atto-mols
 
         afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
         afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
@@ -380,24 +379,26 @@ class Afumigatus(ModuleModel):
             afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE
             and macrophage_cell['status'] == PhagocyteStatus.ACTIVE
         ):
-            afumigatus_cell['status'] = AfumigatusCellStatus.DYING
-            if afumigatus_cell['next_septa'] != -1:
-                afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
-            if afumigatus_cell['next_branch'] != -1:
-                afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
+            Afumigatus.kill_hypha(afumigatus, afumigatus_cell, afumigatus_cell_index)
 
-            # TODO: what if the cell isn't a root? adding this. Will these be growable after a
-            #  macrophage gets them? I haven't done anything with that.
-            # TODO: this really should be spun off into its own method
-            parent_id = afumigatus_cell['previous_septa']
-            if parent_id != -1:
-                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                if parent_cell['next_septa'] == afumigatus_cell_index:
-                    parent_cell['next_septa'] = -1
-                elif parent_cell['next_branch'] == afumigatus_cell_index:
-                    parent_cell['next_branch'] = -1
-                else:
-                    raise AssertionError("The fungal tree structure must be screwed up somehow")
+    @staticmethod
+    def kill_hypha(afumigatus, afumigatus_cell, afumigatus_cell_index):
+        afumigatus_cell['status'] = AfumigatusCellStatus.DYING
+        if afumigatus_cell['next_septa'] != -1:
+            afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
+        if afumigatus_cell['next_branch'] != -1:
+            afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
+
+        # Note: Assuming that hyphae will not change growable state afterwards.
+        parent_id = afumigatus_cell['previous_septa']
+        if parent_id != -1:
+            parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+            if parent_cell['next_septa'] == afumigatus_cell_index:
+                parent_cell['next_septa'] = -1
+            elif parent_cell['next_branch'] == afumigatus_cell_index:
+                parent_cell['next_branch'] = -1
+            else:
+                raise AssertionError("The fungal tree structure must be screwed up somehow")
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
