@@ -132,7 +132,7 @@ class ErythrocyteModel(ModuleModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         erythrocyte: ErythrocyteState = state.erythrocyte
-        voxel_volume = state.voxel_volume
+        # voxel_volume = state.voxel_volume
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),

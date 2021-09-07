@@ -3,7 +3,7 @@ import math
 from attr import attrs
 from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import discrete_laplacian
+from nlisim.diffusion import periodic_discrete_laplacian
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -46,7 +46,9 @@ class Molecules(ModuleModel):
         # construct the laplacian
         tissue = state.lung_tissue
         # laplacian units: 1/(µm^2)
-        molecules.laplacian = discrete_laplacian(grid=state.grid, mask=tissue != TissueType.AIR)
+        molecules.laplacian = periodic_discrete_laplacian(
+            grid=state.grid, mask=tissue != TissueType.AIR
+        )
 
         # Note: Henrique's code did things a little differently here:
         #  1) three 1D laplacians instead of one 3D laplacian

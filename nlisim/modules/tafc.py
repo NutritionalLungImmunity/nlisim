@@ -13,7 +13,7 @@ from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
-    # note the expansion to another axis to account for 0, 1, or 2 bound Fe's.
+    # note the expansion to another axis to account for 0 or 1 bound Fe's.
     return np.zeros(
         shape=self.global_state.grid.shape, dtype=[('TAFC', np.float64), ('TAFCBI', np.float64)]
     )
@@ -197,7 +197,7 @@ class TAFC(ModuleModel):
         concentration = concentration_no_fe + concentration_fe
 
         return {
-            'concentration (nM)': float(concentration  / 1e9),
+            'concentration (nM)': float(concentration / 1e9),
             'concentration TAFC (nM)': float(concentration_no_fe / 1e9),
             'concentration TAFCBI (nM)': float(concentration_fe / 1e9),
         }
