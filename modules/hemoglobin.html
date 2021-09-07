@@ -34,9 +34,10 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -52,7 +53,7 @@ class HemoglobinState(ModuleState):
     ma_heme_import_rate: float
 
 
-class Hemoglobin(MoleculeModel):
+class Hemoglobin(ModuleModel):
     &#34;&#34;&#34;Hemoglobin&#34;&#34;&#34;
 
     name = &#39;hemoglobin&#39;
@@ -105,7 +106,12 @@ class Hemoglobin(MoleculeModel):
         )
 
         # Diffusion of Hemoglobin
-        self.diffuse(hemoglobin.grid, state)
+        hemoglobin.grid[:] = apply_diffusion(
+            variable=hemoglobin.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -114,7 +120,7 @@ class Hemoglobin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(hemoglobin.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(hemoglobin.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -157,7 +163,7 @@ class Hemoglobin(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Hemoglobin(MoleculeModel):
+<pre><code class="python">class Hemoglobin(ModuleModel):
     &#34;&#34;&#34;Hemoglobin&#34;&#34;&#34;
 
     name = &#39;hemoglobin&#39;
@@ -210,7 +216,12 @@ class Hemoglobin(MoleculeModel):
         )
 
         # Diffusion of Hemoglobin
-        self.diffuse(hemoglobin.grid, state)
+        hemoglobin.grid[:] = apply_diffusion(
+            variable=hemoglobin.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -219,7 +230,7 @@ class Hemoglobin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(hemoglobin.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(hemoglobin.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -228,7 +239,6 @@ class Hemoglobin(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -278,7 +288,12 @@ class Hemoglobin(MoleculeModel):
     )
 
     # Diffusion of Hemoglobin
-    self.diffuse(hemoglobin.grid, state)
+    hemoglobin.grid[:] = apply_diffusion(
+        variable=hemoglobin.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -286,21 +301,17 @@ class Hemoglobin(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>nlisim.modules.ros API documentation</title>
+<title>nlisim.modules.hemopexin API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>nlisim.modules.ros</code></h1>
+<h1 class="title">Module <code>nlisim.modules.hemopexin</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -30,63 +30,95 @@
 <pre><code class="python">from typing import Any, Dict
 
 import attr
+from attr import attrib, attrs
 import numpy as np
 
 from nlisim.diffusion import apply_diffusion
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
+from nlisim.util import michaelian_kinetics, turnover_rate
 
 
-def molecule_grid_factory(self: &#39;ROSState&#39;) -&gt; np.ndarray:
+def molecule_grid_factory(self: &#39;HemopexinState&#39;) -&gt; np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)
 
 
-@attr.s(kw_only=True, repr=False)
-class ROSState(ModuleState):
-    grid: np.ndarray = attr.ib(
+@attrs(kw_only=True, repr=False)
+class HemopexinState(ModuleState):
+    grid: np.ndarray = attrib(
         default=attr.Factory(molecule_grid_factory, takes_self=True)
     )  # units: atto-mol
+    k_m: float  # units: aM
+    k_cat: float  # units: XXX
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    system_concentration: float  # units: aM
+    system_amount_per_voxel: float  # units: atto-mol
 
 
-class ROS(ModuleModel):
-    &#34;&#34;&#34;Reactive Oxygen Species&#34;&#34;&#34;
+class Hemopexin(ModuleModel):
+    &#34;&#34;&#34;Hemopexin&#34;&#34;&#34;
 
-    name = &#39;ros&#39;
-    StateClass = ROSState
+    name = &#39;hemopexin&#39;
+    StateClass = HemopexinState
 
     def initialize(self, state: State) -&gt; State:
-        # ros: ROSState = state.ros
-        # geometry: GeometryState = state.geometry
-        # voxel_volume = geometry.voxel_volume
+        from nlisim.util import TissueType
+
+        hemopexin: HemopexinState = state.hemopexin
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # config file values
+        hemopexin.k_m = self.config.getfloat(&#39;k_m&#39;)
+        hemopexin.k_cat = self.config.getfloat(&#39;k_cat&#39;)
+        hemopexin.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
 
         # computed values
+        hemopexin.system_amount_per_voxel = hemopexin.system_concentration * voxel_volume
+        hemopexin.half_life_multiplier = 0.5 ** (
+            self.time_step / hemopexin.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
+
+        # initialize grid
+        hemopexin.grid[state.lung_tissue != TissueType.AIR] = hemopexin.system_amount_per_voxel
 
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
-        from nlisim.modules.molecules import MoleculesState
+        from nlisim.modules.hemoglobin import HemoglobinState
 
-        ros: ROSState = state.ros
+        hemopexin: HemopexinState = state.hemopexin
+        hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
+        voxel_volume: float = state.voxel_volume  # units: L
 
-        # TODO: code below adds zero, omitting until we have a non-trivial model
+        # Hemopexin / Hemoglobin reaction
+        reacted_quantity = michaelian_kinetics(
+            substrate=hemopexin.grid,
+            enzyme=hemoglobin.grid,
+            k_m=hemopexin.k_m,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            k_cat=hemopexin.k_cat,
+            voxel_volume=voxel_volume,
+        )
+        reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.grid], axis=0)
+        hemopexin.grid[:] = np.maximum(0.0, hemopexin.grid - reacted_quantity)
+        hemoglobin.grid[:] = np.maximum(0.0, hemoglobin.grid - reacted_quantity)
 
-        # elif type(interactable) is Macrophage:
-        #     assert isinstance(interactable, Macrophage)
-        #     macrophage: Macrophage = interactable
-        #
-        #     if macrophage.status == Macrophage.ACTIVE:
-        #         self.increase(0, x, y, z)
-        #     return True
+        # Degrade Hemopexin
+        hemopexin.grid *= hemopexin.half_life_multiplier
+        hemopexin.grid *= turnover_rate(
+            x=hemopexin.grid,
+            x_system=hemopexin.system_amount_per_voxel,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
-        # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
-
-        # Diffusion of ros
-        ros.grid[:] = apply_diffusion(
-            variable=ros.grid,
+        # Diffusion of Hemolysin
+        hemopexin.grid[:] = apply_diffusion(
+            variable=hemopexin.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
             dt=self.time_step,
@@ -95,16 +127,19 @@ class ROS(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        ros: ROSState = state.ros
+        from nlisim.util import TissueType
+
+        hemopexin: HemopexinState = state.hemopexin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration (nM)&#39;: float(np.mean(ros.grid) / voxel_volume / 1e9),
+            &#39;concentration (nM)&#39;: float(np.mean(hemopexin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
-        ros: ROSState = state.ros
-        return &#39;molecule&#39;, ros.grid</code></pre>
+        hemopexin: HemopexinState = state.hemopexin
+        return &#39;molecule&#39;, hemopexin.grid</code></pre>
 </details>
 </section>
 <section>
@@ -114,8 +149,8 @@ class ROS(ModuleModel):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="nlisim.modules.ros.molecule_grid_factory"><code class="name flex">
-<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="nlisim.modules.ros.ROSState" href="#nlisim.modules.ros.ROSState">ROSState</a>) ‑> numpy.ndarray</span>
+<dt id="nlisim.modules.hemopexin.molecule_grid_factory"><code class="name flex">
+<span>def <span class="ident">molecule_grid_factory</span></span>(<span>self: <a title="nlisim.modules.hemopexin.HemopexinState" href="#nlisim.modules.hemopexin.HemopexinState">HemopexinState</a>) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -123,7 +158,7 @@ class ROS(ModuleModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def molecule_grid_factory(self: &#39;ROSState&#39;) -&gt; np.ndarray:
+<pre><code class="python">def molecule_grid_factory(self: &#39;HemopexinState&#39;) -&gt; np.ndarray:
     return np.zeros(shape=self.global_state.grid.shape, dtype=float)</code></pre>
 </details>
 </dd>
@@ -132,55 +167,78 @@ class ROS(ModuleModel):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="nlisim.modules.ros.ROS"><code class="flex name class">
-<span>class <span class="ident">ROS</span></span>
+<dt id="nlisim.modules.hemopexin.Hemopexin"><code class="flex name class">
+<span>class <span class="ident">Hemopexin</span></span>
 <span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Reactive Oxygen Species</p></div>
+<div class="desc"><p>Hemopexin</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ROS(ModuleModel):
-    &#34;&#34;&#34;Reactive Oxygen Species&#34;&#34;&#34;
+<pre><code class="python">class Hemopexin(ModuleModel):
+    &#34;&#34;&#34;Hemopexin&#34;&#34;&#34;
 
-    name = &#39;ros&#39;
-    StateClass = ROSState
+    name = &#39;hemopexin&#39;
+    StateClass = HemopexinState
 
     def initialize(self, state: State) -&gt; State:
-        # ros: ROSState = state.ros
-        # geometry: GeometryState = state.geometry
-        # voxel_volume = geometry.voxel_volume
+        from nlisim.util import TissueType
+
+        hemopexin: HemopexinState = state.hemopexin
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # config file values
+        hemopexin.k_m = self.config.getfloat(&#39;k_m&#39;)
+        hemopexin.k_cat = self.config.getfloat(&#39;k_cat&#39;)
+        hemopexin.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
 
         # computed values
+        hemopexin.system_amount_per_voxel = hemopexin.system_concentration * voxel_volume
+        hemopexin.half_life_multiplier = 0.5 ** (
+            self.time_step / hemopexin.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
+
+        # initialize grid
+        hemopexin.grid[state.lung_tissue != TissueType.AIR] = hemopexin.system_amount_per_voxel
 
         return state
 
     def advance(self, state: State, previous_time: float) -&gt; State:
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
-        from nlisim.modules.molecules import MoleculesState
+        from nlisim.modules.hemoglobin import HemoglobinState
 
-        ros: ROSState = state.ros
+        hemopexin: HemopexinState = state.hemopexin
+        hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
+        voxel_volume: float = state.voxel_volume  # units: L
 
-        # TODO: code below adds zero, omitting until we have a non-trivial model
+        # Hemopexin / Hemoglobin reaction
+        reacted_quantity = michaelian_kinetics(
+            substrate=hemopexin.grid,
+            enzyme=hemoglobin.grid,
+            k_m=hemopexin.k_m,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            k_cat=hemopexin.k_cat,
+            voxel_volume=voxel_volume,
+        )
+        reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.grid], axis=0)
+        hemopexin.grid[:] = np.maximum(0.0, hemopexin.grid - reacted_quantity)
+        hemoglobin.grid[:] = np.maximum(0.0, hemoglobin.grid - reacted_quantity)
 
-        # elif type(interactable) is Macrophage:
-        #     assert isinstance(interactable, Macrophage)
-        #     macrophage: Macrophage = interactable
-        #
-        #     if macrophage.status == Macrophage.ACTIVE:
-        #         self.increase(0, x, y, z)
-        #     return True
+        # Degrade Hemopexin
+        hemopexin.grid *= hemopexin.half_life_multiplier
+        hemopexin.grid *= turnover_rate(
+            x=hemopexin.grid,
+            x_system=hemopexin.system_amount_per_voxel,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
-        # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
-
-        # Diffusion of ros
-        ros.grid[:] = apply_diffusion(
-            variable=ros.grid,
+        # Diffusion of Hemolysin
+        hemopexin.grid[:] = apply_diffusion(
+            variable=hemopexin.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
             dt=self.time_step,
@@ -189,16 +247,19 @@ class ROS(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
-        ros: ROSState = state.ros
+        from nlisim.util import TissueType
+
+        hemopexin: HemopexinState = state.hemopexin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration (nM)&#39;: float(np.mean(ros.grid) / voxel_volume / 1e9),
+            &#39;concentration (nM)&#39;: float(np.mean(hemopexin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
-        ros: ROSState = state.ros
-        return &#39;molecule&#39;, ros.grid</code></pre>
+        hemopexin: HemopexinState = state.hemopexin
+        return &#39;molecule&#39;, hemopexin.grid</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -206,7 +267,7 @@ class ROS(ModuleModel):
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="nlisim.modules.ros.ROS.advance"><code class="name flex">
+<dt id="nlisim.modules.hemopexin.Hemopexin.advance"><code class="name flex">
 <span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float) ‑> <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a></span>
 </code></dt>
 <dd>
@@ -217,26 +278,38 @@ class ROS(ModuleModel):
 </summary>
 <pre><code class="python">def advance(self, state: State, previous_time: float) -&gt; State:
     &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
-    from nlisim.modules.molecules import MoleculesState
+    from nlisim.modules.hemoglobin import HemoglobinState
 
-    ros: ROSState = state.ros
+    hemopexin: HemopexinState = state.hemopexin
+    hemoglobin: HemoglobinState = state.hemoglobin
     molecules: MoleculesState = state.molecules
+    voxel_volume: float = state.voxel_volume  # units: L
 
-    # TODO: code below adds zero, omitting until we have a non-trivial model
+    # Hemopexin / Hemoglobin reaction
+    reacted_quantity = michaelian_kinetics(
+        substrate=hemopexin.grid,
+        enzyme=hemoglobin.grid,
+        k_m=hemopexin.k_m,
+        h=self.time_step / 60,  # units: (min/step) / (min/hour)
+        k_cat=hemopexin.k_cat,
+        voxel_volume=voxel_volume,
+    )
+    reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.grid], axis=0)
+    hemopexin.grid[:] = np.maximum(0.0, hemopexin.grid - reacted_quantity)
+    hemoglobin.grid[:] = np.maximum(0.0, hemoglobin.grid - reacted_quantity)
 
-    # elif type(interactable) is Macrophage:
-    #     assert isinstance(interactable, Macrophage)
-    #     macrophage: Macrophage = interactable
-    #
-    #     if macrophage.status == Macrophage.ACTIVE:
-    #         self.increase(0, x, y, z)
-    #     return True
+    # Degrade Hemopexin
+    hemopexin.grid *= hemopexin.half_life_multiplier
+    hemopexin.grid *= turnover_rate(
+        x=hemopexin.grid,
+        x_system=hemopexin.system_amount_per_voxel,
+        base_turnover_rate=molecules.turnover_rate,
+        rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+    )
 
-    # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
-
-    # Diffusion of ros
-    ros.grid[:] = apply_diffusion(
-        variable=ros.grid,
+    # Diffusion of Hemolysin
+    hemopexin.grid[:] = apply_diffusion(
+        variable=hemopexin.grid,
         laplacian=molecules.laplacian,
         diffusivity=molecules.diffusion_constant,
         dt=self.time_step,
@@ -263,8 +336,8 @@ class ROS(ModuleModel):
 </li>
 </ul>
 </dd>
-<dt id="nlisim.modules.ros.ROSState"><code class="flex name class">
-<span>class <span class="ident">ROSState</span></span>
+<dt id="nlisim.modules.hemopexin.HemopexinState"><code class="flex name class">
+<span>class <span class="ident">HemopexinState</span></span>
 <span>(</span><span>*, global_state: State, grid: numpy.ndarray = NOTHING)</span>
 </code></dt>
 <dd>
@@ -273,15 +346,21 @@ class ROS(ModuleModel):
 bool) and numpy arrays of those types.
 Modules containing more complicated
 state must override the serialization mechanism with custom behavior.</p>
-<p>Method generated by attrs for class ROSState.</p></div>
+<p>Method generated by attrs for class HemopexinState.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ROSState(ModuleState):
-    grid: np.ndarray = attr.ib(
+<pre><code class="python">class HemopexinState(ModuleState):
+    grid: np.ndarray = attrib(
         default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mol</code></pre>
+    )  # units: atto-mol
+    k_m: float  # units: aM
+    k_cat: float  # units: XXX
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    system_concentration: float  # units: aM
+    system_amount_per_voxel: float  # units: atto-mol</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -289,7 +368,31 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.ros.ROSState.grid"><code class="name">var <span class="ident">grid</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.hemopexin.HemopexinState.grid"><code class="name">var <span class="ident">grid</span> : numpy.ndarray</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.half_life"><code class="name">var <span class="ident">half_life</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.half_life_multiplier"><code class="name">var <span class="ident">half_life_multiplier</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.k_cat"><code class="name">var <span class="ident">k_cat</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.k_m"><code class="name">var <span class="ident">k_m</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.system_amount_per_voxel"><code class="name">var <span class="ident">system_amount_per_voxel</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.hemopexin.HemopexinState.system_concentration"><code class="name">var <span class="ident">system_concentration</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -322,21 +425,27 @@ state must override the serialization mechanism with custom behavior.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="nlisim.modules.ros.molecule_grid_factory" href="#nlisim.modules.ros.molecule_grid_factory">molecule_grid_factory</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.molecule_grid_factory" href="#nlisim.modules.hemopexin.molecule_grid_factory">molecule_grid_factory</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.ros.ROS" href="#nlisim.modules.ros.ROS">ROS</a></code></h4>
+<h4><code><a title="nlisim.modules.hemopexin.Hemopexin" href="#nlisim.modules.hemopexin.Hemopexin">Hemopexin</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.ros.ROS.advance" href="#nlisim.modules.ros.ROS.advance">advance</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.Hemopexin.advance" href="#nlisim.modules.hemopexin.Hemopexin.advance">advance</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="nlisim.modules.ros.ROSState" href="#nlisim.modules.ros.ROSState">ROSState</a></code></h4>
+<h4><code><a title="nlisim.modules.hemopexin.HemopexinState" href="#nlisim.modules.hemopexin.HemopexinState">HemopexinState</a></code></h4>
 <ul class="">
-<li><code><a title="nlisim.modules.ros.ROSState.grid" href="#nlisim.modules.ros.ROSState.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.grid" href="#nlisim.modules.hemopexin.HemopexinState.grid">grid</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.half_life" href="#nlisim.modules.hemopexin.HemopexinState.half_life">half_life</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.half_life_multiplier" href="#nlisim.modules.hemopexin.HemopexinState.half_life_multiplier">half_life_multiplier</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.k_cat" href="#nlisim.modules.hemopexin.HemopexinState.k_cat">k_cat</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.k_m" href="#nlisim.modules.hemopexin.HemopexinState.k_m">k_m</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.system_amount_per_voxel" href="#nlisim.modules.hemopexin.HemopexinState.system_amount_per_voxel">system_amount_per_voxel</a></code></li>
+<li><code><a title="nlisim.modules.hemopexin.HemopexinState.system_concentration" href="#nlisim.modules.hemopexin.HemopexinState.system_concentration">system_concentration</a></code></li>
 </ul>
 </li>
 </ul>

@@ -34,8 +34,8 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -46,11 +46,13 @@ def molecule_grid_factory(self: &#39;HepcidinState&#39;) -&gt; np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class HepcidinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    kd_hep: float
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    k_d: float  # units: aM
 
 
-class Hepcidin(MoleculeModel):
+class Hepcidin(ModuleModel):
     &#34;&#34;&#34;Hepcidin&#34;&#34;&#34;
 
     name = &#39;hepcidin&#39;
@@ -60,7 +62,7 @@ class Hepcidin(MoleculeModel):
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values
-        hepcidin.kd_hep = self.config.getfloat(&#39;kd_hep&#39;)
+        hepcidin.k_d = self.config.getfloat(&#39;k_d&#39;)  # aM
 
         # computed values (none)
 
@@ -79,12 +81,12 @@ class Hepcidin(MoleculeModel):
             *np.where(
                 activation_function(
                     x=hepcidin.grid,
-                    kd=hepcidin.kd_hep,
-                    h=self.time_step / 60,
+                    k_d=hepcidin.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
-                &gt; np.random.random(hepcidin.grid.shape)
+                &gt; rg.random(size=hepcidin.grid.shape)
             )
         )
         for z, y, x in activated_voxels:
@@ -100,11 +102,14 @@ class Hepcidin(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         hepcidin: HepcidinState = state.hepcidin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(hepcidin.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(hepcidin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -147,7 +152,7 @@ class Hepcidin(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Hepcidin(MoleculeModel):
+<pre><code class="python">class Hepcidin(ModuleModel):
     &#34;&#34;&#34;Hepcidin&#34;&#34;&#34;
 
     name = &#39;hepcidin&#39;
@@ -157,7 +162,7 @@ class Hepcidin(MoleculeModel):
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values
-        hepcidin.kd_hep = self.config.getfloat(&#39;kd_hep&#39;)
+        hepcidin.k_d = self.config.getfloat(&#39;k_d&#39;)  # aM
 
         # computed values (none)
 
@@ -176,12 +181,12 @@ class Hepcidin(MoleculeModel):
             *np.where(
                 activation_function(
                     x=hepcidin.grid,
-                    kd=hepcidin.kd_hep,
-                    h=self.time_step / 60,
+                    k_d=hepcidin.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
-                &gt; np.random.random(hepcidin.grid.shape)
+                &gt; rg.random(size=hepcidin.grid.shape)
             )
         )
         for z, y, x in activated_voxels:
@@ -197,11 +202,14 @@ class Hepcidin(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         hepcidin: HepcidinState = state.hepcidin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(hepcidin.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(hepcidin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -210,7 +218,6 @@ class Hepcidin(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -237,12 +244,12 @@ class Hepcidin(MoleculeModel):
         *np.where(
             activation_function(
                 x=hepcidin.grid,
-                kd=hepcidin.kd_hep,
-                h=self.time_step / 60,
+                k_d=hepcidin.k_d,
+                h=self.time_step / 60,  # units: (min/step) / (min/hour)
                 volume=voxel_volume,
                 b=1,
             )
-            &gt; np.random.random(hepcidin.grid.shape)
+            &gt; rg.random(size=hepcidin.grid.shape)
         )
     )
     for z, y, x in activated_voxels:
@@ -261,21 +268,17 @@ class Hepcidin(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -296,8 +299,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class HepcidinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    kd_hep: float</code></pre>
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    k_d: float  # units: aM</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -309,7 +314,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.hepcidin.HepcidinState.kd_hep"><code class="name">var <span class="ident">kd_hep</span> : float</code></dt>
+<dt id="nlisim.modules.hepcidin.HepcidinState.k_d"><code class="name">var <span class="ident">k_d</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -357,7 +362,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <h4><code><a title="nlisim.modules.hepcidin.HepcidinState" href="#nlisim.modules.hepcidin.HepcidinState">HepcidinState</a></code></h4>
 <ul class="">
 <li><code><a title="nlisim.modules.hepcidin.HepcidinState.grid" href="#nlisim.modules.hepcidin.HepcidinState.grid">grid</a></code></li>
-<li><code><a title="nlisim.modules.hepcidin.HepcidinState.kd_hep" href="#nlisim.modules.hepcidin.HepcidinState.kd_hep">kd_hep</a></code></li>
+<li><code><a title="nlisim.modules.hepcidin.HepcidinState.k_d" href="#nlisim.modules.hepcidin.HepcidinState.k_d">k_d</a></code></li>
 </ul>
 </li>
 </ul>

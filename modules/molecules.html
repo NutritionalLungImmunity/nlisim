@@ -27,17 +27,12 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from functools import reduce
-from itertools import product
-import math
-from operator import mul
+<pre><code class="python">import math
 
 from attr import attrs
-import numpy as np
-import scipy
-from scipy.sparse import dok_matrix
-from scipy.sparse.linalg import cg
+from scipy.sparse import csr_matrix
 
+from nlisim.diffusion import periodic_discrete_laplacian
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -47,8 +42,9 @@ class MoleculesState(ModuleState):
     turnover_rate: float
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
-    diffusion_constant_timestep: float
-    implicit_euler_matrix: np.ndarray
+    diffusion_constant: float
+    laplacian: csr_matrix
+    time_step: float
 
 
 class Molecules(ModuleModel):
@@ -64,86 +60,34 @@ class Molecules(ModuleModel):
         molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)
         molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;)
 
-        # TODO: move these to individual molecules? otherwise changes in the time step will be off
+        # TODO: there is an implicit assumption, below, that all molecules are on the
+        #  same time step. This is true on Aug 24, 2021.
+
         # Computed values
         molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
         # TODO: original comments as below. Is the param 0.2?
         #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
         molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        # TODO: is this a 2 hour constant? i.e. 4*30 min
-        molecules.diffusion_constant_timestep = (
-            self.config.getfloat(&#39;diffusion_constant&#39;) * self.time_step / (4 * 30)
-        )
+        molecules.diffusion_constant = self.config.getfloat(&#39;diffusion_constant&#39;)  # units: µm^2/min
+        molecules.time_step = self.time_step  # units: min/step
 
         # construct the laplacian
-        grid_cardinality = reduce(mul, state.grid.shape)
         tissue = state.lung_tissue
-
-        laplacian = dok_matrix((grid_cardinality, grid_cardinality))
-        z_grid_size, y_grid_size, x_grid_size = state.grid.shape
-        for z, y, x in product(*map(range, state.grid.shape)):
-            # ignore air voxels
-            if tissue[z, y, x] == TissueType.AIR.value:
-                continue
-            # collect connections to non-air voxels (periodic boundary)
-            base_idx = np.ravel_multi_index((z, y, x), state.grid.shape)
-
-            if tissue[(z - 1) % z_grid_size, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(((z - 1) % z_grid_size, y, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[(z + 1) % z_grid_size, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(((z + 1) % z_grid_size, y, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, (y - 1) % y_grid_size, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, (y - 1) % y_grid_size, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, (y + 1) % y_grid_size, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, (y + 1) % y_grid_size, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, y, (x - 1) % x_grid_size] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, y, (x - 1) % x_grid_size), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, y, (x + 1) % x_grid_size] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, y, (x + 1) % x_grid_size), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-        # D = 16
-        # TIME_STEP_SIZE = 2  # minutes
-        # D = Constants.D / (4 * (30 / Constants.TIME_STEP_SIZE))
-        molecules.implicit_euler_matrix = (
-            scipy.sparse.identity(grid_cardinality)
-            - molecules.diffusion_constant_timestep * laplacian.tocsr()
+        # laplacian units: 1/(µm^2)
+        molecules.laplacian = periodic_discrete_laplacian(
+            grid=state.grid, mask=tissue != TissueType.AIR
         )
+
+        # Note: Henrique&#39;s code did things a little differently here:
+        #  1) three 1D laplacians instead of one 3D laplacian
+        #  2) four implicit steps instead of one
 
         return state
 
     def advance(self, state: State, previous_time: float):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
-        return state
-
-
-class MoleculeModel(ModuleModel):
-    @staticmethod
-    def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
-        molecules: MoleculesState = state.molecules
-
-        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=tolerance)
-        if info != 0:
-            raise Exception(f&#39;GMRES failed ({info})&#39;)
-
-        grid[:] = var_next.reshape(grid.shape)</code></pre>
+        return state</code></pre>
 </details>
 </section>
 <section>
@@ -155,94 +99,6 @@ class MoleculeModel(ModuleModel):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="nlisim.modules.molecules.MoleculeModel"><code class="flex name class">
-<span>class <span class="ident">MoleculeModel</span></span>
-<span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class MoleculeModel(ModuleModel):
-    @staticmethod
-    def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
-        molecules: MoleculesState = state.molecules
-
-        var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=tolerance)
-        if info != 0:
-            raise Exception(f&#39;GMRES failed ({info})&#39;)
-
-        grid[:] = var_next.reshape(grid.shape)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="nlisim.modules.antitnfa.AntiTNFa" href="antitnfa.html#nlisim.modules.antitnfa.AntiTNFa">AntiTNFa</a></li>
-<li><a title="nlisim.modules.est_b.EstB" href="est_b.html#nlisim.modules.est_b.EstB">EstB</a></li>
-<li><a title="nlisim.modules.hemoglobin.Hemoglobin" href="hemoglobin.html#nlisim.modules.hemoglobin.Hemoglobin">Hemoglobin</a></li>
-<li><a title="nlisim.modules.hemolysin.Hemolysin" href="hemolysin.html#nlisim.modules.hemolysin.Hemolysin">Hemolysin</a></li>
-<li><a title="nlisim.modules.hepcidin.Hepcidin" href="hepcidin.html#nlisim.modules.hepcidin.Hepcidin">Hepcidin</a></li>
-<li><a title="nlisim.modules.il10.IL10" href="il10.html#nlisim.modules.il10.IL10">IL10</a></li>
-<li><a title="nlisim.modules.il6.IL6" href="il6.html#nlisim.modules.il6.IL6">IL6</a></li>
-<li><a title="nlisim.modules.il8.IL8" href="il8.html#nlisim.modules.il8.IL8">IL8</a></li>
-<li><a title="nlisim.modules.iron.Iron" href="iron.html#nlisim.modules.iron.Iron">Iron</a></li>
-<li><a title="nlisim.modules.lactoferrin.Lactoferrin" href="lactoferrin.html#nlisim.modules.lactoferrin.Lactoferrin">Lactoferrin</a></li>
-<li><a title="nlisim.modules.liver.Liver" href="liver.html#nlisim.modules.liver.Liver">Liver</a></li>
-<li><a title="nlisim.modules.mcp1.MCP1" href="mcp1.html#nlisim.modules.mcp1.MCP1">MCP1</a></li>
-<li><a title="nlisim.modules.mip1b.MIP1B" href="mip1b.html#nlisim.modules.mip1b.MIP1B">MIP1B</a></li>
-<li><a title="nlisim.modules.mip2.MIP2" href="mip2.html#nlisim.modules.mip2.MIP2">MIP2</a></li>
-<li><a title="nlisim.modules.ros.ROS" href="ros.html#nlisim.modules.ros.ROS">ROS</a></li>
-<li><a title="nlisim.modules.tafc.TAFC" href="tafc.html#nlisim.modules.tafc.TAFC">TAFC</a></li>
-<li><a title="nlisim.modules.tgfb.TGFB" href="tgfb.html#nlisim.modules.tgfb.TGFB">TGFB</a></li>
-<li><a title="nlisim.modules.tnfa.TNFa" href="tnfa.html#nlisim.modules.tnfa.TNFa">TNFa</a></li>
-<li><a title="nlisim.modules.transferrin.Transferrin" href="transferrin.html#nlisim.modules.transferrin.Transferrin">Transferrin</a></li>
-</ul>
-<h3>Static methods</h3>
-<dl>
-<dt id="nlisim.modules.molecules.MoleculeModel.diffuse"><code class="name flex">
-<span>def <span class="ident">diffuse</span></span>(<span>grid: numpy.ndarray, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, tolerance: float = 1e-64)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
-    molecules: MoleculesState = state.molecules
-
-    var_next, info = cg(molecules.implicit_euler_matrix, grid.ravel(), tol=tolerance)
-    if info != 0:
-        raise Exception(f&#39;GMRES failed ({info})&#39;)
-
-    grid[:] = var_next.reshape(grid.shape)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
 <dt id="nlisim.modules.molecules.Molecules"><code class="flex name class">
 <span>class <span class="ident">Molecules</span></span>
 <span>(</span><span>config: <a title="nlisim.config.SimulationConfig" href="../config.html#nlisim.config.SimulationConfig">SimulationConfig</a>)</span>
@@ -266,68 +122,28 @@ def diffuse(grid: np.ndarray, state: State, tolerance: float = 1e-64):
         molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)
         molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;)
 
-        # TODO: move these to individual molecules? otherwise changes in the time step will be off
+        # TODO: there is an implicit assumption, below, that all molecules are on the
+        #  same time step. This is true on Aug 24, 2021.
+
         # Computed values
         molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
         # TODO: original comments as below. Is the param 0.2?
         #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
         molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        # TODO: is this a 2 hour constant? i.e. 4*30 min
-        molecules.diffusion_constant_timestep = (
-            self.config.getfloat(&#39;diffusion_constant&#39;) * self.time_step / (4 * 30)
-        )
+        molecules.diffusion_constant = self.config.getfloat(&#39;diffusion_constant&#39;)  # units: µm^2/min
+        molecules.time_step = self.time_step  # units: min/step
 
         # construct the laplacian
-        grid_cardinality = reduce(mul, state.grid.shape)
         tissue = state.lung_tissue
-
-        laplacian = dok_matrix((grid_cardinality, grid_cardinality))
-        z_grid_size, y_grid_size, x_grid_size = state.grid.shape
-        for z, y, x in product(*map(range, state.grid.shape)):
-            # ignore air voxels
-            if tissue[z, y, x] == TissueType.AIR.value:
-                continue
-            # collect connections to non-air voxels (periodic boundary)
-            base_idx = np.ravel_multi_index((z, y, x), state.grid.shape)
-
-            if tissue[(z - 1) % z_grid_size, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(((z - 1) % z_grid_size, y, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[(z + 1) % z_grid_size, y, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index(((z + 1) % z_grid_size, y, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, (y - 1) % y_grid_size, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, (y - 1) % y_grid_size, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, (y + 1) % y_grid_size, x] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, (y + 1) % y_grid_size, x), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, y, (x - 1) % x_grid_size] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, y, (x - 1) % x_grid_size), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-            if tissue[z, y, (x + 1) % x_grid_size] != TissueType.AIR.value:
-                offset_idx = np.ravel_multi_index((z, y, (x + 1) % x_grid_size), state.grid.shape)
-                laplacian[offset_idx, base_idx] += 1.0
-                laplacian[base_idx, base_idx] -= 1.0
-
-        # D = 16
-        # TIME_STEP_SIZE = 2  # minutes
-        # D = Constants.D / (4 * (30 / Constants.TIME_STEP_SIZE))
-        molecules.implicit_euler_matrix = (
-            scipy.sparse.identity(grid_cardinality)
-            - molecules.diffusion_constant_timestep * laplacian.tocsr()
+        # laplacian units: 1/(µm^2)
+        molecules.laplacian = periodic_discrete_laplacian(
+            grid=state.grid, mask=tissue != TissueType.AIR
         )
+
+        # Note: Henrique&#39;s code did things a little differently here:
+        #  1) three 1D laplacians instead of one 3D laplacian
+        #  2) four implicit steps instead of one
 
         return state
 
@@ -392,8 +208,9 @@ state must override the serialization mechanism with custom behavior.</p>
     turnover_rate: float
     cyt_bind_t: float
     rel_cyt_bind_unit_t: float
-    diffusion_constant_timestep: float
-    implicit_euler_matrix: np.ndarray</code></pre>
+    diffusion_constant: float
+    laplacian: csr_matrix
+    time_step: float</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -405,15 +222,19 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.molecules.MoleculesState.diffusion_constant_timestep"><code class="name">var <span class="ident">diffusion_constant_timestep</span> : float</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.diffusion_constant"><code class="name">var <span class="ident">diffusion_constant</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.molecules.MoleculesState.implicit_euler_matrix"><code class="name">var <span class="ident">implicit_euler_matrix</span> : numpy.ndarray</code></dt>
+<dt id="nlisim.modules.molecules.MoleculesState.laplacian"><code class="name">var <span class="ident">laplacian</span> : scipy.sparse.csr.csr_matrix</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t"><code class="name">var <span class="ident">rel_cyt_bind_unit_t</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.molecules.MoleculesState.time_step"><code class="name">var <span class="ident">time_step</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -451,12 +272,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="nlisim.modules.molecules.MoleculeModel" href="#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></code></h4>
-<ul class="">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.diffuse" href="#nlisim.modules.molecules.MoleculeModel.diffuse">diffuse</a></code></li>
-</ul>
-</li>
-<li>
 <h4><code><a title="nlisim.modules.molecules.Molecules" href="#nlisim.modules.molecules.Molecules">Molecules</a></code></h4>
 <ul class="">
 <li><code><a title="nlisim.modules.molecules.Molecules.advance" href="#nlisim.modules.molecules.Molecules.advance">advance</a></code></li>
@@ -464,11 +279,12 @@ state must override the serialization mechanism with custom behavior.</p>
 </li>
 <li>
 <h4><code><a title="nlisim.modules.molecules.MoleculesState" href="#nlisim.modules.molecules.MoleculesState">MoleculesState</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="nlisim.modules.molecules.MoleculesState.cyt_bind_t" href="#nlisim.modules.molecules.MoleculesState.cyt_bind_t">cyt_bind_t</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculesState.diffusion_constant_timestep" href="#nlisim.modules.molecules.MoleculesState.diffusion_constant_timestep">diffusion_constant_timestep</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculesState.implicit_euler_matrix" href="#nlisim.modules.molecules.MoleculesState.implicit_euler_matrix">implicit_euler_matrix</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.diffusion_constant" href="#nlisim.modules.molecules.MoleculesState.diffusion_constant">diffusion_constant</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.laplacian" href="#nlisim.modules.molecules.MoleculesState.laplacian">laplacian</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t" href="#nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t">rel_cyt_bind_unit_t</a></code></li>
+<li><code><a title="nlisim.modules.molecules.MoleculesState.time_step" href="#nlisim.modules.molecules.MoleculesState.time_step">time_step</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.turnover_rate" href="#nlisim.modules.molecules.MoleculesState.turnover_rate">turnover_rate</a></code></li>
 </ul>
 </li>

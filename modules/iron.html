@@ -34,8 +34,7 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
@@ -45,10 +44,12 @@ def molecule_grid_factory(self: &#39;IronState&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
 
 
-class Iron(MoleculeModel):
+class Iron(ModuleModel):
     &#34;&#34;&#34;Iron&#34;&#34;&#34;
 
     name = &#39;iron&#39;
@@ -97,7 +98,7 @@ class Iron(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(iron.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(iron.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -140,7 +141,7 @@ class Iron(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Iron(MoleculeModel):
+<pre><code class="python">class Iron(ModuleModel):
     &#34;&#34;&#34;Iron&#34;&#34;&#34;
 
     name = &#39;iron&#39;
@@ -189,7 +190,7 @@ class Iron(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(iron.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(iron.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -198,7 +199,6 @@ class Iron(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -243,21 +243,17 @@ class Iron(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -278,7 +274,9 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class IronState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">

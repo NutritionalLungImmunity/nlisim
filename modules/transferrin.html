@@ -35,9 +35,9 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
@@ -51,17 +51,18 @@ def molecule_grid_factory(self: &#39;TransferrinState&#39;) -&gt; np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class TransferrinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    threshold: float
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
     p1: float
     p2: float
     p3: float
     threshold_log_hep: float
     threshold_hep: float
-    default_apotf_rel_concentration: float
-    default_tffe_rel_concentration: float
-    default_tffe2_rel_concentration: float
+    default_apotf_rel_concentration: float  # units: proportion
+    default_tffe_rel_concentration: float  # units: proportion
+    default_tffe2_rel_concentration: float  # units: proportion
     default_tf_concentration: float
     default_apotf_concentration: float
     default_tffe_concentration: float
@@ -74,7 +75,7 @@ class TransferrinState(ModuleState):
     rel_iron_imp_exp_unit_t: float
 
 
-class Transferrin(MoleculeModel):
+class Transferrin(ModuleModel):
     &#34;&#34;&#34;Transferrin&#34;&#34;&#34;
 
     name = &#39;transferrin&#39;
@@ -85,7 +86,7 @@ class Transferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         # config file values
-        transferrin.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+        transferrin.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)  # units: aM
         transferrin.p1 = self.config.getfloat(&#39;p1&#39;)
         transferrin.p2 = self.config.getfloat(&#39;p2&#39;)
         transferrin.p3 = self.config.getfloat(&#39;p3&#39;)
@@ -96,33 +97,34 @@ class Transferrin(MoleculeModel):
 
         transferrin.default_apotf_rel_concentration = self.config.getfloat(
             &#39;default_apotf_rel_concentration&#39;
-        )
+        )  # units: proportion
         transferrin.default_tffe_rel_concentration = self.config.getfloat(
             &#39;default_tffe_rel_concentration&#39;
-        )
+        )  # units: proportion
         transferrin.default_tffe2_rel_concentration = self.config.getfloat(
             &#39;default_tffe2_rel_concentration&#39;
-        )
+        )  # units: proportion
 
         transferrin.iron_imp_exp_t = self.config.getfloat(&#39;iron_imp_exp_t&#39;)
 
         # computed values
-        transferrin.threshold = transferrin.k_m_tf_tafc * voxel_volume / 1.0e6
         transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume
+        ) * voxel_volume  # units: aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = self.time_step / transferrin.iron_imp_exp_t
+        transferrin.rel_iron_imp_exp_unit_t = (
+            transferrin.iron_imp_exp_t / self.time_step
+        )  # units: ? / (min/step) = ? * step / min TODO: units
         # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
         #  Adjust comments in config?
         transferrin.ma_iron_import_rate = self.config.getfloat(&#39;ma_iron_import_rate&#39;) / voxel_volume
@@ -139,11 +141,13 @@ class Transferrin(MoleculeModel):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.modules.molecules import MoleculesState
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
         # molecules: MoleculesState = state.molecules
 
@@ -220,9 +224,13 @@ class Transferrin(MoleculeModel):
         # Degrade transferrin: done in liver
 
         # Diffusion of transferrin
-        self.diffuse(transferrin.grid[&#39;Tf&#39;], state)
-        self.diffuse(transferrin.grid[&#39;TfFe&#39;], state)
-        self.diffuse(transferrin.grid[&#39;TfFe2&#39;], state)
+        for component in {&#39;Tf&#39;, &#39;TfFe&#39;, &#39;TfFe2&#39;}:
+            transferrin.grid[component][:] = apply_diffusion(
+                variable=transferrin.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 
@@ -286,7 +294,7 @@ class Transferrin(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Transferrin(MoleculeModel):
+<pre><code class="python">class Transferrin(ModuleModel):
     &#34;&#34;&#34;Transferrin&#34;&#34;&#34;
 
     name = &#39;transferrin&#39;
@@ -297,7 +305,7 @@ class Transferrin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         # config file values
-        transferrin.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+        transferrin.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)  # units: aM
         transferrin.p1 = self.config.getfloat(&#39;p1&#39;)
         transferrin.p2 = self.config.getfloat(&#39;p2&#39;)
         transferrin.p3 = self.config.getfloat(&#39;p3&#39;)
@@ -308,33 +316,34 @@ class Transferrin(MoleculeModel):
 
         transferrin.default_apotf_rel_concentration = self.config.getfloat(
             &#39;default_apotf_rel_concentration&#39;
-        )
+        )  # units: proportion
         transferrin.default_tffe_rel_concentration = self.config.getfloat(
             &#39;default_tffe_rel_concentration&#39;
-        )
+        )  # units: proportion
         transferrin.default_tffe2_rel_concentration = self.config.getfloat(
             &#39;default_tffe2_rel_concentration&#39;
-        )
+        )  # units: proportion
 
         transferrin.iron_imp_exp_t = self.config.getfloat(&#39;iron_imp_exp_t&#39;)
 
         # computed values
-        transferrin.threshold = transferrin.k_m_tf_tafc * voxel_volume / 1.0e6
         transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume
+        ) * voxel_volume  # units: aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
         transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
-        )
+        )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = self.time_step / transferrin.iron_imp_exp_t
+        transferrin.rel_iron_imp_exp_unit_t = (
+            transferrin.iron_imp_exp_t / self.time_step
+        )  # units: ? / (min/step) = ? * step / min TODO: units
         # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
         #  Adjust comments in config?
         transferrin.ma_iron_import_rate = self.config.getfloat(&#39;ma_iron_import_rate&#39;) / voxel_volume
@@ -351,11 +360,13 @@ class Transferrin(MoleculeModel):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+        from nlisim.modules.molecules import MoleculesState
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
         # molecules: MoleculesState = state.molecules
 
@@ -432,9 +443,13 @@ class Transferrin(MoleculeModel):
         # Degrade transferrin: done in liver
 
         # Diffusion of transferrin
-        self.diffuse(transferrin.grid[&#39;Tf&#39;], state)
-        self.diffuse(transferrin.grid[&#39;TfFe&#39;], state)
-        self.diffuse(transferrin.grid[&#39;TfFe2&#39;], state)
+        for component in {&#39;Tf&#39;, &#39;TfFe&#39;, &#39;TfFe2&#39;}:
+            transferrin.grid[component][:] = apply_diffusion(
+                variable=transferrin.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 
@@ -461,7 +476,6 @@ class Transferrin(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -479,11 +493,13 @@ class Transferrin(MoleculeModel):
     &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
     from nlisim.modules.iron import IronState
     from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
+    from nlisim.modules.molecules import MoleculesState
     from nlisim.modules.phagocyte import PhagocyteStatus
 
     transferrin: TransferrinState = state.transferrin
     iron: IronState = state.iron
     macrophage: MacrophageState = state.macrophage
+    molecules: MoleculesState = state.molecules
     grid: RectangularGrid = state.grid
     # molecules: MoleculesState = state.molecules
 
@@ -560,9 +576,13 @@ class Transferrin(MoleculeModel):
     # Degrade transferrin: done in liver
 
     # Diffusion of transferrin
-    self.diffuse(transferrin.grid[&#39;Tf&#39;], state)
-    self.diffuse(transferrin.grid[&#39;TfFe&#39;], state)
-    self.diffuse(transferrin.grid[&#39;TfFe2&#39;], state)
+    for component in {&#39;Tf&#39;, &#39;TfFe&#39;, &#39;TfFe2&#39;}:
+        transferrin.grid[component][:] = apply_diffusion(
+            variable=transferrin.grid[component],
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
     return state</code></pre>
 </details>
@@ -570,21 +590,17 @@ class Transferrin(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -605,17 +621,18 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TransferrinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    threshold: float
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
     p1: float
     p2: float
     p3: float
     threshold_log_hep: float
     threshold_hep: float
-    default_apotf_rel_concentration: float
-    default_tffe_rel_concentration: float
-    default_tffe2_rel_concentration: float
+    default_apotf_rel_concentration: float  # units: proportion
+    default_tffe_rel_concentration: float  # units: proportion
+    default_tffe2_rel_concentration: float  # units: proportion
     default_tf_concentration: float
     default_apotf_concentration: float
     default_tffe_concentration: float
@@ -705,10 +722,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.transferrin.TransferrinState.threshold"><code class="name">var <span class="ident">threshold</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="nlisim.modules.transferrin.TransferrinState.threshold_hep"><code class="name">var <span class="ident">threshold_hep</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
@@ -778,7 +791,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.rel_iron_imp_exp_unit_t" href="#nlisim.modules.transferrin.TransferrinState.rel_iron_imp_exp_unit_t">rel_iron_imp_exp_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.tf_intercept" href="#nlisim.modules.transferrin.TransferrinState.tf_intercept">tf_intercept</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.tf_slope" href="#nlisim.modules.transferrin.TransferrinState.tf_slope">tf_slope</a></code></li>
-<li><code><a title="nlisim.modules.transferrin.TransferrinState.threshold" href="#nlisim.modules.transferrin.TransferrinState.threshold">threshold</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.threshold_hep" href="#nlisim.modules.transferrin.TransferrinState.threshold_hep">threshold_hep</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.threshold_log_hep" href="#nlisim.modules.transferrin.TransferrinState.threshold_log_hep">threshold_log_hep</a></code></li>
 </ul>

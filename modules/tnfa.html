@@ -27,16 +27,16 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -48,19 +48,21 @@ def molecule_grid_factory(self: &#39;TNFaState&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    neutrophil_secretion_rate: float
-    epithelial_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    neutrophil_secretion_rate_unit_t: float
-    epithelial_secretion_rate_unit_t: float
-    k_d: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
+    neutrophil_secretion_rate: float  # units: atto-mol/(cell*h)
+    epithelial_secretion_rate: float  # units: atto-mol/(cell*h)
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    epithelial_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    k_d: float  # aM
 
 
-class TNFa(MoleculeModel):
+class TNFa(ModuleModel):
     name = &#39;tnfa&#39;
     StateClass = TNFaState
 
@@ -68,18 +70,34 @@ class TNFa(MoleculeModel):
         tnfa: TNFaState = state.tnfa
 
         # config file values
-        tnfa.half_life = self.config.getfloat(&#39;half_life&#39;)
-        tnfa.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        tnfa.neutrophil_secretion_rate = self.config.getfloat(&#39;neutrophil_secretion_rate&#39;)
-        tnfa.epithelial_secretion_rate = self.config.getfloat(&#39;epithelial_secretion_rate&#39;)
-        tnfa.k_d = self.config.getfloat(&#39;k_d&#39;)
+        tnfa.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        tnfa.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.neutrophil_secretion_rate = self.config.getfloat(
+            &#39;neutrophil_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.epithelial_secretion_rate = self.config.getfloat(
+            &#39;epithelial_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        tnfa.half_life_multiplier = 1 + math.log(0.5) / (tnfa.half_life / self.time_step)
+        tnfa.half_life_multiplier = 0.5 ** (
+            self.time_step / tnfa.half_life
+        )  # units: (min/step) / min -&gt; 1/step
         # time unit conversions
-        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * 60 * self.time_step
-        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * 60 * self.time_step
-        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -107,8 +125,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(macrophage_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -133,8 +151,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(neutrophil_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -158,16 +176,24 @@ class TNFa(MoleculeModel):
         )
 
         # Diffusion of TNFa
-        self.diffuse(tnfa.grid, state)
+        tnfa.grid[:] = apply_diffusion(
+            variable=tnfa.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         tnfa: TNFaState = state.tnfa
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(tnfa.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(tnfa.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -210,7 +236,7 @@ class TNFa(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class TNFa(MoleculeModel):
+<pre><code class="python">class TNFa(ModuleModel):
     name = &#39;tnfa&#39;
     StateClass = TNFaState
 
@@ -218,18 +244,34 @@ class TNFa(MoleculeModel):
         tnfa: TNFaState = state.tnfa
 
         # config file values
-        tnfa.half_life = self.config.getfloat(&#39;half_life&#39;)
-        tnfa.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        tnfa.neutrophil_secretion_rate = self.config.getfloat(&#39;neutrophil_secretion_rate&#39;)
-        tnfa.epithelial_secretion_rate = self.config.getfloat(&#39;epithelial_secretion_rate&#39;)
-        tnfa.k_d = self.config.getfloat(&#39;k_d&#39;)
+        tnfa.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        tnfa.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.neutrophil_secretion_rate = self.config.getfloat(
+            &#39;neutrophil_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.epithelial_secretion_rate = self.config.getfloat(
+            &#39;epithelial_secretion_rate&#39;
+        )  # units: atto-mol/(cell*h)
+        tnfa.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        tnfa.half_life_multiplier = 1 + math.log(0.5) / (tnfa.half_life / self.time_step)
+        tnfa.half_life_multiplier = 0.5 ** (
+            self.time_step / tnfa.half_life
+        )  # units: (min/step) / min -&gt; 1/step
         # time unit conversions
-        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * 60 * self.time_step
-        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * 60 * self.time_step
-        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -257,8 +299,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(macrophage_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -283,8 +325,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(neutrophil_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -308,16 +350,24 @@ class TNFa(MoleculeModel):
         )
 
         # Diffusion of TNFa
-        self.diffuse(tnfa.grid, state)
+        tnfa.grid[:] = apply_diffusion(
+            variable=tnfa.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         tnfa: TNFaState = state.tnfa
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(tnfa.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(tnfa.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -326,7 +376,6 @@ class TNFa(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -364,8 +413,8 @@ class TNFa(MoleculeModel):
             if (
                 activation_function(
                     x=tnfa.grid[tuple(macrophage_cell_voxel)],
-                    kd=tnfa.k_d,
-                    h=self.time_step / 60,
+                    k_d=tnfa.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -390,8 +439,8 @@ class TNFa(MoleculeModel):
             if (
                 activation_function(
                     x=tnfa.grid[tuple(neutrophil_cell_voxel)],
-                    kd=tnfa.k_d,
-                    h=self.time_step / 60,
+                    k_d=tnfa.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -415,7 +464,12 @@ class TNFa(MoleculeModel):
     )
 
     # Diffusion of TNFa
-    self.diffuse(tnfa.grid, state)
+    tnfa.grid[:] = apply_diffusion(
+        variable=tnfa.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -423,21 +477,17 @@ class TNFa(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -458,16 +508,18 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    neutrophil_secretion_rate: float
-    epithelial_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    neutrophil_secretion_rate_unit_t: float
-    epithelial_secretion_rate_unit_t: float
-    k_d: float</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
+    neutrophil_secretion_rate: float  # units: atto-mol/(cell*h)
+    epithelial_secretion_rate: float  # units: atto-mol/(cell*h)
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    epithelial_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    k_d: float  # aM</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">

@@ -48,7 +48,7 @@ def discrete_laplacian(
     variable.
     &#34;&#34;&#34;
     graph_shape = len(grid), len(grid)
-    laplacian = dok_matrix(graph_shape)
+    laplacian = dok_matrix(graph_shape, dtype=dtype)
 
     delta_z = grid.delta(0)
     delta_y = grid.delta(1)
@@ -57,7 +57,6 @@ def discrete_laplacian(
     for k, j, i in zip(*(mask).nonzero()):
         voxel = Voxel(x=i, y=j, z=k)
         voxel_index = grid.get_flattened_index(voxel)
-        normalization = 0
 
         for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
@@ -72,26 +71,77 @@ def discrete_laplacian(
             dx = delta_x[k, j, i] * (i - ni)
             dy = delta_y[k, j, i] * (j - nj)
             dz = delta_z[k, j, i] * (k - nk)
-            distance2 = 1 / (dx * dx + dy * dy + dz * dz)
+            inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
 
-            normalization -= distance2
-            laplacian[voxel_index, neighbor_index] = distance2
+            laplacian[voxel_index, voxel_index] -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] += inverse_distance2
 
-        laplacian[voxel_index, voxel_index] = normalization
+    return laplacian.tocsr()
+
+
+def periodic_discrete_laplacian(
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
+) -&gt; csr_matrix:
+    &#34;&#34;&#34;Return a laplacian operator with periodic boundary conditions.
+
+    This computes a standard laplacian operator as a scipy linear operator, except it is
+    restricted to a grid mask.  The use case for this is to compute surface diffusion
+    on a gridded variable.  The mask is generated from a category on the lung_tissue
+    variable.
+    &#34;&#34;&#34;
+    graph_shape = len(grid), len(grid)
+    z_extent, y_extent, x_extent = grid.shape
+    laplacian = dok_matrix(graph_shape, dtype=dtype)
+
+    delta_z = grid.delta(0)
+    delta_y = grid.delta(1)
+    delta_x = grid.delta(2)
+
+    for k, j, i in zip(*(mask).nonzero()):
+        voxel = Voxel(x=i, y=j, z=k)
+        voxel_index = grid.get_flattened_index(voxel)
+
+        for offset in [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]:
+            # voxel coordinate displacements
+            dk, dj, di = offset
+
+            # find the neighbor for periodic boundary conditions
+            neighbor: Voxel = Voxel(
+                x=(i + di) % x_extent, y=(j + dj) % y_extent, z=(k + dk) % z_extent
+            )
+
+            # but maybe it isn&#39;t in the mask (i.e. air)
+            if not mask[neighbor.z, neighbor.y, neighbor.x]:
+                continue
+
+            neighbor_index = grid.get_flattened_index(neighbor)
+
+            # continuous space displacements
+            dx = delta_x[k, j, i] * di
+            dy = delta_y[k, j, i] * dj
+            dz = delta_z[k, j, i] * dk
+            inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
+
+            laplacian[voxel_index, voxel_index] -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] += inverse_distance2
 
     return laplacian.tocsr()
 
 
 def apply_diffusion(
-    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
+    variable: np.ndarray,
+    laplacian: csr_matrix,
+    diffusivity: float,
+    dt: float,
+    tolerance: float = 1e-5,
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 
-    Solves Laplace&#39;s equation in 3D using implicit time steps.  The variable is
-    advanced in time by `dt` time units using GMRES.
+    Solves Laplace&#39;s equation in 3D using Crank-Nicholson.  The variable is
+    advanced in time by `dt` time units using the conjugate gradient method.
 
-    Notes that the output of this function might contain negative values caused by
-    rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.
+    Note that, due to numerical error, we cannot guarantee that the quantity
+    of the molecule will remain constant.
 
     The intended use case for this method is to perform &#34;surface diffusion&#34; generated
     by a mask from the `lung_tissue` variable, e.g.
@@ -100,11 +150,15 @@ def apply_diffusion(
         laplacian = discrete_laplacian(grid, mask)
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     &#34;&#34;&#34;
-    operator = eye(*laplacian.shape) - (diffusivity * dt) * laplacian
-    var_next, info = cg(operator, variable.ravel())
-    if info != 0:
-        raise Exception(f&#39;GMRES failed ({info})&#39;)
-    return var_next.reshape(variable.shape)</code></pre>
+    a = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
+    b = eye(*laplacian.shape) + (diffusivity * dt / 2.0) * laplacian
+    var_next, info = cg(a, b @ variable.ravel(), tol=tolerance)
+    if info &gt; 0:
+        raise Exception(f&#39;CG failed (after {info} iterations)&#39;)
+    elif info &lt; 0:
+        raise Exception(f&#39;CG failed ({info})&#39;)
+
+    return np.maximum(0.0, var_next.reshape(variable.shape))</code></pre>
 </details>
 </section>
 <section>
@@ -115,15 +169,15 @@ def apply_diffusion(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="nlisim.diffusion.apply_diffusion"><code class="name flex">
-<span>def <span class="ident">apply_diffusion</span></span>(<span>variable: numpy.ndarray, laplacian: scipy.sparse.csr.csr_matrix, diffusivity: float, dt: float) ‑> numpy.ndarray</span>
+<span>def <span class="ident">apply_diffusion</span></span>(<span>variable: numpy.ndarray, laplacian: scipy.sparse.csr.csr_matrix, diffusivity: float, dt: float, tolerance: float = 1e-05) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Apply diffusion to a variable.</p>
-<p>Solves Laplace's equation in 3D using implicit time steps.
+<p>Solves Laplace's equation in 3D using Crank-Nicholson.
 The variable is
-advanced in time by <code>dt</code> time units using GMRES.</p>
-<p>Notes that the output of this function might contain negative values caused by
-rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.</p>
+advanced in time by <code>dt</code> time units using the conjugate gradient method.</p>
+<p>Note that, due to numerical error, we cannot guarantee that the quantity
+of the molecule will remain constant.</p>
 <p>The intended use case for this method is to perform "surface diffusion" generated
 by a mask from the <code>lung_tissue</code> variable, e.g.</p>
 <pre><code>surface_mask = lung_tissue == TissueTypes.EPITHELIUM
@@ -135,15 +189,19 @@ iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivi
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def apply_diffusion(
-    variable: np.ndarray, laplacian: csr_matrix, diffusivity: float, dt: float
+    variable: np.ndarray,
+    laplacian: csr_matrix,
+    diffusivity: float,
+    dt: float,
+    tolerance: float = 1e-5,
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 
-    Solves Laplace&#39;s equation in 3D using implicit time steps.  The variable is
-    advanced in time by `dt` time units using GMRES.
+    Solves Laplace&#39;s equation in 3D using Crank-Nicholson.  The variable is
+    advanced in time by `dt` time units using the conjugate gradient method.
 
-    Notes that the output of this function might contain negative values caused by
-    rounding error. You can truncate the result by var_next[var_next &lt; 0] = 0.
+    Note that, due to numerical error, we cannot guarantee that the quantity
+    of the molecule will remain constant.
 
     The intended use case for this method is to perform &#34;surface diffusion&#34; generated
     by a mask from the `lung_tissue` variable, e.g.
@@ -152,11 +210,15 @@ iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivi
         laplacian = discrete_laplacian(grid, mask)
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     &#34;&#34;&#34;
-    operator = eye(*laplacian.shape) - (diffusivity * dt) * laplacian
-    var_next, info = cg(operator, variable.ravel())
-    if info != 0:
-        raise Exception(f&#39;GMRES failed ({info})&#39;)
-    return var_next.reshape(variable.shape)</code></pre>
+    a = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
+    b = eye(*laplacian.shape) + (diffusivity * dt / 2.0) * laplacian
+    var_next, info = cg(a, b @ variable.ravel(), tol=tolerance)
+    if info &gt; 0:
+        raise Exception(f&#39;CG failed (after {info} iterations)&#39;)
+    elif info &lt; 0:
+        raise Exception(f&#39;CG failed ({info})&#39;)
+
+    return np.maximum(0.0, var_next.reshape(variable.shape))</code></pre>
 </details>
 </dd>
 <dt id="nlisim.diffusion.discrete_laplacian"><code class="name flex">
@@ -185,7 +247,7 @@ variable.</p></div>
     variable.
     &#34;&#34;&#34;
     graph_shape = len(grid), len(grid)
-    laplacian = dok_matrix(graph_shape)
+    laplacian = dok_matrix(graph_shape, dtype=dtype)
 
     delta_z = grid.delta(0)
     delta_y = grid.delta(1)
@@ -194,7 +256,6 @@ variable.</p></div>
     for k, j, i in zip(*(mask).nonzero()):
         voxel = Voxel(x=i, y=j, z=k)
         voxel_index = grid.get_flattened_index(voxel)
-        normalization = 0
 
         for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
             ni = neighbor.x
@@ -209,12 +270,74 @@ variable.</p></div>
             dx = delta_x[k, j, i] * (i - ni)
             dy = delta_y[k, j, i] * (j - nj)
             dz = delta_z[k, j, i] * (k - nk)
-            distance2 = 1 / (dx * dx + dy * dy + dz * dz)
+            inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
 
-            normalization -= distance2
-            laplacian[voxel_index, neighbor_index] = distance2
+            laplacian[voxel_index, voxel_index] -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] += inverse_distance2
 
-        laplacian[voxel_index, voxel_index] = normalization
+    return laplacian.tocsr()</code></pre>
+</details>
+</dd>
+<dt id="nlisim.diffusion.periodic_discrete_laplacian"><code class="name flex">
+<span>def <span class="ident">periodic_discrete_laplacian</span></span>(<span>grid: <a title="nlisim.grid.RectangularGrid" href="grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>, mask: numpy.ndarray, dtype: numpy.dtype = dtype('float64')) ‑> scipy.sparse.csr.csr_matrix</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a laplacian operator with periodic boundary conditions.</p>
+<p>This computes a standard laplacian operator as a scipy linear operator, except it is
+restricted to a grid mask.
+The use case for this is to compute surface diffusion
+on a gridded variable.
+The mask is generated from a category on the lung_tissue
+variable.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def periodic_discrete_laplacian(
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
+) -&gt; csr_matrix:
+    &#34;&#34;&#34;Return a laplacian operator with periodic boundary conditions.
+
+    This computes a standard laplacian operator as a scipy linear operator, except it is
+    restricted to a grid mask.  The use case for this is to compute surface diffusion
+    on a gridded variable.  The mask is generated from a category on the lung_tissue
+    variable.
+    &#34;&#34;&#34;
+    graph_shape = len(grid), len(grid)
+    z_extent, y_extent, x_extent = grid.shape
+    laplacian = dok_matrix(graph_shape, dtype=dtype)
+
+    delta_z = grid.delta(0)
+    delta_y = grid.delta(1)
+    delta_x = grid.delta(2)
+
+    for k, j, i in zip(*(mask).nonzero()):
+        voxel = Voxel(x=i, y=j, z=k)
+        voxel_index = grid.get_flattened_index(voxel)
+
+        for offset in [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]:
+            # voxel coordinate displacements
+            dk, dj, di = offset
+
+            # find the neighbor for periodic boundary conditions
+            neighbor: Voxel = Voxel(
+                x=(i + di) % x_extent, y=(j + dj) % y_extent, z=(k + dk) % z_extent
+            )
+
+            # but maybe it isn&#39;t in the mask (i.e. air)
+            if not mask[neighbor.z, neighbor.y, neighbor.x]:
+                continue
+
+            neighbor_index = grid.get_flattened_index(neighbor)
+
+            # continuous space displacements
+            dx = delta_x[k, j, i] * di
+            dy = delta_y[k, j, i] * dj
+            dz = delta_z[k, j, i] * dk
+            inverse_distance2 = 1 / (dx * dx + dy * dy + dz * dz)  # units: 1/(µm^2)
+
+            laplacian[voxel_index, voxel_index] -= inverse_distance2
+            laplacian[voxel_index, neighbor_index] += inverse_distance2
 
     return laplacian.tocsr()</code></pre>
 </details>
@@ -239,6 +362,7 @@ variable.</p></div>
 <ul class="">
 <li><code><a title="nlisim.diffusion.apply_diffusion" href="#nlisim.diffusion.apply_diffusion">apply_diffusion</a></code></li>
 <li><code><a title="nlisim.diffusion.discrete_laplacian" href="#nlisim.diffusion.discrete_laplacian">discrete_laplacian</a></code></li>
+<li><code><a title="nlisim.diffusion.periodic_discrete_laplacian" href="#nlisim.diffusion.periodic_discrete_laplacian">periodic_discrete_laplacian</a></code></li>
 </ul>
 </li>
 </ul>

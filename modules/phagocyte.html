@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING, Tuple
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData
+from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -78,26 +78,11 @@ class PhagocyteModuleState(ModuleState):
 
 
 class PhagocyteModel(ModuleModel):
-
-    # def move(self, old_voxel, steps):
-    #     if steps &lt; self.get_max_move_steps():
-    #         calc_drift_probability(old_voxel, self)
-    #         new_voxel = get_voxel(old_voxel, random())
-    #
-    #         old_voxel.remove_cell(self.id)
-    #         new_voxel.set_cell(self)
-    #         steps += 1
-    #
-    #         for _, a in self.phagosome.items():
-    #             a.x = new_voxel.x + random()
-    #             a.y = new_voxel.y + random()
-    #             a.z = new_voxel.z + random()
-    #
-    #         return self.move(new_voxel, steps)
-
-    def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+    def single_step_move(
+        self, state: State, cell: PhagocyteCellData, cell_index: int, cell_list: CellList
+    ) -&gt; None:
         &#34;&#34;&#34;
-        Move the phagocyte one step (voxel) probabilistically.
+        Move the phagocyte one 1 µm, probabilistically.
 
         depending on single_step_probabilistic_drift
 
@@ -114,18 +99,16 @@ class PhagocyteModel(ModuleModel):
         &#34;&#34;&#34;
         grid: RectangularGrid = state.grid
 
-        # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
-        # just in case.
-        cell_point: Point = cell[&#39;point&#39;]
+        # At this moment, there is no inter-voxel geometry.
         cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
-        offset: np.ndarray = cell_point - cell_voxel
-        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
-        cell[&#39;point&#39;] = new_voxel + offset
+        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell[&#39;point&#39;] = new_point
+        cell_list.update_voxel_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -&gt; Voxel:
+    ) -&gt; Point:
         ...
 
     @staticmethod
@@ -443,26 +426,11 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PhagocyteModel(ModuleModel):
-
-    # def move(self, old_voxel, steps):
-    #     if steps &lt; self.get_max_move_steps():
-    #         calc_drift_probability(old_voxel, self)
-    #         new_voxel = get_voxel(old_voxel, random())
-    #
-    #         old_voxel.remove_cell(self.id)
-    #         new_voxel.set_cell(self)
-    #         steps += 1
-    #
-    #         for _, a in self.phagosome.items():
-    #             a.x = new_voxel.x + random()
-    #             a.y = new_voxel.y + random()
-    #             a.z = new_voxel.z + random()
-    #
-    #         return self.move(new_voxel, steps)
-
-    def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+    def single_step_move(
+        self, state: State, cell: PhagocyteCellData, cell_index: int, cell_list: CellList
+    ) -&gt; None:
         &#34;&#34;&#34;
-        Move the phagocyte one step (voxel) probabilistically.
+        Move the phagocyte one 1 µm, probabilistically.
 
         depending on single_step_probabilistic_drift
 
@@ -479,18 +447,16 @@ associated with each cell.</p>
         &#34;&#34;&#34;
         grid: RectangularGrid = state.grid
 
-        # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
-        # just in case.
-        cell_point: Point = cell[&#39;point&#39;]
+        # At this moment, there is no inter-voxel geometry.
         cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
-        offset: np.ndarray = cell_point - cell_voxel
-        new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
-        cell[&#39;point&#39;] = new_voxel + offset
+        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell[&#39;point&#39;] = new_point
+        cell_list.update_voxel_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -&gt; Voxel:
+    ) -&gt; Point:
         ...
 
     @staticmethod
@@ -525,7 +491,6 @@ associated with each cell.</p>
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.erythrocyte.ErythrocyteModel" href="erythrocyte.html#nlisim.modules.erythrocyte.ErythrocyteModel">ErythrocyteModel</a></li>
 <li><a title="nlisim.modules.macrophage.Macrophage" href="macrophage.html#nlisim.modules.macrophage.Macrophage">Macrophage</a></li>
 <li><a title="nlisim.modules.neutrophil.Neutrophil" href="neutrophil.html#nlisim.modules.neutrophil.Neutrophil">Neutrophil</a></li>
 <li><a title="nlisim.modules.pneumocyte.Pneumocyte" href="pneumocyte.html#nlisim.modules.pneumocyte.Pneumocyte">Pneumocyte</a></li>
@@ -584,10 +549,10 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
 <h3>Methods</h3>
 <dl>
 <dt id="nlisim.modules.phagocyte.PhagocyteModel.single_step_move"><code class="name flex">
-<span>def <span class="ident">single_step_move</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>) ‑> None</span>
+<span>def <span class="ident">single_step_move</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, cell_index: int, cell_list: <a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a>) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Move the phagocyte one step (voxel) probabilistically.</p>
+<div class="desc"><p>Move the phagocyte one 1 µm, probabilistically.</p>
 <p>depending on single_step_probabilistic_drift</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -605,9 +570,11 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def single_step_move(self, state: State, cell: PhagocyteCellData) -&gt; None:
+<pre><code class="python">def single_step_move(
+    self, state: State, cell: PhagocyteCellData, cell_index: int, cell_list: CellList
+) -&gt; None:
     &#34;&#34;&#34;
-    Move the phagocyte one step (voxel) probabilistically.
+    Move the phagocyte one 1 µm, probabilistically.
 
     depending on single_step_probabilistic_drift
 
@@ -624,17 +591,15 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
     &#34;&#34;&#34;
     grid: RectangularGrid = state.grid
 
-    # At this moment, there is no inter-voxel geometry, but I&#39;m keeping the offset around
-    # just in case.
-    cell_point: Point = cell[&#39;point&#39;]
+    # At this moment, there is no inter-voxel geometry.
     cell_voxel: Voxel = grid.get_voxel(cell[&#39;point&#39;])
-    offset: np.ndarray = cell_point - cell_voxel
-    new_voxel: Voxel = self.single_step_probabilistic_drift(state, cell, cell_voxel)
-    cell[&#39;point&#39;] = new_voxel + offset</code></pre>
+    new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+    cell[&#39;point&#39;] = new_point
+    cell_list.update_voxel_index([cell_index])</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.phagocyte.PhagocyteModel.single_step_probabilistic_drift"><code class="name flex">
-<span>def <span class="ident">single_step_probabilistic_drift</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a></span>
+<span>def <span class="ident">single_step_probabilistic_drift</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> <a title="nlisim.coordinates.Point" href="../coordinates.html#nlisim.coordinates.Point">Point</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -645,7 +610,7 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
 <pre><code class="python">@abstractmethod
 def single_step_probabilistic_drift(
     self, state: State, cell: PhagocyteCellData, voxel: Voxel
-) -&gt; Voxel:
+) -&gt; Point:
     ...</code></pre>
 </details>
 </dd>

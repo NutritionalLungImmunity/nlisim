@@ -36,13 +36,12 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
 from nlisim.modules.hemolysin import HemolysinState
 from nlisim.modules.macrophage import MacrophageState
 from nlisim.modules.molecules import MoleculesState
-from nlisim.modules.phagocyte import PhagocyteModel
 from nlisim.state import State
 from nlisim.util import TissueType, activation_function
 
@@ -65,7 +64,7 @@ class ErythrocyteState(ModuleState):
     pr_ma_phag_eryt: float
 
 
-class ErythrocyteModel(PhagocyteModel):
+class ErythrocyteModel(ModuleModel):
     name = &#39;erythrocyte&#39;
     StateClass = ErythrocyteState
 
@@ -121,8 +120,8 @@ class ErythrocyteModel(PhagocyteModel):
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells[&#39;count&#39;] * activation_function(
             x=hemolysin.grid,
-            kd=erythrocyte.kd_hemo,
-            h=self.time_step / 60,
+            k_d=erythrocyte.kd_hemo,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=voxel_volume,
             b=1,
         )
@@ -162,11 +161,10 @@ class ErythrocyteModel(PhagocyteModel):
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         erythrocyte: ErythrocyteState = state.erythrocyte
-        voxel_volume = state.voxel_volume
+        # voxel_volume = state.voxel_volume
 
         return {
             &#39;count&#39;: int(np.sum(erythrocyte.cells[&#39;count&#39;])),
-            &#39;concentration&#39;: float(np.mean(erythrocyte.cells[&#39;count&#39;]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):
@@ -212,7 +210,7 @@ class ErythrocyteModel(PhagocyteModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ErythrocyteModel(PhagocyteModel):
+<pre><code class="python">class ErythrocyteModel(ModuleModel):
     name = &#39;erythrocyte&#39;
     StateClass = ErythrocyteState
 
@@ -268,8 +266,8 @@ class ErythrocyteModel(PhagocyteModel):
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells[&#39;count&#39;] * activation_function(
             x=hemolysin.grid,
-            kd=erythrocyte.kd_hemo,
-            h=self.time_step / 60,
+            k_d=erythrocyte.kd_hemo,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=voxel_volume,
             b=1,
         )
@@ -309,11 +307,10 @@ class ErythrocyteModel(PhagocyteModel):
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         erythrocyte: ErythrocyteState = state.erythrocyte
-        voxel_volume = state.voxel_volume
+        # voxel_volume = state.voxel_volume
 
         return {
             &#39;count&#39;: int(np.sum(erythrocyte.cells[&#39;count&#39;])),
-            &#39;concentration&#39;: float(np.mean(erythrocyte.cells[&#39;count&#39;]) / voxel_volume),
         }
 
     def visualization_data(self, state: State):
@@ -322,29 +319,22 @@ class ErythrocyteModel(PhagocyteModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.phagocyte.PhagocyteModel" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel">PhagocyteModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.release_phagosome" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.release_phagosome">release_phagosome</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.single_step_move" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteModel.single_step_move">single_step_move</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.phagocyte.PhagocyteModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>

@@ -27,16 +27,16 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -47,17 +47,19 @@ def molecule_grid_factory(self: &#39;MCP1State&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class MCP1State(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    pneumocyte_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    pneumocyte_secretion_rate_unit_t: float
-    k_d: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    pneumocyte_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # units: aM
 
 
-class MCP1(MoleculeModel):
+class MCP1(ModuleModel):
     &#34;&#34;&#34;MCP1&#34;&#34;&#34;
 
     name = &#39;mcp1&#39;
@@ -67,16 +69,28 @@ class MCP1(MoleculeModel):
         mcp1: MCP1State = state.mcp1
 
         # config file values
-        mcp1.half_life = self.config.getfloat(&#39;half_life&#39;)
-        mcp1.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        mcp1.pneumocyte_secretion_rate = self.config.getfloat(&#39;pneumocyte_secretion_rate&#39;)
-        mcp1.k_d = self.config.getfloat(&#39;k_d&#39;)
+        mcp1.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        mcp1.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.pneumocyte_secretion_rate = self.config.getfloat(
+            &#39;pneumocyte_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        mcp1.half_life_multiplier = 1 + math.log(0.5) / (mcp1.half_life / self.time_step)
+        mcp1.half_life_multiplier = 0.5 ** (
+            self.time_step / mcp1.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
         # time unit conversions
-        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * self.time_step
-        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -117,16 +131,24 @@ class MCP1(MoleculeModel):
         )
 
         # Diffusion of MCP1
-        self.diffuse(mcp1.grid, state)
+        mcp1.grid[:] = apply_diffusion(
+            variable=mcp1.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         mcp1: MCP1State = state.mcp1
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(mcp1.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(mcp1.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -169,7 +191,7 @@ class MCP1(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MCP1(MoleculeModel):
+<pre><code class="python">class MCP1(ModuleModel):
     &#34;&#34;&#34;MCP1&#34;&#34;&#34;
 
     name = &#39;mcp1&#39;
@@ -179,16 +201,28 @@ class MCP1(MoleculeModel):
         mcp1: MCP1State = state.mcp1
 
         # config file values
-        mcp1.half_life = self.config.getfloat(&#39;half_life&#39;)
-        mcp1.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        mcp1.pneumocyte_secretion_rate = self.config.getfloat(&#39;pneumocyte_secretion_rate&#39;)
-        mcp1.k_d = self.config.getfloat(&#39;k_d&#39;)
+        mcp1.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        mcp1.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.pneumocyte_secretion_rate = self.config.getfloat(
+            &#39;pneumocyte_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        mcp1.half_life_multiplier = 1 + math.log(0.5) / (mcp1.half_life / self.time_step)
+        mcp1.half_life_multiplier = 0.5 ** (
+            self.time_step / mcp1.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
         # time unit conversions
-        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * self.time_step
-        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -229,16 +263,24 @@ class MCP1(MoleculeModel):
         )
 
         # Diffusion of MCP1
-        self.diffuse(mcp1.grid, state)
+        mcp1.grid[:] = apply_diffusion(
+            variable=mcp1.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         mcp1: MCP1State = state.mcp1
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(mcp1.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(mcp1.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -247,7 +289,6 @@ class MCP1(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -298,7 +339,12 @@ class MCP1(MoleculeModel):
     )
 
     # Diffusion of MCP1
-    self.diffuse(mcp1.grid, state)
+    mcp1.grid[:] = apply_diffusion(
+        variable=mcp1.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -306,21 +352,17 @@ class MCP1(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -341,14 +383,16 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MCP1State(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    pneumocyte_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    pneumocyte_secretion_rate_unit_t: float
-    k_d: float</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    pneumocyte_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # units: aM</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">

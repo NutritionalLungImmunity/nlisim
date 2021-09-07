@@ -29,7 +29,7 @@
 </summary>
 <pre><code class="python">from enum import IntEnum, unique
 import math
-from queue import SimpleQueue
+from queue import Queue
 import random
 from typing import Any, Dict, List, Tuple, Union
 
@@ -98,12 +98,12 @@ def random_sphere_point() -&gt; np.ndarray:
     while np.linalg.norm(u) &gt; 1.0:
         u = 2 * rg.random(size=2) - 1
 
-    normsq_u = float(np.dot(u, u))
+    norm_squared_u = float(np.dot(u, u))
     return np.array(
         [
-            2 * u[0] * np.sqrt(1 - normsq_u),
-            2 * u[1] * np.sqrt(1 - normsq_u),
-            1 - 2 * normsq_u,
+            2 * u[0] * np.sqrt(1 - norm_squared_u),
+            2 * u[1] * np.sqrt(1 - norm_squared_u),
+            1 - 2 * norm_squared_u,
         ],
         dtype=np.float64,
     )
@@ -117,7 +117,7 @@ class AfumigatusCellData(CellData):
         (&#39;is_root&#39;, bool),
         (&#39;root&#39;, np.float64, 3),
         (&#39;tip&#39;, np.float64, 3),
-        (&#39;vec&#39;, np.float64, 3),
+        (&#39;vec&#39;, np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
         (&#39;growable&#39;, bool),
         (&#39;branchable&#39;, bool),
         (&#39;activation_iteration&#39;, np.int64),
@@ -208,6 +208,7 @@ class AfumigatusState(ModuleState):
     pr_branch: float
     steps_to_bn_eval: int
     hyphae_volume: float
+    hyphal_length: float
     kd_lip: float
     time_to_swelling: float
     iter_to_swelling: int
@@ -232,9 +233,8 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        voxel_volume = state.voxel_volume
+        voxel_volume = state.voxel_volume  # units: L
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat(&#39;pr_ma_hyphae_param&#39;)
         afumigatus.pr_ma_phag_param = self.config.getfloat(&#39;pr_ma_phag_param&#39;)
@@ -244,6 +244,8 @@ class Afumigatus(ModuleModel):
 
         afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)
         afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)
+        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)
+
         afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)
 
         afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)
@@ -258,8 +260,8 @@ class Afumigatus(ModuleModel):
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
 
-        afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
-        afumigatus.rel_phag_affinity_unit_t = time_step_size / afumigatus.phag_affinity_t
+        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
+        afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(
             -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
@@ -276,14 +278,14 @@ class Afumigatus(ModuleModel):
         # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
 
         afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / time_step_size) - 2
+            afumigatus.time_to_swelling * (60 / self.time_step) - 2
         )  # TODO: -2?
         afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / time_step_size) - 2
+            afumigatus.time_to_germinate * (60 / self.time_step) - 2
         )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / time_step_size) - 1
+        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
-            afumigatus.aspergillus_change_half_life * (60 / time_step_size)
+            afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
 
         # place cells for initial infection
@@ -332,7 +334,7 @@ class Afumigatus(ModuleModel):
 
             # ------------ update cell
 
-            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
 
             # ------------ cell growth
             if (
@@ -516,18 +518,14 @@ class Afumigatus(ModuleModel):
 
 
 def cell_self_update(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
     afumigatus_index: int,
-    voxel: Voxel,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
 
     process_boolean_network(
-        state=state,
         afumigatus_cell=afumigatus_cell,
-        voxel=voxel,
         steps_to_eval=afumigatus.steps_to_bn_eval,
         afumigatus=afumigatus,
     )
@@ -574,10 +572,8 @@ def cell_self_update(
 
 
 def process_boolean_network(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    voxel: Voxel,
     steps_to_eval: int,
 ):
     afumigatus_cell[&#39;bn_iteration&#39;] += 1
@@ -655,7 +651,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -&gt; None:
     total_iron: float = 0.0
 
     # walk along the tree, collecting iron
-    q: SimpleQueue = SimpleQueue()
+    q: Queue = Queue()
     q.put(root_cell_index)
     while not q.empty():
         next_cell_index = q.get()
@@ -693,6 +689,7 @@ def elongate(
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
         if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
             afumigatus_cell[&#39;growth_iteration&#39;] += 1
@@ -707,7 +704,7 @@ def elongate(
             next_septa: CellData = AfumigatusCellData.create_cell(
                 point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
                 root=next_septa_root,
-                tip=next_septa_root + afumigatus_cell[&#39;vec&#39;],
+                tip=next_septa_root + hyphal_length * afumigatus_cell[&#39;vec&#39;],
                 vec=afumigatus_cell[&#39;vec&#39;],
                 iron_pool=0,
                 status=AfumigatusCellStatus.HYPHAE,
@@ -725,7 +722,9 @@ def elongate(
             afumigatus_cell[&#39;growth_iteration&#39;] += 1
         else:
             afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell[&#39;tip&#39;] = afumigatus_cell[&#39;root&#39;] + afumigatus_cell[&#39;vec&#39;]
+            afumigatus_cell[&#39;tip&#39;] = (
+                afumigatus_cell[&#39;root&#39;] + hyphal_length * afumigatus_cell[&#39;vec&#39;]
+            )
 
 
 def branch(
@@ -741,6 +740,7 @@ def branch(
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if rg.random() &lt; pr_branch:
         # now we branch
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell[&#39;vec&#39;])
@@ -750,7 +750,7 @@ def branch(
         next_branch: CellData = AfumigatusCellData.create_cell(
             point=Point(x=root[2], y=root[1], z=root[0]),
             root=root,
-            tip=root + branch_vector,
+            tip=root + hyphal_length * branch_vector,
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,
@@ -832,6 +832,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if rg.random() &lt; pr_branch:
         # now we branch
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell[&#39;vec&#39;])
@@ -841,7 +842,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         next_branch: CellData = AfumigatusCellData.create_cell(
             point=Point(x=root[2], y=root[1], z=root[0]),
             root=root,
-            tip=root + branch_vector,
+            tip=root + hyphal_length * branch_vector,
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,
@@ -873,7 +874,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.cell_self_update"><code class="name flex">
-<span>def <span class="ident">cell_self_update</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_index: int, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>) ‑> None</span>
+<span>def <span class="ident">cell_self_update</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_index: int) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -882,18 +883,14 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cell_self_update(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
     afumigatus_index: int,
-    voxel: Voxel,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
 
     process_boolean_network(
-        state=state,
         afumigatus_cell=afumigatus_cell,
-        voxel=voxel,
         steps_to_eval=afumigatus.steps_to_bn_eval,
         afumigatus=afumigatus,
     )
@@ -977,7 +974,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     total_iron: float = 0.0
 
     # walk along the tree, collecting iron
-    q: SimpleQueue = SimpleQueue()
+    q: Queue = Queue()
     q.put(root_cell_index)
     while not q.empty():
         next_cell_index = q.get()
@@ -1018,6 +1015,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     ):
         return
 
+    hyphal_length: float = afumigatus.hyphal_length
     if afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE:
         if afumigatus_cell[&#39;growth_iteration&#39;] &lt; iter_to_grow:
             afumigatus_cell[&#39;growth_iteration&#39;] += 1
@@ -1032,7 +1030,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
             next_septa: CellData = AfumigatusCellData.create_cell(
                 point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
                 root=next_septa_root,
-                tip=next_septa_root + afumigatus_cell[&#39;vec&#39;],
+                tip=next_septa_root + hyphal_length * afumigatus_cell[&#39;vec&#39;],
                 vec=afumigatus_cell[&#39;vec&#39;],
                 iron_pool=0,
                 status=AfumigatusCellStatus.HYPHAE,
@@ -1050,7 +1048,9 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
             afumigatus_cell[&#39;growth_iteration&#39;] += 1
         else:
             afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell[&#39;tip&#39;] = afumigatus_cell[&#39;root&#39;] + afumigatus_cell[&#39;vec&#39;]</code></pre>
+            afumigatus_cell[&#39;tip&#39;] = (
+                afumigatus_cell[&#39;root&#39;] + hyphal_length * afumigatus_cell[&#39;vec&#39;]
+            )</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.generate_branch_direction"><code class="name flex">
@@ -1113,7 +1113,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.process_boolean_network"><code class="name flex">
-<span>def <span class="ident">process_boolean_network</span></span>(<span>state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, voxel: <a title="nlisim.coordinates.Voxel" href="../coordinates.html#nlisim.coordinates.Voxel">Voxel</a>, steps_to_eval: int)</span>
+<span>def <span class="ident">process_boolean_network</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, steps_to_eval: int)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1122,10 +1122,8 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def process_boolean_network(
-    state: State,
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    voxel: Voxel,
     steps_to_eval: int,
 ):
     afumigatus_cell[&#39;bn_iteration&#39;] += 1
@@ -1198,12 +1196,12 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     while np.linalg.norm(u) &gt; 1.0:
         u = 2 * rg.random(size=2) - 1
 
-    normsq_u = float(np.dot(u, u))
+    norm_squared_u = float(np.dot(u, u))
     return np.array(
         [
-            2 * u[0] * np.sqrt(1 - normsq_u),
-            2 * u[1] * np.sqrt(1 - normsq_u),
-            1 - 2 * normsq_u,
+            2 * u[0] * np.sqrt(1 - norm_squared_u),
+            2 * u[1] * np.sqrt(1 - norm_squared_u),
+            1 - 2 * norm_squared_u,
         ],
         dtype=np.float64,
     )</code></pre>
@@ -1232,9 +1230,8 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        voxel_volume = state.voxel_volume
+        voxel_volume = state.voxel_volume  # units: L
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat(&#39;pr_ma_hyphae_param&#39;)
         afumigatus.pr_ma_phag_param = self.config.getfloat(&#39;pr_ma_phag_param&#39;)
@@ -1244,6 +1241,8 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 
         afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)
         afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)
+        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)
+
         afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)
 
         afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)
@@ -1258,8 +1257,8 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
 
-        afumigatus.rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour
-        afumigatus.rel_phag_affinity_unit_t = time_step_size / afumigatus.phag_affinity_t
+        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
+        afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
         afumigatus.pr_ma_hyphae = 1 - math.exp(
             -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
@@ -1276,14 +1275,14 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
 
         afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / time_step_size) - 2
+            afumigatus.time_to_swelling * (60 / self.time_step) - 2
         )  # TODO: -2?
         afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / time_step_size) - 2
+            afumigatus.time_to_germinate * (60 / self.time_step) - 2
         )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / time_step_size) - 1
+        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
-            afumigatus.aspergillus_change_half_life * (60 / time_step_size)
+            afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
 
         # place cells for initial infection
@@ -1332,7 +1331,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 
             # ------------ update cell
 
-            cell_self_update(state, afumigatus, afumigatus_cell, afumigatus_index, voxel)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
 
             # ------------ cell growth
             if (
@@ -1690,7 +1689,7 @@ associated with each cell.</p>
         (&#39;is_root&#39;, bool),
         (&#39;root&#39;, np.float64, 3),
         (&#39;tip&#39;, np.float64, 3),
-        (&#39;vec&#39;, np.float64, 3),
+        (&#39;vec&#39;, np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
         (&#39;growable&#39;, bool),
         (&#39;branchable&#39;, bool),
         (&#39;activation_iteration&#39;, np.int64),
@@ -2017,6 +2016,7 @@ state must override the serialization mechanism with custom behavior.</p>
     pr_branch: float
     steps_to_bn_eval: int
     hyphae_volume: float
+    hyphal_length: float
     kd_lip: float
     time_to_swelling: float
     iter_to_swelling: int
@@ -2051,6 +2051,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.afumigatus.AfumigatusState.hyphae_volume"><code class="name">var <span class="ident">hyphae_volume</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.afumigatus.AfumigatusState.hyphal_length"><code class="name">var <span class="ident">hyphal_length</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2349,6 +2353,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.cells" href="#nlisim.modules.afumigatus.AfumigatusState.cells">cells</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.conidia_vol" href="#nlisim.modules.afumigatus.AfumigatusState.conidia_vol">conidia_vol</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.hyphae_volume" href="#nlisim.modules.afumigatus.AfumigatusState.hyphae_volume">hyphae_volume</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.hyphal_length" href="#nlisim.modules.afumigatus.AfumigatusState.hyphal_length">hyphal_length</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.init_iron" href="#nlisim.modules.afumigatus.AfumigatusState.init_iron">init_iron</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.iter_to_germinate" href="#nlisim.modules.afumigatus.AfumigatusState.iter_to_germinate">iter_to_germinate</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.iter_to_grow" href="#nlisim.modules.afumigatus.AfumigatusState.iter_to_grow">iter_to_grow</a></code></li>

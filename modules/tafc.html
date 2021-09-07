@@ -33,15 +33,16 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: &#39;TAFCState&#39;) -&gt; np.ndarray:
-    # note the expansion to another axis to account for 0, 1, or 2 bound Fe&#39;s.
+    # note the expansion to another axis to account for 0 or 1 bound Fe&#39;s.
     return np.zeros(
         shape=self.global_state.grid.shape, dtype=[(&#39;TAFC&#39;, np.float64), (&#39;TAFCBI&#39;, np.float64)]
     )
@@ -49,14 +50,17 @@ def molecule_grid_factory(self: &#39;TAFCState&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TAFCState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    tafc_up: float
-    threshold: float
-    tafc_qtty: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
+    tafcbi_uptake_rate: float  # units: L * cell^-1 * h^-1
+    tafcbi_uptake_rate_unit_t: float  # units: proportion * cell^-1 * step^-1
+    afumigatus_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    afumigatus_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
 
 
-class TAFC(MoleculeModel):
+class TAFC(ModuleModel):
     # noinspection SpellCheckingInspection
     &#34;&#34;&#34;TAFC: (T)ri(A)cetyl(F)usarinine C&#34;&#34;&#34;
 
@@ -68,12 +72,27 @@ class TAFC(MoleculeModel):
         voxel_volume: float = state.voxel_volume
 
         # config file values
-        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)  # units: aM
+        tafc.afumigatus_secretion_rate = self.config.getfloat(
+            &#39;afumigatus_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        tafc.tafcbi_uptake_rate = self.config.getfloat(
+            &#39;tafcbi_uptake_rate&#39;
+        )  # units: L * cell^-1 * h^-1
 
         # computed values
-        tafc.tafc_qtty = self.config.getfloat(&#39;tafc_qtty&#39;) * 15  # TODO: unit_t
-        tafc.tafc_up = self.config.getfloat(&#39;tafc_up&#39;) / voxel_volume / 15
-        tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
+        tafc.afumigatus_secretion_rate_unit_t = tafc.afumigatus_secretion_rate * (
+            self.time_step / 60
+        )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
+        tafc.tafcbi_uptake_rate_unit_t = (
+            tafc.tafcbi_uptake_rate
+            / voxel_volume
+            * (self.time_step / 60)
+            # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
+            # = proportion * cell^-1 * step^-1
+        )
+        # TODO: this has to be unnecessary:
+        tafc.tafcbi_uptake_rate_unit_t = min(1.0, tafc.tafcbi_uptake_rate_unit_t)
 
         return state
 
@@ -95,49 +114,48 @@ class TAFC(MoleculeModel):
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
         grid: RectangularGrid = state.grid
-        voxel_volume: float = state.voxel_volume
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = michaelian_kinetics(
+        dfe2_dt = michaelian_kinetics(
             substrate=transferrin.grid[&#34;TfFe2&#34;],
             enzyme=tafc.grid[&#34;TAFC&#34;],
-            km=tafc.k_m_tf_tafc,
-            h=self.time_step / 60,
+            k_m=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
-        dfedt = michaelian_kinetics(
+        dfe_dt = michaelian_kinetics(
             substrate=transferrin.grid[&#34;TfFe&#34;],
             enzyme=tafc.grid[&#34;TAFC&#34;],
-            km=tafc.k_m_tf_tafc,
-            h=self.time_step / 60,
+            k_m=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
 
         # - enforce bounds from TAFC quantity
-        total_change = dfe2dt + dfedt
+        total_change = dfe2_dt + dfe_dt
         rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
         # enforce bounds and zero out problem divides
         rel[total_change == 0] = 0.0
-        np.minimum(rel, 1.0, out=rel)
-        np.maximum(rel, 0.0, out=rel)
+        rel[:] = np.maximum(np.minimum(rel, 1.0), 0.0)
 
-        dfe2dt = dfe2dt * rel
-        dfedt = dfedt * rel
+        dfe2_dt = dfe2_dt * rel
+        dfe_dt = dfe_dt * rel
 
         # transferrin+2Fe loses an iron, becomes transferrin+Fe
-        transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
-        transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+        transferrin.grid[&#39;TfFe2&#39;] -= dfe2_dt
+        transferrin.grid[&#39;TfFe&#39;] += dfe2_dt
 
         # transferrin+Fe loses an iron, becomes transferrin
-        transferrin.grid[&#39;TfFe&#39;] -= dfedt
-        transferrin.grid[&#39;Tf&#39;] += dfedt
+        transferrin.grid[&#39;TfFe&#39;] -= dfe_dt
+        transferrin.grid[&#39;Tf&#39;] += dfe_dt
 
         # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
-        tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
-        tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+        tafc.grid[&#39;TAFC&#39;] -= dfe2_dt + dfe_dt
+        tafc.grid[&#39;TAFCBI&#39;] += dfe2_dt + dfe_dt
 
         # interaction with iron, all available iron is bound to TAFC
         potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
@@ -160,11 +178,12 @@ class TAFC(MoleculeModel):
 
             # uptake iron from TAFCBI
             if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
-                qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
-                # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
-                # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
-                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
-                afumigatus_cell[&#39;iron_pool&#39;] += qtty
+                quantity = (
+                    tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)]
+                    * tafc.tafcbi_uptake_rate_unit_t
+                )
+                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= quantity
+                afumigatus_cell[&#39;iron_pool&#39;] += quantity
 
             # secrete TAFC
             if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
@@ -172,7 +191,9 @@ class TAFC(MoleculeModel):
                 AfumigatusCellStatus.HYPHAE,
                 AfumigatusCellStatus.GERM_TUBE,
             }:
-                tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+                tafc.grid[&#39;TAFC&#39;][
+                    tuple(afumigatus_cell_voxel)
+                ] += tafc.afumigatus_secretion_rate_unit_t
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(
@@ -185,8 +206,13 @@ class TAFC(MoleculeModel):
         tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
 
         # Diffusion of TAFC
-        self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
-        self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+        for component in {&#39;TAFC&#39;, &#39;TAFCBI&#39;}:
+            tafc.grid[component][:] = apply_diffusion(
+                variable=tafc.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 
@@ -200,9 +226,9 @@ class TAFC(MoleculeModel):
         concentration = concentration_no_fe + concentration_fe
 
         return {
-            &#39;concentration any&#39;: float(concentration),
-            &#39;concentration TAFC&#39;: float(concentration_no_fe),
-            &#39;concentration TAFCBI&#39;: float(concentration_fe),
+            &#39;concentration (nM)&#39;: float(concentration / 1e9),
+            &#39;concentration TAFC (nM)&#39;: float(concentration_no_fe / 1e9),
+            &#39;concentration TAFCBI (nM)&#39;: float(concentration_fe / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -227,7 +253,7 @@ class TAFC(MoleculeModel):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def molecule_grid_factory(self: &#39;TAFCState&#39;) -&gt; np.ndarray:
-    # note the expansion to another axis to account for 0, 1, or 2 bound Fe&#39;s.
+    # note the expansion to another axis to account for 0 or 1 bound Fe&#39;s.
     return np.zeros(
         shape=self.global_state.grid.shape, dtype=[(&#39;TAFC&#39;, np.float64), (&#39;TAFCBI&#39;, np.float64)]
     )</code></pre>
@@ -248,7 +274,7 @@ class TAFC(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class TAFC(MoleculeModel):
+<pre><code class="python">class TAFC(ModuleModel):
     # noinspection SpellCheckingInspection
     &#34;&#34;&#34;TAFC: (T)ri(A)cetyl(F)usarinine C&#34;&#34;&#34;
 
@@ -260,12 +286,27 @@ class TAFC(MoleculeModel):
         voxel_volume: float = state.voxel_volume
 
         # config file values
-        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)
+        tafc.k_m_tf_tafc = self.config.getfloat(&#39;k_m_tf_tafc&#39;)  # units: aM
+        tafc.afumigatus_secretion_rate = self.config.getfloat(
+            &#39;afumigatus_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        tafc.tafcbi_uptake_rate = self.config.getfloat(
+            &#39;tafcbi_uptake_rate&#39;
+        )  # units: L * cell^-1 * h^-1
 
         # computed values
-        tafc.tafc_qtty = self.config.getfloat(&#39;tafc_qtty&#39;) * 15  # TODO: unit_t
-        tafc.tafc_up = self.config.getfloat(&#39;tafc_up&#39;) / voxel_volume / 15
-        tafc.threshold = tafc.k_m_tf_tafc * voxel_volume / 1.0e6
+        tafc.afumigatus_secretion_rate_unit_t = tafc.afumigatus_secretion_rate * (
+            self.time_step / 60
+        )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
+        tafc.tafcbi_uptake_rate_unit_t = (
+            tafc.tafcbi_uptake_rate
+            / voxel_volume
+            * (self.time_step / 60)
+            # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
+            # = proportion * cell^-1 * step^-1
+        )
+        # TODO: this has to be unnecessary:
+        tafc.tafcbi_uptake_rate_unit_t = min(1.0, tafc.tafcbi_uptake_rate_unit_t)
 
         return state
 
@@ -287,49 +328,48 @@ class TAFC(MoleculeModel):
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
         grid: RectangularGrid = state.grid
-        voxel_volume: float = state.voxel_volume
+        voxel_volume: float = state.voxel_volume  # units: L
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2dt = michaelian_kinetics(
+        dfe2_dt = michaelian_kinetics(
             substrate=transferrin.grid[&#34;TfFe2&#34;],
             enzyme=tafc.grid[&#34;TAFC&#34;],
-            km=tafc.k_m_tf_tafc,
-            h=self.time_step / 60,
+            k_m=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
-        dfedt = michaelian_kinetics(
+        dfe_dt = michaelian_kinetics(
             substrate=transferrin.grid[&#34;TfFe&#34;],
             enzyme=tafc.grid[&#34;TAFC&#34;],
-            km=tafc.k_m_tf_tafc,
-            h=self.time_step / 60,
+            k_m=tafc.k_m_tf_tafc,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
 
         # - enforce bounds from TAFC quantity
-        total_change = dfe2dt + dfedt
+        total_change = dfe2_dt + dfe_dt
         rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
         # enforce bounds and zero out problem divides
         rel[total_change == 0] = 0.0
-        np.minimum(rel, 1.0, out=rel)
-        np.maximum(rel, 0.0, out=rel)
+        rel[:] = np.maximum(np.minimum(rel, 1.0), 0.0)
 
-        dfe2dt = dfe2dt * rel
-        dfedt = dfedt * rel
+        dfe2_dt = dfe2_dt * rel
+        dfe_dt = dfe_dt * rel
 
         # transferrin+2Fe loses an iron, becomes transferrin+Fe
-        transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
-        transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+        transferrin.grid[&#39;TfFe2&#39;] -= dfe2_dt
+        transferrin.grid[&#39;TfFe&#39;] += dfe2_dt
 
         # transferrin+Fe loses an iron, becomes transferrin
-        transferrin.grid[&#39;TfFe&#39;] -= dfedt
-        transferrin.grid[&#39;Tf&#39;] += dfedt
+        transferrin.grid[&#39;TfFe&#39;] -= dfe_dt
+        transferrin.grid[&#39;Tf&#39;] += dfe_dt
 
         # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
-        tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
-        tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+        tafc.grid[&#39;TAFC&#39;] -= dfe2_dt + dfe_dt
+        tafc.grid[&#39;TAFCBI&#39;] += dfe2_dt + dfe_dt
 
         # interaction with iron, all available iron is bound to TAFC
         potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
@@ -352,11 +392,12 @@ class TAFC(MoleculeModel):
 
             # uptake iron from TAFCBI
             if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
-                qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
-                # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
-                # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
-                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
-                afumigatus_cell[&#39;iron_pool&#39;] += qtty
+                quantity = (
+                    tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)]
+                    * tafc.tafcbi_uptake_rate_unit_t
+                )
+                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= quantity
+                afumigatus_cell[&#39;iron_pool&#39;] += quantity
 
             # secrete TAFC
             if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
@@ -364,7 +405,9 @@ class TAFC(MoleculeModel):
                 AfumigatusCellStatus.HYPHAE,
                 AfumigatusCellStatus.GERM_TUBE,
             }:
-                tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+                tafc.grid[&#39;TAFC&#39;][
+                    tuple(afumigatus_cell_voxel)
+                ] += tafc.afumigatus_secretion_rate_unit_t
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(
@@ -377,8 +420,13 @@ class TAFC(MoleculeModel):
         tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
 
         # Diffusion of TAFC
-        self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
-        self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+        for component in {&#39;TAFC&#39;, &#39;TAFCBI&#39;}:
+            tafc.grid[component][:] = apply_diffusion(
+                variable=tafc.grid[component],
+                laplacian=molecules.laplacian,
+                diffusivity=molecules.diffusion_constant,
+                dt=self.time_step,
+            )
 
         return state
 
@@ -392,9 +440,9 @@ class TAFC(MoleculeModel):
         concentration = concentration_no_fe + concentration_fe
 
         return {
-            &#39;concentration any&#39;: float(concentration),
-            &#39;concentration TAFC&#39;: float(concentration_no_fe),
-            &#39;concentration TAFCBI&#39;: float(concentration_fe),
+            &#39;concentration (nM)&#39;: float(concentration / 1e9),
+            &#39;concentration TAFC (nM)&#39;: float(concentration_no_fe / 1e9),
+            &#39;concentration TAFCBI (nM)&#39;: float(concentration_fe / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -403,7 +451,6 @@ class TAFC(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -435,49 +482,48 @@ class TAFC(MoleculeModel):
     molecules: MoleculesState = state.molecules
     afumigatus: AfumigatusState = state.afumigatus
     grid: RectangularGrid = state.grid
-    voxel_volume: float = state.voxel_volume
+    voxel_volume: float = state.voxel_volume  # units: L
 
     # interaction with transferrin
     # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-    dfe2dt = michaelian_kinetics(
+    dfe2_dt = michaelian_kinetics(
         substrate=transferrin.grid[&#34;TfFe2&#34;],
         enzyme=tafc.grid[&#34;TAFC&#34;],
-        km=tafc.k_m_tf_tafc,
-        h=self.time_step / 60,
+        k_m=tafc.k_m_tf_tafc,
+        h=self.time_step / 60,  # units: (min/step) / (min/hour)
         k_cat=1.0,  # default
         voxel_volume=voxel_volume,
     )
-    dfedt = michaelian_kinetics(
+    dfe_dt = michaelian_kinetics(
         substrate=transferrin.grid[&#34;TfFe&#34;],
         enzyme=tafc.grid[&#34;TAFC&#34;],
-        km=tafc.k_m_tf_tafc,
-        h=self.time_step / 60,
+        k_m=tafc.k_m_tf_tafc,
+        h=self.time_step / 60,  # units: (min/step) / (min/hour)
         k_cat=1.0,  # default
         voxel_volume=voxel_volume,
     )
 
     # - enforce bounds from TAFC quantity
-    total_change = dfe2dt + dfedt
+    total_change = dfe2_dt + dfe_dt
     rel = tafc.grid[&#39;TAFC&#39;] / (total_change + EPSILON)
     # enforce bounds and zero out problem divides
     rel[total_change == 0] = 0.0
-    np.minimum(rel, 1.0, out=rel)
-    np.maximum(rel, 0.0, out=rel)
+    rel[:] = np.maximum(np.minimum(rel, 1.0), 0.0)
 
-    dfe2dt = dfe2dt * rel
-    dfedt = dfedt * rel
+    dfe2_dt = dfe2_dt * rel
+    dfe_dt = dfe_dt * rel
 
     # transferrin+2Fe loses an iron, becomes transferrin+Fe
-    transferrin.grid[&#39;TfFe2&#39;] -= dfe2dt
-    transferrin.grid[&#39;TfFe&#39;] += dfe2dt
+    transferrin.grid[&#39;TfFe2&#39;] -= dfe2_dt
+    transferrin.grid[&#39;TfFe&#39;] += dfe2_dt
 
     # transferrin+Fe loses an iron, becomes transferrin
-    transferrin.grid[&#39;TfFe&#39;] -= dfedt
-    transferrin.grid[&#39;Tf&#39;] += dfedt
+    transferrin.grid[&#39;TfFe&#39;] -= dfe_dt
+    transferrin.grid[&#39;Tf&#39;] += dfe_dt
 
     # iron from transferrin becomes bound to TAFC (TAFC-&gt;TAFCBI)
-    tafc.grid[&#39;TAFC&#39;] -= dfe2dt + dfedt
-    tafc.grid[&#39;TAFCBI&#39;] += dfe2dt + dfedt
+    tafc.grid[&#39;TAFC&#39;] -= dfe2_dt + dfe_dt
+    tafc.grid[&#39;TAFCBI&#39;] += dfe2_dt + dfe_dt
 
     # interaction with iron, all available iron is bound to TAFC
     potential_reactive_quantity = np.minimum(iron.grid, tafc.grid[&#39;TAFC&#39;])
@@ -500,11 +546,12 @@ class TAFC(MoleculeModel):
 
         # uptake iron from TAFCBI
         if afumigatus_bool_net[NetworkSpecies.MirB] &amp; afumigatus_bool_net[NetworkSpecies.EstB]:
-            qtty = tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] * tafc.tafc_up
-            # TODO: can&#39;t be bigger, unless tafc.tafc_up &gt; 1. Am I missing something?
-            # qtty = qtty if qtty &lt; self.get(&#34;TAFCBI&#34;, x, y, z) else self.get(&#34;TAFCBI&#34;, x, y, z)
-            tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= qtty
-            afumigatus_cell[&#39;iron_pool&#39;] += qtty
+            quantity = (
+                tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)]
+                * tafc.tafcbi_uptake_rate_unit_t
+            )
+            tafc.grid[&#39;TAFCBI&#39;][tuple(afumigatus_cell_voxel)] -= quantity
+            afumigatus_cell[&#39;iron_pool&#39;] += quantity
 
         # secrete TAFC
         if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell[&#39;status&#39;] in {
@@ -512,7 +559,9 @@ class TAFC(MoleculeModel):
             AfumigatusCellStatus.HYPHAE,
             AfumigatusCellStatus.GERM_TUBE,
         }:
-            tafc.grid[&#39;TAFC&#39;][tuple(afumigatus_cell_voxel)] += tafc.tafc_qtty
+            tafc.grid[&#39;TAFC&#39;][
+                tuple(afumigatus_cell_voxel)
+            ] += tafc.afumigatus_secretion_rate_unit_t
 
     # Degrade TAFC
     trnvr_rt = turnover_rate(
@@ -525,8 +574,13 @@ class TAFC(MoleculeModel):
     tafc.grid[&#39;TAFCBI&#39;] *= trnvr_rt
 
     # Diffusion of TAFC
-    self.diffuse(tafc.grid[&#39;TAFC&#39;], state)
-    self.diffuse(tafc.grid[&#39;TAFCBI&#39;], state)
+    for component in {&#39;TAFC&#39;, &#39;TAFCBI&#39;}:
+        tafc.grid[component][:] = apply_diffusion(
+            variable=tafc.grid[component],
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
     return state</code></pre>
 </details>
@@ -534,21 +588,17 @@ class TAFC(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -569,11 +619,14 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TAFCState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    k_m_tf_tafc: float
-    tafc_up: float
-    threshold: float
-    tafc_qtty: float</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    k_m_tf_tafc: float  # units: aM
+    tafcbi_uptake_rate: float  # units: L * cell^-1 * h^-1
+    tafcbi_uptake_rate_unit_t: float  # units: proportion * cell^-1 * step^-1
+    afumigatus_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    afumigatus_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -581,6 +634,14 @@ state must override the serialization mechanism with custom behavior.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
+<dt id="nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate"><code class="name">var <span class="ident">afumigatus_secretion_rate</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate_unit_t"><code class="name">var <span class="ident">afumigatus_secretion_rate_unit_t</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.modules.tafc.TAFCState.grid"><code class="name">var <span class="ident">grid</span> : numpy.ndarray</code></dt>
 <dd>
 <div class="desc"></div>
@@ -589,15 +650,11 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.tafc.TAFCState.tafc_qtty"><code class="name">var <span class="ident">tafc_qtty</span> : float</code></dt>
+<dt id="nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate"><code class="name">var <span class="ident">tafcbi_uptake_rate</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.tafc.TAFCState.tafc_up"><code class="name">var <span class="ident">tafc_up</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.tafc.TAFCState.threshold"><code class="name">var <span class="ident">threshold</span> : float</code></dt>
+<dt id="nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate_unit_t"><code class="name">var <span class="ident">tafcbi_uptake_rate_unit_t</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -644,11 +701,12 @@ state must override the serialization mechanism with custom behavior.</p>
 <li>
 <h4><code><a title="nlisim.modules.tafc.TAFCState" href="#nlisim.modules.tafc.TAFCState">TAFCState</a></code></h4>
 <ul class="">
+<li><code><a title="nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate" href="#nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate">afumigatus_secretion_rate</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate_unit_t" href="#nlisim.modules.tafc.TAFCState.afumigatus_secretion_rate_unit_t">afumigatus_secretion_rate_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.tafc.TAFCState.grid" href="#nlisim.modules.tafc.TAFCState.grid">grid</a></code></li>
 <li><code><a title="nlisim.modules.tafc.TAFCState.k_m_tf_tafc" href="#nlisim.modules.tafc.TAFCState.k_m_tf_tafc">k_m_tf_tafc</a></code></li>
-<li><code><a title="nlisim.modules.tafc.TAFCState.tafc_qtty" href="#nlisim.modules.tafc.TAFCState.tafc_qtty">tafc_qtty</a></code></li>
-<li><code><a title="nlisim.modules.tafc.TAFCState.tafc_up" href="#nlisim.modules.tafc.TAFCState.tafc_up">tafc_up</a></code></li>
-<li><code><a title="nlisim.modules.tafc.TAFCState.threshold" href="#nlisim.modules.tafc.TAFCState.threshold">threshold</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate" href="#nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate">tafcbi_uptake_rate</a></code></li>
+<li><code><a title="nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate_unit_t" href="#nlisim.modules.tafc.TAFCState.tafcbi_uptake_rate_unit_t">tafcbi_uptake_rate_unit_t</a></code></li>
 </ul>
 </li>
 </ul>

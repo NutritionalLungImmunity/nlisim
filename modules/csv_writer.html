@@ -58,8 +58,8 @@ class CSVWriter(ModuleModel):
             )
         )
         with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(data_columns)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(data_columns)
 
         return state
 
@@ -72,8 +72,8 @@ class CSVWriter(ModuleModel):
             )
         )
         with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(column_names)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(column_names)
 
         return state</code></pre>
 </details>
@@ -112,8 +112,8 @@ class CSVWriter(ModuleModel):
             )
         )
         with open(&#39;data.csv&#39;, &#39;a&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(data_columns)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(data_columns)
 
         return state
 
@@ -126,8 +126,8 @@ class CSVWriter(ModuleModel):
             )
         )
         with open(&#39;data.csv&#39;, &#39;w&#39;) as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(column_names)
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(column_names)
 
         return state</code></pre>
 </details>

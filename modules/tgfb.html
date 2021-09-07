@@ -27,16 +27,16 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -48,15 +48,17 @@ def molecule_grid_factory(self: &#39;TGFBState&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TGFBState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    k_d: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # aM
 
 
-class TGFB(MoleculeModel):
+class TGFB(ModuleModel):
     &#34;&#34;&#34;TGFB&#34;&#34;&#34;
 
     name = &#39;tgfb&#39;
@@ -66,14 +68,20 @@ class TGFB(MoleculeModel):
         tgfb: TGFBState = state.tgfb
 
         # config file values
-        tgfb.half_life = self.config.getfloat(&#39;half_life&#39;)
-        tgfb.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        tgfb.k_d = self.config.getfloat(&#39;k_d&#39;)
+        tgfb.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        tgfb.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        tgfb.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        tgfb.half_life_multiplier = 1 + math.log(0.5) / (tgfb.half_life / self.time_step)
+        tgfb.half_life_multiplier = 0.5 ** (
+            self.time_step / tgfb.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
         # time unit conversions
-        tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * 60 * self.time_step
+        tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * (
+            self.time_step / 60
+        )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
 
         return state
 
@@ -97,8 +105,8 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
-                        h=self.time_step / 60,
+                        k_d=tgfb.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -114,8 +122,8 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
-                        h=self.time_step / 60,
+                        k_d=tgfb.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -136,7 +144,12 @@ class TGFB(MoleculeModel):
         )
 
         # Diffusion of TGFB
-        self.diffuse(tgfb.grid, state)
+        tgfb.grid[:] = apply_diffusion(
+            variable=tgfb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -145,7 +158,7 @@ class TGFB(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(tgfb.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(tgfb.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -188,7 +201,7 @@ class TGFB(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class TGFB(MoleculeModel):
+<pre><code class="python">class TGFB(ModuleModel):
     &#34;&#34;&#34;TGFB&#34;&#34;&#34;
 
     name = &#39;tgfb&#39;
@@ -198,14 +211,20 @@ class TGFB(MoleculeModel):
         tgfb: TGFBState = state.tgfb
 
         # config file values
-        tgfb.half_life = self.config.getfloat(&#39;half_life&#39;)
-        tgfb.macrophage_secretion_rate = self.config.getfloat(&#39;macrophage_secretion_rate&#39;)
-        tgfb.k_d = self.config.getfloat(&#39;k_d&#39;)
+        tgfb.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        tgfb.macrophage_secretion_rate = self.config.getfloat(
+            &#39;macrophage_secretion_rate&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        tgfb.k_d = self.config.getfloat(&#39;k_d&#39;)  # units: aM
 
         # computed values
-        tgfb.half_life_multiplier = 1 + math.log(0.5) / (tgfb.half_life / self.time_step)
+        tgfb.half_life_multiplier = 0.5 ** (
+            self.time_step / tgfb.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
         # time unit conversions
-        tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * 60 * self.time_step
+        tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * (
+            self.time_step / 60
+        )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
 
         return state
 
@@ -229,8 +248,8 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
-                        h=self.time_step / 60,
+                        k_d=tgfb.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -246,8 +265,8 @@ class TGFB(MoleculeModel):
                 if (
                     activation_function(
                         x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                        kd=tgfb.k_d,
-                        h=self.time_step / 60,
+                        k_d=tgfb.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -268,7 +287,12 @@ class TGFB(MoleculeModel):
         )
 
         # Diffusion of TGFB
-        self.diffuse(tgfb.grid, state)
+        tgfb.grid[:] = apply_diffusion(
+            variable=tgfb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -277,7 +301,7 @@ class TGFB(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(tgfb.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(tgfb.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -286,7 +310,6 @@ class TGFB(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -320,8 +343,8 @@ class TGFB(MoleculeModel):
             if (
                 activation_function(
                     x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                    kd=tgfb.k_d,
-                    h=self.time_step / 60,
+                    k_d=tgfb.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -337,8 +360,8 @@ class TGFB(MoleculeModel):
             if (
                 activation_function(
                     x=tgfb.grid[tuple(macrophage_cell_voxel)],
-                    kd=tgfb.k_d,
-                    h=self.time_step / 60,
+                    k_d=tgfb.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
@@ -359,7 +382,12 @@ class TGFB(MoleculeModel):
     )
 
     # Diffusion of TGFB
-    self.diffuse(tgfb.grid, state)
+    tgfb.grid[:] = apply_diffusion(
+        variable=tgfb.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -367,21 +395,17 @@ class TGFB(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -402,12 +426,14 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TGFBState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    k_d: float</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # aM</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">

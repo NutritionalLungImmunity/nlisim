@@ -27,14 +27,14 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.diffusion import apply_diffusion
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -45,17 +45,18 @@ def molecule_grid_factory(self: &#39;AntiTNFaState&#39;) -&gt; np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class AntiTNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    react_time_unit: float
-    k_m: float
-    system_concentration: float
-    system_amount_per_voxel: float
-    turnover_rate: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    react_time_unit: float  # units: hour/step
+    k_m: float  # units: aM
+    system_concentration: float  # units: aM
+    system_amount_per_voxel: float  # units: atto-mol
 
 
-class AntiTNFa(MoleculeModel):
+class AntiTNFa(ModuleModel):
     name = &#39;antitnfa&#39;
     StateClass = AntiTNFaState
 
@@ -67,20 +68,23 @@ class AntiTNFa(MoleculeModel):
         lung_tissue = state.lung_tissue
 
         # config file values
-        anti_tnf_a.half_life = self.config.getfloat(&#39;half_life&#39;)
-        anti_tnf_a.react_time_unit = self.config.getfloat(&#39;react_time_unit&#39;)
-        anti_tnf_a.k_m = self.config.getfloat(&#39;k_m&#39;)
-        anti_tnf_a.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
+        anti_tnf_a.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        anti_tnf_a.react_time_unit = self.config.getfloat(
+            &#39;react_time_unit&#39;
+        )  # units: sec TODO: understand this
+        anti_tnf_a.k_m = self.config.getfloat(&#39;k_m&#39;)  # units: aM
+        anti_tnf_a.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)  # units: aM
 
         # computed values
-        anti_tnf_a.system_amount_per_voxel = anti_tnf_a.system_concentration * voxel_volume
-        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (
-            anti_tnf_a.half_life / self.time_step
-        )
+        anti_tnf_a.system_amount_per_voxel = (
+            anti_tnf_a.system_concentration * voxel_volume
+        )  # units: aM * L = atto-mol
+        anti_tnf_a.half_life_multiplier = 0.5 ** (
+            self.time_step / anti_tnf_a.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
 
         # initialize concentration field
-        anti_tnf_a.grid.fill(anti_tnf_a.system_amount_per_voxel)
-        anti_tnf_a.grid[lung_tissue == TissueType.AIR] = 0.0
+        anti_tnf_a.grid[lung_tissue != TissueType.AIR] = anti_tnf_a.system_amount_per_voxel
 
         return state
 
@@ -97,14 +101,14 @@ class AntiTNFa(MoleculeModel):
         reacted_quantity = michaelian_kinetics(
             substrate=anti_tnf_a.grid,
             enzyme=tnf_a.grid,
-            km=anti_tnf_a.k_m,
-            h=anti_tnf_a.react_time_unit,
+            k_m=anti_tnf_a.k_m,
+            h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
-        anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
-        tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)
+        anti_tnf_a.grid[:] = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
+        tnf_a.grid[:] = np.maximum(0.0, tnf_a.grid - reacted_quantity)
 
         # Degradation of AntiTNFa
         anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
@@ -116,16 +120,24 @@ class AntiTNFa(MoleculeModel):
         )
 
         # Diffusion of AntiTNFa
-        self.diffuse(anti_tnf_a.grid, state)
+        anti_tnf_a.grid[:] = apply_diffusion(
+            variable=anti_tnf_a.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         anti_tnf_a: AntiTNFaState = state.antitnfa
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(anti_tnf_a.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(anti_tnf_a.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -168,7 +180,7 @@ class AntiTNFa(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class AntiTNFa(MoleculeModel):
+<pre><code class="python">class AntiTNFa(ModuleModel):
     name = &#39;antitnfa&#39;
     StateClass = AntiTNFaState
 
@@ -180,20 +192,23 @@ class AntiTNFa(MoleculeModel):
         lung_tissue = state.lung_tissue
 
         # config file values
-        anti_tnf_a.half_life = self.config.getfloat(&#39;half_life&#39;)
-        anti_tnf_a.react_time_unit = self.config.getfloat(&#39;react_time_unit&#39;)
-        anti_tnf_a.k_m = self.config.getfloat(&#39;k_m&#39;)
-        anti_tnf_a.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
+        anti_tnf_a.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: min
+        anti_tnf_a.react_time_unit = self.config.getfloat(
+            &#39;react_time_unit&#39;
+        )  # units: sec TODO: understand this
+        anti_tnf_a.k_m = self.config.getfloat(&#39;k_m&#39;)  # units: aM
+        anti_tnf_a.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)  # units: aM
 
         # computed values
-        anti_tnf_a.system_amount_per_voxel = anti_tnf_a.system_concentration * voxel_volume
-        anti_tnf_a.half_life_multiplier = 1 + math.log(0.5) / (
-            anti_tnf_a.half_life / self.time_step
-        )
+        anti_tnf_a.system_amount_per_voxel = (
+            anti_tnf_a.system_concentration * voxel_volume
+        )  # units: aM * L = atto-mol
+        anti_tnf_a.half_life_multiplier = 0.5 ** (
+            self.time_step / anti_tnf_a.half_life
+        )  # units in exponent: (min/step) / min -&gt; 1/step
 
         # initialize concentration field
-        anti_tnf_a.grid.fill(anti_tnf_a.system_amount_per_voxel)
-        anti_tnf_a.grid[lung_tissue == TissueType.AIR] = 0.0
+        anti_tnf_a.grid[lung_tissue != TissueType.AIR] = anti_tnf_a.system_amount_per_voxel
 
         return state
 
@@ -210,14 +225,14 @@ class AntiTNFa(MoleculeModel):
         reacted_quantity = michaelian_kinetics(
             substrate=anti_tnf_a.grid,
             enzyme=tnf_a.grid,
-            km=anti_tnf_a.k_m,
-            h=anti_tnf_a.react_time_unit,
+            k_m=anti_tnf_a.k_m,
+            h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
-        anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
-        tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)
+        anti_tnf_a.grid[:] = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
+        tnf_a.grid[:] = np.maximum(0.0, tnf_a.grid - reacted_quantity)
 
         # Degradation of AntiTNFa
         anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
@@ -229,16 +244,24 @@ class AntiTNFa(MoleculeModel):
         )
 
         # Diffusion of AntiTNFa
-        self.diffuse(anti_tnf_a.grid, state)
+        anti_tnf_a.grid[:] = apply_diffusion(
+            variable=anti_tnf_a.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         anti_tnf_a: AntiTNFaState = state.antitnfa
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            &#39;concentration&#39;: float(np.mean(anti_tnf_a.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(anti_tnf_a.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -247,7 +270,6 @@ class AntiTNFa(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -274,14 +296,14 @@ class AntiTNFa(MoleculeModel):
     reacted_quantity = michaelian_kinetics(
         substrate=anti_tnf_a.grid,
         enzyme=tnf_a.grid,
-        km=anti_tnf_a.k_m,
-        h=anti_tnf_a.react_time_unit,
+        k_m=anti_tnf_a.k_m,
+        h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
         k_cat=1.0,  # default
         voxel_volume=voxel_volume,
     )
     reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
-    anti_tnf_a.grid = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
-    tnf_a.grid = np.maximum(0.0, tnf_a.grid - reacted_quantity)
+    anti_tnf_a.grid[:] = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
+    tnf_a.grid[:] = np.maximum(0.0, tnf_a.grid - reacted_quantity)
 
     # Degradation of AntiTNFa
     anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
@@ -293,7 +315,12 @@ class AntiTNFa(MoleculeModel):
     )
 
     # Diffusion of AntiTNFa
-    self.diffuse(anti_tnf_a.grid, state)
+    anti_tnf_a.grid[:] = apply_diffusion(
+        variable=anti_tnf_a.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -301,21 +328,17 @@ class AntiTNFa(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -336,14 +359,15 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class AntiTNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    react_time_unit: float
-    k_m: float
-    system_concentration: float
-    system_amount_per_voxel: float
-    turnover_rate: float</code></pre>
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    react_time_unit: float  # units: hour/step
+    k_m: float  # units: aM
+    system_concentration: float  # units: aM
+    system_amount_per_voxel: float  # units: atto-mol</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -376,10 +400,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.antitnfa.AntiTNFaState.system_concentration"><code class="name">var <span class="ident">system_concentration</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.antitnfa.AntiTNFaState.turnover_rate"><code class="name">var <span class="ident">turnover_rate</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -433,7 +453,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.antitnfa.AntiTNFaState.react_time_unit" href="#nlisim.modules.antitnfa.AntiTNFaState.react_time_unit">react_time_unit</a></code></li>
 <li><code><a title="nlisim.modules.antitnfa.AntiTNFaState.system_amount_per_voxel" href="#nlisim.modules.antitnfa.AntiTNFaState.system_amount_per_voxel">system_amount_per_voxel</a></code></li>
 <li><code><a title="nlisim.modules.antitnfa.AntiTNFaState.system_concentration" href="#nlisim.modules.antitnfa.AntiTNFaState.system_concentration">system_concentration</a></code></li>
-<li><code><a title="nlisim.modules.antitnfa.AntiTNFaState.turnover_rate" href="#nlisim.modules.antitnfa.AntiTNFaState.turnover_rate">turnover_rate</a></code></li>
 </ul>
 </li>
 </ul>

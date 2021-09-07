@@ -76,6 +76,7 @@ class Visualization(ModuleModel):
     def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
         vol = vtkPolyData()
         verts = vtkPoints()
+        # noinspection PyArgumentList
         lines = vtkCellArray()
 
         # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
@@ -98,6 +99,7 @@ class Visualization(ModuleModel):
 
         for index in var.alive():
             cell = var[index]
+            # noinspection PyArgumentList
             verts.InsertNextPoint(cell[&#39;point&#39;][2], cell[&#39;point&#39;][1], cell[&#39;point&#39;][0])
 
         alive_cells = np.take(var.cell_data, var.alive())
@@ -141,7 +143,10 @@ class Visualization(ModuleModel):
             attr_names = json_config[&#39;attributes&#39;]
         except KeyError:
             attr_names = None
-        var = getattr(getattr(state, module_name), var_name)
+        module = getattr(state, module_name, None)
+        if module is None:
+            return
+        var = getattr(module, var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
             spacing = (
@@ -278,6 +283,7 @@ class Visualization(ModuleModel):
     def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
         vol = vtkPolyData()
         verts = vtkPoints()
+        # noinspection PyArgumentList
         lines = vtkCellArray()
 
         # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
@@ -300,6 +306,7 @@ class Visualization(ModuleModel):
 
         for index in var.alive():
             cell = var[index]
+            # noinspection PyArgumentList
             verts.InsertNextPoint(cell[&#39;point&#39;][2], cell[&#39;point&#39;][1], cell[&#39;point&#39;][0])
 
         alive_cells = np.take(var.cell_data, var.alive())
@@ -343,7 +350,10 @@ class Visualization(ModuleModel):
             attr_names = json_config[&#39;attributes&#39;]
         except KeyError:
             attr_names = None
-        var = getattr(getattr(state, module_name), var_name)
+        module = getattr(state, module_name, None)
+        if module is None:
+            return
+        var = getattr(module, var_name)
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
             spacing = (
@@ -423,6 +433,7 @@ class Visualization(ModuleModel):
 def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
     vol = vtkPolyData()
     verts = vtkPoints()
+    # noinspection PyArgumentList
     lines = vtkCellArray()
 
     # Retained, but not used. &#39;Fungus&#39; is current, not &#39;Afumigatus&#39;
@@ -445,6 +456,7 @@ def write_poly_data(cls, var, filename: str, attr_names: str) -&gt; None:
 
     for index in var.alive():
         cell = var[index]
+        # noinspection PyArgumentList
         verts.InsertNextPoint(cell[&#39;point&#39;][2], cell[&#39;point&#39;][1], cell[&#39;point&#39;][0])
 
     alive_cells = np.take(var.cell_data, var.alive())
@@ -511,7 +523,10 @@ def write_structured_points(
         attr_names = json_config[&#39;attributes&#39;]
     except KeyError:
         attr_names = None
-    var = getattr(getattr(state, module_name), var_name)
+    module = getattr(state, module_name, None)
+    if module is None:
+        return
+    var = getattr(module, var_name)
 
     if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
         spacing = (

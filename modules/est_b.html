@@ -27,15 +27,15 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.diffusion import apply_diffusion
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -46,17 +46,19 @@ def molecule_grid_factory(self: &#39;EstBState&#39;) -&gt; np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class EstBState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    k_m: float
-    kcat: float
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    k_m: float  # units: aM
+    k_cat: float
     system_concentration: float
     system_amount_per_voxel: float
 
 
-class EstB(MoleculeModel):
+class EstB(ModuleModel):
     &#34;&#34;&#34;Esterase B&#34;&#34;&#34;
 
     name = &#39;estb&#39;
@@ -71,17 +73,18 @@ class EstB(MoleculeModel):
 
         # config file values
         estb.half_life = self.config.getfloat(&#39;half_life&#39;)
-        estb.k_m = self.config.getfloat(&#39;km&#39;)
-        estb.kcat = self.config.getfloat(&#39;kcat&#39;)
+        estb.k_m = self.config.getfloat(&#39;k_m&#39;)
+        estb.k_cat = self.config.getfloat(&#39;k_cat&#39;)
         estb.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
 
         # computed values
-        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
+        estb.half_life_multiplier = 0.5 ** (
+            self.time_step / estb.half_life
+        )  # units: (min/step) / min -&gt; 1/step
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
-        estb.grid.fill(estb.system_amount_per_voxel)
-        estb.grid[lung_tissue == TissueType.AIR] = 0.0
+        estb.grid[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
 
         return state
 
@@ -98,23 +101,23 @@ class EstB(MoleculeModel):
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer
-        estb.iron_buffer.fill(0.0)
+        estb.iron_buffer[:] = 0.0
 
         # interact with TAFC
         v1 = michaelian_kinetics(
             substrate=tafc.grid[&#34;TAFC&#34;],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
             substrate=tafc.grid[&#34;TAFCBI&#34;],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         tafc.grid[&#34;TAFC&#34;] -= v1
@@ -131,7 +134,12 @@ class EstB(MoleculeModel):
         )
 
         # Diffusion of EstB
-        self.diffuse(estb.grid, state)
+        estb.grid[:] = apply_diffusion(
+            variable=estb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -140,7 +148,7 @@ class EstB(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(estb.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(estb.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -183,7 +191,7 @@ class EstB(MoleculeModel):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class EstB(MoleculeModel):
+<pre><code class="python">class EstB(ModuleModel):
     &#34;&#34;&#34;Esterase B&#34;&#34;&#34;
 
     name = &#39;estb&#39;
@@ -198,17 +206,18 @@ class EstB(MoleculeModel):
 
         # config file values
         estb.half_life = self.config.getfloat(&#39;half_life&#39;)
-        estb.k_m = self.config.getfloat(&#39;km&#39;)
-        estb.kcat = self.config.getfloat(&#39;kcat&#39;)
+        estb.k_m = self.config.getfloat(&#39;k_m&#39;)
+        estb.k_cat = self.config.getfloat(&#39;k_cat&#39;)
         estb.system_concentration = self.config.getfloat(&#39;system_concentration&#39;)
 
         # computed values
-        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
+        estb.half_life_multiplier = 0.5 ** (
+            self.time_step / estb.half_life
+        )  # units: (min/step) / min -&gt; 1/step
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
-        estb.grid.fill(estb.system_amount_per_voxel)
-        estb.grid[lung_tissue == TissueType.AIR] = 0.0
+        estb.grid[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
 
         return state
 
@@ -225,23 +234,23 @@ class EstB(MoleculeModel):
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer
-        estb.iron_buffer.fill(0.0)
+        estb.iron_buffer[:] = 0.0
 
         # interact with TAFC
         v1 = michaelian_kinetics(
             substrate=tafc.grid[&#34;TAFC&#34;],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
             substrate=tafc.grid[&#34;TAFCBI&#34;],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         tafc.grid[&#34;TAFC&#34;] -= v1
@@ -258,7 +267,12 @@ class EstB(MoleculeModel):
         )
 
         # Diffusion of EstB
-        self.diffuse(estb.grid, state)
+        estb.grid[:] = apply_diffusion(
+            variable=estb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -267,7 +281,7 @@ class EstB(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            &#39;concentration&#39;: float(np.mean(estb.grid) / voxel_volume),
+            &#39;concentration (nM)&#39;: float(np.mean(estb.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
@@ -276,7 +290,6 @@ class EstB(MoleculeModel):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></li>
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
 <h3>Methods</h3>
@@ -303,23 +316,23 @@ class EstB(MoleculeModel):
 
     # contribute our iron buffer to the iron pool
     iron.grid += estb.iron_buffer
-    estb.iron_buffer.fill(0.0)
+    estb.iron_buffer[:] = 0.0
 
     # interact with TAFC
     v1 = michaelian_kinetics(
         substrate=tafc.grid[&#34;TAFC&#34;],
         enzyme=estb.grid,
-        km=estb.k_m,
-        k_cat=estb.kcat,
-        h=self.time_step / 60,
+        k_m=estb.k_m,
+        k_cat=estb.k_cat,
+        h=self.time_step / 60,  # units: (min/step) / (min/hour)
         voxel_volume=voxel_volume,
     )
     v2 = michaelian_kinetics(
         substrate=tafc.grid[&#34;TAFCBI&#34;],
         enzyme=estb.grid,
-        km=estb.k_m,
-        k_cat=estb.kcat,
-        h=self.time_step / 60,
+        k_m=estb.k_m,
+        k_cat=estb.k_cat,
+        h=self.time_step / 60,  # units: (min/step) / (min/hour)
         voxel_volume=voxel_volume,
     )
     tafc.grid[&#34;TAFC&#34;] -= v1
@@ -336,7 +349,12 @@ class EstB(MoleculeModel):
     )
 
     # Diffusion of EstB
-    self.diffuse(estb.grid, state)
+    estb.grid[:] = apply_diffusion(
+        variable=estb.grid,
+        laplacian=molecules.laplacian,
+        diffusivity=molecules.diffusion_constant,
+        dt=self.time_step,
+    )
 
     return state</code></pre>
 </details>
@@ -344,21 +362,17 @@ class EstB(MoleculeModel):
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="nlisim.modules.molecules.MoleculeModel" href="molecules.html#nlisim.modules.molecules.MoleculeModel">MoleculeModel</a></b></code>:
-<ul class="hlist">
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculeModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
-</ul>
-</li>
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.name" href="../module.html#nlisim.module.ModuleModel.name">name</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.section" href="../module.html#nlisim.module.ModuleModel.section">section</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.summary_stats" href="../module.html#nlisim.module.ModuleModel.summary_stats">summary_stats</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.time_step" href="../module.html#nlisim.module.ModuleModel.time_step">time_step</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.visualization_data" href="../module.html#nlisim.module.ModuleModel.visualization_data">visualization_data</a></code></li>
 </ul>
 </li>
 </ul>
@@ -379,12 +393,14 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EstBState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    k_m: float
-    kcat: float
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    k_m: float  # units: aM
+    k_cat: float
     system_concentration: float
     system_amount_per_voxel: float</code></pre>
 </details>
@@ -410,11 +426,11 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.est_b.EstBState.k_m"><code class="name">var <span class="ident">k_m</span> : float</code></dt>
+<dt id="nlisim.modules.est_b.EstBState.k_cat"><code class="name">var <span class="ident">k_cat</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.est_b.EstBState.kcat"><code class="name">var <span class="ident">kcat</span> : float</code></dt>
+<dt id="nlisim.modules.est_b.EstBState.k_m"><code class="name">var <span class="ident">k_m</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -473,8 +489,8 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.est_b.EstBState.half_life" href="#nlisim.modules.est_b.EstBState.half_life">half_life</a></code></li>
 <li><code><a title="nlisim.modules.est_b.EstBState.half_life_multiplier" href="#nlisim.modules.est_b.EstBState.half_life_multiplier">half_life_multiplier</a></code></li>
 <li><code><a title="nlisim.modules.est_b.EstBState.iron_buffer" href="#nlisim.modules.est_b.EstBState.iron_buffer">iron_buffer</a></code></li>
+<li><code><a title="nlisim.modules.est_b.EstBState.k_cat" href="#nlisim.modules.est_b.EstBState.k_cat">k_cat</a></code></li>
 <li><code><a title="nlisim.modules.est_b.EstBState.k_m" href="#nlisim.modules.est_b.EstBState.k_m">k_m</a></code></li>
-<li><code><a title="nlisim.modules.est_b.EstBState.kcat" href="#nlisim.modules.est_b.EstBState.kcat">kcat</a></code></li>
 <li><code><a title="nlisim.modules.est_b.EstBState.system_amount_per_voxel" href="#nlisim.modules.est_b.EstBState.system_amount_per_voxel">system_amount_per_voxel</a></code></li>
 <li><code><a title="nlisim.modules.est_b.EstBState.system_concentration" href="#nlisim.modules.est_b.EstBState.system_concentration">system_concentration</a></code></li>
 </ul>
