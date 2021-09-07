@@ -54,6 +54,7 @@ class MoleculeGrid(object):
 
     def __attrs_post_init__(self):
         grid = self.grid
+        # noinspection PyTypeChecker
         object.__setattr__(
             self,
             '_concentrations',
@@ -65,6 +66,7 @@ class MoleculeGrid(object):
             ),
         )
 
+        # noinspection PyTypeChecker
         object.__setattr__(
             self,
             '_sources',

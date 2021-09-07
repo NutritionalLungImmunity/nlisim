@@ -3,8 +3,8 @@ import math
 from attr import attrs
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -19,7 +19,7 @@ class LiverState(ModuleState):
     threshold_hep: float
 
 
-class Liver(MoleculeModel):
+class Liver(ModuleModel):
     """Liver"""
 
     name = 'liver'
@@ -29,7 +29,6 @@ class Liver(MoleculeModel):
         liver: LiverState = state.liver
 
         # config file values
-        # TODO: consider moving to hepcidin
         liver.hep_slope = self.config.getfloat('hep_slope')
         liver.hep_intercept = self.config.getfloat('hep_intercept')
         liver.il6_threshold = self.config.getfloat('il6_threshold')

@@ -7,13 +7,12 @@ import numpy as np
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
+from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
 from nlisim.modules.hemolysin import HemolysinState
 from nlisim.modules.macrophage import MacrophageState
 from nlisim.modules.molecules import MoleculesState
-from nlisim.modules.phagocyte import PhagocyteModel
 from nlisim.state import State
 from nlisim.util import TissueType, activation_function
 
@@ -36,7 +35,7 @@ class ErythrocyteState(ModuleState):
     pr_ma_phag_eryt: float
 
 
-class ErythrocyteModel(PhagocyteModel):
+class ErythrocyteModel(ModuleModel):
     name = 'erythrocyte'
     StateClass = ErythrocyteState
 
@@ -92,8 +91,8 @@ class ErythrocyteModel(PhagocyteModel):
         # TODO: avg? variable name improvement?
         avg = erythrocyte.cells['count'] * activation_function(
             x=hemolysin.grid,
-            kd=erythrocyte.kd_hemo,
-            h=self.time_step / 60,
+            k_d=erythrocyte.kd_hemo,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=voxel_volume,
             b=1,
         )
@@ -133,11 +132,10 @@ class ErythrocyteModel(PhagocyteModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         erythrocyte: ErythrocyteState = state.erythrocyte
-        voxel_volume = state.voxel_volume
+        # voxel_volume = state.voxel_volume
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),
-            'concentration': float(np.mean(erythrocyte.cells['count']) / voxel_volume),
         }
 
     def visualization_data(self, state: State):

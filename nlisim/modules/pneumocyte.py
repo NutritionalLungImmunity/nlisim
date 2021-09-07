@@ -59,12 +59,13 @@ def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
 @attrs(kw_only=True)
 class PneumocyteState(PhagocyteModuleState):
     cells: PneumocyteCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    time_to_rest: float
-    iter_to_rest: int
-    time_to_change_state: float
-    iter_to_change_state: int
-    p_il6_qtty: float
-    p_il8_qtty: float
+    max_conidia: int  # units: conidia
+    time_to_rest: float  # units: hours
+    iter_to_rest: int  # units: steps
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
+    # p_il8_qtty: float
     p_tnf_qtty: float
     pr_p_int: float
 
@@ -79,19 +80,21 @@ class Pneumocyte(PhagocyteModel):
         time_step_size: float = self.time_step
         lung_tissue: np.ndarray = state.lung_tissue
 
-        pneumocyte.max_conidia = self.config.getint('max_conidia')
-        pneumocyte.time_to_rest = self.config.getint('time_to_rest')
-        pneumocyte.time_to_change_state = self.config.getint('time_to_change_state')
+        pneumocyte.max_conidia = self.config.getint('max_conidia')  # units: conidia
+        pneumocyte.time_to_rest = self.config.getint('time_to_rest')  # units: hours
+        pneumocyte.time_to_change_state = self.config.getint('time_to_change_state')  # units: hours
 
-        pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
-        pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
+        # pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
+        # pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
         pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
 
         # computed values
-        pneumocyte.iter_to_rest = int(pneumocyte.time_to_rest * (60 / time_step_size))
+        pneumocyte.iter_to_rest = int(
+            pneumocyte.time_to_rest * (60 / self.time_step)
+        )  # units: hours * (min/hour) / (min/step) = step
         pneumocyte.iter_to_change_state = int(
-            pneumocyte.time_to_change_state * (60 / time_step_size)
-        )
+            pneumocyte.time_to_change_state * (60 / self.time_step)
+        )  # units: hours * (min/hour) / (min/step) = step
 
         rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
         pneumocyte.pr_p_int = 1 - math.exp(
@@ -99,7 +102,6 @@ class Pneumocyte(PhagocyteModel):
         )
 
         # initialize cells, placing one per epithelial voxel
-        # TODO: Any changes due to ongoing conversation with Henrique
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
@@ -123,6 +125,12 @@ class Pneumocyte(PhagocyteModel):
 
         return state
 
+    def single_step_probabilistic_drift(
+        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+    ) -> Point:
+        # pneumocytes do not move
+        pass
+
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         from nlisim.modules.afumigatus import (
@@ -130,14 +138,15 @@ class Pneumocyte(PhagocyteModel):
             AfumigatusCellStatus,
             AfumigatusState,
         )
-        from nlisim.modules.il6 import IL6State
-        from nlisim.modules.il8 import IL8State
+
+        # from nlisim.modules.il6 import IL6State
+        # from nlisim.modules.il8 import IL8State
         from nlisim.modules.tnfa import TNFaState
 
         pneumocyte: PneumocyteState = state.pneumocyte
         afumigatus: AfumigatusState = state.afumigatus
-        il6: IL6State = getattr(state, 'il6', None)
-        il8: IL8State = getattr(state, 'il8', None)
+        # il6: IL6State = getattr(state, 'il6', None)
+        # il8: IL8State = getattr(state, 'il8', None)
         tnfa: TNFaState = state.tnfa
         grid: RectangularGrid = state.grid
         voxel_volume: float = state.voxel_volume
@@ -186,21 +195,21 @@ class Pneumocyte(PhagocyteModel):
                         #  when activating
                         pneumocyte_cell['status_iteration'] = 0
 
-            # secrete IL6
-            if il6 is not None and pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
-
-            # secrete IL8
-            if il8 is not None and pneumocyte_cell['tnfa']:  # TODO: and active?
-                il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
+            # # secrete IL6
+            # if il6 is not None and pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
+            #     il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
+            #
+            # # secrete IL8
+            # if il8 is not None and pneumocyte_cell['tnfa']:
+            #     il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
 
             # interact with TNFa
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )

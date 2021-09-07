@@ -1,12 +1,12 @@
-import math
 from typing import Any, Dict
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.diffusion import apply_diffusion
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
@@ -17,17 +17,19 @@ def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class EstBState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
     iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    k_m: float
-    kcat: float
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    k_m: float  # units: aM
+    k_cat: float
     system_concentration: float
     system_amount_per_voxel: float
 
 
-class EstB(MoleculeModel):
+class EstB(ModuleModel):
     """Esterase B"""
 
     name = 'estb'
@@ -42,17 +44,18 @@ class EstB(MoleculeModel):
 
         # config file values
         estb.half_life = self.config.getfloat('half_life')
-        estb.k_m = self.config.getfloat('km')
-        estb.kcat = self.config.getfloat('kcat')
+        estb.k_m = self.config.getfloat('k_m')
+        estb.k_cat = self.config.getfloat('k_cat')
         estb.system_concentration = self.config.getfloat('system_concentration')
 
         # computed values
-        estb.half_life_multiplier = 1 + math.log(0.5) / (estb.half_life / self.time_step)
+        estb.half_life_multiplier = 0.5 ** (
+            self.time_step / estb.half_life
+        )  # units: (min/step) / min -> 1/step
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
-        estb.grid.fill(estb.system_amount_per_voxel)
-        estb.grid[lung_tissue == TissueType.AIR] = 0.0
+        estb.grid[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
 
         return state
 
@@ -69,23 +72,23 @@ class EstB(MoleculeModel):
 
         # contribute our iron buffer to the iron pool
         iron.grid += estb.iron_buffer
-        estb.iron_buffer.fill(0.0)
+        estb.iron_buffer[:] = 0.0
 
         # interact with TAFC
         v1 = michaelian_kinetics(
             substrate=tafc.grid["TAFC"],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
             substrate=tafc.grid["TAFCBI"],
             enzyme=estb.grid,
-            km=estb.k_m,
-            k_cat=estb.kcat,
-            h=self.time_step / 60,
+            k_m=estb.k_m,
+            k_cat=estb.k_cat,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
             voxel_volume=voxel_volume,
         )
         tafc.grid["TAFC"] -= v1
@@ -102,7 +105,12 @@ class EstB(MoleculeModel):
         )
 
         # Diffusion of EstB
-        self.diffuse(estb.grid, state)
+        estb.grid[:] = apply_diffusion(
+            variable=estb.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -111,7 +119,7 @@ class EstB(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(estb.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(estb.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

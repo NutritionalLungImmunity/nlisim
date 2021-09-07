@@ -15,9 +15,12 @@ EPSILON = 5.57e-309
 
 
 @jit(cache=True)
-def activation_function(*, x, kd, h, volume, b=1):
-    # x -> x / volume CONVERT MOL TO MOLAR
-    return h * (1 - b * np.exp(-(x / volume) / kd))
+def activation_function(*, x, k_d, h, volume, b=1):
+    # units:
+    # x: atto-mol
+    # k_d: aM
+    # volume: L
+    return h * (1 - b * np.exp(-x / k_d / volume))
 
 
 def turnover_rate(
@@ -32,8 +35,7 @@ def turnover_rate(
 
     # enforce bounds and zero out problem divides
     result[x == 0] = 0.0
-    np.minimum(result, 1.0, out=result)
-    np.maximum(result, 0.0, out=result)
+    result[:] = np.maximum(0.0, np.minimum(1.0, result))
 
     return result
 
@@ -57,15 +59,11 @@ def iron_tf_reaction(
     rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)
     # enforce bounds and zero out problem divides
     rel_total_iron[total_binding_site == 0] = 0.0
-    np.minimum(rel_total_iron, 1.0, out=rel_total_iron)
-    np.maximum(rel_total_iron, 0.0, out=rel_total_iron)
+    rel_total_iron[:] = np.maximum(np.minimum(rel_total_iron, 1.0), 0.0)
 
-    rel_tf_fe: np.ndarray = ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
-
-    rel_tf_fe = np.maximum(
-        0.0, rel_tf_fe
-    )  # one root of the polynomial is at ~0.99897 and goes neg after
-    # rel_TfFe = np.minimum(1.0, rel_TfFe) <- not currently needed, future-proof it?
+    rel_tf_fe: np.ndarray = np.maximum(
+        0.0, ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
+    )  # maximum used as one root of the polynomial is at ~0.99897 and goes neg after
 
     rel_tf_fe[total_iron == 0] = 0.0
     rel_tf_fe[total_binding_site == 0] = 0.0
@@ -78,15 +76,27 @@ def michaelian_kinetics(
     *,
     substrate: np.ndarray,
     enzyme: np.ndarray,
-    km: float,
+    k_m: float,
     h: float,
     k_cat: float = 1.0,
     voxel_volume: float,
 ) -> np.ndarray:
-    # Note: was originally h*k_cat*enzyme*substrate/(substrate+km), but with
-    # enzyme /= voxel_volume and substrate /= voxel_volume.
-    # This is algebraically equivalent and reduces the number of operations.
-    return h * k_cat * enzyme * substrate / (substrate + km * voxel_volume)
+    """
+    Compute Michaelis–Menten kinetics.
+
+    units:
+    substrate : atto-mol
+    enzyme : atto-mol
+    k_m : aM
+    h: sec/step
+    k_cat: 1/sec
+    voxel_volume: L
+
+    result: atto-mol/step
+    """
+    # Note: was originally defined by converting to molarity, but can be redefined in terms
+    # of mols. This is algebraically equivalent and reduces the number of operations.
+    return h * k_cat * enzyme * substrate / (substrate + k_m * voxel_volume)
 
 
 class TissueType(IntEnum):

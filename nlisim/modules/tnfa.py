@@ -1,13 +1,13 @@
-import math
 from typing import Any, Dict
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
@@ -19,19 +19,21 @@ def molecule_grid_factory(self: 'TNFaState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    neutrophil_secretion_rate: float
-    epithelial_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    neutrophil_secretion_rate_unit_t: float
-    epithelial_secretion_rate_unit_t: float
-    k_d: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
+    neutrophil_secretion_rate: float  # units: atto-mol/(cell*h)
+    epithelial_secretion_rate: float  # units: atto-mol/(cell*h)
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    epithelial_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
+    k_d: float  # aM
 
 
-class TNFa(MoleculeModel):
+class TNFa(ModuleModel):
     name = 'tnfa'
     StateClass = TNFaState
 
@@ -39,18 +41,34 @@ class TNFa(MoleculeModel):
         tnfa: TNFaState = state.tnfa
 
         # config file values
-        tnfa.half_life = self.config.getfloat('half_life')
-        tnfa.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        tnfa.neutrophil_secretion_rate = self.config.getfloat('neutrophil_secretion_rate')
-        tnfa.epithelial_secretion_rate = self.config.getfloat('epithelial_secretion_rate')
-        tnfa.k_d = self.config.getfloat('k_d')
+        tnfa.half_life = self.config.getfloat('half_life')  # units: min
+        tnfa.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        tnfa.neutrophil_secretion_rate = self.config.getfloat(
+            'neutrophil_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        tnfa.epithelial_secretion_rate = self.config.getfloat(
+            'epithelial_secretion_rate'
+        )  # units: atto-mol/(cell*h)
+        tnfa.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
-        tnfa.half_life_multiplier = 1 + math.log(0.5) / (tnfa.half_life / self.time_step)
+        tnfa.half_life_multiplier = 0.5 ** (
+            self.time_step / tnfa.half_life
+        )  # units: (min/step) / min -> 1/step
         # time unit conversions
-        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * 60 * self.time_step
-        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * 60 * self.time_step
-        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * (
+            self.time_step / 60
+        )
+        tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -78,8 +96,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(macrophage_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -104,8 +122,8 @@ class TNFa(MoleculeModel):
                 if (
                     activation_function(
                         x=tnfa.grid[tuple(neutrophil_cell_voxel)],
-                        kd=tnfa.k_d,
-                        h=self.time_step / 60,
+                        k_d=tnfa.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
                         b=1,
                     )
@@ -129,16 +147,24 @@ class TNFa(MoleculeModel):
         )
 
         # Diffusion of TNFa
-        self.diffuse(tnfa.grid, state)
+        tnfa.grid[:] = apply_diffusion(
+            variable=tnfa.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         tnfa: TNFaState = state.tnfa
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(tnfa.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(tnfa.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

@@ -5,8 +5,8 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
 
@@ -17,11 +17,13 @@ def molecule_grid_factory(self: 'HepcidinState') -> np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class HepcidinState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    kd_hep: float
+    grid: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mol
+    k_d: float  # units: aM
 
 
-class Hepcidin(MoleculeModel):
+class Hepcidin(ModuleModel):
     """Hepcidin"""
 
     name = 'hepcidin'
@@ -31,7 +33,7 @@ class Hepcidin(MoleculeModel):
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values
-        hepcidin.kd_hep = self.config.getfloat('kd_hep')
+        hepcidin.k_d = self.config.getfloat('k_d')  # aM
 
         # computed values (none)
 
@@ -50,12 +52,12 @@ class Hepcidin(MoleculeModel):
             *np.where(
                 activation_function(
                     x=hepcidin.grid,
-                    kd=hepcidin.kd_hep,
-                    h=self.time_step / 60,
+                    k_d=hepcidin.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
-                > np.random.random(hepcidin.grid.shape)
+                > rg.random(size=hepcidin.grid.shape)
             )
         )
         for z, y, x in activated_voxels:
@@ -71,11 +73,14 @@ class Hepcidin(MoleculeModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         hepcidin: HepcidinState = state.hepcidin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(hepcidin.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(hepcidin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

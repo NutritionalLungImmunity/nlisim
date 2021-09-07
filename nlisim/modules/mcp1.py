@@ -1,13 +1,13 @@
-import math
 from typing import Any, Dict
 
 import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -18,17 +18,19 @@ def molecule_grid_factory(self: 'MCP1State') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class MCP1State(ModuleState):
-    grid: np.ndarray = attr.ib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    half_life: float
-    half_life_multiplier: float
-    macrophage_secretion_rate: float
-    pneumocyte_secretion_rate: float
-    macrophage_secretion_rate_unit_t: float
-    pneumocyte_secretion_rate_unit_t: float
-    k_d: float
+    grid: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-mols
+    half_life: float  # units: min
+    half_life_multiplier: float  # units: proportion
+    macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    pneumocyte_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    k_d: float  # units: aM
 
 
-class MCP1(MoleculeModel):
+class MCP1(ModuleModel):
     """MCP1"""
 
     name = 'mcp1'
@@ -38,16 +40,28 @@ class MCP1(MoleculeModel):
         mcp1: MCP1State = state.mcp1
 
         # config file values
-        mcp1.half_life = self.config.getfloat('half_life')
-        mcp1.macrophage_secretion_rate = self.config.getfloat('macrophage_secretion_rate')
-        mcp1.pneumocyte_secretion_rate = self.config.getfloat('pneumocyte_secretion_rate')
-        mcp1.k_d = self.config.getfloat('k_d')
+        mcp1.half_life = self.config.getfloat('half_life')  # units: min
+        mcp1.macrophage_secretion_rate = self.config.getfloat(
+            'macrophage_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.pneumocyte_secretion_rate = self.config.getfloat(
+            'pneumocyte_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
+        mcp1.k_d = self.config.getfloat('k_d')  # units: aM
 
         # computed values
-        mcp1.half_life_multiplier = 1 + math.log(0.5) / (mcp1.half_life / self.time_step)
+        mcp1.half_life_multiplier = 0.5 ** (
+            self.time_step / mcp1.half_life
+        )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
-        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * 60 * self.time_step
-        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * 60 * self.time_step
+        # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
+        #        = atto-mol * cell^-1 * step^-1
+        mcp1.macrophage_secretion_rate_unit_t = mcp1.macrophage_secretion_rate * (
+            self.time_step / 60
+        )
+        mcp1.pneumocyte_secretion_rate_unit_t = mcp1.pneumocyte_secretion_rate * (
+            self.time_step / 60
+        )
 
         return state
 
@@ -88,16 +102,24 @@ class MCP1(MoleculeModel):
         )
 
         # Diffusion of MCP1
-        self.diffuse(mcp1.grid, state)
+        mcp1.grid[:] = apply_diffusion(
+            variable=mcp1.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         mcp1: MCP1State = state.mcp1
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(mcp1.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(mcp1.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

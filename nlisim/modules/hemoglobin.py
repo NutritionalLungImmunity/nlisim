@@ -5,9 +5,10 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -23,7 +24,7 @@ class HemoglobinState(ModuleState):
     ma_heme_import_rate: float
 
 
-class Hemoglobin(MoleculeModel):
+class Hemoglobin(ModuleModel):
     """Hemoglobin"""
 
     name = 'hemoglobin'
@@ -76,7 +77,12 @@ class Hemoglobin(MoleculeModel):
         )
 
         # Diffusion of Hemoglobin
-        self.diffuse(hemoglobin.grid, state)
+        hemoglobin.grid[:] = apply_diffusion(
+            variable=hemoglobin.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
@@ -85,7 +91,7 @@ class Hemoglobin(MoleculeModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration': float(np.mean(hemoglobin.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(hemoglobin.grid) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):

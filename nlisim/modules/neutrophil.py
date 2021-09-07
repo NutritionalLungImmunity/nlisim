@@ -207,7 +207,6 @@ class Neutrophil(PhagocyteModel):
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
                 for aspergillus_index in local_aspergillus:
-                    print('tick')
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
                     if aspergillus_cell['dead']:
                         continue
@@ -251,9 +250,7 @@ class Neutrophil(PhagocyteModel):
                     if macrophage_num_cells_in_phagosome == 0:
                         macrophage_cell['phagosome'] = neutrophil_cell['phagosome']
                         macrophage_cell['iron_pool'] += neutrophil_cell['iron_pool']
-                        neutrophil_cell[
-                            'iron_pool'
-                        ] = 0.0  # TODO: verify, Henrique's code looks odd
+                        neutrophil_cell['iron_pool'] = 0.0
                         neutrophil_cell['status'] = PhagocyteStatus.DEAD
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVE
 
@@ -262,9 +259,14 @@ class Neutrophil(PhagocyteModel):
                 max_move_step = neutrophil.n_move_rate_act * self.time_step
             else:
                 max_move_step = neutrophil.n_move_rate_rest * self.time_step
-            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+            move_step: int = rg.poisson(max_move_step)
+            # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
-                self.single_step_move(state, neutrophil_cell)
+                self.single_step_move(
+                    state, neutrophil_cell, neutrophil_cell_index, neutrophil.cells
+                )
+            # TODO: understand the meaning of the parameter here: moving randomly n steps is
+            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_neutrophils(state, space_volume, voxel_volume)
@@ -317,9 +319,9 @@ class Neutrophil(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -> Voxel:
+    ) -> Point:
         """
-        Calculate a 1-step voxel movement of a neutrophil
+        Calculate a 1µm movement of a neutrophil
 
         Parameters
         ----------
@@ -332,13 +334,13 @@ class Neutrophil(PhagocyteModel):
 
         Returns
         -------
-        Voxel
-            the new voxel position of the neutrophil
+        Point
+            the new position of the neutrophil
         """
         # neutrophils are attracted by MIP2
 
         neutrophil: NeutrophilState = state.neutrophil
-        mip2: MIP2State = state.mip1b
+        mip2: MIP2State = state.mip2
         grid: RectangularGrid = state.grid
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
@@ -347,22 +349,34 @@ class Neutrophil(PhagocyteModel):
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
-                activation_function(
+                0.0
+                if lung_tissue[tuple(vxl)] == TissueType.AIR
+                else activation_function(
                     x=mip2.grid[tuple(vxl)],
-                    kd=mip2.k_d,
-                    h=self.time_step / 60,
+                    k_d=mip2.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
                 + neutrophil.drift_bias
-                if lung_tissue[tuple(vxl)] != TissueType.AIR
-                else 0.0
                 for vxl in nearby_voxels
             ],
             dtype=np.float64,
         )
 
-        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
+        voxel_movement_direction: Voxel = choose_voxel_by_prob(
+            voxels=nearby_voxels, default_value=voxel, weights=weights
+        )
+
+        # get normalized direction vector
+        dp_dt: np.ndarray = grid.get_voxel_center(voxel_movement_direction) - grid.get_voxel_center(
+            voxel
+        )
+        norm = np.linalg.norm(dp_dt)
+        if norm > 0.0:
+            dp_dt /= norm
+
+        return cell['point'] + dp_dt
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """
@@ -442,8 +456,8 @@ class Neutrophil(PhagocyteModel):
                     np.logical_and(
                         activation_function(
                             x=mip2.grid,
-                            kd=mip2.k_d,
-                            h=self.time_step / 60,
+                            k_d=mip2.k_d,
+                            h=self.time_step / 60,  # units: (min/step) / (min/hour)
                             volume=voxel_volume,
                             b=neutrophil.rec_bias,
                         )
@@ -497,14 +511,15 @@ class Neutrophil(PhagocyteModel):
         """
         neutrophil: NeutrophilState = state.neutrophil
 
-        if 'iron_pool' in kwargs:
-            neutrophil.cells.append(
-                NeutrophilCellData.create_cell(point=Point(x=x, y=y, z=z), **kwargs)
+        # use default value of iron pool if not present
+        iron_pool = kwargs.get('iron_pool', 0.0)
+        kwargs.pop('iron_pool', None)
+
+        neutrophil.cells.append(
+            NeutrophilCellData.create_cell(
+                point=Point(x=x, y=y, z=z), iron_pool=iron_pool, **kwargs
             )
-        else:
-            neutrophil.cells.append(
-                NeutrophilCellData.create_cell(point=Point(x=x, y=y, z=z), iron_pool=0.0, **kwargs)
-            )
+        )
 
 
 # def get_max_move_steps(self):  ##REVIEW

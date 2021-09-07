@@ -14,4 +14,4 @@ click-pathlib
 dataclasses;python_version<"3.8"
 importlib-metadata;python_version<"3.8"
 vtk
-numba>=0.34.0
+numba

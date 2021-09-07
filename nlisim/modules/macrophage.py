@@ -89,8 +89,8 @@ class MacrophageState(PhagocyteModuleState):
     recruitment_rate: float
     rec_bias: float
     drift_bias: float
-    ma_move_rate_act: float
-    ma_move_rate_rest: float
+    ma_move_rate_act: float  # µm/min
+    ma_move_rate_rest: float  # µm/min
 
 
 class Macrophage(PhagocyteModel):
@@ -119,8 +119,8 @@ class Macrophage(PhagocyteModel):
         macrophage.rec_bias = self.config.getfloat('rec_bias')
 
         macrophage.drift_bias = self.config.getfloat('drift_bias')
-        macrophage.ma_move_rate_act = self.config.getfloat('ma_move_rate_act')
-        macrophage.ma_move_rate_rest = self.config.getfloat('ma_move_rate_rest')
+        macrophage.ma_move_rate_act = self.config.getfloat('ma_move_rate_act')  # µm/min
+        macrophage.ma_move_rate_rest = self.config.getfloat('ma_move_rate_rest')  # µm/min
 
         # computed values
         macrophage.iter_to_change_state = int(
@@ -180,18 +180,23 @@ class Macrophage(PhagocyteModel):
                 else:
                     macrophage_cell['fpn_iteration'] += 1
 
-            # macrophage_cell['move_step'] = 0
-            # TODO: -1 below was 'None'. this looks like something which needs to be reworked
-            # macrophage_cell['max_move_step'] = -1
-
             # Movement
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                max_move_step = macrophage.ma_move_rate_act * self.time_step
+                max_move_step = (
+                    macrophage.ma_move_rate_act * self.time_step
+                )  # (µm/min) * (min/step)
             else:
-                max_move_step = macrophage.ma_move_rate_rest * self.time_step
-            move_step: int = rg.poisson(max_move_step)  # TODO: verify
+                max_move_step = (
+                    macrophage.ma_move_rate_rest * self.time_step
+                )  # (µm/min) * (min/step)
+            move_step: int = rg.poisson(max_move_step)
+            # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
-                self.single_step_move(state, macrophage_cell)
+                self.single_step_move(
+                    state, macrophage_cell, macrophage_cell_index, macrophage.cells
+                )
+            # TODO: understand the meaning of the parameter here: moving randomly n steps is
+            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_macrophages(state)
@@ -283,7 +288,7 @@ class Macrophage(PhagocyteModel):
                     np.logical_and(
                         activation_function(
                             x=mip1b.grid,
-                            kd=mip1b.k_d,
+                            k_d=mip1b.k_d,
                             h=self.time_step / 60,
                             volume=voxel_volume,
                             b=macrophage.rec_bias,
@@ -317,9 +322,9 @@ class Macrophage(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
-    ) -> Voxel:
+    ) -> Point:
         """
-        Calculate a 1-step voxel movement of a macrophage
+        Calculate a 1µm movement of a macrophage
 
         Parameters
         ----------
@@ -332,8 +337,8 @@ class Macrophage(PhagocyteModel):
 
         Returns
         -------
-        Voxel
-            the new voxel position of the macrophage
+        Point
+            the new position of the macrophage
         """
         # macrophages are attracted by MIP1b
         from nlisim.modules.mip1b import MIP1BState
@@ -351,22 +356,34 @@ class Macrophage(PhagocyteModel):
         nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
         weights = np.array(
             [
-                activation_function(
+                0.0
+                if lung_tissue[tuple(vxl)] == TissueType.AIR
+                else activation_function(
                     x=mip1b.grid[tuple(vxl)],
-                    kd=mip1b.k_d,
-                    h=self.time_step / 60,
+                    k_d=mip1b.k_d,
+                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
                     volume=voxel_volume,
                     b=1,
                 )
                 + macrophage.drift_bias
-                if lung_tissue[tuple(vxl)] != TissueType.AIR
-                else 0.0
                 for vxl in nearby_voxels
             ],
             dtype=np.float64,
         )
 
-        return choose_voxel_by_prob(voxels=nearby_voxels, default_value=voxel, weights=weights)
+        voxel_movement_direction: Voxel = choose_voxel_by_prob(
+            voxels=nearby_voxels, default_value=voxel, weights=weights
+        )
+
+        # get normalized direction vector
+        dp_dt: np.ndarray = grid.get_voxel_center(voxel_movement_direction) - grid.get_voxel_center(
+            voxel
+        )
+        norm = np.linalg.norm(dp_dt)
+        if norm > 0.0:
+            dp_dt /= norm
+
+        return cell['point'] + dp_dt
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
@@ -389,21 +406,18 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         macrophage: MacrophageState = state.macrophage
-        if 'iron_pool' in kwargs:
-            macrophage.cells.append(
-                MacrophageCellData.create_cell(
-                    point=Point(x=x, y=y, z=z),
-                    **kwargs,
-                )
+
+        # use default value of iron pool if not present
+        iron_pool = kwargs.get('iron_pool', macrophage.ma_internal_iron)
+        kwargs.pop('iron_pool', None)
+
+        macrophage.cells.append(
+            MacrophageCellData.create_cell(
+                point=Point(x=x, y=y, z=z),
+                iron_pool=iron_pool,
+                **kwargs,
             )
-        else:
-            macrophage.cells.append(
-                MacrophageCellData.create_cell(
-                    point=Point(x=x, y=y, z=z),
-                    iron_pool=macrophage.ma_internal_iron,
-                    **kwargs,
-                )
-            )
+        )
 
     def update_status(
         self, state: State, macrophage_cell: MacrophageCellData, num_cells_in_phagosome

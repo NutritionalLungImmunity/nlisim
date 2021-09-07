@@ -5,9 +5,10 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
+from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
-from nlisim.module import ModuleState
-from nlisim.modules.molecules import MoleculeModel, MoleculesState
+from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
 
@@ -22,7 +23,7 @@ class HemolysinState(ModuleState):
     hemolysin_qtty: float
 
 
-class Hemolysin(MoleculeModel):
+class Hemolysin(ModuleModel):
     """Hemolysin"""
 
     name = 'hemolysin'
@@ -68,16 +69,24 @@ class Hemolysin(MoleculeModel):
         )
 
         # Diffusion of Hemolysin
-        self.diffuse(hemolysin.grid, state)
+        hemolysin.grid[:] = apply_diffusion(
+            variable=hemolysin.grid,
+            laplacian=molecules.laplacian,
+            diffusivity=molecules.diffusion_constant,
+            dt=self.time_step,
+        )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         hemolysin: HemolysinState = state.hemolysin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration': float(np.mean(hemolysin.grid) / voxel_volume),
+            'concentration (nM)': float(np.mean(hemolysin.grid[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
