@@ -36,7 +36,7 @@ class Molecules(ModuleModel):
         # TODO: original comments as below. Is the param 0.2?
         #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
         # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
-        # molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
+        # molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0) TODO: hard coded the 2.0 ...
         molecules.turnover_rate = (1 - 0.2) ** (
             2 / 60
         )  # TODO: still hardcoding the 2, move to individual molecules?

@@ -65,9 +65,10 @@ class PneumocyteState(PhagocyteModuleState):
     time_to_change_state: float  # units: hours
     iter_to_change_state: int  # units: steps
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
-    # p_il8_qtty: float
-    p_tnf_qtty: float
-    pr_p_int: float
+    # p_il8_qtty: float # units: mol * cell^-1 * h^-1
+    p_tnf_qtty: float  # units: atto-mol * cell^-1 * h^-1
+    pr_p_int: float  # units: probability
+    pr_p_int_param: float
 
 
 class Pneumocyte(PhagocyteModel):
@@ -83,10 +84,10 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.max_conidia = self.config.getint('max_conidia')  # units: conidia
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')  # units: hours
         pneumocyte.time_to_change_state = self.config.getint('time_to_change_state')  # units: hours
-
-        # pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
-        # pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
-        pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
+        pneumocyte.p_tnf_qtty = self.config.getfloat(
+            'p_tnf_qtty'
+        )  # units: atto-mol * cell^-1 * h^-1
+        pneumocyte.pr_p_int_param = self.config.getfloat('pr_p_int_param')
 
         # computed values
         pneumocyte.iter_to_rest = int(
@@ -95,11 +96,9 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
-
-        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
-        pneumocyte.pr_p_int = 1 - math.exp(
-            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_p_int_param'))
-        )
+        pneumocyte.pr_p_int = -math.expm1(
+            -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        )  # units: probability
 
         # initialize cells, placing one per epithelial voxel
         dz_field: np.ndarray = state.grid.delta(axis=0)

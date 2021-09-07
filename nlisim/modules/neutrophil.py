@@ -31,9 +31,7 @@ class NeutrophilCellData(PhagocyteCellData):
     NEUTROPHIL_FIELDS = [
         ('status', np.uint8),
         ('state', np.uint8),
-        ('iron_pool', np.float64),
-        ('move_step', np.float64),
-        ('max_move_step', np.float64),  # TODO: double check, might be int
+        ('iron_pool', np.float64),  # units: atto-mol
         ('tnfa', bool),
         ('status_iteration', np.uint),
     ]
@@ -51,8 +49,6 @@ class NeutrophilCellData(PhagocyteCellData):
             'status': kwargs.get('status', PhagocyteStatus.RESTING),
             'state': kwargs.get('state', PhagocyteState.FREE),
             'iron_pool': kwargs.get('iron_pool', 0.0),
-            'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
-            'max_move_step': kwargs.get('max_move_step', 1.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
             'status_iteration': kwargs.get('status_iteration', 0),
         }
@@ -75,19 +71,22 @@ def cell_list_factory(self: 'NeutrophilState') -> NeutrophilCellList:
 @attrs(kw_only=True)
 class NeutrophilState(PhagocyteModuleState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    apoptosis_probability: float
-    time_to_change_state: float
-    iter_to_change_state: int
-    pr_n_hyphae: float
-    pr_n_phagocyte: float
+    half_life: float  # units: hours
+    apoptosis_probability: float  # units: probability
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    pr_n_hyphae: float  # units: probability
+    pr_n_hyphae_param: float
+    pr_n_phagocyte: float  # units: probability
+    pr_n_phagocyte_param: float
     recruitment_rate: float
     rec_bias: float
-    max_n: float  # TODO: 0.5?
+    max_neutrophils: float  # TODO: 0.5?
     n_frac: float
     drift_bias: float
     n_move_rate_act: float
     n_move_rate_rest: float
-    init_num_neutrophils: int
+    init_num_neutrophils: int  # units: count
 
 
 class Neutrophil(PhagocyteModel):
@@ -98,39 +97,43 @@ class Neutrophil(PhagocyteModel):
         neutrophil: NeutrophilState = state.neutrophil
         voxel_volume = state.voxel_volume
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
-        neutrophil.init_num_neutrophils = self.config.getint('init_num_neutrophils')
+        neutrophil.init_num_neutrophils = self.config.getint('init_num_neutrophils')  # units: count
 
-        neutrophil.time_to_change_state = self.config.getfloat('time_to_change_state')
-        neutrophil.max_conidia = self.config.getint('max_conidia')
+        neutrophil.time_to_change_state = self.config.getfloat(
+            'time_to_change_state'
+        )  # units: hours
+        neutrophil.max_conidia = self.config.getint(
+            'max_conidia'
+        )  # (from phagocyte model) units: count
 
         neutrophil.recruitment_rate = self.config.getfloat('recruitment_rate')
         neutrophil.rec_bias = self.config.getfloat('rec_bias')
-        neutrophil.max_n = self.config.getfloat('max_n')
+        neutrophil.max_neutrophils = self.config.getfloat('max_neutrophils')  # units: count
         neutrophil.n_frac = self.config.getfloat('n_frac')
 
         neutrophil.drift_bias = self.config.getfloat('drift_bias')
         neutrophil.n_move_rate_act = self.config.getfloat('n_move_rate_act')
         neutrophil.n_move_rate_rest = self.config.getfloat('n_move_rate_rest')
 
+        neutrophil.pr_n_hyphae_param = self.config.getfloat('pr_n_hyphae_param')
+        neutrophil.pr_n_phagocyte_param = self.config.getfloat('pr_n_phagocyte_param')
+
+        neutrophil.half_life = self.config.getfloat('half_life')  # units: hours
+
         # computed values
         neutrophil.apoptosis_probability = -math.log(0.5) / (
-            self.config.getfloat('half_life') * (60 / time_step_size)
-        )
-
-        neutrophil.iter_to_change_state = int(neutrophil.time_to_change_state * 60 / time_step_size)
-
-        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
-        neutrophil.pr_n_hyphae = 1 - math.exp(
-            -rel_n_hyphae_int_unit_t / (voxel_volume * self.config.getfloat('pr_n_hyphae_param'))
-        )  # TODO: -exp1m
-
-        rel_phagocyte_affinity_unit_t = time_step_size / 60  # TODO: not like this
-        neutrophil.pr_n_phagocyte = 1 - math.exp(
-            -rel_phagocyte_affinity_unit_t
-            / (voxel_volume * self.config.getfloat('pr_n_phag_param'))
-        )  # TODO: -exp1m
+            neutrophil.half_life * (60 / self.time_step)  # units: hours*(min/hour)/(min/step)=steps
+        )  # units: probability
+        neutrophil.iter_to_change_state = int(
+            neutrophil.time_to_change_state * 60 / self.time_step
+        )  # units: hours * (min/hour) / (min/step) = steps
+        neutrophil.pr_n_hyphae = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_hyphae_param)
+        )  # units: probability
+        neutrophil.pr_n_phagocyte = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_phagocyte_param)
+        )  # units: probability
 
         # place initial neutrophils
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -178,11 +181,6 @@ class Neutrophil(PhagocyteModel):
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
             self.update_status(state, neutrophil_cell)
-
-            neutrophil_cell['move_step'] = 0
-            # TODO: -1 below was 'None'. this looks like something which needs to be reworked
-            neutrophil_cell['max_move_step'] = -1
-            neutrophil_cell['state'] = PhagocyteState.FREE
 
             # ---------- interactions
 
@@ -445,7 +443,7 @@ class Neutrophil(PhagocyteModel):
             neutrophil.recruitment_rate
             * neutrophil.n_frac
             * np.sum(mip2.grid)
-            * (1 - num_live_neutrophils / neutrophil.max_n)
+            * (1 - num_live_neutrophils / neutrophil.max_neutrophils)
             / (mip2.k_d * space_volume)
         )
         number_to_recruit = np.random.poisson(avg) if avg > 0 else 0
@@ -520,12 +518,3 @@ class Neutrophil(PhagocyteModel):
                 point=Point(x=x, y=y, z=z), iron_pool=iron_pool, **kwargs
             )
         )
-
-
-# def get_max_move_steps(self):  ##REVIEW
-#     if self.max_move_step is None:
-#         if self.status == Macrophage.ACTIVE:
-#             self.max_move_step = np.random.poisson(Constants.MA_MOVE_RATE_REST)
-#         else:
-#             self.max_move_step = np.random.poisson(Constants.MA_MOVE_RATE_REST)
-#     return self.max_move_step
