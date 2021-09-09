@@ -75,6 +75,7 @@ def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
 @attr.s(kw_only=True)
 class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
+    time_to_rest: float  # units: min
     iter_to_rest: int  # units: steps
     time_to_change_state: float  # units: hours
     iter_to_change_state: int  # units: steps
@@ -108,7 +109,7 @@ class Macrophage(PhagocyteModel):
         macrophage.max_conidia = self.config.getint(
             'max_conidia'
         )  # (from phagocyte model) units: count
-        macrophage.iter_to_rest = self.config.getint('iter_to_rest')  # units: steps
+        macrophage.time_to_rest = self.config.getint('time_to_rest')  # units: min
         macrophage.time_to_change_state = self.config.getint('time_to_change_state')  # units: hours
         macrophage.ma_internal_iron = self.config.getfloat('ma_internal_iron')  # units: atto-mols
 
@@ -130,6 +131,9 @@ class Macrophage(PhagocyteModel):
         # macrophage.ma_vol = self.config.getfloat('ma_vol')
 
         # computed values
+        macrophage.iter_to_rest = (
+            macrophage.time_to_rest / self.time_step
+        )  # units: min / (min/step) = steps
         macrophage.iter_to_change_state = int(
             macrophage.time_to_change_state * (60 / time_step_size)
         )  # units: hours * (min/hour) / (min/step) = step

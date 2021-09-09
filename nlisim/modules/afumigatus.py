@@ -172,10 +172,10 @@ def cell_list_factory(self: 'AfumigatusState') -> AfumigatusCellList:
 @attrs(kw_only=True)
 class AfumigatusState(ModuleState):
     cells: AfumigatusCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    pr_ma_hyphae: float
-    pr_ma_hyphae_param: float
-    pr_ma_phag: float
-    pr_ma_phag_param: float
+    pr_ma_hyphae: float  # units: probability
+    pr_ma_hyphae_param: float  # units: M
+    pr_ma_phag: float  # units: probability
+    pr_ma_phag_param: float  # units: M
     pr_branch: float  # units: probability
     steps_to_bn_eval: int  # units: steps
     hyphal_length: float  # units: µm
@@ -190,7 +190,6 @@ class AfumigatusState(ModuleState):
     time_to_grow: float  # units: hours
     iter_to_grow: int  # units: steps
     pr_aspergillus_change: float
-    rel_n_hyphae_int_unit_t: float
     rel_phag_affinity_unit_t: float
     phag_affinity_t: float
     aspergillus_change_half_life: float  # units: hours
@@ -230,30 +229,24 @@ class Afumigatus(ModuleModel):
         # computed values
         afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol  # units: aM*L = atto-mols
 
-        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
         afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
-        afumigatus.pr_ma_hyphae = 1 - math.exp(
-            -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
-        )
-        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)
-        #  kd ~10x neut. (ref 71)
-        #  and below
-        afumigatus.pr_ma_phag = 1 - math.exp(
-            -afumigatus.rel_phag_affinity_unit_t
-            / (voxel_volume * self.config.getfloat('pr_ma_phag_param'))
-        )
-        # pr_ma_phag = 1 - math.exp(-(
-        #            1 / voxel_vol) * rel_phag_affinity_unit_t / 1.32489230813214e+10)
-        # 30 min --> 1 - exp(-cells*t/kd) --> kd = 1.32489230813214e+10
+        afumigatus.pr_ma_hyphae = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (afumigatus.pr_ma_hyphae_param * voxel_volume)
+        )  # exponent units:  ?/(?*L) = TODO
+        afumigatus.pr_ma_phag = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (voxel_volume * afumigatus.pr_ma_phag_param)
+        )  # exponent units:  ?/(?*L) = TODO
 
         afumigatus.iter_to_swelling = int(
             afumigatus.time_to_swelling * (60 / self.time_step) - 2
-        )  # TODO: -2?
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
         afumigatus.iter_to_germinate = int(
             afumigatus.time_to_germinate * (60 / self.time_step) - 2
-        )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        afumigatus.iter_to_grow = (
+            int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        )  # units: hours * (min/hour) / (min/step) = steps
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )

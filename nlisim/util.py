@@ -49,11 +49,14 @@ def iron_tf_reaction(
     p2: float,
     p3: float,
 ) -> np.ndarray:
+    # Note: It doesn't matter what the units of iron, tf, and tf_fe are as long as they are the same
+
     # easier to deal with (1,) array
     if np.isscalar(iron) or type(iron) == float:
         iron = np.array([iron])
 
-    total_binding_site: np.ndarray = 2 * (tf + tf_fe)  # That is right 2*(Tf + TfFe)!
+    # That is right, 2*(Tf + TfFe)!
+    total_binding_site: np.ndarray = 2 * (tf + tf_fe)
     total_iron: np.ndarray = iron + tf_fe  # it does not count TfFe2
 
     rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)

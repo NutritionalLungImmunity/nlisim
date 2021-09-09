@@ -1,4 +1,3 @@
-import math
 from typing import Any, Dict
 
 import attr
@@ -29,21 +28,20 @@ class TransferrinState(ModuleState):
     p1: float
     p2: float
     p3: float
-    threshold_log_hep: float
-    threshold_hep: float
+    threshold_log_hep: float  # units: log(atto-mols)
     default_apotf_rel_concentration: float  # units: proportion
     default_tffe_rel_concentration: float  # units: proportion
     default_tffe2_rel_concentration: float  # units: proportion
-    default_tf_concentration: float
-    default_apotf_concentration: float
-    default_tffe_concentration: float
-    default_tffe2_concentration: float
-    tf_intercept: float
-    tf_slope: float
-    iron_imp_exp_t: float
-    ma_iron_import_rate: float
-    ma_iron_export_rate: float
-    rel_iron_imp_exp_unit_t: float
+    default_tf_concentration: float  # units: aM
+    default_apotf_concentration: float  # units: aM
+    default_tffe_concentration: float  # units: aM
+    default_tffe2_concentration: float  # units: aM
+    tf_intercept: float  # units: aM
+    tf_slope: float  # units: aM
+    ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
+    ma_iron_export_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_export_rate_vol: float  # units: L * cell^-1 * h^-1
 
 
 class Transferrin(ModuleModel):
@@ -76,13 +74,13 @@ class Transferrin(ModuleModel):
             'default_tffe2_rel_concentration'
         )  # units: proportion
 
-        transferrin.iron_imp_exp_t = self.config.getfloat('iron_imp_exp_t')
+        transferrin.ma_iron_import_rate_vol = self.config.getfloat('ma_iron_import_rate_vol')
+        transferrin.ma_iron_export_rate_vol = self.config.getfloat('ma_iron_export_rate_vol')
 
         # computed values
-        transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume  # units: aM
+        )  # based on y--log(x) plot. units: aM * L = aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
@@ -93,18 +91,17 @@ class Transferrin(ModuleModel):
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = (
-            transferrin.iron_imp_exp_t / self.time_step
-        )  # units: ? / (min/step) = ? * step / min TODO: units
-        # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
-        #  Adjust comments in config?
-        transferrin.ma_iron_import_rate = self.config.getfloat('ma_iron_import_rate') / voxel_volume
-        transferrin.ma_iron_export_rate = self.config.getfloat('ma_iron_export_rate') / voxel_volume
+        transferrin.ma_iron_import_rate = (
+            transferrin.ma_iron_import_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
+        transferrin.ma_iron_export_rate = (
+            transferrin.ma_iron_export_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
 
         # initialize the molecular field
-        transferrin.grid['Tf'] = transferrin.default_apotf_concentration
-        transferrin.grid['TfFe'] = transferrin.default_tffe_concentration
-        transferrin.grid['TfFe2'] = transferrin.default_tffe2_concentration
+        transferrin.grid['Tf'] = transferrin.default_apotf_concentration * voxel_volume
+        transferrin.grid['TfFe'] = transferrin.default_tffe_concentration * voxel_volume
+        transferrin.grid['TfFe2'] = transferrin.default_tffe2_concentration * voxel_volume
 
         return state
 
@@ -120,21 +117,15 @@ class Transferrin(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
-        # molecules: MoleculesState = state.molecules
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
-            # TODO: what is going on with these min's? hard to believe that these constants will > 1
-            qtty_fe2 = transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
-
-            qtty_fe = transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
+            uptake_proportion = np.minimum(transferrin.ma_iron_import_rate, 1.0)
+            qtty_fe2 = transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * uptake_proportion
+            qtty_fe = transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] * uptake_proportion
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
@@ -153,8 +144,7 @@ class Transferrin(ModuleModel):
                     2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
                     macrophage_cell['iron_pool']
                     * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)]
-                    * transferrin.ma_iron_export_rate
-                    * transferrin.rel_iron_imp_exp_unit_t,
+                    * transferrin.ma_iron_export_rate,
                 )
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
@@ -206,12 +196,15 @@ class Transferrin(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
+        from nlisim.util import TissueType
+
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
-        concentration_0fe = np.mean(transferrin.grid['Tf']) / voxel_volume
-        concentration_1fe = np.mean(transferrin.grid['TfFe']) / voxel_volume
-        concentration_2fe = np.mean(transferrin.grid['TfFe2']) / voxel_volume
+        concentration_0fe = np.mean(transferrin.grid['Tf'][mask]) / voxel_volume
+        concentration_1fe = np.mean(transferrin.grid['TfFe'][mask]) / voxel_volume
+        concentration_2fe = np.mean(transferrin.grid['TfFe2'][mask]) / voxel_volume
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 

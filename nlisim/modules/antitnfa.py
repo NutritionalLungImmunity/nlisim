@@ -74,7 +74,7 @@ class AntiTNFa(ModuleModel):
             enzyme=tnf_a.grid,
             k_m=anti_tnf_a.k_m,
             h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
-            k_cat=1.0,  # default
+            k_cat=1.0,  # default TODO use k_cat to reparameterize into hours
             voxel_volume=voxel_volume,
         )
         reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
