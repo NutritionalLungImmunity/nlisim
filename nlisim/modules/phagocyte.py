@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Tuple
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -20,8 +20,8 @@ MAX_CONIDIA = (
 
 
 class PhagocyteCellData(CellData):
-    PHAGOCYTE_FIELDS = [
-        ('phagosome', (np.int64, MAX_CONIDIA)),
+    PHAGOCYTE_FIELDS: CellFields = [
+        ('phagosome', np.int64, MAX_CONIDIA),
         ('has_conidia', bool),
     ]
 

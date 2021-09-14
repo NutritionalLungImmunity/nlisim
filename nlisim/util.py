@@ -1,5 +1,4 @@
 from enum import IntEnum
-import math
 from typing import Tuple, Union
 
 from numba import jit
@@ -9,9 +8,7 @@ from nlisim.coordinates import Voxel
 from nlisim.random import rg
 
 # ϵ is used in a divide by zero fix: 1/x -> 1/(x+ϵ)
-# this value is pretty close to the smallest 64bit float with the property that its
-# reciprocal is finite.
-EPSILON = 5.57e-309
+EPSILON = 1e-50
 
 
 @jit(cache=True)
@@ -29,7 +26,7 @@ def turnover_rate(
     if x_system == 0.0:
         return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
-    y = (x - x_system) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
+    y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
     result = y / (x + EPSILON)
 

@@ -202,17 +202,17 @@ class Transferrin(ModuleModel):
         voxel_volume = state.voxel_volume
         mask = state.lung_tissue != TissueType.AIR
 
-        concentration_0fe = np.mean(transferrin.grid['Tf'][mask]) / voxel_volume
-        concentration_1fe = np.mean(transferrin.grid['TfFe'][mask]) / voxel_volume
-        concentration_2fe = np.mean(transferrin.grid['TfFe2'][mask]) / voxel_volume
+        concentration_0fe = np.mean(transferrin.grid['Tf'][mask]) / voxel_volume / 1e9
+        concentration_1fe = np.mean(transferrin.grid['TfFe'][mask]) / voxel_volume / 1e9
+        concentration_2fe = np.mean(transferrin.grid['TfFe2'][mask]) / voxel_volume / 1e9
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
         return {
-            'concentration': float(concentration),
-            '+0Fe concentration': float(concentration_0fe),
-            '+1Fe concentration': float(concentration_1fe),
-            '+2Fe concentration': float(concentration_2fe),
+            'concentration (nM)': float(concentration),
+            '+0Fe concentration (nM)': float(concentration_0fe),
+            '+1Fe concentration (nM)': float(concentration_1fe),
+            '+2Fe concentration (nM)': float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):

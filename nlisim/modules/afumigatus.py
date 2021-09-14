@@ -2,13 +2,13 @@ from enum import IntEnum, unique
 import math
 from queue import Queue
 import random
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
@@ -81,7 +81,7 @@ def random_sphere_point() -> np.ndarray:
 
 
 class AfumigatusCellData(CellData):
-    AFUMIGATUS_FIELDS: List[Union[Tuple[str, Any], Tuple[str, Any, Any]]] = [
+    AFUMIGATUS_FIELDS: CellFields = [
         ('iron_pool', np.float64),  # units: atto-mol
         ('state', np.uint8),
         ('status', np.uint8),
@@ -238,8 +238,8 @@ class Afumigatus(ModuleModel):
             -afumigatus.rel_phag_affinity_unit_t / (voxel_volume * afumigatus.pr_ma_phag_param)
         )  # exponent units:  ?/(?*L) = TODO
 
-        afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / self.time_step) - 2
+        afumigatus.iter_to_swelling = max(
+            0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
         afumigatus.iter_to_germinate = int(
             afumigatus.time_to_germinate * (60 / self.time_step) - 2

@@ -6,7 +6,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.mip2 import MIP2State
@@ -28,7 +28,7 @@ MAX_CONIDIA = (
 
 
 class NeutrophilCellData(PhagocyteCellData):
-    NEUTROPHIL_FIELDS = [
+    NEUTROPHIL_FIELDS: CellFields = [
         ('status', np.uint8),
         ('state', np.uint8),
         ('iron_pool', np.float64),  # units: atto-mol
@@ -84,8 +84,8 @@ class NeutrophilState(PhagocyteModuleState):
     max_neutrophils: float  # TODO: 0.5?
     n_frac: float
     drift_bias: float
-    n_move_rate_act: float
-    n_move_rate_rest: float
+    n_move_rate_act: float  # units: µm
+    n_move_rate_rest: float  # units: µm
     init_num_neutrophils: int  # units: count
 
 
@@ -447,9 +447,11 @@ class Neutrophil(PhagocyteModel):
             / (mip2.k_d * space_volume)
         )
         number_to_recruit = np.random.poisson(avg) if avg > 0 else 0
+        if number_to_recruit <= 0:
+            return
         # 2. get voxels for new macrophages, based on activation
-        if number_to_recruit > 0:
-            activation_voxels = zip(
+        activation_voxels = tuple(
+            zip(
                 *np.where(
                     np.logical_and(
                         activation_function(
@@ -464,28 +466,26 @@ class Neutrophil(PhagocyteModel):
                     )
                 )
             )
+        )
 
-            dz_field: np.ndarray = state.grid.delta(axis=0)
-            dy_field: np.ndarray = state.grid.delta(axis=1)
-            dx_field: np.ndarray = state.grid.delta(axis=2)
-            for coordinates in rg.choice(
-                tuple(activation_voxels), size=number_to_recruit, replace=True
-            ):
-                vox_z, vox_y, vox_x = coordinates
-                # the x,y,z coordinates are in the centers of the grids
-                z = state.grid.z[vox_z]
-                y = state.grid.y[vox_y]
-                x = state.grid.x[vox_x]
-                dz = dz_field[vox_z, vox_y, vox_x]
-                dy = dy_field[vox_z, vox_y, vox_x]
-                dx = dx_field[vox_z, vox_y, vox_x]
-                self.create_neutrophil(
-                    state=state,
-                    x=x + rg.uniform(-dx / 2, dx / 2),
-                    y=y + rg.uniform(-dy / 2, dy / 2),
-                    z=z + rg.uniform(-dz / 2, dz / 2),
-                )
-                # TODO: have placement fail due to overcrowding of cells
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+            vox_z, vox_y, vox_x = coordinates
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_neutrophil(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
     @staticmethod
     def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -> None:

@@ -6,7 +6,7 @@ import attr
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.phagocyte import (
@@ -22,17 +22,16 @@ from nlisim.util import choose_voxel_by_prob
 
 
 class MacrophageCellData(PhagocyteCellData):
-    MACROPHAGE_FIELDS = [
+    MACROPHAGE_FIELDS: CellFields = [
         ('status', np.uint8),
         ('state', np.uint8),
         ('fpn', bool),
         ('fpn_iteration', np.int64),
         ('tf', bool),  # TODO: descriptive name, transferrin?
-        ('move_step', np.float64),
-        ('max_move_step', np.float64),  # TODO: double check, might be int
         ('tnfa', bool),
         ('iron_pool', np.float64),
         ('status_iteration', np.uint64),
+        ('velocity', np.float64, 3),
     ]
 
     dtype = np.dtype(
@@ -50,11 +49,10 @@ class MacrophageCellData(PhagocyteCellData):
             'fpn': kwargs.get('fpn', True),
             'fpn_iteration': kwargs.get('fpn_iteration', 0),
             'tf': kwargs.get('tf', False),
-            'move_step': kwargs.get('move_step', 1.0),  # TODO: reasonable default?
-            'max_move_step': kwargs.get('max_move_step', 10.0),  # TODO: reasonable default?
             'tnfa': kwargs.get('tnfa', False),
             'iron_pool': kwargs.get('iron_pool', 0.0),
             'status_iteration': kwargs.get('status_iteration', 0),
+            'velocity': kwargs.get('root', np.zeros(3, dtype=np.float64)),
         }
 
         # ensure that these come in the correct order
@@ -131,7 +129,7 @@ class Macrophage(PhagocyteModel):
         # macrophage.ma_vol = self.config.getfloat('ma_vol')
 
         # computed values
-        macrophage.iter_to_rest = (
+        macrophage.iter_to_rest = int(
             macrophage.time_to_rest / self.time_step
         )  # units: min / (min/step) = steps
         macrophage.iter_to_change_state = int(
@@ -160,6 +158,7 @@ class Macrophage(PhagocyteModel):
                 x=x + rg.uniform(-dx / 2, dx / 2),
                 y=y + rg.uniform(-dy / 2, dy / 2),
                 z=z + rg.uniform(-dz / 2, dz / 2),
+                iron_pool=macrophage.ma_internal_iron,
             )
 
         return state
@@ -359,10 +358,11 @@ class Macrophage(PhagocyteModel):
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 
+        # compute chemokine influence on velocity, with some randomness.
         # macrophage has a non-zero probability of moving into non-air voxels.
         # if not any of these, stay in place. This could happen if e.g. you are
         # somehow stranded in air.
-        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel, corners=True))
         weights = np.array(
             [
                 0.0
@@ -392,7 +392,23 @@ class Macrophage(PhagocyteModel):
         if norm > 0.0:
             dp_dt /= norm
 
-        return cell['point'] + dp_dt
+        # average and re-normalize with existing velocity
+        dp_dt += cell['velocity']
+        norm = np.linalg.norm(dp_dt)
+        if norm > 0.0:
+            dp_dt /= norm
+
+        # we need to determine if this movement will put us into an air voxel. This can happen
+        # when pushed there by momentum. If that happens, we stay in place and zero out the
+        # momentum. Otherwise, velocity is updated to dp/dt and movement is as expected.
+        new_position = cell['point'] + dp_dt
+        new_voxel: Voxel = grid.get_voxel(new_position)
+        if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
+            cell['velocity'][:] = np.zeros(3, dtype=np.float64)
+            return cell['point']
+        else:
+            cell['velocity'][:] = dp_dt
+            return new_position
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:

@@ -35,6 +35,7 @@ class LactoferrinState(ModuleState):
     ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
     ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
     neutrophil_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
+    neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
 
 
 class Lactoferrin(ModuleModel):
@@ -52,21 +53,20 @@ class Lactoferrin(ModuleModel):
         lactoferrin.p1 = self.config.getfloat('p1')
         lactoferrin.p2 = self.config.getfloat('p2')
         lactoferrin.p3 = self.config.getfloat('p3')
-        lactoferrin.iron_imp_exp_t = 60  # units: min/hour
         lactoferrin.ma_iron_import_rate_vol = self.config.getfloat(
             'ma_iron_import_rate_vol'
         )  # units: L * cell^-1 * h^-1
-
-        # computed values
-        lactoferrin.ma_iron_import_rate = (
-            lactoferrin.ma_iron_import_rate_vol / voxel_volume / (self.time_step / 60)
-        )  # units: proportion * cell^-1 * step^-1
-        lactoferrin.rel_iron_imp_exp_unit_t = (
-            self.time_step / 60
-        )  # units: (min/step) / (min/hour) = hour/step
         lactoferrin.neutrophil_secretion_rate = self.config.getfloat(
             'neutrophil_secretion_rate'
         )  # units: atto-mol * cell^-1 * h^-1
+
+        # computed values
+        lactoferrin.ma_iron_import_rate = (
+            lactoferrin.ma_iron_import_rate_vol / voxel_volume * (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
+        lactoferrin.neutrophil_secretion_rate_unit_t = lactoferrin.neutrophil_secretion_rate * (
+            self.time_step / 60
+        )  # units: atto-mol * cell^-1 * step^-1
 
         return state
 
@@ -122,7 +122,7 @@ class Lactoferrin(ModuleModel):
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
             lactoferrin.grid['Lactoferrin'][
                 tuple(neutrophil_cell_voxel)
-            ] += lactoferrin.neutrophil_secretion_rate
+            ] += lactoferrin.neutrophil_secretion_rate_unit_t
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to lactoferrin

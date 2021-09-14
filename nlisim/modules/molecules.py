@@ -1,4 +1,5 @@
 from attr import attrs
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import periodic_discrete_laplacian
@@ -32,14 +33,14 @@ class Molecules(ModuleModel):
         )  # units: µm^2 * min^-1
 
         # NOTE: there is an implicit assumption, below, that all molecules are on the
-        #  same time step. This is true on Sept 9, 2021.
+        #  same time step and that time step is 2 minutes. This is true on Sept 13, 2021.
 
         # Computed values
         molecules.rel_cyt_bind_unit_t = (
             self.time_step / molecules.cyt_bind_t
         )  # units: (min/step) / (min) = 1/step
-        molecules.turnover_rate = (1 - 0.2) ** (
-            2 / 60
+        molecules.turnover_rate = 1 - np.log(1.2) / int(
+            30 / 2
         )  # TODO: still hardcoding the 2, move to individual molecules?
 
         # construct the laplacian

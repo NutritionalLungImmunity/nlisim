@@ -14,6 +14,8 @@ MAX_CELL_LIST_SIZE = 1_000_000
 # the way numpy types single records is strange...
 CellType = Any
 
+CellFields = List[Union[Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str, int]]]
+
 
 class CellData(np.ndarray):
     """A low-level data contain for an array cells.
@@ -48,7 +50,7 @@ class CellData(np.ndarray):
     ```
     """
 
-    FIELDS: List[Any] = [
+    FIELDS: CellFields = [
         ('point', Point.dtype),
         ('dead', 'b1'),
     ]

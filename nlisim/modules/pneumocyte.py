@@ -5,7 +5,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.phagocyte import (
@@ -20,7 +20,7 @@ from nlisim.util import TissueType, activation_function
 
 
 class PneumocyteCellData(PhagocyteCellData):
-    PNEUMOCYTE_FIELDS = [
+    PNEUMOCYTE_FIELDS: CellFields = [
         ('status', np.uint8),
         ('status_iteration', np.uint),
         ('tnfa', bool),
@@ -43,7 +43,7 @@ class PneumocyteCellData(PhagocyteCellData):
 
         # ensure that these come in the correct order
         return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+            [initializer[key] for key, *_ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
         )
 
 
@@ -104,7 +104,9 @@ class Pneumocyte(PhagocyteModel):
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+        epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        rg.shuffle(epithelial_voxels)
+        for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint('count')]:
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
             y = state.grid.y[vox_y]
