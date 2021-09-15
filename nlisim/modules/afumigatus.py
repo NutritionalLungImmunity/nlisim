@@ -398,7 +398,6 @@ class Afumigatus(ModuleModel):
 
         Unlinks the cell from its fungal tree and releases its iron.
         """
-
         # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
             afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
