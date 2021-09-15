@@ -16,7 +16,7 @@ from nlisim.modules.phagocyte import (
     PhagocyteModuleState,
     PhagocyteState,
     PhagocyteStatus,
-    internalize_aspergillus,
+    interact_with_aspergillus,
 )
 from nlisim.random import rg
 from nlisim.state import State
@@ -161,6 +161,7 @@ class Neutrophil(PhagocyteModel):
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         from nlisim.modules.afumigatus import (
+            Afumigatus,
             AfumigatusCellData,
             AfumigatusCellStatus,
             AfumigatusState,
@@ -204,8 +205,8 @@ class Neutrophil(PhagocyteModel):
             }:
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
-                for aspergillus_index in local_aspergillus:
-                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+                for aspergillus_cell_index in local_aspergillus:
+                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_cell_index]
                     if aspergillus_cell['dead']:
                         continue
 
@@ -213,29 +214,32 @@ class Neutrophil(PhagocyteModel):
                         AfumigatusCellStatus.HYPHAE,
                         AfumigatusCellStatus.GERM_TUBE,
                     }:
-                        # possibly internalize the fungal cell
+                        # possibly kill the fungal cell, extracellularly
                         if rg.uniform() < neutrophil.pr_n_hyphae:
-                            internalization_successful = internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                            if internalization_successful:
-                                aspergillus_cell['status'] = AfumigatusCellStatus.DYING
+                            Afumigatus.kill_fungal_cell(
+                                afumigatus=afumigatus,
+                                afumigatus_cell=aspergillus_cell,
+                                afumigatus_cell_index=aspergillus_cell_index,
+                                iron=iron,
+                                grid=grid,
+                            )
                         else:
                             neutrophil_cell['state'] = PhagocyteState.INTERACTING
 
                     elif aspergillus_cell['status'] == AfumigatusCellStatus.SWELLING_CONIDIA:
                         if rg.uniform() < neutrophil.pr_n_phagocyte:
-                            internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                        else:
-                            pass
 
             # interact with macrophages:
             # if we are apoptotic, give our iron and phagosome to a nearby

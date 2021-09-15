@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union,
 import attr
 from h5py import Group
 import numpy as np
+from numpy import dtype
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
@@ -15,7 +16,13 @@ MAX_CELL_LIST_SIZE = 1_000_000
 CellType = Any
 
 CellFields = List[
-    Union[Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]
+    Union[
+        Tuple[str, dtype],
+        Tuple[str, Type[Any]],
+        Tuple[str, Type[Any], int],
+        Tuple[str, str],
+        Tuple[str, str, int],
+    ]
 ]
 
 

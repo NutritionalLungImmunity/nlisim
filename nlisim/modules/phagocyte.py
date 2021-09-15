@@ -22,7 +22,6 @@ MAX_CONIDIA = (
 class PhagocyteCellData(CellData):
     PHAGOCYTE_FIELDS: CellFields = [
         ('phagosome', np.int64, MAX_CONIDIA),
-        ('has_conidia', bool),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -34,7 +33,6 @@ class PhagocyteCellData(CellData):
     ) -> Tuple:
         initializer = {
             'phagosome': kwargs.get('phagosome', -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
-            'has_conidia': kwargs.get('has_conidia', False),
         }
 
         # ensure that these come in the correct order
@@ -128,17 +126,17 @@ class PhagocyteStatus(IntEnum):
     NECROTIC = 6
     DEAD = 7
     ANERGIC = 8
-    INTERACTING = 9  # TODO: check
+    INTERACTING = 9
 
 
 # noinspection PyUnresolvedReferences
-def internalize_aspergillus(
+def interact_with_aspergillus(
     phagocyte_cell: PhagocyteCellData,
     aspergillus_cell: 'AfumigatusCellData',
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
     phagocytize: bool = False,
-) -> bool:
+) -> None:
     """
     Possibly have a phagocyte phagocytize a fungal cell.
 
@@ -149,29 +147,19 @@ def internalize_aspergillus(
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
     phagocytize : bool
-
-    Returns
-    -------
-    Boolean value: Did the internalization happen?
     """
     from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
 
-    internalization_successful = False
-
     # We cannot internalize an already internalized fungal cell
     if aspergillus_cell['state'] != AfumigatusCellState.FREE:
-        return internalization_successful
+        return
 
-    # deal with conidia
-    if (
-        aspergillus_cell['status']
-        in {
-            AfumigatusCellStatus.RESTING_CONIDIA,
-            AfumigatusCellStatus.SWELLING_CONIDIA,
-            AfumigatusCellStatus.STERILE_CONIDIA,
-        }
-        or phagocytize
-    ):
+    # internalize conidia
+    if phagocytize or aspergillus_cell['status'] in {
+        AfumigatusCellStatus.RESTING_CONIDIA,
+        AfumigatusCellStatus.SWELLING_CONIDIA,
+        AfumigatusCellStatus.STERILE_CONIDIA,
+    }:
         if phagocyte_cell['status'] not in {
             PhagocyteStatus.NECROTIC,
             PhagocyteStatus.APOPTOTIC,
@@ -180,20 +168,22 @@ def internalize_aspergillus(
             # check to see if we have room before we add in another cell to the phagosome
             num_cells_in_phagosome = np.sum(phagocyte_cell['phagosome'] >= 0)
             if num_cells_in_phagosome < phagocyte.max_conidia:
-                phagocyte_cell['has_conidia'] = True
                 aspergillus_cell['state'] = AfumigatusCellState.INTERNALIZING
                 # place the fungal cell in the phagosome,
                 # sorting makes sure that an 'empty' i.e. -1 slot is first
                 phagocyte_cell['phagosome'].sort()
                 phagocyte_cell['phagosome'][0] = aspergillus_cell_index
-                internalization_successful = True
 
-    # TODO: what is going on here? is the if too loose?
-    if aspergillus_cell['status'] != AfumigatusCellStatus.RESTING_CONIDIA:
-        phagocyte_cell['state'] = PhagocyteStatus.INTERACTING
-        if phagocyte_cell['status'] != PhagocyteStatus.ACTIVE:
-            phagocyte_cell['status'] = PhagocyteStatus.ACTIVATING
-        else:
+    # All phagocytes are activated by their interaction, except with resting conidia
+    if aspergillus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA:
+        return
+    phagocyte_cell['state'] = PhagocyteStatus.INTERACTING
+    if phagocyte_cell['status'] != PhagocyteStatus.ACTIVE:
+        # non-active phagocytes begin the activation stage
+        if phagocyte_cell['status'] != PhagocyteStatus.ACTIVATING:
+            # reset the counter, first time only
             phagocyte_cell['status_iteration'] = 0
-
-    return internalization_successful
+        phagocyte_cell['status'] = PhagocyteStatus.ACTIVATING
+    else:
+        # active phagocytes are kept active by resetting their iteration counter
+        phagocyte_cell['status_iteration'] = 0

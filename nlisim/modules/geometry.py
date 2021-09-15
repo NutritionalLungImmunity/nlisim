@@ -31,7 +31,7 @@ class GeometryState(ModuleState):
     lung_tissue = grid_variable(np.dtype('int'))
 
     # noinspection PyUnusedLocal
-    @lung_tissue.validator
+    @lung_tissue.validator  # type: ignore
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -> None:
         if not TissueTypes.validate(value):
             raise ValidationError('input illegal')

@@ -13,7 +13,7 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
-from nlisim.modules.phagocyte import internalize_aspergillus
+from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import TissueType
@@ -21,13 +21,12 @@ from nlisim.util import TissueType
 
 @unique
 class AfumigatusCellStatus(IntEnum):
-    RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = 1
-    GERM_TUBE = 2
-    HYPHAE = 3
-    DYING = 4
-    DEAD = 5
-    STERILE_CONIDIA = 6
+    DEAD = 0
+    RESTING_CONIDIA = 1
+    SWELLING_CONIDIA = 2
+    GERM_TUBE = 3
+    HYPHAE = 4
+    STERILE_CONIDIA = 5
 
 
 @unique
@@ -298,7 +297,7 @@ class Afumigatus(ModuleModel):
 
             # ------------ update cell
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_cell_index)
 
             # ------------ cell growth
             if (
@@ -312,13 +311,6 @@ class Afumigatus(ModuleModel):
 
             # ------------ interactions after this point
 
-            # interact with iron
-            if afumigatus_cell['status'] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
-                # Note: this is likely redundant
-                Afumigatus.kill_fungal_cell(
-                    afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
-                )
-
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
                 macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
@@ -331,7 +323,7 @@ class Afumigatus(ModuleModel):
                 }:
                     continue
 
-                self.fungus_macrophage_interaction(
+                Afumigatus.fungus_macrophage_interaction(
                     afumigatus,
                     afumigatus_cell,
                     afumigatus_cell_index,
@@ -369,7 +361,7 @@ class Afumigatus(ModuleModel):
 
         # now they interact
 
-        internalize_aspergillus(
+        interact_with_aspergillus(
             macrophage_cell,
             afumigatus_cell,
             afumigatus_cell_index,
@@ -519,8 +511,6 @@ def cell_self_update(
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
     afumigatus_cell_index: int,
-    iron: IronState,
-    grid: RectangularGrid,
 ) -> None:
     afumigatus_cell['activation_iteration'] += 1
 
@@ -546,11 +536,6 @@ def cell_self_update(
     ):
         afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
-
-    elif afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
-        # Note: This is really just a double check, we may be able to remove the
-        # dying state entirely
-        Afumigatus.kill_fungal_cell(afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid)
 
     # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
     # it previously had one which was eaten.

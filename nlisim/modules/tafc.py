@@ -136,10 +136,7 @@ class TAFC(ModuleModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
 
-            if (
-                afumigatus_cell['state'] != AfumigatusCellState.FREE
-                or afumigatus_cell['status'] == AfumigatusCellStatus.DYING
-            ):
+            if afumigatus_cell['state'] != AfumigatusCellState.FREE:
                 continue
 
             afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
