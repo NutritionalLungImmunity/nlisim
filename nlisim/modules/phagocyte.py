@@ -106,7 +106,7 @@ class PhagocyteModel(ModuleModel):
             if fungal_cell_index == -1:
                 continue
             afumigatus.cells[fungal_cell_index]['state'] = AfumigatusCellState.RELEASING
-        phagocyte_cell['phagosome'].fill(-1)
+        phagocyte_cell['phagosome'][:] = -1
 
 
 # TODO: better name
@@ -138,7 +138,7 @@ def internalize_aspergillus(
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
     phagocytize: bool = False,
-) -> None:
+) -> bool:
     """
     Possibly have a phagocyte phagocytize a fungal cell.
 
@@ -152,13 +152,15 @@ def internalize_aspergillus(
 
     Returns
     -------
-    Nothing
+    Boolean value: Did the internalization happen?
     """
     from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
 
+    internalization_successful = False
+
     # We cannot internalize an already internalized fungal cell
     if aspergillus_cell['state'] != AfumigatusCellState.FREE:
-        return
+        return internalization_successful
 
     # deal with conidia
     if (
@@ -184,6 +186,7 @@ def internalize_aspergillus(
                 # sorting makes sure that an 'empty' i.e. -1 slot is first
                 phagocyte_cell['phagosome'].sort()
                 phagocyte_cell['phagosome'][0] = aspergillus_cell_index
+                internalization_successful = True
 
     # TODO: what is going on here? is the if too loose?
     if aspergillus_cell['status'] != AfumigatusCellStatus.RESTING_CONIDIA:
@@ -192,3 +195,5 @@ def internalize_aspergillus(
             phagocyte_cell['status'] = PhagocyteStatus.ACTIVATING
         else:
             phagocyte_cell['status_iteration'] = 0
+
+    return internalization_successful

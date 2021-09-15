@@ -215,13 +215,14 @@ class Neutrophil(PhagocyteModel):
                     }:
                         # possibly internalize the fungal cell
                         if rg.uniform() < neutrophil.pr_n_hyphae:
-                            internalize_aspergillus(
+                            internalization_successful = internalize_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
                                 aspergillus_cell_index=aspergillus_index,
                                 phagocyte=neutrophil,
                             )
-                            aspergillus_cell['status'] = AfumigatusCellStatus.DYING
+                            if internalization_successful:
+                                aspergillus_cell['status'] = AfumigatusCellStatus.DYING
                         else:
                             neutrophil_cell['state'] = PhagocyteState.INTERACTING
 

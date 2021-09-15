@@ -10,6 +10,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import internalize_aspergillus
@@ -241,11 +242,11 @@ class Afumigatus(ModuleModel):
         afumigatus.iter_to_swelling = max(
             0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
-        afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / self.time_step) - 2
+        afumigatus.iter_to_germinate = max(
+            0, int(afumigatus.time_to_germinate * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
-        afumigatus.iter_to_grow = (
-            int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        afumigatus.iter_to_grow = max(
+            0, int(afumigatus.time_to_grow * 60 / self.time_step) - 1
         )  # units: hours * (min/hour) / (min/step) = steps
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
@@ -290,32 +291,33 @@ class Afumigatus(ModuleModel):
         lung_tissue: np.ndarray = state.lung_tissue
 
         # update live cells
-        for afumigatus_index in afumigatus.cells.alive():
+        for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
-            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
             voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
 
             # ------------ update cell
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid)
 
             # ------------ cell growth
             if (
                 afumigatus_cell['state'] == AfumigatusCellState.FREE
                 and lung_tissue[tuple(voxel)] != TissueType.AIR
             ):
-                elongate(afumigatus_cell, afumigatus_index, afumigatus.iter_to_grow, afumigatus)
-                branch(afumigatus_cell, afumigatus_index, afumigatus.pr_branch, afumigatus)
+                elongate(
+                    afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
+                )
+                branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
 
             # interact with iron
-            # TODO: this should never be reached?! Make sure that we release iron when we kill
-            #  the fungal cell and release cell's iron pool back to voxel
             if afumigatus_cell['status'] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
-                iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
-                afumigatus_cell['iron_pool'] = 0.0
-                afumigatus_cell['dead'] = True
+                # Note: this is likely redundant
+                Afumigatus.kill_fungal_cell(
+                    afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+                )
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
@@ -330,7 +332,13 @@ class Afumigatus(ModuleModel):
                     continue
 
                 self.fungus_macrophage_interaction(
-                    afumigatus, afumigatus_cell, afumigatus_index, macrophage, macrophage_cell
+                    afumigatus,
+                    afumigatus_cell,
+                    afumigatus_cell_index,
+                    macrophage,
+                    macrophage_cell,
+                    iron,
+                    grid,
                 )
 
             # -----------
@@ -344,6 +352,8 @@ class Afumigatus(ModuleModel):
         afumigatus_cell_index: int,
         macrophage: 'MacrophageState',
         macrophage_cell: 'MacrophageCellData',
+        iron: IronState,
+        grid: RectangularGrid,
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
@@ -372,26 +382,50 @@ class Afumigatus(ModuleModel):
             afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE
             and macrophage_cell['status'] == PhagocyteStatus.ACTIVE
         ):
-            Afumigatus.kill_hypha(afumigatus, afumigatus_cell, afumigatus_cell_index)
+            Afumigatus.kill_fungal_cell(
+                afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+            )
 
     @staticmethod
-    def kill_hypha(afumigatus, afumigatus_cell, afumigatus_cell_index):
-        afumigatus_cell['status'] = AfumigatusCellStatus.DYING
+    def kill_fungal_cell(
+        afumigatus: AfumigatusState,
+        afumigatus_cell: AfumigatusCellData,
+        afumigatus_cell_index: int,
+        iron: IronState,
+        grid: RectangularGrid,
+    ):
+        """Kill a fungal cell.
+
+        Unlinks the cell from its fungal tree and releases its iron.
+        """
+
+        # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
             afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
+            afumigatus.cells[afumigatus_cell['next_septa']]['previous_septa'] = -1
         if afumigatus_cell['next_branch'] != -1:
             afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
+            afumigatus.cells[afumigatus_cell['next_branch']]['previous_septa'] = -1
 
-        # Note: Assuming that hyphae will not change growable state afterwards.
+        # unlink from parent, if exists
         parent_id = afumigatus_cell['previous_septa']
         if parent_id != -1:
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
             if parent_cell['next_septa'] == afumigatus_cell_index:
                 parent_cell['next_septa'] = -1
+                parent_cell['growable'] = True
             elif parent_cell['next_branch'] == afumigatus_cell_index:
                 parent_cell['next_branch'] = -1
+                parent_cell['branchable'] = True
             else:
-                raise AssertionError("The fungal tree structure must be screwed up somehow")
+                raise AssertionError("The fungal tree structure is malformed.")
+
+        # kill the cell off and release its iron
+        voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
+        iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
+        afumigatus_cell['iron_pool'] = 0.0
+        afumigatus_cell['dead'] = True
+        afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -485,7 +519,9 @@ class Afumigatus(ModuleModel):
 def cell_self_update(
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    afumigatus_index: int,
+    afumigatus_cell_index: int,
+    iron: IronState,
+    grid: RectangularGrid,
 ) -> None:
     afumigatus_cell['activation_iteration'] += 1
 
@@ -513,13 +549,16 @@ def cell_self_update(
         afumigatus_cell['activation_iteration'] = 0
 
     elif afumigatus_cell['status'] == AfumigatusCellStatus.DYING:
-        # TODO: Henrique said something about the DYING state not being necessary. First glance in
-        #  code suggests that this update only removes the cells from live counts
-        afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
+        # Note: This is really just a double check, we may be able to remove the
+        # dying state entirely
+        Afumigatus.kill_fungal_cell(afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid)
 
-    # TODO: this looks redundant/unnecessary. well, as long as we are careful about pruning the tree
+    # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
+    # it previously had one which was eaten.
     if afumigatus_cell['next_septa'] == -1:
         afumigatus_cell['growable'] = True
+    if afumigatus_cell['next_branch'] == -1:
+        afumigatus_cell['branchable'] = True
 
     # TODO: verify this, 1 turn on internalizing then free?
     if afumigatus_cell['state'] in {
@@ -528,12 +567,9 @@ def cell_self_update(
     }:
         afumigatus_cell['state'] = AfumigatusCellState.FREE
 
+    # Distribute iron evenly within fungal tree.
     # Note: called for every cell, but a no-op on non-root cells.
-    diffuse_iron(afumigatus_index, afumigatus)
-
-    # TODO: verify necessity. see above for next_septa
-    if afumigatus_cell['next_branch'] == -1:
-        afumigatus_cell['growable'] = True
+    diffuse_iron(afumigatus_cell_index, afumigatus)
 
 
 def process_boolean_network(

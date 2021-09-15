@@ -204,8 +204,6 @@ class Macrophage(PhagocyteModel):
                 self.single_step_move(
                     state, macrophage_cell, macrophage_cell_index, macrophage.cells
                 )
-            # TODO: understand the meaning of the parameter here: moving randomly n steps is
-            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_macrophages(state)
