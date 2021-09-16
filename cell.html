@@ -33,6 +33,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union,
 import attr
 from h5py import Group
 import numpy as np
+from numpy import dtype
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
@@ -42,6 +43,16 @@ MAX_CELL_LIST_SIZE = 1_000_000
 
 # the way numpy types single records is strange...
 CellType = Any
+
+CellFields = List[
+    Union[
+        Tuple[str, dtype],
+        Tuple[str, Type[Any]],
+        Tuple[str, Type[Any], int],
+        Tuple[str, str],
+        Tuple[str, str, int],
+    ]
+]
 
 
 class CellData(np.ndarray):
@@ -77,7 +88,7 @@ class CellData(np.ndarray):
     ```
     &#34;&#34;&#34;
 
-    FIELDS: List[Any] = [
+    FIELDS: CellFields = [
         (&#39;point&#39;, Point.dtype),
         (&#39;dead&#39;, &#39;b1&#39;),
     ]
@@ -461,7 +472,7 @@ associated with each cell.</p>
     ```
     &#34;&#34;&#34;
 
-    FIELDS: List[Any] = [
+    FIELDS: CellFields = [
         (&#39;point&#39;, Point.dtype),
         (&#39;dead&#39;, &#39;b1&#39;),
     ]
@@ -548,7 +559,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span> : List[Any]</code></dt>
+<dt id="nlisim.cell.CellData.FIELDS"><code class="name">var <span class="ident">FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"><p>This variable contains the base fields that all subclasses should include
 in their derived data type.</p></div>

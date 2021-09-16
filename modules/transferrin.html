@@ -27,8 +27,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-from typing import Any, Dict
+<pre><code class="python">from typing import Any, Dict
 
 import attr
 from attr import attrib, attrs
@@ -58,21 +57,20 @@ class TransferrinState(ModuleState):
     p1: float
     p2: float
     p3: float
-    threshold_log_hep: float
-    threshold_hep: float
+    threshold_log_hep: float  # units: log(atto-mols)
     default_apotf_rel_concentration: float  # units: proportion
     default_tffe_rel_concentration: float  # units: proportion
     default_tffe2_rel_concentration: float  # units: proportion
-    default_tf_concentration: float
-    default_apotf_concentration: float
-    default_tffe_concentration: float
-    default_tffe2_concentration: float
-    tf_intercept: float
-    tf_slope: float
-    iron_imp_exp_t: float
-    ma_iron_import_rate: float
-    ma_iron_export_rate: float
-    rel_iron_imp_exp_unit_t: float
+    default_tf_concentration: float  # units: aM
+    default_apotf_concentration: float  # units: aM
+    default_tffe_concentration: float  # units: aM
+    default_tffe2_concentration: float  # units: aM
+    tf_intercept: float  # units: aM
+    tf_slope: float  # units: aM
+    ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
+    ma_iron_export_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_export_rate_vol: float  # units: L * cell^-1 * h^-1
 
 
 class Transferrin(ModuleModel):
@@ -105,13 +103,13 @@ class Transferrin(ModuleModel):
             &#39;default_tffe2_rel_concentration&#39;
         )  # units: proportion
 
-        transferrin.iron_imp_exp_t = self.config.getfloat(&#39;iron_imp_exp_t&#39;)
+        transferrin.ma_iron_import_rate_vol = self.config.getfloat(&#39;ma_iron_import_rate_vol&#39;)
+        transferrin.ma_iron_export_rate_vol = self.config.getfloat(&#39;ma_iron_export_rate_vol&#39;)
 
         # computed values
-        transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume  # units: aM
+        )  # based on y--log(x) plot. units: aM * L = aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
@@ -122,18 +120,17 @@ class Transferrin(ModuleModel):
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = (
-            transferrin.iron_imp_exp_t / self.time_step
-        )  # units: ? / (min/step) = ? * step / min TODO: units
-        # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
-        #  Adjust comments in config?
-        transferrin.ma_iron_import_rate = self.config.getfloat(&#39;ma_iron_import_rate&#39;) / voxel_volume
-        transferrin.ma_iron_export_rate = self.config.getfloat(&#39;ma_iron_export_rate&#39;) / voxel_volume
+        transferrin.ma_iron_import_rate = (
+            transferrin.ma_iron_import_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
+        transferrin.ma_iron_export_rate = (
+            transferrin.ma_iron_export_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
 
         # initialize the molecular field
-        transferrin.grid[&#39;Tf&#39;] = transferrin.default_apotf_concentration
-        transferrin.grid[&#39;TfFe&#39;] = transferrin.default_tffe_concentration
-        transferrin.grid[&#39;TfFe2&#39;] = transferrin.default_tffe2_concentration
+        transferrin.grid[&#39;Tf&#39;] = transferrin.default_apotf_concentration * voxel_volume
+        transferrin.grid[&#39;TfFe&#39;] = transferrin.default_tffe_concentration * voxel_volume
+        transferrin.grid[&#39;TfFe2&#39;] = transferrin.default_tffe2_concentration * voxel_volume
 
         return state
 
@@ -149,21 +146,15 @@ class Transferrin(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
-        # molecules: MoleculesState = state.molecules
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell[&#39;point&#39;])
 
-            # TODO: what is going on with these min&#39;s? hard to believe that these constants will &gt; 1
-            qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
-
-            qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
+            uptake_proportion = np.minimum(transferrin.ma_iron_import_rate, 1.0)
+            qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
+            qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] -= qtty_fe2
@@ -182,8 +173,7 @@ class Transferrin(ModuleModel):
                     2 * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)],
                     macrophage_cell[&#39;iron_pool&#39;]
                     * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)]
-                    * transferrin.ma_iron_export_rate
-                    * transferrin.rel_iron_imp_exp_unit_t,
+                    * transferrin.ma_iron_export_rate,
                 )
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
@@ -235,20 +225,23 @@ class Transferrin(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
-        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume
-        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume
-        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume
+        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;][mask]) / voxel_volume / 1e9
+        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;][mask]) / voxel_volume / 1e9
+        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;][mask]) / voxel_volume / 1e9
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
         return {
-            &#39;concentration&#39;: float(concentration),
-            &#39;+0Fe concentration&#39;: float(concentration_0fe),
-            &#39;+1Fe concentration&#39;: float(concentration_1fe),
-            &#39;+2Fe concentration&#39;: float(concentration_2fe),
+            &#39;concentration (nM)&#39;: float(concentration),
+            &#39;+0Fe concentration (nM)&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration (nM)&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration (nM)&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):
@@ -324,13 +317,13 @@ class Transferrin(ModuleModel):
             &#39;default_tffe2_rel_concentration&#39;
         )  # units: proportion
 
-        transferrin.iron_imp_exp_t = self.config.getfloat(&#39;iron_imp_exp_t&#39;)
+        transferrin.ma_iron_import_rate_vol = self.config.getfloat(&#39;ma_iron_import_rate_vol&#39;)
+        transferrin.ma_iron_export_rate_vol = self.config.getfloat(&#39;ma_iron_export_rate_vol&#39;)
 
         # computed values
-        transferrin.threshold_hep = math.pow(10, transferrin.threshold_log_hep)
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
-        ) * voxel_volume  # units: aM
+        )  # based on y--log(x) plot. units: aM * L = aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
@@ -341,18 +334,17 @@ class Transferrin(ModuleModel):
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
         )  # units: aM
 
-        transferrin.rel_iron_imp_exp_unit_t = (
-            transferrin.iron_imp_exp_t / self.time_step
-        )  # units: ? / (min/step) = ? * step / min TODO: units
-        # TODO: I just commented out the voxel_volume code in the config file. Putting it here.
-        #  Adjust comments in config?
-        transferrin.ma_iron_import_rate = self.config.getfloat(&#39;ma_iron_import_rate&#39;) / voxel_volume
-        transferrin.ma_iron_export_rate = self.config.getfloat(&#39;ma_iron_export_rate&#39;) / voxel_volume
+        transferrin.ma_iron_import_rate = (
+            transferrin.ma_iron_import_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
+        transferrin.ma_iron_export_rate = (
+            transferrin.ma_iron_export_rate_vol / voxel_volume / (self.time_step / 60)
+        )  # units: proportion * cell^-1 * step^-1
 
         # initialize the molecular field
-        transferrin.grid[&#39;Tf&#39;] = transferrin.default_apotf_concentration
-        transferrin.grid[&#39;TfFe&#39;] = transferrin.default_tffe_concentration
-        transferrin.grid[&#39;TfFe2&#39;] = transferrin.default_tffe2_concentration
+        transferrin.grid[&#39;Tf&#39;] = transferrin.default_apotf_concentration * voxel_volume
+        transferrin.grid[&#39;TfFe&#39;] = transferrin.default_tffe_concentration * voxel_volume
+        transferrin.grid[&#39;TfFe2&#39;] = transferrin.default_tffe2_concentration * voxel_volume
 
         return state
 
@@ -368,21 +360,15 @@ class Transferrin(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
         grid: RectangularGrid = state.grid
-        # molecules: MoleculesState = state.molecules
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell[&#39;point&#39;])
 
-            # TODO: what is going on with these min&#39;s? hard to believe that these constants will &gt; 1
-            qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
-
-            qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * min(
-                1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-            )
+            uptake_proportion = np.minimum(transferrin.ma_iron_import_rate, 1.0)
+            qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
+            qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] -= qtty_fe2
@@ -401,8 +387,7 @@ class Transferrin(ModuleModel):
                     2 * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)],
                     macrophage_cell[&#39;iron_pool&#39;]
                     * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)]
-                    * transferrin.ma_iron_export_rate
-                    * transferrin.rel_iron_imp_exp_unit_t,
+                    * transferrin.ma_iron_export_rate,
                 )
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
@@ -454,20 +439,23 @@ class Transferrin(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
+        from nlisim.util import TissueType
+
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
 
-        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;]) / voxel_volume
-        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;]) / voxel_volume
-        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;]) / voxel_volume
+        concentration_0fe = np.mean(transferrin.grid[&#39;Tf&#39;][mask]) / voxel_volume / 1e9
+        concentration_1fe = np.mean(transferrin.grid[&#39;TfFe&#39;][mask]) / voxel_volume / 1e9
+        concentration_2fe = np.mean(transferrin.grid[&#39;TfFe2&#39;][mask]) / voxel_volume / 1e9
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
         return {
-            &#39;concentration&#39;: float(concentration),
-            &#39;+0Fe concentration&#39;: float(concentration_0fe),
-            &#39;+1Fe concentration&#39;: float(concentration_1fe),
-            &#39;+2Fe concentration&#39;: float(concentration_2fe),
+            &#39;concentration (nM)&#39;: float(concentration),
+            &#39;+0Fe concentration (nM)&#39;: float(concentration_0fe),
+            &#39;+1Fe concentration (nM)&#39;: float(concentration_1fe),
+            &#39;+2Fe concentration (nM)&#39;: float(concentration_2fe),
         }
 
     def visualization_data(self, state: State):
@@ -501,21 +489,15 @@ class Transferrin(ModuleModel):
     macrophage: MacrophageState = state.macrophage
     molecules: MoleculesState = state.molecules
     grid: RectangularGrid = state.grid
-    # molecules: MoleculesState = state.molecules
 
     # interact with macrophages
     for macrophage_cell_index in macrophage.cells.alive():
         macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
         macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell[&#39;point&#39;])
 
-        # TODO: what is going on with these min&#39;s? hard to believe that these constants will &gt; 1
-        qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * min(
-            1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-        )
-
-        qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * min(
-            1.0, transferrin.ma_iron_import_rate * transferrin.rel_iron_imp_exp_unit_t
-        )
+        uptake_proportion = np.minimum(transferrin.ma_iron_import_rate, 1.0)
+        qtty_fe2 = transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
+        qtty_fe = transferrin.grid[&#39;TfFe&#39;][tuple(macrophage_cell_voxel)] * uptake_proportion
 
         # macrophage uptakes iron, leaves transferrin+0Fe behind
         transferrin.grid[&#39;TfFe2&#39;][tuple(macrophage_cell_voxel)] -= qtty_fe2
@@ -534,8 +516,7 @@ class Transferrin(ModuleModel):
                 2 * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)],
                 macrophage_cell[&#39;iron_pool&#39;]
                 * transferrin.grid[&#39;Tf&#39;][tuple(macrophage_cell_voxel)]
-                * transferrin.ma_iron_export_rate
-                * transferrin.rel_iron_imp_exp_unit_t,
+                * transferrin.ma_iron_export_rate,
             )
             rel_tf_fe = iron_tf_reaction(
                 iron=qtty,
@@ -628,21 +609,20 @@ state must override the serialization mechanism with custom behavior.</p>
     p1: float
     p2: float
     p3: float
-    threshold_log_hep: float
-    threshold_hep: float
+    threshold_log_hep: float  # units: log(atto-mols)
     default_apotf_rel_concentration: float  # units: proportion
     default_tffe_rel_concentration: float  # units: proportion
     default_tffe2_rel_concentration: float  # units: proportion
-    default_tf_concentration: float
-    default_apotf_concentration: float
-    default_tffe_concentration: float
-    default_tffe2_concentration: float
-    tf_intercept: float
-    tf_slope: float
-    iron_imp_exp_t: float
-    ma_iron_import_rate: float
-    ma_iron_export_rate: float
-    rel_iron_imp_exp_unit_t: float</code></pre>
+    default_tf_concentration: float  # units: aM
+    default_apotf_concentration: float  # units: aM
+    default_tffe_concentration: float  # units: aM
+    default_tffe2_concentration: float  # units: aM
+    tf_intercept: float  # units: aM
+    tf_slope: float  # units: aM
+    ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
+    ma_iron_export_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_export_rate_vol: float  # units: L * cell^-1 * h^-1</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -682,10 +662,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.transferrin.TransferrinState.iron_imp_exp_t"><code class="name">var <span class="ident">iron_imp_exp_t</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="nlisim.modules.transferrin.TransferrinState.k_m_tf_tafc"><code class="name">var <span class="ident">k_m_tf_tafc</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
@@ -694,7 +670,15 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="nlisim.modules.transferrin.TransferrinState.ma_iron_export_rate_vol"><code class="name">var <span class="ident">ma_iron_export_rate_vol</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate"><code class="name">var <span class="ident">ma_iron_import_rate</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate_vol"><code class="name">var <span class="ident">ma_iron_import_rate_vol</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -710,19 +694,11 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.transferrin.TransferrinState.rel_iron_imp_exp_unit_t"><code class="name">var <span class="ident">rel_iron_imp_exp_unit_t</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="nlisim.modules.transferrin.TransferrinState.tf_intercept"><code class="name">var <span class="ident">tf_intercept</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.transferrin.TransferrinState.tf_slope"><code class="name">var <span class="ident">tf_slope</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.transferrin.TransferrinState.threshold_hep"><code class="name">var <span class="ident">threshold_hep</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -781,17 +757,16 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.default_tffe_concentration" href="#nlisim.modules.transferrin.TransferrinState.default_tffe_concentration">default_tffe_concentration</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.default_tffe_rel_concentration" href="#nlisim.modules.transferrin.TransferrinState.default_tffe_rel_concentration">default_tffe_rel_concentration</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.grid" href="#nlisim.modules.transferrin.TransferrinState.grid">grid</a></code></li>
-<li><code><a title="nlisim.modules.transferrin.TransferrinState.iron_imp_exp_t" href="#nlisim.modules.transferrin.TransferrinState.iron_imp_exp_t">iron_imp_exp_t</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.k_m_tf_tafc" href="#nlisim.modules.transferrin.TransferrinState.k_m_tf_tafc">k_m_tf_tafc</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.ma_iron_export_rate" href="#nlisim.modules.transferrin.TransferrinState.ma_iron_export_rate">ma_iron_export_rate</a></code></li>
+<li><code><a title="nlisim.modules.transferrin.TransferrinState.ma_iron_export_rate_vol" href="#nlisim.modules.transferrin.TransferrinState.ma_iron_export_rate_vol">ma_iron_export_rate_vol</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate" href="#nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate">ma_iron_import_rate</a></code></li>
+<li><code><a title="nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate_vol" href="#nlisim.modules.transferrin.TransferrinState.ma_iron_import_rate_vol">ma_iron_import_rate_vol</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.p1" href="#nlisim.modules.transferrin.TransferrinState.p1">p1</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.p2" href="#nlisim.modules.transferrin.TransferrinState.p2">p2</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.p3" href="#nlisim.modules.transferrin.TransferrinState.p3">p3</a></code></li>
-<li><code><a title="nlisim.modules.transferrin.TransferrinState.rel_iron_imp_exp_unit_t" href="#nlisim.modules.transferrin.TransferrinState.rel_iron_imp_exp_unit_t">rel_iron_imp_exp_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.tf_intercept" href="#nlisim.modules.transferrin.TransferrinState.tf_intercept">tf_intercept</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.tf_slope" href="#nlisim.modules.transferrin.TransferrinState.tf_slope">tf_slope</a></code></li>
-<li><code><a title="nlisim.modules.transferrin.TransferrinState.threshold_hep" href="#nlisim.modules.transferrin.TransferrinState.threshold_hep">threshold_hep</a></code></li>
 <li><code><a title="nlisim.modules.transferrin.TransferrinState.threshold_log_hep" href="#nlisim.modules.transferrin.TransferrinState.threshold_log_hep">threshold_log_hep</a></code></li>
 </ul>
 </li>

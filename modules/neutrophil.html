@@ -35,7 +35,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.mip2 import MIP2State
@@ -45,7 +45,7 @@ from nlisim.modules.phagocyte import (
     PhagocyteModuleState,
     PhagocyteState,
     PhagocyteStatus,
-    internalize_aspergillus,
+    interact_with_aspergillus,
 )
 from nlisim.random import rg
 from nlisim.state import State
@@ -57,12 +57,10 @@ MAX_CONIDIA = (
 
 
 class NeutrophilCellData(PhagocyteCellData):
-    NEUTROPHIL_FIELDS = [
+    NEUTROPHIL_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;state&#39;, np.uint8),
-        (&#39;iron_pool&#39;, np.float64),
-        (&#39;move_step&#39;, np.float64),
-        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
+        (&#39;iron_pool&#39;, np.float64),  # units: atto-mol
         (&#39;tnfa&#39;, bool),
         (&#39;status_iteration&#39;, np.uint),
     ]
@@ -80,8 +78,6 @@ class NeutrophilCellData(PhagocyteCellData):
             &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
             &#39;state&#39;: kwargs.get(&#39;state&#39;, PhagocyteState.FREE),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
-            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
-            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 1.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
         }
@@ -104,19 +100,22 @@ def cell_list_factory(self: &#39;NeutrophilState&#39;) -&gt; NeutrophilCellList:
 @attrs(kw_only=True)
 class NeutrophilState(PhagocyteModuleState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    apoptosis_probability: float
-    time_to_change_state: float
-    iter_to_change_state: int
-    pr_n_hyphae: float
-    pr_n_phagocyte: float
+    half_life: float  # units: hours
+    apoptosis_probability: float  # units: probability
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    pr_n_hyphae: float  # units: probability
+    pr_n_hyphae_param: float
+    pr_n_phagocyte: float  # units: probability
+    pr_n_phagocyte_param: float
     recruitment_rate: float
     rec_bias: float
-    max_n: float  # TODO: 0.5?
+    max_neutrophils: float  # TODO: 0.5?
     n_frac: float
     drift_bias: float
-    n_move_rate_act: float
-    n_move_rate_rest: float
-    init_num_neutrophils: int
+    n_move_rate_act: float  # units: µm
+    n_move_rate_rest: float  # units: µm
+    init_num_neutrophils: int  # units: count
 
 
 class Neutrophil(PhagocyteModel):
@@ -127,39 +126,43 @@ class Neutrophil(PhagocyteModel):
         neutrophil: NeutrophilState = state.neutrophil
         voxel_volume = state.voxel_volume
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
-        neutrophil.init_num_neutrophils = self.config.getint(&#39;init_num_neutrophils&#39;)
+        neutrophil.init_num_neutrophils = self.config.getint(&#39;init_num_neutrophils&#39;)  # units: count
 
-        neutrophil.time_to_change_state = self.config.getfloat(&#39;time_to_change_state&#39;)
-        neutrophil.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        neutrophil.time_to_change_state = self.config.getfloat(
+            &#39;time_to_change_state&#39;
+        )  # units: hours
+        neutrophil.max_conidia = self.config.getint(
+            &#39;max_conidia&#39;
+        )  # (from phagocyte model) units: count
 
         neutrophil.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
         neutrophil.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
-        neutrophil.max_n = self.config.getfloat(&#39;max_n&#39;)
+        neutrophil.max_neutrophils = self.config.getfloat(&#39;max_neutrophils&#39;)  # units: count
         neutrophil.n_frac = self.config.getfloat(&#39;n_frac&#39;)
 
         neutrophil.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
         neutrophil.n_move_rate_act = self.config.getfloat(&#39;n_move_rate_act&#39;)
         neutrophil.n_move_rate_rest = self.config.getfloat(&#39;n_move_rate_rest&#39;)
 
+        neutrophil.pr_n_hyphae_param = self.config.getfloat(&#39;pr_n_hyphae_param&#39;)
+        neutrophil.pr_n_phagocyte_param = self.config.getfloat(&#39;pr_n_phagocyte_param&#39;)
+
+        neutrophil.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: hours
+
         # computed values
         neutrophil.apoptosis_probability = -math.log(0.5) / (
-            self.config.getfloat(&#39;half_life&#39;) * (60 / time_step_size)
-        )
-
-        neutrophil.iter_to_change_state = int(neutrophil.time_to_change_state * 60 / time_step_size)
-
-        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
-        neutrophil.pr_n_hyphae = 1 - math.exp(
-            -rel_n_hyphae_int_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_n_hyphae_param&#39;))
-        )  # TODO: -exp1m
-
-        rel_phagocyte_affinity_unit_t = time_step_size / 60  # TODO: not like this
-        neutrophil.pr_n_phagocyte = 1 - math.exp(
-            -rel_phagocyte_affinity_unit_t
-            / (voxel_volume * self.config.getfloat(&#39;pr_n_phag_param&#39;))
-        )  # TODO: -exp1m
+            neutrophil.half_life * (60 / self.time_step)  # units: hours*(min/hour)/(min/step)=steps
+        )  # units: probability
+        neutrophil.iter_to_change_state = int(
+            neutrophil.time_to_change_state * 60 / self.time_step
+        )  # units: hours * (min/hour) / (min/step) = steps
+        neutrophil.pr_n_hyphae = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_hyphae_param)
+        )  # units: probability
+        neutrophil.pr_n_phagocyte = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_phagocyte_param)
+        )  # units: probability
 
         # place initial neutrophils
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -187,6 +190,7 @@ class Neutrophil(PhagocyteModel):
     def advance(self, state: State, previous_time: float):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         from nlisim.modules.afumigatus import (
+            Afumigatus,
             AfumigatusCellData,
             AfumigatusCellStatus,
             AfumigatusState,
@@ -207,11 +211,6 @@ class Neutrophil(PhagocyteModel):
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell[&#39;point&#39;])
 
             self.update_status(state, neutrophil_cell)
-
-            neutrophil_cell[&#39;move_step&#39;] = 0
-            # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
-            neutrophil_cell[&#39;max_move_step&#39;] = -1
-            neutrophil_cell[&#39;state&#39;] = PhagocyteState.FREE
 
             # ---------- interactions
 
@@ -235,8 +234,8 @@ class Neutrophil(PhagocyteModel):
             }:
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
-                for aspergillus_index in local_aspergillus:
-                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+                for aspergillus_cell_index in local_aspergillus:
+                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_cell_index]
                     if aspergillus_cell[&#39;dead&#39;]:
                         continue
 
@@ -244,28 +243,32 @@ class Neutrophil(PhagocyteModel):
                         AfumigatusCellStatus.HYPHAE,
                         AfumigatusCellStatus.GERM_TUBE,
                     }:
-                        # possibly internalize the fungal cell
+                        # possibly kill the fungal cell, extracellularly
                         if rg.uniform() &lt; neutrophil.pr_n_hyphae:
-                            internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                            aspergillus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+                            Afumigatus.kill_fungal_cell(
+                                afumigatus=afumigatus,
+                                afumigatus_cell=aspergillus_cell,
+                                afumigatus_cell_index=aspergillus_cell_index,
+                                iron=iron,
+                                grid=grid,
+                            )
                         else:
                             neutrophil_cell[&#39;state&#39;] = PhagocyteState.INTERACTING
 
                     elif aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.SWELLING_CONIDIA:
                         if rg.uniform() &lt; neutrophil.pr_n_phagocyte:
-                            internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                        else:
-                            pass
 
             # interact with macrophages:
             # if we are apoptotic, give our iron and phagosome to a nearby
@@ -474,13 +477,15 @@ class Neutrophil(PhagocyteModel):
             neutrophil.recruitment_rate
             * neutrophil.n_frac
             * np.sum(mip2.grid)
-            * (1 - num_live_neutrophils / neutrophil.max_n)
+            * (1 - num_live_neutrophils / neutrophil.max_neutrophils)
             / (mip2.k_d * space_volume)
         )
         number_to_recruit = np.random.poisson(avg) if avg &gt; 0 else 0
+        if number_to_recruit &lt;= 0:
+            return
         # 2. get voxels for new macrophages, based on activation
-        if number_to_recruit &gt; 0:
-            activation_voxels = zip(
+        activation_voxels = tuple(
+            zip(
                 *np.where(
                     np.logical_and(
                         activation_function(
@@ -495,28 +500,26 @@ class Neutrophil(PhagocyteModel):
                     )
                 )
             )
+        )
 
-            dz_field: np.ndarray = state.grid.delta(axis=0)
-            dy_field: np.ndarray = state.grid.delta(axis=1)
-            dx_field: np.ndarray = state.grid.delta(axis=2)
-            for coordinates in rg.choice(
-                tuple(activation_voxels), size=number_to_recruit, replace=True
-            ):
-                vox_z, vox_y, vox_x = coordinates
-                # the x,y,z coordinates are in the centers of the grids
-                z = state.grid.z[vox_z]
-                y = state.grid.y[vox_y]
-                x = state.grid.x[vox_x]
-                dz = dz_field[vox_z, vox_y, vox_x]
-                dy = dy_field[vox_z, vox_y, vox_x]
-                dx = dx_field[vox_z, vox_y, vox_x]
-                self.create_neutrophil(
-                    state=state,
-                    x=x + rg.uniform(-dx / 2, dx / 2),
-                    y=y + rg.uniform(-dy / 2, dy / 2),
-                    z=z + rg.uniform(-dz / 2, dz / 2),
-                )
-                # TODO: have placement fail due to overcrowding of cells
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+            vox_z, vox_y, vox_x = coordinates
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_neutrophil(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
     @staticmethod
     def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
@@ -548,16 +551,7 @@ class Neutrophil(PhagocyteModel):
             NeutrophilCellData.create_cell(
                 point=Point(x=x, y=y, z=z), iron_pool=iron_pool, **kwargs
             )
-        )
-
-
-# def get_max_move_steps(self):  ##REVIEW
-#     if self.max_move_step is None:
-#         if self.status == Macrophage.ACTIVE:
-#             self.max_move_step = np.random.poisson(Constants.MA_MOVE_RATE_REST)
-#         else:
-#             self.max_move_step = np.random.poisson(Constants.MA_MOVE_RATE_REST)
-#     return self.max_move_step</code></pre>
+        )</code></pre>
 </details>
 </section>
 <section>
@@ -603,39 +597,43 @@ class Neutrophil(PhagocyteModel):
         neutrophil: NeutrophilState = state.neutrophil
         voxel_volume = state.voxel_volume
         lung_tissue = state.lung_tissue
-        time_step_size: float = self.time_step
 
-        neutrophil.init_num_neutrophils = self.config.getint(&#39;init_num_neutrophils&#39;)
+        neutrophil.init_num_neutrophils = self.config.getint(&#39;init_num_neutrophils&#39;)  # units: count
 
-        neutrophil.time_to_change_state = self.config.getfloat(&#39;time_to_change_state&#39;)
-        neutrophil.max_conidia = self.config.getint(&#39;max_conidia&#39;)
+        neutrophil.time_to_change_state = self.config.getfloat(
+            &#39;time_to_change_state&#39;
+        )  # units: hours
+        neutrophil.max_conidia = self.config.getint(
+            &#39;max_conidia&#39;
+        )  # (from phagocyte model) units: count
 
         neutrophil.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
         neutrophil.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
-        neutrophil.max_n = self.config.getfloat(&#39;max_n&#39;)
+        neutrophil.max_neutrophils = self.config.getfloat(&#39;max_neutrophils&#39;)  # units: count
         neutrophil.n_frac = self.config.getfloat(&#39;n_frac&#39;)
 
         neutrophil.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
         neutrophil.n_move_rate_act = self.config.getfloat(&#39;n_move_rate_act&#39;)
         neutrophil.n_move_rate_rest = self.config.getfloat(&#39;n_move_rate_rest&#39;)
 
+        neutrophil.pr_n_hyphae_param = self.config.getfloat(&#39;pr_n_hyphae_param&#39;)
+        neutrophil.pr_n_phagocyte_param = self.config.getfloat(&#39;pr_n_phagocyte_param&#39;)
+
+        neutrophil.half_life = self.config.getfloat(&#39;half_life&#39;)  # units: hours
+
         # computed values
         neutrophil.apoptosis_probability = -math.log(0.5) / (
-            self.config.getfloat(&#39;half_life&#39;) * (60 / time_step_size)
-        )
-
-        neutrophil.iter_to_change_state = int(neutrophil.time_to_change_state * 60 / time_step_size)
-
-        rel_n_hyphae_int_unit_t = time_step_size / 60  # per hour # TODO: not like this
-        neutrophil.pr_n_hyphae = 1 - math.exp(
-            -rel_n_hyphae_int_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_n_hyphae_param&#39;))
-        )  # TODO: -exp1m
-
-        rel_phagocyte_affinity_unit_t = time_step_size / 60  # TODO: not like this
-        neutrophil.pr_n_phagocyte = 1 - math.exp(
-            -rel_phagocyte_affinity_unit_t
-            / (voxel_volume * self.config.getfloat(&#39;pr_n_phag_param&#39;))
-        )  # TODO: -exp1m
+            neutrophil.half_life * (60 / self.time_step)  # units: hours*(min/hour)/(min/step)=steps
+        )  # units: probability
+        neutrophil.iter_to_change_state = int(
+            neutrophil.time_to_change_state * 60 / self.time_step
+        )  # units: hours * (min/hour) / (min/step) = steps
+        neutrophil.pr_n_hyphae = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_hyphae_param)
+        )  # units: probability
+        neutrophil.pr_n_phagocyte = -math.expm1(
+            -self.time_step / 60 / (voxel_volume * neutrophil.pr_n_phagocyte_param)
+        )  # units: probability
 
         # place initial neutrophils
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -663,6 +661,7 @@ class Neutrophil(PhagocyteModel):
     def advance(self, state: State, previous_time: float):
         &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         from nlisim.modules.afumigatus import (
+            Afumigatus,
             AfumigatusCellData,
             AfumigatusCellStatus,
             AfumigatusState,
@@ -683,11 +682,6 @@ class Neutrophil(PhagocyteModel):
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell[&#39;point&#39;])
 
             self.update_status(state, neutrophil_cell)
-
-            neutrophil_cell[&#39;move_step&#39;] = 0
-            # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
-            neutrophil_cell[&#39;max_move_step&#39;] = -1
-            neutrophil_cell[&#39;state&#39;] = PhagocyteState.FREE
 
             # ---------- interactions
 
@@ -711,8 +705,8 @@ class Neutrophil(PhagocyteModel):
             }:
                 # get fungal cells in this voxel
                 local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
-                for aspergillus_index in local_aspergillus:
-                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+                for aspergillus_cell_index in local_aspergillus:
+                    aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_cell_index]
                     if aspergillus_cell[&#39;dead&#39;]:
                         continue
 
@@ -720,28 +714,32 @@ class Neutrophil(PhagocyteModel):
                         AfumigatusCellStatus.HYPHAE,
                         AfumigatusCellStatus.GERM_TUBE,
                     }:
-                        # possibly internalize the fungal cell
+                        # possibly kill the fungal cell, extracellularly
                         if rg.uniform() &lt; neutrophil.pr_n_hyphae:
-                            internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                            aspergillus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+                            Afumigatus.kill_fungal_cell(
+                                afumigatus=afumigatus,
+                                afumigatus_cell=aspergillus_cell,
+                                afumigatus_cell_index=aspergillus_cell_index,
+                                iron=iron,
+                                grid=grid,
+                            )
                         else:
                             neutrophil_cell[&#39;state&#39;] = PhagocyteState.INTERACTING
 
                     elif aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.SWELLING_CONIDIA:
                         if rg.uniform() &lt; neutrophil.pr_n_phagocyte:
-                            internalize_aspergillus(
+                            interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
                                 aspergillus_cell=aspergillus_cell,
-                                aspergillus_cell_index=aspergillus_index,
+                                aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
                             )
-                        else:
-                            pass
 
             # interact with macrophages:
             # if we are apoptotic, give our iron and phagosome to a nearby
@@ -950,13 +948,15 @@ class Neutrophil(PhagocyteModel):
             neutrophil.recruitment_rate
             * neutrophil.n_frac
             * np.sum(mip2.grid)
-            * (1 - num_live_neutrophils / neutrophil.max_n)
+            * (1 - num_live_neutrophils / neutrophil.max_neutrophils)
             / (mip2.k_d * space_volume)
         )
         number_to_recruit = np.random.poisson(avg) if avg &gt; 0 else 0
+        if number_to_recruit &lt;= 0:
+            return
         # 2. get voxels for new macrophages, based on activation
-        if number_to_recruit &gt; 0:
-            activation_voxels = zip(
+        activation_voxels = tuple(
+            zip(
                 *np.where(
                     np.logical_and(
                         activation_function(
@@ -971,28 +971,26 @@ class Neutrophil(PhagocyteModel):
                     )
                 )
             )
+        )
 
-            dz_field: np.ndarray = state.grid.delta(axis=0)
-            dy_field: np.ndarray = state.grid.delta(axis=1)
-            dx_field: np.ndarray = state.grid.delta(axis=2)
-            for coordinates in rg.choice(
-                tuple(activation_voxels), size=number_to_recruit, replace=True
-            ):
-                vox_z, vox_y, vox_x = coordinates
-                # the x,y,z coordinates are in the centers of the grids
-                z = state.grid.z[vox_z]
-                y = state.grid.y[vox_y]
-                x = state.grid.x[vox_x]
-                dz = dz_field[vox_z, vox_y, vox_x]
-                dy = dy_field[vox_z, vox_y, vox_x]
-                dx = dx_field[vox_z, vox_y, vox_x]
-                self.create_neutrophil(
-                    state=state,
-                    x=x + rg.uniform(-dx / 2, dx / 2),
-                    y=y + rg.uniform(-dy / 2, dy / 2),
-                    z=z + rg.uniform(-dz / 2, dz / 2),
-                )
-                # TODO: have placement fail due to overcrowding of cells
+        dz_field: np.ndarray = state.grid.delta(axis=0)
+        dy_field: np.ndarray = state.grid.delta(axis=1)
+        dx_field: np.ndarray = state.grid.delta(axis=2)
+        for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+            vox_z, vox_y, vox_x = coordinates
+            # the x,y,z coordinates are in the centers of the grids
+            z = state.grid.z[vox_z]
+            y = state.grid.y[vox_y]
+            x = state.grid.x[vox_x]
+            dz = dz_field[vox_z, vox_y, vox_x]
+            dy = dy_field[vox_z, vox_y, vox_x]
+            dx = dx_field[vox_z, vox_y, vox_x]
+            self.create_neutrophil(
+                state=state,
+                x=x + rg.uniform(-dx / 2, dx / 2),
+                y=y + rg.uniform(-dy / 2, dy / 2),
+                z=z + rg.uniform(-dz / 2, dz / 2),
+            )
 
     @staticmethod
     def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
@@ -1108,6 +1106,7 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
 <pre><code class="python">def advance(self, state: State, previous_time: float):
     &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
     from nlisim.modules.afumigatus import (
+        Afumigatus,
         AfumigatusCellData,
         AfumigatusCellStatus,
         AfumigatusState,
@@ -1128,11 +1127,6 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
         neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell[&#39;point&#39;])
 
         self.update_status(state, neutrophil_cell)
-
-        neutrophil_cell[&#39;move_step&#39;] = 0
-        # TODO: -1 below was &#39;None&#39;. this looks like something which needs to be reworked
-        neutrophil_cell[&#39;max_move_step&#39;] = -1
-        neutrophil_cell[&#39;state&#39;] = PhagocyteState.FREE
 
         # ---------- interactions
 
@@ -1156,8 +1150,8 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
         }:
             # get fungal cells in this voxel
             local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
-            for aspergillus_index in local_aspergillus:
-                aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
+            for aspergillus_cell_index in local_aspergillus:
+                aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_cell_index]
                 if aspergillus_cell[&#39;dead&#39;]:
                     continue
 
@@ -1165,28 +1159,32 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
                     AfumigatusCellStatus.HYPHAE,
                     AfumigatusCellStatus.GERM_TUBE,
                 }:
-                    # possibly internalize the fungal cell
+                    # possibly kill the fungal cell, extracellularly
                     if rg.uniform() &lt; neutrophil.pr_n_hyphae:
-                        internalize_aspergillus(
+                        interact_with_aspergillus(
                             phagocyte_cell=neutrophil_cell,
                             aspergillus_cell=aspergillus_cell,
-                            aspergillus_cell_index=aspergillus_index,
+                            aspergillus_cell_index=aspergillus_cell_index,
                             phagocyte=neutrophil,
                         )
-                        aspergillus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
+                        Afumigatus.kill_fungal_cell(
+                            afumigatus=afumigatus,
+                            afumigatus_cell=aspergillus_cell,
+                            afumigatus_cell_index=aspergillus_cell_index,
+                            iron=iron,
+                            grid=grid,
+                        )
                     else:
                         neutrophil_cell[&#39;state&#39;] = PhagocyteState.INTERACTING
 
                 elif aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.SWELLING_CONIDIA:
                     if rg.uniform() &lt; neutrophil.pr_n_phagocyte:
-                        internalize_aspergillus(
+                        interact_with_aspergillus(
                             phagocyte_cell=neutrophil_cell,
                             aspergillus_cell=aspergillus_cell,
-                            aspergillus_cell_index=aspergillus_index,
+                            aspergillus_cell_index=aspergillus_cell_index,
                             phagocyte=neutrophil,
                         )
-                    else:
-                        pass
 
         # interact with macrophages:
         # if we are apoptotic, give our iron and phagosome to a nearby
@@ -1275,13 +1273,15 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
         neutrophil.recruitment_rate
         * neutrophil.n_frac
         * np.sum(mip2.grid)
-        * (1 - num_live_neutrophils / neutrophil.max_n)
+        * (1 - num_live_neutrophils / neutrophil.max_neutrophils)
         / (mip2.k_d * space_volume)
     )
     number_to_recruit = np.random.poisson(avg) if avg &gt; 0 else 0
+    if number_to_recruit &lt;= 0:
+        return
     # 2. get voxels for new macrophages, based on activation
-    if number_to_recruit &gt; 0:
-        activation_voxels = zip(
+    activation_voxels = tuple(
+        zip(
             *np.where(
                 np.logical_and(
                     activation_function(
@@ -1296,28 +1296,26 @@ def create_neutrophil(state: State, x: float, y: float, z: float, **kwargs) -&gt
                 )
             )
         )
+    )
 
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
-        for coordinates in rg.choice(
-            tuple(activation_voxels), size=number_to_recruit, replace=True
-        ):
-            vox_z, vox_y, vox_x = coordinates
-            # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
-            dz = dz_field[vox_z, vox_y, vox_x]
-            dy = dy_field[vox_z, vox_y, vox_x]
-            dx = dx_field[vox_z, vox_y, vox_x]
-            self.create_neutrophil(
-                state=state,
-                x=x + rg.uniform(-dx / 2, dx / 2),
-                y=y + rg.uniform(-dy / 2, dy / 2),
-                z=z + rg.uniform(-dz / 2, dz / 2),
-            )
-            # TODO: have placement fail due to overcrowding of cells</code></pre>
+    dz_field: np.ndarray = state.grid.delta(axis=0)
+    dy_field: np.ndarray = state.grid.delta(axis=1)
+    dx_field: np.ndarray = state.grid.delta(axis=2)
+    for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
+        vox_z, vox_y, vox_x = coordinates
+        # the x,y,z coordinates are in the centers of the grids
+        z = state.grid.z[vox_z]
+        y = state.grid.y[vox_y]
+        x = state.grid.x[vox_x]
+        dz = dz_field[vox_z, vox_y, vox_x]
+        dy = dy_field[vox_z, vox_y, vox_x]
+        dx = dx_field[vox_z, vox_y, vox_x]
+        self.create_neutrophil(
+            state=state,
+            x=x + rg.uniform(-dx / 2, dx / 2),
+            y=y + rg.uniform(-dy / 2, dy / 2),
+            z=z + rg.uniform(-dz / 2, dz / 2),
+        )</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.neutrophil.Neutrophil.single_step_probabilistic_drift"><code class="name flex">
@@ -1528,12 +1526,10 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class NeutrophilCellData(PhagocyteCellData):
-    NEUTROPHIL_FIELDS = [
+    NEUTROPHIL_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;state&#39;, np.uint8),
-        (&#39;iron_pool&#39;, np.float64),
-        (&#39;move_step&#39;, np.float64),
-        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
+        (&#39;iron_pool&#39;, np.float64),  # units: atto-mol
         (&#39;tnfa&#39;, bool),
         (&#39;status_iteration&#39;, np.uint),
     ]
@@ -1551,8 +1547,6 @@ associated with each cell.</p>
             &#39;status&#39;: kwargs.get(&#39;status&#39;, PhagocyteStatus.RESTING),
             &#39;state&#39;: kwargs.get(&#39;state&#39;, PhagocyteState.FREE),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
-            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
-            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 1.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
         }
@@ -1570,7 +1564,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.neutrophil.NeutrophilCellData.NEUTROPHIL_FIELDS"><code class="name">var <span class="ident">NEUTROPHIL_FIELDS</span></code></dt>
+<dt id="nlisim.modules.neutrophil.NeutrophilCellData.NEUTROPHIL_FIELDS"><code class="name">var <span class="ident">NEUTROPHIL_FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1579,6 +1573,7 @@ associated with each cell.</p>
 <ul class="hlist">
 <li><code><b><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
@@ -1586,7 +1581,6 @@ associated with each cell.</p>
 </li>
 <li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
 </ul>
 </li>
@@ -1679,19 +1673,22 @@ state must override the serialization mechanism with custom behavior.</p>
 </summary>
 <pre><code class="python">class NeutrophilState(PhagocyteModuleState):
     cells: NeutrophilCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    apoptosis_probability: float
-    time_to_change_state: float
-    iter_to_change_state: int
-    pr_n_hyphae: float
-    pr_n_phagocyte: float
+    half_life: float  # units: hours
+    apoptosis_probability: float  # units: probability
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    pr_n_hyphae: float  # units: probability
+    pr_n_hyphae_param: float
+    pr_n_phagocyte: float  # units: probability
+    pr_n_phagocyte_param: float
     recruitment_rate: float
     rec_bias: float
-    max_n: float  # TODO: 0.5?
+    max_neutrophils: float  # TODO: 0.5?
     n_frac: float
     drift_bias: float
-    n_move_rate_act: float
-    n_move_rate_rest: float
-    init_num_neutrophils: int</code></pre>
+    n_move_rate_act: float  # units: µm
+    n_move_rate_rest: float  # units: µm
+    init_num_neutrophils: int  # units: count</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1712,6 +1709,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="nlisim.modules.neutrophil.NeutrophilState.half_life"><code class="name">var <span class="ident">half_life</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.modules.neutrophil.NeutrophilState.init_num_neutrophils"><code class="name">var <span class="ident">init_num_neutrophils</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1720,7 +1721,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.neutrophil.NeutrophilState.max_n"><code class="name">var <span class="ident">max_n</span> : float</code></dt>
+<dt id="nlisim.modules.neutrophil.NeutrophilState.max_neutrophils"><code class="name">var <span class="ident">max_neutrophils</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1740,7 +1741,15 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="nlisim.modules.neutrophil.NeutrophilState.pr_n_hyphae_param"><code class="name">var <span class="ident">pr_n_hyphae_param</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte"><code class="name">var <span class="ident">pr_n_phagocyte</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte_param"><code class="name">var <span class="ident">pr_n_phagocyte_param</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1819,14 +1828,17 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.apoptosis_probability" href="#nlisim.modules.neutrophil.NeutrophilState.apoptosis_probability">apoptosis_probability</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.cells" href="#nlisim.modules.neutrophil.NeutrophilState.cells">cells</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.drift_bias" href="#nlisim.modules.neutrophil.NeutrophilState.drift_bias">drift_bias</a></code></li>
+<li><code><a title="nlisim.modules.neutrophil.NeutrophilState.half_life" href="#nlisim.modules.neutrophil.NeutrophilState.half_life">half_life</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.init_num_neutrophils" href="#nlisim.modules.neutrophil.NeutrophilState.init_num_neutrophils">init_num_neutrophils</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.iter_to_change_state" href="#nlisim.modules.neutrophil.NeutrophilState.iter_to_change_state">iter_to_change_state</a></code></li>
-<li><code><a title="nlisim.modules.neutrophil.NeutrophilState.max_n" href="#nlisim.modules.neutrophil.NeutrophilState.max_n">max_n</a></code></li>
+<li><code><a title="nlisim.modules.neutrophil.NeutrophilState.max_neutrophils" href="#nlisim.modules.neutrophil.NeutrophilState.max_neutrophils">max_neutrophils</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.n_frac" href="#nlisim.modules.neutrophil.NeutrophilState.n_frac">n_frac</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.n_move_rate_act" href="#nlisim.modules.neutrophil.NeutrophilState.n_move_rate_act">n_move_rate_act</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.n_move_rate_rest" href="#nlisim.modules.neutrophil.NeutrophilState.n_move_rate_rest">n_move_rate_rest</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.pr_n_hyphae" href="#nlisim.modules.neutrophil.NeutrophilState.pr_n_hyphae">pr_n_hyphae</a></code></li>
+<li><code><a title="nlisim.modules.neutrophil.NeutrophilState.pr_n_hyphae_param" href="#nlisim.modules.neutrophil.NeutrophilState.pr_n_hyphae_param">pr_n_hyphae_param</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte" href="#nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte">pr_n_phagocyte</a></code></li>
+<li><code><a title="nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte_param" href="#nlisim.modules.neutrophil.NeutrophilState.pr_n_phagocyte_param">pr_n_phagocyte_param</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.rec_bias" href="#nlisim.modules.neutrophil.NeutrophilState.rec_bias">rec_bias</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.recruitment_rate" href="#nlisim.modules.neutrophil.NeutrophilState.recruitment_rate">recruitment_rate</a></code></li>
 <li><code><a title="nlisim.modules.neutrophil.NeutrophilState.time_to_change_state" href="#nlisim.modules.neutrophil.NeutrophilState.time_to_change_state">time_to_change_state</a></code></li>

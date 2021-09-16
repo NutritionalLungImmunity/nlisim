@@ -28,7 +28,6 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from enum import IntEnum
-import math
 from typing import Tuple, Union
 
 from numba import jit
@@ -38,9 +37,7 @@ from nlisim.coordinates import Voxel
 from nlisim.random import rg
 
 # ϵ is used in a divide by zero fix: 1/x -&gt; 1/(x+ϵ)
-# this value is pretty close to the smallest 64bit float with the property that its
-# reciprocal is finite.
-EPSILON = 5.57e-309
+EPSILON = 1e-50
 
 
 @jit(cache=True)
@@ -58,7 +55,7 @@ def turnover_rate(
     if x_system == 0.0:
         return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
-    y = (x - x_system) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
+    y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
     result = y / (x + EPSILON)
 
@@ -78,11 +75,14 @@ def iron_tf_reaction(
     p2: float,
     p3: float,
 ) -&gt; np.ndarray:
+    # Note: It doesn&#39;t matter what the units of iron, tf, and tf_fe are as long as they are the same
+
     # easier to deal with (1,) array
     if np.isscalar(iron) or type(iron) == float:
         iron = np.array([iron])
 
-    total_binding_site: np.ndarray = 2 * (tf + tf_fe)  # That is right 2*(Tf + TfFe)!
+    # That is right, 2*(Tf + TfFe)!
+    total_binding_site: np.ndarray = 2 * (tf + tf_fe)
     total_iron: np.ndarray = iron + tf_fe  # it does not count TfFe2
 
     rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)
@@ -286,11 +286,14 @@ def activation_function(*, x, k_d, h, volume, b=1):
     p2: float,
     p3: float,
 ) -&gt; np.ndarray:
+    # Note: It doesn&#39;t matter what the units of iron, tf, and tf_fe are as long as they are the same
+
     # easier to deal with (1,) array
     if np.isscalar(iron) or type(iron) == float:
         iron = np.array([iron])
 
-    total_binding_site: np.ndarray = 2 * (tf + tf_fe)  # That is right 2*(Tf + TfFe)!
+    # That is right, 2*(Tf + TfFe)!
+    total_binding_site: np.ndarray = 2 * (tf + tf_fe)
     total_iron: np.ndarray = iron + tf_fe  # it does not count TfFe2
 
     rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)
@@ -368,7 +371,7 @@ def michaelian_kinetics(
     if x_system == 0.0:
         return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
-    y = (x - x_system) * math.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
+    y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
     result = y / (x + EPSILON)
 

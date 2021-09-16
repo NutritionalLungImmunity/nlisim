@@ -59,7 +59,8 @@ class TissueTypes(Enum):
 class GeometryState(ModuleState):
     lung_tissue = grid_variable(np.dtype(&#39;int&#39;))
 
-    @lung_tissue.validator
+    # noinspection PyUnusedLocal
+    @lung_tissue.validator  # type: ignore
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -&gt; None:
         if not TissueTypes.validate(value):
             raise ValidationError(&#39;input illegal&#39;)
@@ -79,7 +80,7 @@ class Geometry(ModuleModel):
         try:
             with h5py.File(path, &#39;r&#39;) as f:
                 if f[&#39;geometry&#39;][:].shape != state.grid.shape:
-                    raise ValidationError(&#34;shape doesn\&#39;t match&#34;)
+                    raise ValidationError(&#34;shape doesn&#39;t match&#34;)
                 geometry.lung_tissue[:] = f[&#39;geometry&#39;][:]
         except Exception:
             print(f&#39;Error loading geometry file at {path}.&#39;)
@@ -118,7 +119,7 @@ class Geometry(ModuleModel):
         try:
             with h5py.File(path, &#39;r&#39;) as f:
                 if f[&#39;geometry&#39;][:].shape != state.grid.shape:
-                    raise ValidationError(&#34;shape doesn\&#39;t match&#34;)
+                    raise ValidationError(&#34;shape doesn&#39;t match&#34;)
                 geometry.lung_tissue[:] = f[&#39;geometry&#39;][:]
         except Exception:
             print(f&#39;Error loading geometry file at {path}.&#39;)
@@ -166,7 +167,8 @@ state must override the serialization mechanism with custom behavior.</p>
 <pre><code class="python">class GeometryState(ModuleState):
     lung_tissue = grid_variable(np.dtype(&#39;int&#39;))
 
-    @lung_tissue.validator
+    # noinspection PyUnusedLocal
+    @lung_tissue.validator  # type: ignore
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -&gt; None:
         if not TissueTypes.validate(value):
             raise ValidationError(&#39;input illegal&#39;)

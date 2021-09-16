@@ -135,7 +135,7 @@ class MIP2(ModuleModel):
                 and neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform()
             ):
                 neutrophil_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
-                neutrophil_cell[&#39;status_iteration&#39;] = 0  # TODO: had &#39;todo: set_status&#39; in orig
+                neutrophil_cell[&#39;status_iteration&#39;] = 0
             elif neutrophil_cell[&#39;tnfa&#39;]:
                 mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
                 if neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform():
@@ -300,7 +300,7 @@ class MIP2(ModuleModel):
                 and neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform()
             ):
                 neutrophil_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
-                neutrophil_cell[&#39;status_iteration&#39;] = 0  # TODO: had &#39;todo: set_status&#39; in orig
+                neutrophil_cell[&#39;status_iteration&#39;] = 0
             elif neutrophil_cell[&#39;tnfa&#39;]:
                 mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
                 if neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform():
@@ -403,7 +403,7 @@ class MIP2(ModuleModel):
             and neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform()
         ):
             neutrophil_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
-            neutrophil_cell[&#39;status_iteration&#39;] = 0  # TODO: had &#39;todo: set_status&#39; in orig
+            neutrophil_cell[&#39;status_iteration&#39;] = 0
         elif neutrophil_cell[&#39;tnfa&#39;]:
             mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
             if neutrophil_activation[tuple(neutrophil_cell_voxel)] &gt; rg.uniform():

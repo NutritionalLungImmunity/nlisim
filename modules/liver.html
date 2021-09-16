@@ -42,8 +42,7 @@ from nlisim.util import turnover_rate
 class LiverState(ModuleState):
     hep_slope: float
     hep_intercept: float
-    log_hepcidin: float
-    il6_threshold: float
+    il6_threshold: float  # units: aM
     threshold_log_hep: float
     threshold_hep: float
 
@@ -58,15 +57,12 @@ class Liver(ModuleModel):
         liver: LiverState = state.liver
 
         # config file values
-        liver.hep_slope = self.config.getfloat(&#39;hep_slope&#39;)
-        liver.hep_intercept = self.config.getfloat(&#39;hep_intercept&#39;)
-        liver.il6_threshold = self.config.getfloat(&#39;il6_threshold&#39;)
+        liver.hep_slope = self.config.getfloat(&#39;hep_slope&#39;)  # units: aM
+        liver.hep_intercept = self.config.getfloat(&#39;hep_intercept&#39;)  # units: aM
+        liver.il6_threshold = self.config.getfloat(&#39;il6_threshold&#39;)  # units: aM
         liver.threshold_log_hep = self.config.getfloat(&#39;threshold_log_hep&#39;)
 
-        # default values
-        liver.log_hepcidin = float(&#39;-inf&#39;)  # TODO: verify valid default value
-
-        # computed values (none)
+        # computed values
         liver.threshold_hep = math.pow(10, liver.threshold_log_hep)
 
         return state
@@ -76,6 +72,7 @@ class Liver(ModuleModel):
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State
         from nlisim.modules.transferrin import TransferrinState
+        from nlisim.util import TissueType
 
         liver: LiverState = state.liver
         transferrin: TransferrinState = state.transferrin
@@ -83,12 +80,23 @@ class Liver(ModuleModel):
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
         voxel_volume: float = state.voxel_volume
-        space_volume: float = state.space_volume
+
+        # interact with IL6
+        mask = state.lung_tissue != TissueType.AIR
+        global_il6_concentration = np.mean(il6.grid[mask]) / (
+            2 * voxel_volume
+        )  # div 2: serum, units: aM
+        if global_il6_concentration &gt; liver.il6_threshold:
+            log_hepcidin = liver.hep_intercept + liver.hep_slope * (
+                math.log(global_il6_concentration, 10)
+            )
+        else:
+            log_hepcidin = float(&#39;-inf&#39;)
 
         # interact with transferrin
         tf = transferrin.tf_intercept + transferrin.tf_slope * max(
-            transferrin.threshold_log_hep, liver.log_hepcidin
-        )
+            transferrin.threshold_log_hep, log_hepcidin
+        )  # units: aM
         rate_tf = turnover_rate(
             x=transferrin.grid[&#39;Tf&#39;],
             x_system=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
@@ -111,20 +119,11 @@ class Liver(ModuleModel):
         transferrin.grid[&#39;TfFe&#39;] *= rate_tf_fe
         transferrin.grid[&#39;TfFe2&#39;] *= rate_tf_fe2
 
-        # interact with IL6
-        global_il6_concentration = np.sum(il6.grid) / (2 * space_volume)  # div 2 : serum
-        if global_il6_concentration &gt; liver.il6_threshold:
-            liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(
-                global_il6_concentration, 10
-            )
-        else:
-            liver.log_hepcidin = float(&#39;-inf&#39;)
-
         # interact with hepcidin
         system_concentration = (
             liver.threshold_hep
-            if liver.log_hepcidin == float(&#39;-inf&#39;) or liver.log_hepcidin &gt; liver.threshold_log_hep
-            else math.pow(10.0, liver.log_hepcidin)
+            if log_hepcidin == float(&#39;-inf&#39;) or log_hepcidin &gt; liver.threshold_log_hep
+            else math.pow(10.0, log_hepcidin)
         )
         hepcidin.grid *= turnover_rate(
             x=hepcidin.grid,
@@ -165,15 +164,12 @@ class Liver(ModuleModel):
         liver: LiverState = state.liver
 
         # config file values
-        liver.hep_slope = self.config.getfloat(&#39;hep_slope&#39;)
-        liver.hep_intercept = self.config.getfloat(&#39;hep_intercept&#39;)
-        liver.il6_threshold = self.config.getfloat(&#39;il6_threshold&#39;)
+        liver.hep_slope = self.config.getfloat(&#39;hep_slope&#39;)  # units: aM
+        liver.hep_intercept = self.config.getfloat(&#39;hep_intercept&#39;)  # units: aM
+        liver.il6_threshold = self.config.getfloat(&#39;il6_threshold&#39;)  # units: aM
         liver.threshold_log_hep = self.config.getfloat(&#39;threshold_log_hep&#39;)
 
-        # default values
-        liver.log_hepcidin = float(&#39;-inf&#39;)  # TODO: verify valid default value
-
-        # computed values (none)
+        # computed values
         liver.threshold_hep = math.pow(10, liver.threshold_log_hep)
 
         return state
@@ -183,6 +179,7 @@ class Liver(ModuleModel):
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State
         from nlisim.modules.transferrin import TransferrinState
+        from nlisim.util import TissueType
 
         liver: LiverState = state.liver
         transferrin: TransferrinState = state.transferrin
@@ -190,12 +187,23 @@ class Liver(ModuleModel):
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
         voxel_volume: float = state.voxel_volume
-        space_volume: float = state.space_volume
+
+        # interact with IL6
+        mask = state.lung_tissue != TissueType.AIR
+        global_il6_concentration = np.mean(il6.grid[mask]) / (
+            2 * voxel_volume
+        )  # div 2: serum, units: aM
+        if global_il6_concentration &gt; liver.il6_threshold:
+            log_hepcidin = liver.hep_intercept + liver.hep_slope * (
+                math.log(global_il6_concentration, 10)
+            )
+        else:
+            log_hepcidin = float(&#39;-inf&#39;)
 
         # interact with transferrin
         tf = transferrin.tf_intercept + transferrin.tf_slope * max(
-            transferrin.threshold_log_hep, liver.log_hepcidin
-        )
+            transferrin.threshold_log_hep, log_hepcidin
+        )  # units: aM
         rate_tf = turnover_rate(
             x=transferrin.grid[&#39;Tf&#39;],
             x_system=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
@@ -218,20 +226,11 @@ class Liver(ModuleModel):
         transferrin.grid[&#39;TfFe&#39;] *= rate_tf_fe
         transferrin.grid[&#39;TfFe2&#39;] *= rate_tf_fe2
 
-        # interact with IL6
-        global_il6_concentration = np.sum(il6.grid) / (2 * space_volume)  # div 2 : serum
-        if global_il6_concentration &gt; liver.il6_threshold:
-            liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(
-                global_il6_concentration, 10
-            )
-        else:
-            liver.log_hepcidin = float(&#39;-inf&#39;)
-
         # interact with hepcidin
         system_concentration = (
             liver.threshold_hep
-            if liver.log_hepcidin == float(&#39;-inf&#39;) or liver.log_hepcidin &gt; liver.threshold_log_hep
-            else math.pow(10.0, liver.log_hepcidin)
+            if log_hepcidin == float(&#39;-inf&#39;) or log_hepcidin &gt; liver.threshold_log_hep
+            else math.pow(10.0, log_hepcidin)
         )
         hepcidin.grid *= turnover_rate(
             x=hepcidin.grid,
@@ -262,6 +261,7 @@ class Liver(ModuleModel):
     from nlisim.modules.hepcidin import HepcidinState
     from nlisim.modules.il6 import IL6State
     from nlisim.modules.transferrin import TransferrinState
+    from nlisim.util import TissueType
 
     liver: LiverState = state.liver
     transferrin: TransferrinState = state.transferrin
@@ -269,12 +269,23 @@ class Liver(ModuleModel):
     hepcidin: HepcidinState = state.hepcidin
     molecules: MoleculesState = state.molecules
     voxel_volume: float = state.voxel_volume
-    space_volume: float = state.space_volume
+
+    # interact with IL6
+    mask = state.lung_tissue != TissueType.AIR
+    global_il6_concentration = np.mean(il6.grid[mask]) / (
+        2 * voxel_volume
+    )  # div 2: serum, units: aM
+    if global_il6_concentration &gt; liver.il6_threshold:
+        log_hepcidin = liver.hep_intercept + liver.hep_slope * (
+            math.log(global_il6_concentration, 10)
+        )
+    else:
+        log_hepcidin = float(&#39;-inf&#39;)
 
     # interact with transferrin
     tf = transferrin.tf_intercept + transferrin.tf_slope * max(
-        transferrin.threshold_log_hep, liver.log_hepcidin
-    )
+        transferrin.threshold_log_hep, log_hepcidin
+    )  # units: aM
     rate_tf = turnover_rate(
         x=transferrin.grid[&#39;Tf&#39;],
         x_system=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
@@ -297,20 +308,11 @@ class Liver(ModuleModel):
     transferrin.grid[&#39;TfFe&#39;] *= rate_tf_fe
     transferrin.grid[&#39;TfFe2&#39;] *= rate_tf_fe2
 
-    # interact with IL6
-    global_il6_concentration = np.sum(il6.grid) / (2 * space_volume)  # div 2 : serum
-    if global_il6_concentration &gt; liver.il6_threshold:
-        liver.log_hepcidin = liver.hep_intercept + liver.hep_slope * math.log(
-            global_il6_concentration, 10
-        )
-    else:
-        liver.log_hepcidin = float(&#39;-inf&#39;)
-
     # interact with hepcidin
     system_concentration = (
         liver.threshold_hep
-        if liver.log_hepcidin == float(&#39;-inf&#39;) or liver.log_hepcidin &gt; liver.threshold_log_hep
-        else math.pow(10.0, liver.log_hepcidin)
+        if log_hepcidin == float(&#39;-inf&#39;) or log_hepcidin &gt; liver.threshold_log_hep
+        else math.pow(10.0, log_hepcidin)
     )
     hepcidin.grid *= turnover_rate(
         x=hepcidin.grid,
@@ -358,8 +360,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <pre><code class="python">class LiverState(ModuleState):
     hep_slope: float
     hep_intercept: float
-    log_hepcidin: float
-    il6_threshold: float
+    il6_threshold: float  # units: aM
     threshold_log_hep: float
     threshold_hep: float</code></pre>
 </details>
@@ -378,10 +379,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.liver.LiverState.il6_threshold"><code class="name">var <span class="ident">il6_threshold</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.liver.LiverState.log_hepcidin"><code class="name">var <span class="ident">log_hepcidin</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -430,11 +427,10 @@ state must override the serialization mechanism with custom behavior.</p>
 </li>
 <li>
 <h4><code><a title="nlisim.modules.liver.LiverState" href="#nlisim.modules.liver.LiverState">LiverState</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="nlisim.modules.liver.LiverState.hep_intercept" href="#nlisim.modules.liver.LiverState.hep_intercept">hep_intercept</a></code></li>
 <li><code><a title="nlisim.modules.liver.LiverState.hep_slope" href="#nlisim.modules.liver.LiverState.hep_slope">hep_slope</a></code></li>
 <li><code><a title="nlisim.modules.liver.LiverState.il6_threshold" href="#nlisim.modules.liver.LiverState.il6_threshold">il6_threshold</a></code></li>
-<li><code><a title="nlisim.modules.liver.LiverState.log_hepcidin" href="#nlisim.modules.liver.LiverState.log_hepcidin">log_hepcidin</a></code></li>
 <li><code><a title="nlisim.modules.liver.LiverState.threshold_hep" href="#nlisim.modules.liver.LiverState.threshold_hep">threshold_hep</a></code></li>
 <li><code><a title="nlisim.modules.liver.LiverState.threshold_log_hep" href="#nlisim.modules.liver.LiverState.threshold_log_hep">threshold_log_hep</a></code></li>
 </ul>

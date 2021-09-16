@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING, Tuple
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -49,9 +49,8 @@ MAX_CONIDIA = (
 
 
 class PhagocyteCellData(CellData):
-    PHAGOCYTE_FIELDS = [
-        (&#39;phagosome&#39;, (np.int64, MAX_CONIDIA)),
-        (&#39;has_conidia&#39;, bool),
+    PHAGOCYTE_FIELDS: CellFields = [
+        (&#39;phagosome&#39;, np.int64, MAX_CONIDIA),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -63,7 +62,6 @@ class PhagocyteCellData(CellData):
     ) -&gt; Tuple:
         initializer = {
             &#39;phagosome&#39;: kwargs.get(&#39;phagosome&#39;, -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
-            &#39;has_conidia&#39;: kwargs.get(&#39;has_conidia&#39;, False),
         }
 
         # ensure that these come in the correct order
@@ -74,7 +72,7 @@ class PhagocyteCellData(CellData):
 
 @attrs(kw_only=True)
 class PhagocyteModuleState(ModuleState):
-    max_conidia: int
+    max_conidia: int  # units: count
 
 
 class PhagocyteModel(ModuleModel):
@@ -135,7 +133,7 @@ class PhagocyteModel(ModuleModel):
             if fungal_cell_index == -1:
                 continue
             afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
-        phagocyte_cell[&#39;phagosome&#39;].fill(-1)
+        phagocyte_cell[&#39;phagosome&#39;][:] = -1
 
 
 # TODO: better name
@@ -157,11 +155,11 @@ class PhagocyteStatus(IntEnum):
     NECROTIC = 6
     DEAD = 7
     ANERGIC = 8
-    INTERACTING = 9  # TODO: check
+    INTERACTING = 9
 
 
 # noinspection PyUnresolvedReferences
-def internalize_aspergillus(
+def interact_with_aspergillus(
     phagocyte_cell: PhagocyteCellData,
     aspergillus_cell: &#39;AfumigatusCellData&#39;,
     aspergillus_cell_index: int,
@@ -178,10 +176,6 @@ def internalize_aspergillus(
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
     phagocytize : bool
-
-    Returns
-    -------
-    Nothing
     &#34;&#34;&#34;
     from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
 
@@ -189,16 +183,12 @@ def internalize_aspergillus(
     if aspergillus_cell[&#39;state&#39;] != AfumigatusCellState.FREE:
         return
 
-    # deal with conidia
-    if (
-        aspergillus_cell[&#39;status&#39;]
-        in {
-            AfumigatusCellStatus.RESTING_CONIDIA,
-            AfumigatusCellStatus.SWELLING_CONIDIA,
-            AfumigatusCellStatus.STERILE_CONIDIA,
-        }
-        or phagocytize
-    ):
+    # internalize conidia
+    if phagocytize or aspergillus_cell[&#39;status&#39;] in {
+        AfumigatusCellStatus.RESTING_CONIDIA,
+        AfumigatusCellStatus.SWELLING_CONIDIA,
+        AfumigatusCellStatus.STERILE_CONIDIA,
+    }:
         if phagocyte_cell[&#39;status&#39;] not in {
             PhagocyteStatus.NECROTIC,
             PhagocyteStatus.APOPTOTIC,
@@ -207,20 +197,25 @@ def internalize_aspergillus(
             # check to see if we have room before we add in another cell to the phagosome
             num_cells_in_phagosome = np.sum(phagocyte_cell[&#39;phagosome&#39;] &gt;= 0)
             if num_cells_in_phagosome &lt; phagocyte.max_conidia:
-                phagocyte_cell[&#39;has_conidia&#39;] = True
                 aspergillus_cell[&#39;state&#39;] = AfumigatusCellState.INTERNALIZING
                 # place the fungal cell in the phagosome,
                 # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
                 phagocyte_cell[&#39;phagosome&#39;].sort()
                 phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
 
-    # TODO: what is going on here? is the if too loose?
-    if aspergillus_cell[&#39;status&#39;] != AfumigatusCellStatus.RESTING_CONIDIA:
-        phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
-        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
-            phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
-        else:
-            phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
+    # All phagocytes are activated by their interaction, except with resting conidia
+    if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
+        return
+    phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
+    if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+        # non-active phagocytes begin the activation stage
+        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVATING:
+            # reset the counter, first time only
+            phagocyte_cell[&#39;status_iteration&#39;] = 0
+        phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+    else:
+        # active phagocytes are kept active by resetting their iteration counter
+        phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
 </details>
 </section>
 <section>
@@ -230,8 +225,8 @@ def internalize_aspergillus(
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="nlisim.modules.phagocyte.internalize_aspergillus"><code class="name flex">
-<span>def <span class="ident">internalize_aspergillus</span></span>(<span>phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, aspergillus_cell: AfumigatusCellData, aspergillus_cell_index: int, phagocyte: <a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a>, phagocytize: bool = False)</span>
+<dt id="nlisim.modules.phagocyte.interact_with_aspergillus"><code class="name flex">
+<span>def <span class="ident">interact_with_aspergillus</span></span>(<span>phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, aspergillus_cell: AfumigatusCellData, aspergillus_cell_index: int, phagocyte: <a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a>, phagocytize: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Possibly have a phagocyte phagocytize a fungal cell.</p>
@@ -247,17 +242,12 @@ def internalize_aspergillus(
 <dd>&nbsp;</dd>
 <dt><strong><code>phagocytize</code></strong> :&ensp;<code>bool</code></dt>
 <dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Nothing</code></dt>
-<dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def internalize_aspergillus(
+<pre><code class="python">def interact_with_aspergillus(
     phagocyte_cell: PhagocyteCellData,
     aspergillus_cell: &#39;AfumigatusCellData&#39;,
     aspergillus_cell_index: int,
@@ -274,10 +264,6 @@ def internalize_aspergillus(
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
     phagocytize : bool
-
-    Returns
-    -------
-    Nothing
     &#34;&#34;&#34;
     from nlisim.modules.afumigatus import AfumigatusCellState, AfumigatusCellStatus
 
@@ -285,16 +271,12 @@ def internalize_aspergillus(
     if aspergillus_cell[&#39;state&#39;] != AfumigatusCellState.FREE:
         return
 
-    # deal with conidia
-    if (
-        aspergillus_cell[&#39;status&#39;]
-        in {
-            AfumigatusCellStatus.RESTING_CONIDIA,
-            AfumigatusCellStatus.SWELLING_CONIDIA,
-            AfumigatusCellStatus.STERILE_CONIDIA,
-        }
-        or phagocytize
-    ):
+    # internalize conidia
+    if phagocytize or aspergillus_cell[&#39;status&#39;] in {
+        AfumigatusCellStatus.RESTING_CONIDIA,
+        AfumigatusCellStatus.SWELLING_CONIDIA,
+        AfumigatusCellStatus.STERILE_CONIDIA,
+    }:
         if phagocyte_cell[&#39;status&#39;] not in {
             PhagocyteStatus.NECROTIC,
             PhagocyteStatus.APOPTOTIC,
@@ -303,20 +285,25 @@ def internalize_aspergillus(
             # check to see if we have room before we add in another cell to the phagosome
             num_cells_in_phagosome = np.sum(phagocyte_cell[&#39;phagosome&#39;] &gt;= 0)
             if num_cells_in_phagosome &lt; phagocyte.max_conidia:
-                phagocyte_cell[&#39;has_conidia&#39;] = True
                 aspergillus_cell[&#39;state&#39;] = AfumigatusCellState.INTERNALIZING
                 # place the fungal cell in the phagosome,
                 # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
                 phagocyte_cell[&#39;phagosome&#39;].sort()
                 phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
 
-    # TODO: what is going on here? is the if too loose?
-    if aspergillus_cell[&#39;status&#39;] != AfumigatusCellStatus.RESTING_CONIDIA:
-        phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
-        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
-            phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
-        else:
-            phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
+    # All phagocytes are activated by their interaction, except with resting conidia
+    if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
+        return
+    phagocyte_cell[&#39;state&#39;] = PhagocyteStatus.INTERACTING
+    if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVE:
+        # non-active phagocytes begin the activation stage
+        if phagocyte_cell[&#39;status&#39;] != PhagocyteStatus.ACTIVATING:
+            # reset the counter, first time only
+            phagocyte_cell[&#39;status_iteration&#39;] = 0
+        phagocyte_cell[&#39;status&#39;] = PhagocyteStatus.ACTIVATING
+    else:
+        # active phagocytes are kept active by resetting their iteration counter
+        phagocyte_cell[&#39;status_iteration&#39;] = 0</code></pre>
 </details>
 </dd>
 </dl>
@@ -362,9 +349,8 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PhagocyteCellData(CellData):
-    PHAGOCYTE_FIELDS = [
-        (&#39;phagosome&#39;, (np.int64, MAX_CONIDIA)),
-        (&#39;has_conidia&#39;, bool),
+    PHAGOCYTE_FIELDS: CellFields = [
+        (&#39;phagosome&#39;, np.int64, MAX_CONIDIA),
     ]
 
     dtype = np.dtype(CellData.FIELDS + PHAGOCYTE_FIELDS, align=True)  # type: ignore
@@ -376,7 +362,6 @@ associated with each cell.</p>
     ) -&gt; Tuple:
         initializer = {
             &#39;phagosome&#39;: kwargs.get(&#39;phagosome&#39;, -1 * np.ones(MAX_CONIDIA, dtype=np.int64)),
-            &#39;has_conidia&#39;: kwargs.get(&#39;has_conidia&#39;, False),
         }
 
         # ensure that these come in the correct order
@@ -397,7 +382,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span></code></dt>
+<dt id="nlisim.modules.phagocyte.PhagocyteCellData.PHAGOCYTE_FIELDS"><code class="name">var <span class="ident">PHAGOCYTE_FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -483,7 +468,7 @@ associated with each cell.</p>
             if fungal_cell_index == -1:
                 continue
             afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
-        phagocyte_cell[&#39;phagosome&#39;].fill(-1)</code></pre>
+        phagocyte_cell[&#39;phagosome&#39;][:] = -1</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -542,7 +527,7 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
         if fungal_cell_index == -1:
             continue
         afumigatus.cells[fungal_cell_index][&#39;state&#39;] = AfumigatusCellState.RELEASING
-    phagocyte_cell[&#39;phagosome&#39;].fill(-1)</code></pre>
+    phagocyte_cell[&#39;phagosome&#39;][:] = -1</code></pre>
 </details>
 </dd>
 </dl>
@@ -649,7 +634,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PhagocyteModuleState(ModuleState):
-    max_conidia: int</code></pre>
+    max_conidia: int  # units: count</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -732,7 +717,7 @@ state must override the serialization mechanism with custom behavior.</p>
     NECROTIC = 6
     DEAD = 7
     ANERGIC = 8
-    INTERACTING = 9  # TODO: check</code></pre>
+    INTERACTING = 9</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -800,7 +785,7 @@ state must override the serialization mechanism with custom behavior.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="nlisim.modules.phagocyte.internalize_aspergillus" href="#nlisim.modules.phagocyte.internalize_aspergillus">internalize_aspergillus</a></code></li>
+<li><code><a title="nlisim.modules.phagocyte.interact_with_aspergillus" href="#nlisim.modules.phagocyte.interact_with_aspergillus">interact_with_aspergillus</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

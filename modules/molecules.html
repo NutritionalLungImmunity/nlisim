@@ -27,9 +27,8 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import math
-
-from attr import attrs
+<pre><code class="python">from attr import attrs
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import periodic_discrete_laplacian
@@ -39,12 +38,11 @@ from nlisim.state import State
 
 @attrs(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
-    turnover_rate: float
-    cyt_bind_t: float
+    turnover_rate: float  # units: proportion
+    cyt_bind_t: float  # units: min
     rel_cyt_bind_unit_t: float
-    diffusion_constant: float
-    laplacian: csr_matrix
-    time_step: float
+    diffusion_constant: float  # units: µm^2 * min^-1
+    laplacian: csr_matrix  # units: µm^-2
 
 
 class Molecules(ModuleModel):
@@ -57,36 +55,28 @@ class Molecules(ModuleModel):
 
         molecules: MoleculesState = state.molecules
 
-        molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)
-        molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;)
+        molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)  # units: min
+        # molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;) # units: hours^-1
+        molecules.diffusion_constant = self.config.getfloat(
+            &#39;diffusion_constant&#39;
+        )  # units: µm^2 * min^-1
 
-        # TODO: there is an implicit assumption, below, that all molecules are on the
-        #  same time step. This is true on Aug 24, 2021.
+        # NOTE: there is an implicit assumption, below, that all molecules are on the
+        #  same time step and that time step is 2 minutes. This is true on Sept 13, 2021.
 
         # Computed values
-        molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
-        # TODO: original comments as below. Is the param 0.2?
-        #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
-        # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
-        molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        molecules.diffusion_constant = self.config.getfloat(&#39;diffusion_constant&#39;)  # units: µm^2/min
-        molecules.time_step = self.time_step  # units: min/step
+        molecules.rel_cyt_bind_unit_t = (
+            self.time_step / molecules.cyt_bind_t
+        )  # units: (min/step) / (min) = 1/step
+        molecules.turnover_rate = 1 - np.log(1.2) / int(
+            30 / 2
+        )  # TODO: still hardcoding the 2, move to individual molecules?
 
         # construct the laplacian
-        tissue = state.lung_tissue
-        # laplacian units: 1/(µm^2)
         molecules.laplacian = periodic_discrete_laplacian(
-            grid=state.grid, mask=tissue != TissueType.AIR
-        )
+            grid=state.grid, mask=state.lung_tissue != TissueType.AIR
+        )  # units: µm^-2
 
-        # Note: Henrique&#39;s code did things a little differently here:
-        #  1) three 1D laplacians instead of one 3D laplacian
-        #  2) four implicit steps instead of one
-
-        return state
-
-    def advance(self, state: State, previous_time: float):
-        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         return state</code></pre>
 </details>
 </section>
@@ -119,64 +109,40 @@ class Molecules(ModuleModel):
 
         molecules: MoleculesState = state.molecules
 
-        molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)
-        molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;)
+        molecules.cyt_bind_t = self.config.getfloat(&#39;cyt_bind_t&#39;)  # units: min
+        # molecules.turnover_rate = self.config.getfloat(&#39;turnover_rate&#39;) # units: hours^-1
+        molecules.diffusion_constant = self.config.getfloat(
+            &#39;diffusion_constant&#39;
+        )  # units: µm^2 * min^-1
 
-        # TODO: there is an implicit assumption, below, that all molecules are on the
-        #  same time step. This is true on Aug 24, 2021.
+        # NOTE: there is an implicit assumption, below, that all molecules are on the
+        #  same time step and that time step is 2 minutes. This is true on Sept 13, 2021.
 
         # Computed values
-        molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
-        # TODO: original comments as below. Is the param 0.2?
-        #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
-        # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
-        molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        molecules.diffusion_constant = self.config.getfloat(&#39;diffusion_constant&#39;)  # units: µm^2/min
-        molecules.time_step = self.time_step  # units: min/step
+        molecules.rel_cyt_bind_unit_t = (
+            self.time_step / molecules.cyt_bind_t
+        )  # units: (min/step) / (min) = 1/step
+        molecules.turnover_rate = 1 - np.log(1.2) / int(
+            30 / 2
+        )  # TODO: still hardcoding the 2, move to individual molecules?
 
         # construct the laplacian
-        tissue = state.lung_tissue
-        # laplacian units: 1/(µm^2)
         molecules.laplacian = periodic_discrete_laplacian(
-            grid=state.grid, mask=tissue != TissueType.AIR
-        )
+            grid=state.grid, mask=state.lung_tissue != TissueType.AIR
+        )  # units: µm^-2
 
-        # Note: Henrique&#39;s code did things a little differently here:
-        #  1) three 1D laplacians instead of one 3D laplacian
-        #  2) four implicit steps instead of one
-
-        return state
-
-    def advance(self, state: State, previous_time: float):
-        &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
         return state</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></li>
 </ul>
-<h3>Methods</h3>
-<dl>
-<dt id="nlisim.modules.molecules.Molecules.advance"><code class="name flex">
-<span>def <span class="ident">advance</span></span>(<span>self, state: <a title="nlisim.state.State" href="../state.html#nlisim.state.State">State</a>, previous_time: float)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Advance the state by a single time step.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def advance(self, state: State, previous_time: float):
-    &#34;&#34;&#34;Advance the state by a single time step.&#34;&#34;&#34;
-    return state</code></pre>
-</details>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="nlisim.module.ModuleModel" href="../module.html#nlisim.module.ModuleModel">ModuleModel</a></b></code>:
 <ul class="hlist">
 <li><code><a title="nlisim.module.ModuleModel.StateClass" href="../module.html#nlisim.module.ModuleModel.StateClass">StateClass</a></code></li>
+<li><code><a title="nlisim.module.ModuleModel.advance" href="../module.html#nlisim.module.ModuleModel.advance">advance</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.construct" href="../module.html#nlisim.module.ModuleModel.construct">construct</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.finalize" href="../module.html#nlisim.module.ModuleModel.finalize">finalize</a></code></li>
 <li><code><a title="nlisim.module.ModuleModel.initialize" href="../module.html#nlisim.module.ModuleModel.initialize">initialize</a></code></li>
@@ -205,12 +171,11 @@ state must override the serialization mechanism with custom behavior.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MoleculesState(ModuleState):
-    turnover_rate: float
-    cyt_bind_t: float
+    turnover_rate: float  # units: proportion
+    cyt_bind_t: float  # units: min
     rel_cyt_bind_unit_t: float
-    diffusion_constant: float
-    laplacian: csr_matrix
-    time_step: float</code></pre>
+    diffusion_constant: float  # units: µm^2 * min^-1
+    laplacian: csr_matrix  # units: µm^-2</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -231,10 +196,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t"><code class="name">var <span class="ident">rel_cyt_bind_unit_t</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.molecules.MoleculesState.time_step"><code class="name">var <span class="ident">time_step</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -273,18 +234,14 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul>
 <li>
 <h4><code><a title="nlisim.modules.molecules.Molecules" href="#nlisim.modules.molecules.Molecules">Molecules</a></code></h4>
-<ul class="">
-<li><code><a title="nlisim.modules.molecules.Molecules.advance" href="#nlisim.modules.molecules.Molecules.advance">advance</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="nlisim.modules.molecules.MoleculesState" href="#nlisim.modules.molecules.MoleculesState">MoleculesState</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="nlisim.modules.molecules.MoleculesState.cyt_bind_t" href="#nlisim.modules.molecules.MoleculesState.cyt_bind_t">cyt_bind_t</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.diffusion_constant" href="#nlisim.modules.molecules.MoleculesState.diffusion_constant">diffusion_constant</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.laplacian" href="#nlisim.modules.molecules.MoleculesState.laplacian">laplacian</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t" href="#nlisim.modules.molecules.MoleculesState.rel_cyt_bind_unit_t">rel_cyt_bind_unit_t</a></code></li>
-<li><code><a title="nlisim.modules.molecules.MoleculesState.time_step" href="#nlisim.modules.molecules.MoleculesState.time_step">time_step</a></code></li>
 <li><code><a title="nlisim.modules.molecules.MoleculesState.turnover_rate" href="#nlisim.modules.molecules.MoleculesState.turnover_rate">turnover_rate</a></code></li>
 </ul>
 </li>

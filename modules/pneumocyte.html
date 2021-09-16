@@ -34,7 +34,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.phagocyte import (
@@ -49,7 +49,7 @@ from nlisim.util import TissueType, activation_function
 
 
 class PneumocyteCellData(PhagocyteCellData):
-    PNEUMOCYTE_FIELDS = [
+    PNEUMOCYTE_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;status_iteration&#39;, np.uint),
         (&#39;tnfa&#39;, bool),
@@ -72,7 +72,7 @@ class PneumocyteCellData(PhagocyteCellData):
 
         # ensure that these come in the correct order
         return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+            [initializer[key] for key, *_ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
         )
 
 
@@ -94,9 +94,10 @@ class PneumocyteState(PhagocyteModuleState):
     time_to_change_state: float  # units: hours
     iter_to_change_state: int  # units: steps
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
-    # p_il8_qtty: float
-    p_tnf_qtty: float
-    pr_p_int: float
+    # p_il8_qtty: float # units: mol * cell^-1 * h^-1
+    p_tnf_qtty: float  # units: atto-mol * cell^-1 * h^-1
+    pr_p_int: float  # units: probability
+    pr_p_int_param: float
 
 
 class Pneumocyte(PhagocyteModel):
@@ -112,10 +113,10 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.max_conidia = self.config.getint(&#39;max_conidia&#39;)  # units: conidia
         pneumocyte.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)  # units: hours
         pneumocyte.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)  # units: hours
-
-        # pneumocyte.p_il6_qtty = self.config.getfloat(&#39;p_il6_qtty&#39;)
-        # pneumocyte.p_il8_qtty = self.config.getfloat(&#39;p_il8_qtty&#39;)
-        pneumocyte.p_tnf_qtty = self.config.getfloat(&#39;p_tnf_qtty&#39;)
+        pneumocyte.p_tnf_qtty = self.config.getfloat(
+            &#39;p_tnf_qtty&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        pneumocyte.pr_p_int_param = self.config.getfloat(&#39;pr_p_int_param&#39;)
 
         # computed values
         pneumocyte.iter_to_rest = int(
@@ -124,17 +125,17 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
-
-        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
-        pneumocyte.pr_p_int = 1 - math.exp(
-            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_p_int_param&#39;))
-        )
+        pneumocyte.pr_p_int = -math.expm1(
+            -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        )  # units: probability
 
         # initialize cells, placing one per epithelial voxel
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+        epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        rg.shuffle(epithelial_voxels)
+        for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint(&#39;count&#39;)]:
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
             y = state.grid.y[vox_y]
@@ -345,10 +346,10 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.max_conidia = self.config.getint(&#39;max_conidia&#39;)  # units: conidia
         pneumocyte.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)  # units: hours
         pneumocyte.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)  # units: hours
-
-        # pneumocyte.p_il6_qtty = self.config.getfloat(&#39;p_il6_qtty&#39;)
-        # pneumocyte.p_il8_qtty = self.config.getfloat(&#39;p_il8_qtty&#39;)
-        pneumocyte.p_tnf_qtty = self.config.getfloat(&#39;p_tnf_qtty&#39;)
+        pneumocyte.p_tnf_qtty = self.config.getfloat(
+            &#39;p_tnf_qtty&#39;
+        )  # units: atto-mol * cell^-1 * h^-1
+        pneumocyte.pr_p_int_param = self.config.getfloat(&#39;pr_p_int_param&#39;)
 
         # computed values
         pneumocyte.iter_to_rest = int(
@@ -357,17 +358,17 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
-
-        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
-        pneumocyte.pr_p_int = 1 - math.exp(
-            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat(&#39;pr_p_int_param&#39;))
-        )
+        pneumocyte.pr_p_int = -math.expm1(
+            -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        )  # units: probability
 
         # initialize cells, placing one per epithelial voxel
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+        epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        rg.shuffle(epithelial_voxels)
+        for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint(&#39;count&#39;)]:
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
             y = state.grid.y[vox_y]
@@ -716,7 +717,7 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PneumocyteCellData(PhagocyteCellData):
-    PNEUMOCYTE_FIELDS = [
+    PNEUMOCYTE_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;status_iteration&#39;, np.uint),
         (&#39;tnfa&#39;, bool),
@@ -739,7 +740,7 @@ associated with each cell.</p>
 
         # ensure that these come in the correct order
         return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+            [initializer[key] for key, *_ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
         )</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -750,7 +751,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.pneumocyte.PneumocyteCellData.PNEUMOCYTE_FIELDS"><code class="name">var <span class="ident">PNEUMOCYTE_FIELDS</span></code></dt>
+<dt id="nlisim.modules.pneumocyte.PneumocyteCellData.PNEUMOCYTE_FIELDS"><code class="name">var <span class="ident">PNEUMOCYTE_FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -759,6 +760,7 @@ associated with each cell.</p>
 <ul class="hlist">
 <li><code><b><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
@@ -766,7 +768,6 @@ associated with each cell.</p>
 </li>
 <li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
 </ul>
 </li>
@@ -865,9 +866,10 @@ state must override the serialization mechanism with custom behavior.</p>
     time_to_change_state: float  # units: hours
     iter_to_change_state: int  # units: steps
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
-    # p_il8_qtty: float
-    p_tnf_qtty: float
-    pr_p_int: float</code></pre>
+    # p_il8_qtty: float # units: mol * cell^-1 * h^-1
+    p_tnf_qtty: float  # units: atto-mol * cell^-1 * h^-1
+    pr_p_int: float  # units: probability
+    pr_p_int_param: float</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -897,6 +899,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int"><code class="name">var <span class="ident">pr_p_int</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int_param"><code class="name">var <span class="ident">pr_p_int_param</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -971,6 +977,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.max_conidia" href="#nlisim.modules.pneumocyte.PneumocyteState.max_conidia">max_conidia</a></code></li>
 <li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.p_tnf_qtty" href="#nlisim.modules.pneumocyte.PneumocyteState.p_tnf_qtty">p_tnf_qtty</a></code></li>
 <li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int" href="#nlisim.modules.pneumocyte.PneumocyteState.pr_p_int">pr_p_int</a></code></li>
+<li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.pr_p_int_param" href="#nlisim.modules.pneumocyte.PneumocyteState.pr_p_int_param">pr_p_int_param</a></code></li>
 <li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.time_to_change_state" href="#nlisim.modules.pneumocyte.PneumocyteState.time_to_change_state">time_to_change_state</a></code></li>
 <li><code><a title="nlisim.modules.pneumocyte.PneumocyteState.time_to_rest" href="#nlisim.modules.pneumocyte.PneumocyteState.time_to_rest">time_to_rest</a></code></li>
 </ul>

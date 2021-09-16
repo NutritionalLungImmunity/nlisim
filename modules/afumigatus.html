@@ -31,17 +31,18 @@
 import math
 from queue import Queue
 import random
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
+from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
-from nlisim.modules.phagocyte import internalize_aspergillus
+from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import TissueType
@@ -49,13 +50,12 @@ from nlisim.util import TissueType
 
 @unique
 class AfumigatusCellStatus(IntEnum):
-    RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = 1
-    GERM_TUBE = 2
-    HYPHAE = 3
-    DYING = 4
-    DEAD = 5
-    STERILE_CONIDIA = 6
+    DEAD = 0
+    RESTING_CONIDIA = 1
+    SWELLING_CONIDIA = 2
+    GERM_TUBE = 3
+    HYPHAE = 4
+    STERILE_CONIDIA = 5
 
 
 @unique
@@ -110,8 +110,8 @@ def random_sphere_point() -&gt; np.ndarray:
 
 
 class AfumigatusCellData(CellData):
-    AFUMIGATUS_FIELDS: List[Union[Tuple[str, Any], Tuple[str, Any, Any]]] = [
-        (&#39;iron_pool&#39;, np.float64),
+    AFUMIGATUS_FIELDS: CellFields = [
+        (&#39;iron_pool&#39;, np.float64),  # units: atto-mol
         (&#39;state&#39;, np.uint8),
         (&#39;status&#39;, np.uint8),
         (&#39;is_root&#39;, bool),
@@ -201,28 +201,27 @@ def cell_list_factory(self: &#39;AfumigatusState&#39;) -&gt; AfumigatusCellList:
 @attrs(kw_only=True)
 class AfumigatusState(ModuleState):
     cells: AfumigatusCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    pr_ma_hyphae: float
-    pr_ma_hyphae_param: float
-    pr_ma_phag: float
-    pr_ma_phag_param: float
-    pr_branch: float
-    steps_to_bn_eval: int
-    hyphae_volume: float
-    hyphal_length: float
-    kd_lip: float
-    time_to_swelling: float
-    iter_to_swelling: int
-    time_to_germinate: float
-    iter_to_germinate: int
-    time_to_grow: float
-    iter_to_grow: int
+    pr_ma_hyphae: float  # units: probability
+    pr_ma_hyphae_param: float  # units: M
+    pr_ma_phag: float  # units: probability
+    pr_ma_phag_param: float  # units: M
+    pr_branch: float  # units: probability
+    steps_to_bn_eval: int  # units: steps
+    hyphal_length: float  # units: µm
+    hyphae_volume: float  # units: L
+    conidia_vol: float  # units: L
+    kd_lip: float  # units: aM
+    init_iron: float  # units: atto-mol
+    time_to_swelling: float  # units: hours
+    iter_to_swelling: int  # units: steps
+    time_to_germinate: float  # units: hours
+    iter_to_germinate: int  # units: steps
+    time_to_grow: float  # units: hours
+    iter_to_grow: int  # units: steps
     pr_aspergillus_change: float
-    init_iron: float
-    conidia_vol: float
-    rel_n_hyphae_int_unit_t: float
     rel_phag_affinity_unit_t: float
     phag_affinity_t: float
-    aspergillus_change_half_life: float
+    aspergillus_change_half_life: float  # units: hours
 
 
 class Afumigatus(ModuleModel):
@@ -238,52 +237,45 @@ class Afumigatus(ModuleModel):
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat(&#39;pr_ma_hyphae_param&#39;)
         afumigatus.pr_ma_phag_param = self.config.getfloat(&#39;pr_ma_phag_param&#39;)
-
-        afumigatus.pr_branch = self.config.getfloat(&#39;pr_branch&#39;)
-        afumigatus.steps_to_bn_eval = self.config.getint(&#39;steps_to_bn_eval&#39;)
-
-        afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)
-        afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)
-        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)
-
-        afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)
-
-        afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)
-        afumigatus.time_to_germinate = self.config.getfloat(&#39;time_to_germinate&#39;)
-        afumigatus.time_to_grow = self.config.getfloat(&#39;time_to_grow&#39;)
-        afumigatus.aspergillus_change_half_life = self.config.getfloat(
-            &#39;aspergillus_change_half_life&#39;
-        )
-
         afumigatus.phag_affinity_t = self.config.getfloat(&#39;phag_affinity_t&#39;)
 
-        # computed values
-        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
+        afumigatus.pr_branch = self.config.getfloat(&#39;pr_branch&#39;)  # units: probability
+        afumigatus.steps_to_bn_eval = self.config.getint(&#39;steps_to_bn_eval&#39;)  # units: steps
 
-        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
+        afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)  # units: L
+        afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)  # units: L
+        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)  # units: µm
+
+        afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)  # units: aM
+
+        afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)  # units: hours
+        afumigatus.time_to_germinate = self.config.getfloat(&#39;time_to_germinate&#39;)  # units: hours
+        afumigatus.time_to_grow = self.config.getfloat(&#39;time_to_grow&#39;)  # units: hours
+        afumigatus.aspergillus_change_half_life = self.config.getfloat(
+            &#39;aspergillus_change_half_life&#39;
+        )  # units: hours
+
+        # computed values
+        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol  # units: aM*L = atto-mols
+
         afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
-        afumigatus.pr_ma_hyphae = 1 - math.exp(
-            -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
-        )
-        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)
-        #  kd ~10x neut. (ref 71)
-        #  and below
-        afumigatus.pr_ma_phag = 1 - math.exp(
-            -afumigatus.rel_phag_affinity_unit_t
-            / (voxel_volume * self.config.getfloat(&#39;pr_ma_phag_param&#39;))
-        )
-        # pr_ma_phag = 1 - math.exp(-(
-        #            1 / voxel_vol) * rel_phag_affinity_unit_t / 1.32489230813214e+10)
-        # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
+        afumigatus.pr_ma_hyphae = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (afumigatus.pr_ma_hyphae_param * voxel_volume)
+        )  # exponent units:  ?/(?*L) = TODO
+        afumigatus.pr_ma_phag = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (voxel_volume * afumigatus.pr_ma_phag_param)
+        )  # exponent units:  ?/(?*L) = TODO
 
-        afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / self.time_step) - 2
-        )  # TODO: -2?
-        afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / self.time_step) - 2
-        )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        afumigatus.iter_to_swelling = max(
+            0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        afumigatus.iter_to_germinate = max(
+            0, int(afumigatus.time_to_germinate * (60 / self.time_step) - 2)
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        afumigatus.iter_to_grow = max(
+            0, int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        )  # units: hours * (min/hour) / (min/step) = steps
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
@@ -327,32 +319,26 @@ class Afumigatus(ModuleModel):
         lung_tissue: np.ndarray = state.lung_tissue
 
         # update live cells
-        for afumigatus_index in afumigatus.cells.alive():
+        for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
-            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
             voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
 
             # ------------ update cell
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_cell_index)
 
             # ------------ cell growth
             if (
                 afumigatus_cell[&#39;state&#39;] == AfumigatusCellState.FREE
                 and lung_tissue[tuple(voxel)] != TissueType.AIR
             ):
-                elongate(afumigatus_cell, afumigatus_index, afumigatus.iter_to_grow, afumigatus)
-                branch(afumigatus_cell, afumigatus_index, afumigatus.pr_branch, afumigatus)
+                elongate(
+                    afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
+                )
+                branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
-
-            # interact with iron
-            # TODO: this should never be reached?! Make sure that we release iron when we kill
-            #  the fungal cell and release cell&#39;s iron pool back to voxel
-            if afumigatus_cell[&#39;status&#39;] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
-                iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell[&#39;iron_pool&#39;]
-                afumigatus_cell[&#39;iron_pool&#39;] = 0.0
-                afumigatus_cell[&#39;dead&#39;] = True
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
@@ -366,8 +352,14 @@ class Afumigatus(ModuleModel):
                 }:
                     continue
 
-                self.fungus_macrophage_interaction(
-                    afumigatus, afumigatus_cell, afumigatus_index, macrophage, macrophage_cell
+                Afumigatus.fungus_macrophage_interaction(
+                    afumigatus,
+                    afumigatus_cell,
+                    afumigatus_cell_index,
+                    macrophage,
+                    macrophage_cell,
+                    iron,
+                    grid,
                 )
 
             # -----------
@@ -381,6 +373,8 @@ class Afumigatus(ModuleModel):
         afumigatus_cell_index: int,
         macrophage: &#39;MacrophageState&#39;,
         macrophage_cell: &#39;MacrophageCellData&#39;,
+        iron: IronState,
+        grid: RectangularGrid,
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
@@ -396,7 +390,7 @@ class Afumigatus(ModuleModel):
 
         # now they interact
 
-        internalize_aspergillus(
+        interact_with_aspergillus(
             macrophage_cell,
             afumigatus_cell,
             afumigatus_cell_index,
@@ -409,24 +403,49 @@ class Afumigatus(ModuleModel):
             afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
             and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
         ):
-            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-            if afumigatus_cell[&#39;next_septa&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-            if afumigatus_cell[&#39;next_branch&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+            Afumigatus.kill_fungal_cell(
+                afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+            )
 
-            # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-            #  macrophage gets them? I haven&#39;t done anything with that.
-            # TODO: this really should be spun off into its own method
-            parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-            if parent_id != -1:
-                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
-                    parent_cell[&#39;next_septa&#39;] = -1
-                elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
-                    parent_cell[&#39;next_branch&#39;] = -1
-                else:
-                    raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+    @staticmethod
+    def kill_fungal_cell(
+        afumigatus: AfumigatusState,
+        afumigatus_cell: AfumigatusCellData,
+        afumigatus_cell_index: int,
+        iron: IronState,
+        grid: RectangularGrid,
+    ):
+        &#34;&#34;&#34;Kill a fungal cell.
+
+        Unlinks the cell from its fungal tree and releases its iron.
+        &#34;&#34;&#34;
+        # unlink from any children
+        if afumigatus_cell[&#39;next_septa&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;previous_septa&#39;] = -1
+        if afumigatus_cell[&#39;next_branch&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;previous_septa&#39;] = -1
+
+        # unlink from parent, if exists
+        parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+        if parent_id != -1:
+            parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+            if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_septa&#39;] = -1
+                parent_cell[&#39;growable&#39;] = True
+            elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_branch&#39;] = -1
+                parent_cell[&#39;branchable&#39;] = True
+            else:
+                raise AssertionError(&#34;The fungal tree structure is malformed.&#34;)
+
+        # kill the cell off and release its iron
+        voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+        iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell[&#39;iron_pool&#39;]
+        afumigatus_cell[&#39;iron_pool&#39;] = 0.0
+        afumigatus_cell[&#39;dead&#39;] = True
+        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DEAD
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -520,7 +539,7 @@ class Afumigatus(ModuleModel):
 def cell_self_update(
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    afumigatus_index: int,
+    afumigatus_cell_index: int,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
 
@@ -547,14 +566,12 @@ def cell_self_update(
         afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell[&#39;activation_iteration&#39;] = 0
 
-    elif afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.DYING:
-        # TODO: Henrique said something about the DYING state not being necessary. First glance in
-        #  code suggests that this update only removes the cells from live counts
-        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DEAD
-
-    # TODO: this looks redundant/unnecessary. well, as long as we are careful about pruning the tree
+    # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
+    # it previously had one which was eaten.
     if afumigatus_cell[&#39;next_septa&#39;] == -1:
         afumigatus_cell[&#39;growable&#39;] = True
+    if afumigatus_cell[&#39;next_branch&#39;] == -1:
+        afumigatus_cell[&#39;branchable&#39;] = True
 
     # TODO: verify this, 1 turn on internalizing then free?
     if afumigatus_cell[&#39;state&#39;] in {
@@ -563,12 +580,9 @@ def cell_self_update(
     }:
         afumigatus_cell[&#39;state&#39;] = AfumigatusCellState.FREE
 
+    # Distribute iron evenly within fungal tree.
     # Note: called for every cell, but a no-op on non-root cells.
-    diffuse_iron(afumigatus_index, afumigatus)
-
-    # TODO: verify necessity. see above for next_septa
-    if afumigatus_cell[&#39;next_branch&#39;] == -1:
-        afumigatus_cell[&#39;growable&#39;] = True
+    diffuse_iron(afumigatus_cell_index, afumigatus)
 
 
 def process_boolean_network(
@@ -874,7 +888,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.cell_self_update"><code class="name flex">
-<span>def <span class="ident">cell_self_update</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_index: int) ‑> None</span>
+<span>def <span class="ident">cell_self_update</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_cell_index: int) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -885,7 +899,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 <pre><code class="python">def cell_self_update(
     afumigatus: AfumigatusState,
     afumigatus_cell: AfumigatusCellData,
-    afumigatus_index: int,
+    afumigatus_cell_index: int,
 ) -&gt; None:
     afumigatus_cell[&#39;activation_iteration&#39;] += 1
 
@@ -912,14 +926,12 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell[&#39;activation_iteration&#39;] = 0
 
-    elif afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.DYING:
-        # TODO: Henrique said something about the DYING state not being necessary. First glance in
-        #  code suggests that this update only removes the cells from live counts
-        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DEAD
-
-    # TODO: this looks redundant/unnecessary. well, as long as we are careful about pruning the tree
+    # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
+    # it previously had one which was eaten.
     if afumigatus_cell[&#39;next_septa&#39;] == -1:
         afumigatus_cell[&#39;growable&#39;] = True
+    if afumigatus_cell[&#39;next_branch&#39;] == -1:
+        afumigatus_cell[&#39;branchable&#39;] = True
 
     # TODO: verify this, 1 turn on internalizing then free?
     if afumigatus_cell[&#39;state&#39;] in {
@@ -928,12 +940,9 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
     }:
         afumigatus_cell[&#39;state&#39;] = AfumigatusCellState.FREE
 
+    # Distribute iron evenly within fungal tree.
     # Note: called for every cell, but a no-op on non-root cells.
-    diffuse_iron(afumigatus_index, afumigatus)
-
-    # TODO: verify necessity. see above for next_septa
-    if afumigatus_cell[&#39;next_branch&#39;] == -1:
-        afumigatus_cell[&#39;growable&#39;] = True</code></pre>
+    diffuse_iron(afumigatus_cell_index, afumigatus)</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.afumigatus.diffuse_iron"><code class="name flex">
@@ -1235,52 +1244,45 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat(&#39;pr_ma_hyphae_param&#39;)
         afumigatus.pr_ma_phag_param = self.config.getfloat(&#39;pr_ma_phag_param&#39;)
-
-        afumigatus.pr_branch = self.config.getfloat(&#39;pr_branch&#39;)
-        afumigatus.steps_to_bn_eval = self.config.getint(&#39;steps_to_bn_eval&#39;)
-
-        afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)
-        afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)
-        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)
-
-        afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)
-
-        afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)
-        afumigatus.time_to_germinate = self.config.getfloat(&#39;time_to_germinate&#39;)
-        afumigatus.time_to_grow = self.config.getfloat(&#39;time_to_grow&#39;)
-        afumigatus.aspergillus_change_half_life = self.config.getfloat(
-            &#39;aspergillus_change_half_life&#39;
-        )
-
         afumigatus.phag_affinity_t = self.config.getfloat(&#39;phag_affinity_t&#39;)
 
-        # computed values
-        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol
+        afumigatus.pr_branch = self.config.getfloat(&#39;pr_branch&#39;)  # units: probability
+        afumigatus.steps_to_bn_eval = self.config.getint(&#39;steps_to_bn_eval&#39;)  # units: steps
 
-        afumigatus.rel_n_hyphae_int_unit_t = self.time_step / 60  # per hour
+        afumigatus.conidia_vol = self.config.getfloat(&#39;conidia_vol&#39;)  # units: L
+        afumigatus.hyphae_volume = self.config.getfloat(&#39;hyphae_volume&#39;)  # units: L
+        afumigatus.hyphal_length = self.config.getfloat(&#39;hyphal_length&#39;)  # units: µm
+
+        afumigatus.kd_lip = self.config.getfloat(&#39;kd_lip&#39;)  # units: aM
+
+        afumigatus.time_to_swelling = self.config.getfloat(&#39;time_to_swelling&#39;)  # units: hours
+        afumigatus.time_to_germinate = self.config.getfloat(&#39;time_to_germinate&#39;)  # units: hours
+        afumigatus.time_to_grow = self.config.getfloat(&#39;time_to_grow&#39;)  # units: hours
+        afumigatus.aspergillus_change_half_life = self.config.getfloat(
+            &#39;aspergillus_change_half_life&#39;
+        )  # units: hours
+
+        # computed values
+        afumigatus.init_iron = afumigatus.kd_lip * afumigatus.conidia_vol  # units: aM*L = atto-mols
+
         afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
-        afumigatus.pr_ma_hyphae = 1 - math.exp(
-            -afumigatus.rel_n_hyphae_int_unit_t / (voxel_volume * afumigatus.pr_ma_hyphae_param)
-        )
-        # TODO: = 1 - math.exp(-(1 / voxel_vol) * rel_n_hyphae_int_unit_t / 5.02201143330207e+9)
-        #  kd ~10x neut. (ref 71)
-        #  and below
-        afumigatus.pr_ma_phag = 1 - math.exp(
-            -afumigatus.rel_phag_affinity_unit_t
-            / (voxel_volume * self.config.getfloat(&#39;pr_ma_phag_param&#39;))
-        )
-        # pr_ma_phag = 1 - math.exp(-(
-        #            1 / voxel_vol) * rel_phag_affinity_unit_t / 1.32489230813214e+10)
-        # 30 min --&gt; 1 - exp(-cells*t/kd) --&gt; kd = 1.32489230813214e+10
+        afumigatus.pr_ma_hyphae = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (afumigatus.pr_ma_hyphae_param * voxel_volume)
+        )  # exponent units:  ?/(?*L) = TODO
+        afumigatus.pr_ma_phag = -math.expm1(
+            -afumigatus.rel_phag_affinity_unit_t / (voxel_volume * afumigatus.pr_ma_phag_param)
+        )  # exponent units:  ?/(?*L) = TODO
 
-        afumigatus.iter_to_swelling = int(
-            afumigatus.time_to_swelling * (60 / self.time_step) - 2
-        )  # TODO: -2?
-        afumigatus.iter_to_germinate = int(
-            afumigatus.time_to_germinate * (60 / self.time_step) - 2
-        )  # TODO: -2?
-        afumigatus.iter_to_grow = int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        afumigatus.iter_to_swelling = max(
+            0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        afumigatus.iter_to_germinate = max(
+            0, int(afumigatus.time_to_germinate * (60 / self.time_step) - 2)
+        )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        afumigatus.iter_to_grow = max(
+            0, int(afumigatus.time_to_grow * 60 / self.time_step) - 1
+        )  # units: hours * (min/hour) / (min/step) = steps
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
@@ -1324,32 +1326,26 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         lung_tissue: np.ndarray = state.lung_tissue
 
         # update live cells
-        for afumigatus_index in afumigatus.cells.alive():
+        for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
-            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_index]
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
             voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
 
             # ------------ update cell
 
-            cell_self_update(afumigatus, afumigatus_cell, afumigatus_index)
+            cell_self_update(afumigatus, afumigatus_cell, afumigatus_cell_index)
 
             # ------------ cell growth
             if (
                 afumigatus_cell[&#39;state&#39;] == AfumigatusCellState.FREE
                 and lung_tissue[tuple(voxel)] != TissueType.AIR
             ):
-                elongate(afumigatus_cell, afumigatus_index, afumigatus.iter_to_grow, afumigatus)
-                branch(afumigatus_cell, afumigatus_index, afumigatus.pr_branch, afumigatus)
+                elongate(
+                    afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
+                )
+                branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
-
-            # interact with iron
-            # TODO: this should never be reached?! Make sure that we release iron when we kill
-            #  the fungal cell and release cell&#39;s iron pool back to voxel
-            if afumigatus_cell[&#39;status&#39;] in {AfumigatusCellStatus.DYING, AfumigatusCellStatus.DEAD}:
-                iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell[&#39;iron_pool&#39;]
-                afumigatus_cell[&#39;iron_pool&#39;] = 0.0
-                afumigatus_cell[&#39;dead&#39;] = True
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
@@ -1363,8 +1359,14 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
                 }:
                     continue
 
-                self.fungus_macrophage_interaction(
-                    afumigatus, afumigatus_cell, afumigatus_index, macrophage, macrophage_cell
+                Afumigatus.fungus_macrophage_interaction(
+                    afumigatus,
+                    afumigatus_cell,
+                    afumigatus_cell_index,
+                    macrophage,
+                    macrophage_cell,
+                    iron,
+                    grid,
                 )
 
             # -----------
@@ -1378,6 +1380,8 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
         afumigatus_cell_index: int,
         macrophage: &#39;MacrophageState&#39;,
         macrophage_cell: &#39;MacrophageCellData&#39;,
+        iron: IronState,
+        grid: RectangularGrid,
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
@@ -1393,7 +1397,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
 
         # now they interact
 
-        internalize_aspergillus(
+        interact_with_aspergillus(
             macrophage_cell,
             afumigatus_cell,
             afumigatus_cell_index,
@@ -1406,24 +1410,49 @@ def generate_branch_direction(cell_vec: np.ndarray) -&gt; np.ndarray:
             afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
             and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
         ):
-            afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-            if afumigatus_cell[&#39;next_septa&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-            if afumigatus_cell[&#39;next_branch&#39;] != -1:
-                afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+            Afumigatus.kill_fungal_cell(
+                afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+            )
 
-            # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-            #  macrophage gets them? I haven&#39;t done anything with that.
-            # TODO: this really should be spun off into its own method
-            parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-            if parent_id != -1:
-                parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-                if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
-                    parent_cell[&#39;next_septa&#39;] = -1
-                elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
-                    parent_cell[&#39;next_branch&#39;] = -1
-                else:
-                    raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)
+    @staticmethod
+    def kill_fungal_cell(
+        afumigatus: AfumigatusState,
+        afumigatus_cell: AfumigatusCellData,
+        afumigatus_cell_index: int,
+        iron: IronState,
+        grid: RectangularGrid,
+    ):
+        &#34;&#34;&#34;Kill a fungal cell.
+
+        Unlinks the cell from its fungal tree and releases its iron.
+        &#34;&#34;&#34;
+        # unlink from any children
+        if afumigatus_cell[&#39;next_septa&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;previous_septa&#39;] = -1
+        if afumigatus_cell[&#39;next_branch&#39;] != -1:
+            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;previous_septa&#39;] = -1
+
+        # unlink from parent, if exists
+        parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+        if parent_id != -1:
+            parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+            if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_septa&#39;] = -1
+                parent_cell[&#39;growable&#39;] = True
+            elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+                parent_cell[&#39;next_branch&#39;] = -1
+                parent_cell[&#39;branchable&#39;] = True
+            else:
+                raise AssertionError(&#34;The fungal tree structure is malformed.&#34;)
+
+        # kill the cell off and release its iron
+        voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+        iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell[&#39;iron_pool&#39;]
+        afumigatus_cell[&#39;iron_pool&#39;] = 0.0
+        afumigatus_cell[&#39;dead&#39;] = True
+        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DEAD
 
     def summary_stats(self, state: State) -&gt; Dict[str, Any]:
         afumigatus: AfumigatusState = state.afumigatus
@@ -1562,7 +1591,7 @@ state must override the serialization mechanism with custom behavior.</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="nlisim.modules.afumigatus.Afumigatus.fungus_macrophage_interaction"><code class="name flex">
-<span>def <span class="ident">fungus_macrophage_interaction</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_cell_index: int, macrophage: MacrophageState, macrophage_cell: MacrophageCellData)</span>
+<span>def <span class="ident">fungus_macrophage_interaction</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_cell_index: int, macrophage: MacrophageState, macrophage_cell: MacrophageCellData, iron: <a title="nlisim.modules.iron.IronState" href="iron.html#nlisim.modules.iron.IronState">IronState</a>, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1577,6 +1606,8 @@ def fungus_macrophage_interaction(
     afumigatus_cell_index: int,
     macrophage: &#39;MacrophageState&#39;,
     macrophage_cell: &#39;MacrophageCellData&#39;,
+    iron: IronState,
+    grid: RectangularGrid,
 ):
     from nlisim.modules.macrophage import PhagocyteStatus
 
@@ -1592,7 +1623,7 @@ def fungus_macrophage_interaction(
 
     # now they interact
 
-    internalize_aspergillus(
+    interact_with_aspergillus(
         macrophage_cell,
         afumigatus_cell,
         afumigatus_cell_index,
@@ -1605,24 +1636,60 @@ def fungus_macrophage_interaction(
         afumigatus_cell[&#39;status&#39;] == AfumigatusCellStatus.HYPHAE
         and macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE
     ):
-        afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DYING
-        if afumigatus_cell[&#39;next_septa&#39;] != -1:
-            afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
-        if afumigatus_cell[&#39;next_branch&#39;] != -1:
-            afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+        Afumigatus.kill_fungal_cell(
+            afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+        )</code></pre>
+</details>
+</dd>
+<dt id="nlisim.modules.afumigatus.Afumigatus.kill_fungal_cell"><code class="name flex">
+<span>def <span class="ident">kill_fungal_cell</span></span>(<span>afumigatus: <a title="nlisim.modules.afumigatus.AfumigatusState" href="#nlisim.modules.afumigatus.AfumigatusState">AfumigatusState</a>, afumigatus_cell: <a title="nlisim.modules.afumigatus.AfumigatusCellData" href="#nlisim.modules.afumigatus.AfumigatusCellData">AfumigatusCellData</a>, afumigatus_cell_index: int, iron: <a title="nlisim.modules.iron.IronState" href="iron.html#nlisim.modules.iron.IronState">IronState</a>, grid: <a title="nlisim.grid.RectangularGrid" href="../grid.html#nlisim.grid.RectangularGrid">RectangularGrid</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Kill a fungal cell.</p>
+<p>Unlinks the cell from its fungal tree and releases its iron.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def kill_fungal_cell(
+    afumigatus: AfumigatusState,
+    afumigatus_cell: AfumigatusCellData,
+    afumigatus_cell_index: int,
+    iron: IronState,
+    grid: RectangularGrid,
+):
+    &#34;&#34;&#34;Kill a fungal cell.
 
-        # TODO: what if the cell isn&#39;t a root? adding this. Will these be growable after a
-        #  macrophage gets them? I haven&#39;t done anything with that.
-        # TODO: this really should be spun off into its own method
-        parent_id = afumigatus_cell[&#39;previous_septa&#39;]
-        if parent_id != -1:
-            parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
-            if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
-                parent_cell[&#39;next_septa&#39;] = -1
-            elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
-                parent_cell[&#39;next_branch&#39;] = -1
-            else:
-                raise AssertionError(&#34;The fungal tree structure must be screwed up somehow&#34;)</code></pre>
+    Unlinks the cell from its fungal tree and releases its iron.
+    &#34;&#34;&#34;
+    # unlink from any children
+    if afumigatus_cell[&#39;next_septa&#39;] != -1:
+        afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;is_root&#39;] = True
+        afumigatus.cells[afumigatus_cell[&#39;next_septa&#39;]][&#39;previous_septa&#39;] = -1
+    if afumigatus_cell[&#39;next_branch&#39;] != -1:
+        afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;is_root&#39;] = True
+        afumigatus.cells[afumigatus_cell[&#39;next_branch&#39;]][&#39;previous_septa&#39;] = -1
+
+    # unlink from parent, if exists
+    parent_id = afumigatus_cell[&#39;previous_septa&#39;]
+    if parent_id != -1:
+        parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
+        if parent_cell[&#39;next_septa&#39;] == afumigatus_cell_index:
+            parent_cell[&#39;next_septa&#39;] = -1
+            parent_cell[&#39;growable&#39;] = True
+        elif parent_cell[&#39;next_branch&#39;] == afumigatus_cell_index:
+            parent_cell[&#39;next_branch&#39;] = -1
+            parent_cell[&#39;branchable&#39;] = True
+        else:
+            raise AssertionError(&#34;The fungal tree structure is malformed.&#34;)
+
+    # kill the cell off and release its iron
+    voxel: Voxel = grid.get_voxel(afumigatus_cell[&#39;point&#39;])
+    iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell[&#39;iron_pool&#39;]
+    afumigatus_cell[&#39;iron_pool&#39;] = 0.0
+    afumigatus_cell[&#39;dead&#39;] = True
+    afumigatus_cell[&#39;status&#39;] = AfumigatusCellStatus.DEAD</code></pre>
 </details>
 </dd>
 </dl>
@@ -1682,8 +1749,8 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class AfumigatusCellData(CellData):
-    AFUMIGATUS_FIELDS: List[Union[Tuple[str, Any], Tuple[str, Any, Any]]] = [
-        (&#39;iron_pool&#39;, np.float64),
+    AFUMIGATUS_FIELDS: CellFields = [
+        (&#39;iron_pool&#39;, np.float64),  # units: atto-mol
         (&#39;state&#39;, np.uint8),
         (&#39;status&#39;, np.uint8),
         (&#39;is_root&#39;, bool),
@@ -1767,7 +1834,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS"><code class="name">var <span class="ident">AFUMIGATUS_FIELDS</span> : List[Union[Tuple[str, Any], Tuple[str, Any, Any]]]</code></dt>
+<dt id="nlisim.modules.afumigatus.AfumigatusCellData.AFUMIGATUS_FIELDS"><code class="name">var <span class="ident">AFUMIGATUS_FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1946,13 +2013,12 @@ low-level array.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class AfumigatusCellStatus(IntEnum):
-    RESTING_CONIDIA = 0
-    SWELLING_CONIDIA = 1
-    GERM_TUBE = 2
-    HYPHAE = 3
-    DYING = 4
-    DEAD = 5
-    STERILE_CONIDIA = 6</code></pre>
+    DEAD = 0
+    RESTING_CONIDIA = 1
+    SWELLING_CONIDIA = 2
+    GERM_TUBE = 3
+    HYPHAE = 4
+    STERILE_CONIDIA = 5</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1963,10 +2029,6 @@ low-level array.</p>
 <h3>Class variables</h3>
 <dl>
 <dt id="nlisim.modules.afumigatus.AfumigatusCellStatus.DEAD"><code class="name">var <span class="ident">DEAD</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.afumigatus.AfumigatusCellStatus.DYING"><code class="name">var <span class="ident">DYING</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2009,28 +2071,27 @@ state must override the serialization mechanism with custom behavior.</p>
 </summary>
 <pre><code class="python">class AfumigatusState(ModuleState):
     cells: AfumigatusCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    pr_ma_hyphae: float
-    pr_ma_hyphae_param: float
-    pr_ma_phag: float
-    pr_ma_phag_param: float
-    pr_branch: float
-    steps_to_bn_eval: int
-    hyphae_volume: float
-    hyphal_length: float
-    kd_lip: float
-    time_to_swelling: float
-    iter_to_swelling: int
-    time_to_germinate: float
-    iter_to_germinate: int
-    time_to_grow: float
-    iter_to_grow: int
+    pr_ma_hyphae: float  # units: probability
+    pr_ma_hyphae_param: float  # units: M
+    pr_ma_phag: float  # units: probability
+    pr_ma_phag_param: float  # units: M
+    pr_branch: float  # units: probability
+    steps_to_bn_eval: int  # units: steps
+    hyphal_length: float  # units: µm
+    hyphae_volume: float  # units: L
+    conidia_vol: float  # units: L
+    kd_lip: float  # units: aM
+    init_iron: float  # units: atto-mol
+    time_to_swelling: float  # units: hours
+    iter_to_swelling: int  # units: steps
+    time_to_germinate: float  # units: hours
+    iter_to_germinate: int  # units: steps
+    time_to_grow: float  # units: hours
+    iter_to_grow: int  # units: steps
     pr_aspergillus_change: float
-    init_iron: float
-    conidia_vol: float
-    rel_n_hyphae_int_unit_t: float
     rel_phag_affinity_unit_t: float
     phag_affinity_t: float
-    aspergillus_change_half_life: float</code></pre>
+    aspergillus_change_half_life: float  # units: hours</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2103,10 +2164,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag_param"><code class="name">var <span class="ident">pr_ma_phag_param</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.afumigatus.AfumigatusState.rel_n_hyphae_int_unit_t"><code class="name">var <span class="ident">rel_n_hyphae_int_unit_t</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2310,6 +2367,7 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.Afumigatus.MacrophageCellData" href="#nlisim.modules.afumigatus.Afumigatus.MacrophageCellData">MacrophageCellData</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.Afumigatus.MacrophageState" href="#nlisim.modules.afumigatus.Afumigatus.MacrophageState">MacrophageState</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.Afumigatus.fungus_macrophage_interaction" href="#nlisim.modules.afumigatus.Afumigatus.fungus_macrophage_interaction">fungus_macrophage_interaction</a></code></li>
+<li><code><a title="nlisim.modules.afumigatus.Afumigatus.kill_fungal_cell" href="#nlisim.modules.afumigatus.Afumigatus.kill_fungal_cell">kill_fungal_cell</a></code></li>
 </ul>
 </li>
 <li>
@@ -2338,7 +2396,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <h4><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus" href="#nlisim.modules.afumigatus.AfumigatusCellStatus">AfumigatusCellStatus</a></code></h4>
 <ul class="two-column">
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus.DEAD" href="#nlisim.modules.afumigatus.AfumigatusCellStatus.DEAD">DEAD</a></code></li>
-<li><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus.DYING" href="#nlisim.modules.afumigatus.AfumigatusCellStatus.DYING">DYING</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus.GERM_TUBE" href="#nlisim.modules.afumigatus.AfumigatusCellStatus.GERM_TUBE">GERM_TUBE</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus.HYPHAE" href="#nlisim.modules.afumigatus.AfumigatusCellStatus.HYPHAE">HYPHAE</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusCellStatus.RESTING_CONIDIA" href="#nlisim.modules.afumigatus.AfumigatusCellStatus.RESTING_CONIDIA">RESTING_CONIDIA</a></code></li>
@@ -2366,7 +2423,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_hyphae_param" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_hyphae_param">pr_ma_hyphae_param</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag">pr_ma_phag</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag_param" href="#nlisim.modules.afumigatus.AfumigatusState.pr_ma_phag_param">pr_ma_phag_param</a></code></li>
-<li><code><a title="nlisim.modules.afumigatus.AfumigatusState.rel_n_hyphae_int_unit_t" href="#nlisim.modules.afumigatus.AfumigatusState.rel_n_hyphae_int_unit_t">rel_n_hyphae_int_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.rel_phag_affinity_unit_t" href="#nlisim.modules.afumigatus.AfumigatusState.rel_phag_affinity_unit_t">rel_phag_affinity_unit_t</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.steps_to_bn_eval" href="#nlisim.modules.afumigatus.AfumigatusState.steps_to_bn_eval">steps_to_bn_eval</a></code></li>
 <li><code><a title="nlisim.modules.afumigatus.AfumigatusState.time_to_germinate" href="#nlisim.modules.afumigatus.AfumigatusState.time_to_germinate">time_to_germinate</a></code></li>

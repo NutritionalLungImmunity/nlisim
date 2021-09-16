@@ -133,7 +133,7 @@ def apply_diffusion(
     laplacian: csr_matrix,
     diffusivity: float,
     dt: float,
-    tolerance: float = 1e-5,
+    tolerance: float = 1e-10,
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 
@@ -169,7 +169,7 @@ def apply_diffusion(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="nlisim.diffusion.apply_diffusion"><code class="name flex">
-<span>def <span class="ident">apply_diffusion</span></span>(<span>variable: numpy.ndarray, laplacian: scipy.sparse.csr.csr_matrix, diffusivity: float, dt: float, tolerance: float = 1e-05) ‑> numpy.ndarray</span>
+<span>def <span class="ident">apply_diffusion</span></span>(<span>variable: numpy.ndarray, laplacian: scipy.sparse.csr.csr_matrix, diffusivity: float, dt: float, tolerance: float = 1e-10) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Apply diffusion to a variable.</p>
@@ -193,7 +193,7 @@ iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivi
     laplacian: csr_matrix,
     diffusivity: float,
     dt: float,
-    tolerance: float = 1e-5,
+    tolerance: float = 1e-10,
 ) -&gt; np.ndarray:
     &#34;&#34;&#34;Apply diffusion to a variable.
 

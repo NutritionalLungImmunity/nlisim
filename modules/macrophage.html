@@ -35,7 +35,7 @@ import attr
 from attr import attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.phagocyte import (
@@ -51,20 +51,18 @@ from nlisim.util import choose_voxel_by_prob
 
 
 class MacrophageCellData(PhagocyteCellData):
-    MACROPHAGE_FIELDS = [
+    MACROPHAGE_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;state&#39;, np.uint8),
         (&#39;fpn&#39;, bool),
         (&#39;fpn_iteration&#39;, np.int64),
         (&#39;tf&#39;, bool),  # TODO: descriptive name, transferrin?
-        (&#39;move_step&#39;, np.float64),
-        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
         (&#39;tnfa&#39;, bool),
         (&#39;iron_pool&#39;, np.float64),
         (&#39;status_iteration&#39;, np.uint64),
+        (&#39;velocity&#39;, np.float64, 3),
     ]
 
-    # TODO: this implementation of inheritance is not so slick, redo with super?
     dtype = np.dtype(
         CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
     )  # type: ignore
@@ -80,11 +78,10 @@ class MacrophageCellData(PhagocyteCellData):
             &#39;fpn&#39;: kwargs.get(&#39;fpn&#39;, True),
             &#39;fpn_iteration&#39;: kwargs.get(&#39;fpn_iteration&#39;, 0),
             &#39;tf&#39;: kwargs.get(&#39;tf&#39;, False),
-            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
-            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+            &#39;velocity&#39;: kwargs.get(&#39;root&#39;, np.zeros(3, dtype=np.float64)),
         }
 
         # ensure that these come in the correct order
@@ -105,21 +102,24 @@ def cell_list_factory(self: &#39;MacrophageState&#39;) -&gt; MacrophageCellList:
 @attr.s(kw_only=True)
 class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    iter_to_rest: int
-    time_to_change_state: float
-    iter_to_change_state: int
-    ma_internal_iron: float
-    kd_ma_iron: float
-    ma_vol: float
-    ma_half_life: float
-    max_ma: int
-    min_ma: int
-    init_num_macrophages: int
+    time_to_rest: float  # units: min
+    iter_to_rest: int  # units: steps
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    ma_internal_iron: float  # units: atto-mols
+    prob_death_per_timestep: float  # units: probability * step^-1
+    max_ma: int  # units: count
+    min_ma: int  # units: count
+    init_num_macrophages: int  # units: count
     recruitment_rate: float
     rec_bias: float
     drift_bias: float
     ma_move_rate_act: float  # µm/min
     ma_move_rate_rest: float  # µm/min
+    half_life: float  # units: hours
+    # UNUSED:
+    # kd_ma_iron: float
+    # ma_vol: float  # units: pL
 
 
 class Macrophage(PhagocyteModel):
@@ -133,32 +133,41 @@ class Macrophage(PhagocyteModel):
         lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
-        macrophage.max_conidia = self.config.getint(&#39;max_conidia&#39;)
-        macrophage.iter_to_rest = self.config.getint(&#39;iter_to_rest&#39;)
-        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
-        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)
-        macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
-        macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+        macrophage.max_conidia = self.config.getint(
+            &#39;max_conidia&#39;
+        )  # (from phagocyte model) units: count
+        macrophage.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)  # units: min
+        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)  # units: hours
+        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)  # units: atto-mols
 
-        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)
-        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)
+        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)  # units: count
+        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)  # units: count
+        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)  # units: count
 
-        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)
         macrophage.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
         macrophage.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
-
         macrophage.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
+
         macrophage.ma_move_rate_act = self.config.getfloat(&#39;ma_move_rate_act&#39;)  # µm/min
         macrophage.ma_move_rate_rest = self.config.getfloat(&#39;ma_move_rate_rest&#39;)  # µm/min
 
+        macrophage.half_life = self.config.getfloat(&#39;ma_half_life&#39;)  # units: hours
+
+        # UNUSED:
+        # macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
+        # macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+
         # computed values
+        macrophage.iter_to_rest = int(
+            macrophage.time_to_rest / self.time_step
+        )  # units: min / (min/step) = steps
         macrophage.iter_to_change_state = int(
             macrophage.time_to_change_state * (60 / time_step_size)
-        )  # 4
+        )  # units: hours * (min/hour) / (min/step) = step
 
-        macrophage.ma_half_life = -math.log(0.5) / (
-            self.config.getfloat(&#39;ma_half_life&#39;) * (60 / time_step_size)
-        )
+        macrophage.prob_death_per_timestep = -math.log(0.5) / (
+            macrophage.half_life * (60 / time_step_size)
+        )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
 
         # initialize cells, placing them randomly
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -178,6 +187,7 @@ class Macrophage(PhagocyteModel):
                 x=x + rg.uniform(-dx / 2, dx / 2),
                 y=y + rg.uniform(-dy / 2, dy / 2),
                 z=z + rg.uniform(-dz / 2, dz / 2),
+                iron_pool=macrophage.ma_internal_iron,
             )
 
         return state
@@ -193,10 +203,9 @@ class Macrophage(PhagocyteModel):
 
             self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-            # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
             if (
                 num_cells_in_phagosome == 0
-                and rg.uniform() &lt; macrophage.ma_half_life
+                and rg.uniform() &lt; macrophage.prob_death_per_timestep
                 and len(macrophage.cells.alive()) &gt; macrophage.min_ma
             ):
                 macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
@@ -213,19 +222,17 @@ class Macrophage(PhagocyteModel):
             if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
                 max_move_step = (
                     macrophage.ma_move_rate_act * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             else:
                 max_move_step = (
                     macrophage.ma_move_rate_rest * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             move_step: int = rg.poisson(max_move_step)
             # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
                 self.single_step_move(
                     state, macrophage_cell, macrophage_cell_index, macrophage.cells
                 )
-            # TODO: understand the meaning of the parameter here: moving randomly n steps is
-            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_macrophages(state)
@@ -333,7 +340,6 @@ class Macrophage(PhagocyteModel):
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
-                # TODO: have placement fail due to overcrowding of cells
                 vox_z, vox_y, vox_x = coordinates
                 # the x,y,z coordinates are in the centers of the grids
                 z = state.grid.z[vox_z]
@@ -379,10 +385,11 @@ class Macrophage(PhagocyteModel):
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 
+        # compute chemokine influence on velocity, with some randomness.
         # macrophage has a non-zero probability of moving into non-air voxels.
         # if not any of these, stay in place. This could happen if e.g. you are
         # somehow stranded in air.
-        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel, corners=True))
         weights = np.array(
             [
                 0.0
@@ -412,7 +419,23 @@ class Macrophage(PhagocyteModel):
         if norm &gt; 0.0:
             dp_dt /= norm
 
-        return cell[&#39;point&#39;] + dp_dt
+        # average and re-normalize with existing velocity
+        dp_dt += cell[&#39;velocity&#39;]
+        norm = np.linalg.norm(dp_dt)
+        if norm &gt; 0.0:
+            dp_dt /= norm
+
+        # we need to determine if this movement will put us into an air voxel. This can happen
+        # when pushed there by momentum. If that happens, we stay in place and zero out the
+        # momentum. Otherwise, velocity is updated to dp/dt and movement is as expected.
+        new_position = cell[&#39;point&#39;] + dp_dt
+        new_voxel: Voxel = grid.get_voxel(new_position)
+        if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
+            cell[&#39;velocity&#39;][:] = np.zeros(3, dtype=np.float64)
+            return cell[&#39;point&#39;]
+        else:
+            cell[&#39;velocity&#39;][:] = dp_dt
+            return new_position
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
@@ -558,32 +581,41 @@ class Macrophage(PhagocyteModel):
         lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
 
-        macrophage.max_conidia = self.config.getint(&#39;max_conidia&#39;)
-        macrophage.iter_to_rest = self.config.getint(&#39;iter_to_rest&#39;)
-        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)
-        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)
-        macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
-        macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+        macrophage.max_conidia = self.config.getint(
+            &#39;max_conidia&#39;
+        )  # (from phagocyte model) units: count
+        macrophage.time_to_rest = self.config.getint(&#39;time_to_rest&#39;)  # units: min
+        macrophage.time_to_change_state = self.config.getint(&#39;time_to_change_state&#39;)  # units: hours
+        macrophage.ma_internal_iron = self.config.getfloat(&#39;ma_internal_iron&#39;)  # units: atto-mols
 
-        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)
-        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)
+        macrophage.max_ma = self.config.getint(&#39;max_ma&#39;)  # units: count
+        macrophage.min_ma = self.config.getint(&#39;min_ma&#39;)  # units: count
+        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)  # units: count
 
-        macrophage.init_num_macrophages = self.config.getint(&#39;init_num_macrophages&#39;)
         macrophage.recruitment_rate = self.config.getfloat(&#39;recruitment_rate&#39;)
         macrophage.rec_bias = self.config.getfloat(&#39;rec_bias&#39;)
-
         macrophage.drift_bias = self.config.getfloat(&#39;drift_bias&#39;)
+
         macrophage.ma_move_rate_act = self.config.getfloat(&#39;ma_move_rate_act&#39;)  # µm/min
         macrophage.ma_move_rate_rest = self.config.getfloat(&#39;ma_move_rate_rest&#39;)  # µm/min
 
+        macrophage.half_life = self.config.getfloat(&#39;ma_half_life&#39;)  # units: hours
+
+        # UNUSED:
+        # macrophage.kd_ma_iron = self.config.getfloat(&#39;kd_ma_iron&#39;)
+        # macrophage.ma_vol = self.config.getfloat(&#39;ma_vol&#39;)
+
         # computed values
+        macrophage.iter_to_rest = int(
+            macrophage.time_to_rest / self.time_step
+        )  # units: min / (min/step) = steps
         macrophage.iter_to_change_state = int(
             macrophage.time_to_change_state * (60 / time_step_size)
-        )  # 4
+        )  # units: hours * (min/hour) / (min/step) = step
 
-        macrophage.ma_half_life = -math.log(0.5) / (
-            self.config.getfloat(&#39;ma_half_life&#39;) * (60 / time_step_size)
-        )
+        macrophage.prob_death_per_timestep = -math.log(0.5) / (
+            macrophage.half_life * (60 / time_step_size)
+        )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
 
         # initialize cells, placing them randomly
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -603,6 +635,7 @@ class Macrophage(PhagocyteModel):
                 x=x + rg.uniform(-dx / 2, dx / 2),
                 y=y + rg.uniform(-dy / 2, dy / 2),
                 z=z + rg.uniform(-dz / 2, dz / 2),
+                iron_pool=macrophage.ma_internal_iron,
             )
 
         return state
@@ -618,10 +651,9 @@ class Macrophage(PhagocyteModel):
 
             self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-            # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
             if (
                 num_cells_in_phagosome == 0
-                and rg.uniform() &lt; macrophage.ma_half_life
+                and rg.uniform() &lt; macrophage.prob_death_per_timestep
                 and len(macrophage.cells.alive()) &gt; macrophage.min_ma
             ):
                 macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
@@ -638,19 +670,17 @@ class Macrophage(PhagocyteModel):
             if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
                 max_move_step = (
                     macrophage.ma_move_rate_act * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             else:
                 max_move_step = (
                     macrophage.ma_move_rate_rest * self.time_step
-                )  # (µm/min) * (min/step)
+                )  # (µm/min) * (min/step) = µm * step
             move_step: int = rg.poisson(max_move_step)
             # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
                 self.single_step_move(
                     state, macrophage_cell, macrophage_cell_index, macrophage.cells
                 )
-            # TODO: understand the meaning of the parameter here: moving randomly n steps is
-            #  different than moving n steps in a random direction. Which is it?
 
         # Recruitment
         self.recruit_macrophages(state)
@@ -758,7 +788,6 @@ class Macrophage(PhagocyteModel):
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
-                # TODO: have placement fail due to overcrowding of cells
                 vox_z, vox_y, vox_x = coordinates
                 # the x,y,z coordinates are in the centers of the grids
                 z = state.grid.z[vox_z]
@@ -804,10 +833,11 @@ class Macrophage(PhagocyteModel):
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 
+        # compute chemokine influence on velocity, with some randomness.
         # macrophage has a non-zero probability of moving into non-air voxels.
         # if not any of these, stay in place. This could happen if e.g. you are
         # somehow stranded in air.
-        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel, corners=True))
         weights = np.array(
             [
                 0.0
@@ -837,7 +867,23 @@ class Macrophage(PhagocyteModel):
         if norm &gt; 0.0:
             dp_dt /= norm
 
-        return cell[&#39;point&#39;] + dp_dt
+        # average and re-normalize with existing velocity
+        dp_dt += cell[&#39;velocity&#39;]
+        norm = np.linalg.norm(dp_dt)
+        if norm &gt; 0.0:
+            dp_dt /= norm
+
+        # we need to determine if this movement will put us into an air voxel. This can happen
+        # when pushed there by momentum. If that happens, we stay in place and zero out the
+        # momentum. Otherwise, velocity is updated to dp/dt and movement is as expected.
+        new_position = cell[&#39;point&#39;] + dp_dt
+        new_voxel: Voxel = grid.get_voxel(new_position)
+        if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
+            cell[&#39;velocity&#39;][:] = np.zeros(3, dtype=np.float64)
+            return cell[&#39;point&#39;]
+        else:
+            cell[&#39;velocity&#39;][:] = dp_dt
+            return new_position
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -&gt; None:
@@ -1028,10 +1074,9 @@ def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -
 
         self.update_status(state, macrophage_cell, num_cells_in_phagosome)
 
-        # TODO: this usage suggests &#39;half life&#39; should be &#39;prob death&#39;, real half life is 1/prob
         if (
             num_cells_in_phagosome == 0
-            and rg.uniform() &lt; macrophage.ma_half_life
+            and rg.uniform() &lt; macrophage.prob_death_per_timestep
             and len(macrophage.cells.alive()) &gt; macrophage.min_ma
         ):
             macrophage_cell[&#39;status&#39;] = PhagocyteStatus.DEAD
@@ -1048,19 +1093,17 @@ def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -
         if macrophage_cell[&#39;status&#39;] == PhagocyteStatus.ACTIVE:
             max_move_step = (
                 macrophage.ma_move_rate_act * self.time_step
-            )  # (µm/min) * (min/step)
+            )  # (µm/min) * (min/step) = µm * step
         else:
             max_move_step = (
                 macrophage.ma_move_rate_rest * self.time_step
-            )  # (µm/min) * (min/step)
+            )  # (µm/min) * (min/step) = µm * step
         move_step: int = rg.poisson(max_move_step)
         # move the cell 1 µm, move_step number of times
         for _ in range(move_step):
             self.single_step_move(
                 state, macrophage_cell, macrophage_cell_index, macrophage.cells
             )
-        # TODO: understand the meaning of the parameter here: moving randomly n steps is
-        #  different than moving n steps in a random direction. Which is it?
 
     # Recruitment
     self.recruit_macrophages(state)
@@ -1143,7 +1186,6 @@ def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -
         for coordinates in rg.choice(
             tuple(activation_voxels), size=number_to_recruit, replace=True
         ):
-            # TODO: have placement fail due to overcrowding of cells
             vox_z, vox_y, vox_x = coordinates
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
@@ -1213,10 +1255,11 @@ def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -
     lung_tissue: np.ndarray = state.lung_tissue
     voxel_volume: float = state.voxel_volume
 
+    # compute chemokine influence on velocity, with some randomness.
     # macrophage has a non-zero probability of moving into non-air voxels.
     # if not any of these, stay in place. This could happen if e.g. you are
     # somehow stranded in air.
-    nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel))
+    nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel, corners=True))
     weights = np.array(
         [
             0.0
@@ -1246,7 +1289,23 @@ def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -
     if norm &gt; 0.0:
         dp_dt /= norm
 
-    return cell[&#39;point&#39;] + dp_dt</code></pre>
+    # average and re-normalize with existing velocity
+    dp_dt += cell[&#39;velocity&#39;]
+    norm = np.linalg.norm(dp_dt)
+    if norm &gt; 0.0:
+        dp_dt /= norm
+
+    # we need to determine if this movement will put us into an air voxel. This can happen
+    # when pushed there by momentum. If that happens, we stay in place and zero out the
+    # momentum. Otherwise, velocity is updated to dp/dt and movement is as expected.
+    new_position = cell[&#39;point&#39;] + dp_dt
+    new_voxel: Voxel = grid.get_voxel(new_position)
+    if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
+        cell[&#39;velocity&#39;][:] = np.zeros(3, dtype=np.float64)
+        return cell[&#39;point&#39;]
+    else:
+        cell[&#39;velocity&#39;][:] = dp_dt
+        return new_position</code></pre>
 </details>
 </dd>
 <dt id="nlisim.modules.macrophage.Macrophage.update_status"><code class="name flex">
@@ -1398,20 +1457,18 @@ associated with each cell.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MacrophageCellData(PhagocyteCellData):
-    MACROPHAGE_FIELDS = [
+    MACROPHAGE_FIELDS: CellFields = [
         (&#39;status&#39;, np.uint8),
         (&#39;state&#39;, np.uint8),
         (&#39;fpn&#39;, bool),
         (&#39;fpn_iteration&#39;, np.int64),
         (&#39;tf&#39;, bool),  # TODO: descriptive name, transferrin?
-        (&#39;move_step&#39;, np.float64),
-        (&#39;max_move_step&#39;, np.float64),  # TODO: double check, might be int
         (&#39;tnfa&#39;, bool),
         (&#39;iron_pool&#39;, np.float64),
         (&#39;status_iteration&#39;, np.uint64),
+        (&#39;velocity&#39;, np.float64, 3),
     ]
 
-    # TODO: this implementation of inheritance is not so slick, redo with super?
     dtype = np.dtype(
         CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
     )  # type: ignore
@@ -1427,11 +1484,10 @@ associated with each cell.</p>
             &#39;fpn&#39;: kwargs.get(&#39;fpn&#39;, True),
             &#39;fpn_iteration&#39;: kwargs.get(&#39;fpn_iteration&#39;, 0),
             &#39;tf&#39;: kwargs.get(&#39;tf&#39;, False),
-            &#39;move_step&#39;: kwargs.get(&#39;move_step&#39;, 1.0),  # TODO: reasonable default?
-            &#39;max_move_step&#39;: kwargs.get(&#39;max_move_step&#39;, 10.0),  # TODO: reasonable default?
             &#39;tnfa&#39;: kwargs.get(&#39;tnfa&#39;, False),
             &#39;iron_pool&#39;: kwargs.get(&#39;iron_pool&#39;, 0.0),
             &#39;status_iteration&#39;: kwargs.get(&#39;status_iteration&#39;, 0),
+            &#39;velocity&#39;: kwargs.get(&#39;root&#39;, np.zeros(3, dtype=np.float64)),
         }
 
         # ensure that these come in the correct order
@@ -1447,7 +1503,7 @@ associated with each cell.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="nlisim.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS"><code class="name">var <span class="ident">MACROPHAGE_FIELDS</span></code></dt>
+<dt id="nlisim.modules.macrophage.MacrophageCellData.MACROPHAGE_FIELDS"><code class="name">var <span class="ident">MACROPHAGE_FIELDS</span> : List[Union[Tuple[str, numpy.dtype], Tuple[str, Type[Any]], Tuple[str, Type[Any], int], Tuple[str, str], Tuple[str, str, int]]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1456,6 +1512,7 @@ associated with each cell.</p>
 <ul class="hlist">
 <li><code><b><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="phagocyte.html#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></b></code>:
 <ul class="hlist">
+<li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell" href="../cell.html#nlisim.cell.CellData.create_cell">create_cell</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.create_cell_tuple" href="../cell.html#nlisim.cell.CellData.create_cell_tuple">create_cell_tuple</a></code></li>
 <li><code><a title="nlisim.modules.phagocyte.PhagocyteCellData.point_mask" href="../cell.html#nlisim.cell.CellData.point_mask">point_mask</a></code></li>
@@ -1463,7 +1520,6 @@ associated with each cell.</p>
 </li>
 <li><code><b><a title="nlisim.cell.CellData" href="../cell.html#nlisim.cell.CellData">CellData</a></b></code>:
 <ul class="hlist">
-<li><code><a title="nlisim.cell.CellData.FIELDS" href="../cell.html#nlisim.cell.CellData.FIELDS">FIELDS</a></code></li>
 <li><code><a title="nlisim.cell.CellData.dtype" href="../cell.html#nlisim.cell.CellData.dtype">dtype</a></code></li>
 </ul>
 </li>
@@ -1556,21 +1612,24 @@ state must override the serialization mechanism with custom behavior.</p>
 </summary>
 <pre><code class="python">class MacrophageState(PhagocyteModuleState):
     cells: MacrophageCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
-    iter_to_rest: int
-    time_to_change_state: float
-    iter_to_change_state: int
-    ma_internal_iron: float
-    kd_ma_iron: float
-    ma_vol: float
-    ma_half_life: float
-    max_ma: int
-    min_ma: int
-    init_num_macrophages: int
+    time_to_rest: float  # units: min
+    iter_to_rest: int  # units: steps
+    time_to_change_state: float  # units: hours
+    iter_to_change_state: int  # units: steps
+    ma_internal_iron: float  # units: atto-mols
+    prob_death_per_timestep: float  # units: probability * step^-1
+    max_ma: int  # units: count
+    min_ma: int  # units: count
+    init_num_macrophages: int  # units: count
     recruitment_rate: float
     rec_bias: float
     drift_bias: float
     ma_move_rate_act: float  # µm/min
-    ma_move_rate_rest: float  # µm/min</code></pre>
+    ma_move_rate_rest: float  # µm/min
+    half_life: float  # units: hours
+    # UNUSED:
+    # kd_ma_iron: float
+    # ma_vol: float  # units: pL</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1587,6 +1646,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.half_life"><code class="name">var <span class="ident">half_life</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="nlisim.modules.macrophage.MacrophageState.init_num_macrophages"><code class="name">var <span class="ident">init_num_macrophages</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1596,14 +1659,6 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.macrophage.MacrophageState.iter_to_rest"><code class="name">var <span class="ident">iter_to_rest</span> : int</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.kd_ma_iron"><code class="name">var <span class="ident">kd_ma_iron</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.ma_half_life"><code class="name">var <span class="ident">ma_half_life</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1619,15 +1674,15 @@ state must override the serialization mechanism with custom behavior.</p>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="nlisim.modules.macrophage.MacrophageState.ma_vol"><code class="name">var <span class="ident">ma_vol</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="nlisim.modules.macrophage.MacrophageState.max_ma"><code class="name">var <span class="ident">max_ma</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.macrophage.MacrophageState.min_ma"><code class="name">var <span class="ident">min_ma</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.prob_death_per_timestep"><code class="name">var <span class="ident">prob_death_per_timestep</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1640,6 +1695,10 @@ state must override the serialization mechanism with custom behavior.</p>
 <div class="desc"></div>
 </dd>
 <dt id="nlisim.modules.macrophage.MacrophageState.time_to_change_state"><code class="name">var <span class="ident">time_to_change_state</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="nlisim.modules.macrophage.MacrophageState.time_to_rest"><code class="name">var <span class="ident">time_to_rest</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1705,20 +1764,20 @@ state must override the serialization mechanism with custom behavior.</p>
 <ul class="">
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.cells" href="#nlisim.modules.macrophage.MacrophageState.cells">cells</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.drift_bias" href="#nlisim.modules.macrophage.MacrophageState.drift_bias">drift_bias</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.half_life" href="#nlisim.modules.macrophage.MacrophageState.half_life">half_life</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.init_num_macrophages" href="#nlisim.modules.macrophage.MacrophageState.init_num_macrophages">init_num_macrophages</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.iter_to_change_state" href="#nlisim.modules.macrophage.MacrophageState.iter_to_change_state">iter_to_change_state</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.iter_to_rest" href="#nlisim.modules.macrophage.MacrophageState.iter_to_rest">iter_to_rest</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.kd_ma_iron" href="#nlisim.modules.macrophage.MacrophageState.kd_ma_iron">kd_ma_iron</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_half_life" href="#nlisim.modules.macrophage.MacrophageState.ma_half_life">ma_half_life</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_internal_iron" href="#nlisim.modules.macrophage.MacrophageState.ma_internal_iron">ma_internal_iron</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_move_rate_act" href="#nlisim.modules.macrophage.MacrophageState.ma_move_rate_act">ma_move_rate_act</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_move_rate_rest" href="#nlisim.modules.macrophage.MacrophageState.ma_move_rate_rest">ma_move_rate_rest</a></code></li>
-<li><code><a title="nlisim.modules.macrophage.MacrophageState.ma_vol" href="#nlisim.modules.macrophage.MacrophageState.ma_vol">ma_vol</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.max_ma" href="#nlisim.modules.macrophage.MacrophageState.max_ma">max_ma</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.min_ma" href="#nlisim.modules.macrophage.MacrophageState.min_ma">min_ma</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.prob_death_per_timestep" href="#nlisim.modules.macrophage.MacrophageState.prob_death_per_timestep">prob_death_per_timestep</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.rec_bias" href="#nlisim.modules.macrophage.MacrophageState.rec_bias">rec_bias</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.recruitment_rate" href="#nlisim.modules.macrophage.MacrophageState.recruitment_rate">recruitment_rate</a></code></li>
 <li><code><a title="nlisim.modules.macrophage.MacrophageState.time_to_change_state" href="#nlisim.modules.macrophage.MacrophageState.time_to_change_state">time_to_change_state</a></code></li>
+<li><code><a title="nlisim.modules.macrophage.MacrophageState.time_to_rest" href="#nlisim.modules.macrophage.MacrophageState.time_to_rest">time_to_rest</a></code></li>
 </ul>
 </li>
 </ul>
