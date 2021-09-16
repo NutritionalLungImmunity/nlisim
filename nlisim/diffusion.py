@@ -104,7 +104,7 @@ def apply_diffusion(
     laplacian: csr_matrix,
     diffusivity: float,
     dt: float,
-    tolerance: float = 1e-5,
+    tolerance: float = 1e-10,
 ) -> np.ndarray:
     """Apply diffusion to a variable.
 

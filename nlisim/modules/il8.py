@@ -95,8 +95,6 @@ class IL8(ModuleModel):
                     neutrophil_cell['status'] = PhagocyteStatus.ACTIVE
                     neutrophil_cell['status_iteration'] = 0
 
-        # TODO: were macrophages and pneumocytes also going to secrete IL8?
-
         # Degrade IL8
         il8.grid *= il8.half_life_multiplier
         il8.grid *= turnover_rate(

@@ -5,7 +5,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellList
+from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.modules.phagocyte import (
@@ -20,7 +20,7 @@ from nlisim.util import TissueType, activation_function
 
 
 class PneumocyteCellData(PhagocyteCellData):
-    PNEUMOCYTE_FIELDS = [
+    PNEUMOCYTE_FIELDS: CellFields = [
         ('status', np.uint8),
         ('status_iteration', np.uint),
         ('tnfa', bool),
@@ -43,7 +43,7 @@ class PneumocyteCellData(PhagocyteCellData):
 
         # ensure that these come in the correct order
         return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, _ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
+            [initializer[key] for key, *_ in PneumocyteCellData.PNEUMOCYTE_FIELDS]
         )
 
 
@@ -65,9 +65,10 @@ class PneumocyteState(PhagocyteModuleState):
     time_to_change_state: float  # units: hours
     iter_to_change_state: int  # units: steps
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
-    # p_il8_qtty: float
-    p_tnf_qtty: float
-    pr_p_int: float
+    # p_il8_qtty: float # units: mol * cell^-1 * h^-1
+    p_tnf_qtty: float  # units: atto-mol * cell^-1 * h^-1
+    pr_p_int: float  # units: probability
+    pr_p_int_param: float
 
 
 class Pneumocyte(PhagocyteModel):
@@ -83,10 +84,10 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.max_conidia = self.config.getint('max_conidia')  # units: conidia
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')  # units: hours
         pneumocyte.time_to_change_state = self.config.getint('time_to_change_state')  # units: hours
-
-        # pneumocyte.p_il6_qtty = self.config.getfloat('p_il6_qtty')
-        # pneumocyte.p_il8_qtty = self.config.getfloat('p_il8_qtty')
-        pneumocyte.p_tnf_qtty = self.config.getfloat('p_tnf_qtty')
+        pneumocyte.p_tnf_qtty = self.config.getfloat(
+            'p_tnf_qtty'
+        )  # units: atto-mol * cell^-1 * h^-1
+        pneumocyte.pr_p_int_param = self.config.getfloat('pr_p_int_param')
 
         # computed values
         pneumocyte.iter_to_rest = int(
@@ -95,17 +96,17 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
-
-        rel_phag_afnt_unit_t = time_step_size / 60  # TODO: not like this
-        pneumocyte.pr_p_int = 1 - math.exp(
-            -rel_phag_afnt_unit_t / (voxel_volume * self.config.getfloat('pr_p_int_param'))
-        )
+        pneumocyte.pr_p_int = -math.expm1(
+            -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        )  # units: probability
 
         # initialize cells, placing one per epithelial voxel
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in zip(*np.where(lung_tissue == TissueType.EPITHELIUM)):
+        epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        rg.shuffle(epithelial_voxels)
+        for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint('count')]:
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
             y = state.grid.y[vox_y]

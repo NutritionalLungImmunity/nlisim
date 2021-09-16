@@ -106,7 +106,7 @@ class MIP2(ModuleModel):
                 and neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()
             ):
                 neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
-                neutrophil_cell['status_iteration'] = 0  # TODO: had 'todo: set_status' in orig
+                neutrophil_cell['status_iteration'] = 0
             elif neutrophil_cell['tnfa']:
                 mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
                 if neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform():

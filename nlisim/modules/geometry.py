@@ -30,7 +30,8 @@ class TissueTypes(Enum):
 class GeometryState(ModuleState):
     lung_tissue = grid_variable(np.dtype('int'))
 
-    @lung_tissue.validator
+    # noinspection PyUnusedLocal
+    @lung_tissue.validator  # type: ignore
     def _validate_lung_tissue(self, attribute: attr.Attribute, value: np.ndarray) -> None:
         if not TissueTypes.validate(value):
             raise ValidationError('input illegal')
@@ -50,7 +51,7 @@ class Geometry(ModuleModel):
         try:
             with h5py.File(path, 'r') as f:
                 if f['geometry'][:].shape != state.grid.shape:
-                    raise ValidationError("shape doesn\'t match")
+                    raise ValidationError("shape doesn't match")
                 geometry.lung_tissue[:] = f['geometry'][:]
         except Exception:
             print(f'Error loading geometry file at {path}.')

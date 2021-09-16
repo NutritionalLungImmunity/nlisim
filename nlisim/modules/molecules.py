@@ -1,6 +1,5 @@
-import math
-
 from attr import attrs
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import periodic_discrete_laplacian
@@ -10,12 +9,11 @@ from nlisim.state import State
 
 @attrs(kw_only=True, repr=False)
 class MoleculesState(ModuleState):
-    turnover_rate: float
-    cyt_bind_t: float
+    turnover_rate: float  # units: proportion
+    cyt_bind_t: float  # units: min
     rel_cyt_bind_unit_t: float
-    diffusion_constant: float
-    laplacian: csr_matrix
-    time_step: float
+    diffusion_constant: float  # units: µm^2 * min^-1
+    laplacian: csr_matrix  # units: µm^-2
 
 
 class Molecules(ModuleModel):
@@ -28,34 +26,26 @@ class Molecules(ModuleModel):
 
         molecules: MoleculesState = state.molecules
 
-        molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')
-        molecules.turnover_rate = self.config.getfloat('turnover_rate')
+        molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')  # units: min
+        # molecules.turnover_rate = self.config.getfloat('turnover_rate') # units: hours^-1
+        molecules.diffusion_constant = self.config.getfloat(
+            'diffusion_constant'
+        )  # units: µm^2 * min^-1
 
-        # TODO: there is an implicit assumption, below, that all molecules are on the
-        #  same time step. This is true on Aug 24, 2021.
+        # NOTE: there is an implicit assumption, below, that all molecules are on the
+        #  same time step and that time step is 2 minutes. This is true on Sept 13, 2021.
 
         # Computed values
-        molecules.rel_cyt_bind_unit_t = self.time_step / molecules.cyt_bind_t
-        # TODO: original comments as below. Is the param 0.2?
-        #  i.e. ...math.log(1+0.2)... Yes, 20% per hour
-        # 0.2 # 10.1124/jpet.118.250134 (approx) 0.2/h CHANGE!!!!
-        molecules.turnover_rate = 1 - math.log(1.2) / int(30 / 2.0)  # TODO: hard coded the 2.0 ...
-        molecules.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
-        molecules.time_step = self.time_step  # units: min/step
+        molecules.rel_cyt_bind_unit_t = (
+            self.time_step / molecules.cyt_bind_t
+        )  # units: (min/step) / (min) = 1/step
+        molecules.turnover_rate = 1 - np.log(1.2) / int(
+            30 / 2
+        )  # TODO: still hardcoding the 2, move to individual molecules?
 
         # construct the laplacian
-        tissue = state.lung_tissue
-        # laplacian units: 1/(µm^2)
         molecules.laplacian = periodic_discrete_laplacian(
-            grid=state.grid, mask=tissue != TissueType.AIR
-        )
+            grid=state.grid, mask=state.lung_tissue != TissueType.AIR
+        )  # units: µm^-2
 
-        # Note: Henrique's code did things a little differently here:
-        #  1) three 1D laplacians instead of one 3D laplacian
-        #  2) four implicit steps instead of one
-
-        return state
-
-    def advance(self, state: State, previous_time: float):
-        """Advance the state by a single time step."""
         return state

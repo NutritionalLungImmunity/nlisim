@@ -5,7 +5,7 @@ class Coordinate(np.ndarray):
     """A base class for representing 3D vectors as numpy arrays."""
 
     def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs) -> 'Coordinate':
-        return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)
+        return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)  # type: ignore
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.x}, {self.y}, {self.z})'

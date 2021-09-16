@@ -18,7 +18,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
     live_cells = cells.alive()
     cell_data = cell_data[live_cells]
 
-    fields = dict(cell_data.dtype.fields)
+    fields = dict(cell_data.dtype.fields)  # type: ignore
     fields.pop('point')
 
     points = vtkPoints()

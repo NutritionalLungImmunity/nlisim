@@ -62,8 +62,6 @@ class TAFC(ModuleModel):
             # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
             # = proportion * cell^-1 * step^-1
         )
-        # TODO: this has to be unnecessary:
-        tafc.tafcbi_uptake_rate_unit_t = min(1.0, tafc.tafcbi_uptake_rate_unit_t)
 
         return state
 
@@ -93,7 +91,7 @@ class TAFC(ModuleModel):
             substrate=transferrin.grid["TfFe2"],
             enzyme=tafc.grid["TAFC"],
             k_m=tafc.k_m_tf_tafc,
-            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
             voxel_volume=voxel_volume,
         )
@@ -138,10 +136,7 @@ class TAFC(ModuleModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
 
-            if (
-                afumigatus_cell['state'] != AfumigatusCellState.FREE
-                or afumigatus_cell['status'] == AfumigatusCellStatus.DYING
-            ):
+            if afumigatus_cell['state'] != AfumigatusCellState.FREE:
                 continue
 
             afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
