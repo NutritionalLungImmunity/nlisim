@@ -534,6 +534,9 @@ def cell_self_update(
     ):
         afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
+        afumigatus_cell['tip'] = (
+            afumigatus_cell['point'] + afumigatus.hyphal_length * afumigatus_cell['vec']
+        )
 
     # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
     # it previously had one which was eaten.
