@@ -757,13 +757,24 @@ def branch(
 
 
 def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
-    # form a random unit vector on a 45 degree cone
-    theta = rg.random() * 2 * np.pi
+    """
+    Generate a direction vector for branches.
+
+    Parameters
+    ----------
+    cell_vec : np.ndarray
+        a unit 3-vector
+
+    Returns
+    -------
+    np.ndarray
+        a random unit 3-vector at a 45 degree angle to `cell_vec`, sampled from the
+        uniform distribution
+    """
+    # norm should be approx 1, can delete for performance
+    cell_vec = cell_vec / np.linalg.norm(cell_vec)
 
     # create orthogonal basis adapted to cell's direction
-    cell_vec_norm = np.linalg.norm(cell_vec)
-    normed_cell_vec = cell_vec / cell_vec_norm
-
     # get first orthogonal vector
     u: np.ndarray
     epsilon = 0.1
@@ -772,24 +783,24 @@ def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
     # if the cell vector isn't too close to +/- e1, generate the orthogonal vector using the cross
     # product with e1. otherwise use e2. (we can't be too close to both)
     u = (
-        np.cross(normed_cell_vec, e1)
-        if (
-            np.linalg.norm(normed_cell_vec - e1) > epsilon
-            and np.linalg.norm(normed_cell_vec + e1) > epsilon
-        )
-        else np.cross(normed_cell_vec, e2)
+        np.cross(cell_vec, e1)
+        if (np.linalg.norm(cell_vec - e1) > epsilon and np.linalg.norm(cell_vec + e1) > epsilon)
+        else np.cross(cell_vec, e2)
     )
-    u /= np.linalg.norm(u)
+    u /= np.linalg.norm(u)  # unlike the other normalizations, this is non-optional
 
     # get second orthogonal vector, orthogonal to both the cell vec and the first orthogonal vector
-    v = np.cross(normed_cell_vec, u)
+    v = np.cross(cell_vec, u)
     # norm should be approx 1, can delete for performance
     v /= np.linalg.norm(v)
 
     # change of coordinates matrix
-    p_matrix = np.array([normed_cell_vec, u, v]).T
+    p_matrix = np.array([cell_vec, u, v]).T
+
+    # form a random unit vector on a 45 degree cone
+    theta = rg.random() * 2 * np.pi
     branch_direction = p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
     # norm should be approx 1, can delete for performance
     branch_direction /= np.linalg.norm(branch_direction)
 
-    return branch_direction * cell_vec_norm
+    return branch_direction
