@@ -766,26 +766,28 @@ def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
 
     # get first orthogonal vector
     u: np.ndarray
-    epsilon = 0.01
+    epsilon = 0.1
     e1 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
     e2 = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-    # if the cell vector isn't too close to e1, just use that. otherwise use e2.
-    # (we can't be too close to both)
-    if (
-        np.linalg.norm(normed_cell_vec - e1) > epsilon
-        or np.linalg.norm(normed_cell_vec + e1) > epsilon
-    ):
-        u = np.cross(normed_cell_vec, e1)
-    else:
-        u = np.cross(normed_cell_vec, e2)
+    # if the cell vector isn't too close to +/- e1, generate the orthogonal vector using the cross
+    # product with e1. otherwise use e2. (we can't be too close to both)
+    u = (
+        np.cross(normed_cell_vec, e1)
+        if (
+            np.linalg.norm(normed_cell_vec - e1) > epsilon
+            and np.linalg.norm(normed_cell_vec + e1) > epsilon
+        )
+        else np.cross(normed_cell_vec, e2)
+    )
+    u /= np.linalg.norm(u)
 
     # get second orthogonal vector
     v = np.cross(normed_cell_vec, u)
+    v /= np.linalg.norm(v)
 
     # change of coordinates matrix
     p_matrix = np.array([normed_cell_vec, u, v]).T
-    branch_direction = (
-        cell_vec_norm * p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
-    )
+    branch_direction = p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+    branch_direction /= np.linalg.norm(branch_direction)
 
-    return branch_direction
+    return branch_direction * cell_vec_norm
