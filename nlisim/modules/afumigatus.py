@@ -781,13 +781,15 @@ def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
     )
     u /= np.linalg.norm(u)
 
-    # get second orthogonal vector
+    # get second orthogonal vector, orthogonal to both the cell vec and the first orthogonal vector
     v = np.cross(normed_cell_vec, u)
+    # norm should be approx 1, can delete for performance
     v /= np.linalg.norm(v)
 
     # change of coordinates matrix
     p_matrix = np.array([normed_cell_vec, u, v]).T
     branch_direction = p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+    # norm should be approx 1, can delete for performance
     branch_direction /= np.linalg.norm(branch_direction)
 
     return branch_direction * cell_vec_norm
