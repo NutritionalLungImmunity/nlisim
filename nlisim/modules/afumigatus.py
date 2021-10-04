@@ -86,7 +86,6 @@ class AfumigatusCellData(CellData):
         ('state', np.uint8),
         ('status', np.uint8),
         ('is_root', bool),
-        ('tip', np.float64, 3),
         ('vec', np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
         ('growable', bool),
         ('branchable', bool),
@@ -109,8 +108,7 @@ class AfumigatusCellData(CellData):
             'state': kwargs.get('state', AfumigatusCellState.FREE),
             'status': kwargs.get('status', AfumigatusCellStatus.RESTING_CONIDIA),
             'is_root': kwargs.get('is_root', True),
-            'tip': kwargs.get('tip', np.zeros(3, dtype=np.float64)),
-            'vec': kwargs.get('vec', random_sphere_point()),  # dx, dy, dz
+            'vec': kwargs.get('vec', random_sphere_point()),  # dz, dy, dx
             'growable': kwargs.get('growable', True),
             'branchable': kwargs.get('branchable', False),
             'activation_iteration': kwargs.get('activation_iteration', 0),
@@ -390,15 +388,20 @@ class Afumigatus(ModuleModel):
         """
         # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
-            afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
-            afumigatus.cells[afumigatus_cell['next_septa']]['previous_septa'] = -1
+            next_septa = afumigatus_cell['next_septa']
+            afumigatus_cell['next_septa'] = -1
+            afumigatus.cells[next_septa]['is_root'] = True
+            afumigatus.cells[next_septa]['previous_septa'] = -1
         if afumigatus_cell['next_branch'] != -1:
-            afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
-            afumigatus.cells[afumigatus_cell['next_branch']]['previous_septa'] = -1
+            next_branch = afumigatus_cell['next_branch']
+            afumigatus_cell['next_branch'] = -1
+            afumigatus.cells[next_branch]['is_root'] = True
+            afumigatus.cells[next_branch]['previous_septa'] = -1
 
         # unlink from parent, if exists
         parent_id = afumigatus_cell['previous_septa']
         if parent_id != -1:
+            afumigatus_cell['previous_septa'] = -1
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
             if parent_cell['next_septa'] == afumigatus_cell_index:
                 parent_cell['next_septa'] = -1
@@ -534,9 +537,6 @@ def cell_self_update(
     ):
         afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
-        afumigatus_cell['tip'] = (
-            afumigatus_cell['point'] + afumigatus.hyphal_length * afumigatus_cell['vec']
-        )
 
     # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
     # it previously had one which was eaten.
@@ -684,7 +684,9 @@ def elongate(
             afumigatus_cell['growable'] = False
             afumigatus_cell['branchable'] = True
             afumigatus_cell['iron_pool'] /= 2.0
-            next_septa_base_point = afumigatus_cell['tip']
+            next_septa_base_point = (
+                afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
+            )
 
             # create the new septa
             next_septa: CellData = AfumigatusCellData.create_cell(
@@ -693,7 +695,6 @@ def elongate(
                     y=next_septa_base_point[1],
                     z=next_septa_base_point[0],
                 ),
-                tip=next_septa_base_point + hyphal_length * afumigatus_cell['vec'],
                 vec=afumigatus_cell['vec'],
                 iron_pool=0,
                 status=AfumigatusCellStatus.HYPHAE,
@@ -711,9 +712,6 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell['tip'] = (
-                afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
-            )
 
 
 def branch(
@@ -732,13 +730,12 @@ def branch(
     hyphal_length: float = afumigatus.hyphal_length
     if rg.random() < pr_branch:
         # now we branch
+        branch_base_point = afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell['vec'])
-        base_point = afumigatus_cell['tip']
 
         # create the new septa
         next_branch: CellData = AfumigatusCellData.create_cell(
-            point=Point(x=base_point[2], y=base_point[1], z=base_point[0]),
-            tip=base_point + hyphal_length * branch_vector,
+            point=Point(x=branch_base_point[2], y=branch_base_point[1], z=branch_base_point[0]),
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,
