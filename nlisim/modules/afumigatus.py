@@ -684,16 +684,16 @@ def elongate(
             afumigatus_cell['growable'] = False
             afumigatus_cell['branchable'] = True
             afumigatus_cell['iron_pool'] /= 2.0
-            next_septa_base_point = (
+            next_septa_center_point = (
                 afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
-            )
+            )  # center to center is two half hyphal lengths
 
             # create the new septa
             next_septa: CellData = AfumigatusCellData.create_cell(
                 point=Point(
-                    x=next_septa_base_point[2],
-                    y=next_septa_base_point[1],
-                    z=next_septa_base_point[0],
+                    x=next_septa_center_point[2],
+                    y=next_septa_center_point[1],
+                    z=next_septa_center_point[0],
                 ),
                 vec=afumigatus_cell['vec'],
                 iron_pool=0,
@@ -712,6 +712,9 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
+            # center of cell moves
+            afumigatus_cell['point'] += (hyphal_length / 2) * afumigatus_cell['vec']
+            afumigatus.cells.update_voxel_index([afumigatus_cell_index])
 
 
 def branch(
@@ -730,12 +733,18 @@ def branch(
     hyphal_length: float = afumigatus.hyphal_length
     if rg.random() < pr_branch:
         # now we branch
-        branch_base_point = afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell['vec'])
+        branch_center_point = (
+            afumigatus_cell['point']
+            + (hyphal_length / 2) * afumigatus_cell['vec']
+            + (hyphal_length / 2) * branch_vector
+        )  # center of new branch is offset by rest (half) of this septa and half of the new septa
 
         # create the new septa
         next_branch: CellData = AfumigatusCellData.create_cell(
-            point=Point(x=branch_base_point[2], y=branch_base_point[1], z=branch_base_point[0]),
+            point=Point(
+                x=branch_center_point[2], y=branch_center_point[1], z=branch_center_point[0]
+            ),
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,
