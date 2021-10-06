@@ -303,7 +303,8 @@ class Afumigatus(ModuleModel):
                 elongate(
                     afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
                 )
-                branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
+                if afumigatus_cell['next_septa'] != -1:  # only branch if we have already elongated
+                    branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
 
