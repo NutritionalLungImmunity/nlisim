@@ -87,8 +87,6 @@ class AfumigatusCellData(CellData):
         ('status', np.uint8),
         ('is_root', bool),
         ('vec', np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
-        ('growable', bool),
-        ('branchable', bool),
         ('activation_iteration', np.int64),
         ('growth_iteration', np.int64),
         ('boolean_network', 'b1', len(NetworkSpecies)),
@@ -109,8 +107,6 @@ class AfumigatusCellData(CellData):
             'status': kwargs.get('status', AfumigatusCellStatus.RESTING_CONIDIA),
             'is_root': kwargs.get('is_root', True),
             'vec': kwargs.get('vec', random_sphere_point()),  # dz, dy, dx
-            'growable': kwargs.get('growable', True),
-            'branchable': kwargs.get('branchable', False),
             'activation_iteration': kwargs.get('activation_iteration', 0),
             'growth_iteration': kwargs.get('growth_iteration', 0),
             'boolean_network': kwargs.get('boolean_network', cls.initial_boolean_network()),
@@ -406,10 +402,8 @@ class Afumigatus(ModuleModel):
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
             if parent_cell['next_septa'] == afumigatus_cell_index:
                 parent_cell['next_septa'] = -1
-                parent_cell['growable'] = True
             elif parent_cell['next_branch'] == afumigatus_cell_index:
                 parent_cell['next_branch'] = -1
-                parent_cell['branchable'] = True
             else:
                 raise AssertionError("The fungal tree structure is malformed.")
 
@@ -539,13 +533,6 @@ def cell_self_update(
         afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
 
-    # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
-    # it previously had one which was eaten.
-    if afumigatus_cell['next_septa'] == -1:
-        afumigatus_cell['growable'] = True
-    if afumigatus_cell['next_branch'] == -1:
-        afumigatus_cell['branchable'] = True
-
     # TODO: verify this, 1 turn on internalizing then free?
     if afumigatus_cell['state'] in {
         AfumigatusCellState.INTERNALIZING,
@@ -671,7 +658,7 @@ def elongate(
     afumigatus: AfumigatusState,
 ):
     if (
-        not afumigatus_cell['growable']
+        afumigatus_cell['next_septa'] != -1  # already has a next septa
         or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]
     ):
         return
@@ -682,8 +669,6 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['growth_iteration'] = 0
-            afumigatus_cell['growable'] = False
-            afumigatus_cell['branchable'] = True
             afumigatus_cell['iron_pool'] /= 2.0
             next_septa_center_point = (
                 afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
@@ -725,7 +710,7 @@ def branch(
     afumigatus: AfumigatusState,
 ):
     if (
-        not afumigatus_cell['branchable']
+        afumigatus_cell['next_branch'] != -1  # if it already has a branch
         or afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE
         or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]
     ):
@@ -758,9 +743,6 @@ def branch(
         # link them together
         afumigatus_cell['next_branch'] = next_branch_id
         next_branch['previous_septa'] = afumigatus_cell_index
-
-    # only get one shot at branching
-    afumigatus_cell['branchable'] = False
 
 
 def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
