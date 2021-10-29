@@ -454,7 +454,7 @@ class Neutrophil(PhagocyteModel):
         number_to_recruit = np.random.poisson(avg) if avg > 0 else 0
         if number_to_recruit <= 0:
             return
-        # 2. get voxels for new macrophages, based on activation
+        # 2. get voxels for new neutrophils, based on activation
         activation_voxels = tuple(
             zip(
                 *np.where(

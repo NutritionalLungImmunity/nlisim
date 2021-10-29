@@ -52,7 +52,7 @@ class Transferrin(ModuleModel):
 
     def initialize(self, state: State) -> State:
         transferrin: TransferrinState = state.transferrin
-        voxel_volume = state.voxel_volume
+        voxel_volume: float = state.voxel_volume
 
         # config file values
         transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
