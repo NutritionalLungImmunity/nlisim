@@ -113,7 +113,7 @@ class EpithelialCell(ModuleModel):
         )  # units: min / (min/step) = steps
 
 
-        # initialize cells, placing them randomly
+        # initialize cells TODO: This is dumb. Do something that makes sense.
         locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
