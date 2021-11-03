@@ -61,6 +61,11 @@ class PhagocyteModel(ModuleModel):
             the global simulation state
         cell : PhagocyteCellData
             the cell to move
+        cell_index : int
+            index of cell in cell_list
+        cell_list : CellList
+            the CellList for the cell-type (macrophage/neutrophil/etc) of cell
+
 
         Returns
         -------
@@ -131,7 +136,9 @@ class PhagocyteStatus(IntEnum):
 
 # noinspection PyUnresolvedReferences
 def interact_with_aspergillus(
+    *,
     phagocyte_cell: PhagocyteCellData,
+    phagocyte_cell_index: int,
     aspergillus_cell: 'AfumigatusCellData',
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
@@ -143,6 +150,7 @@ def interact_with_aspergillus(
     Parameters
     ----------
     phagocyte_cell : PhagocyteCellData
+    phagocyte_cell_index: int
     aspergillus_cell : AfumigatusCellData
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
@@ -173,6 +181,9 @@ def interact_with_aspergillus(
                 # sorting makes sure that an 'empty' i.e. -1 slot is first
                 phagocyte_cell['phagosome'].sort()
                 phagocyte_cell['phagosome'][0] = aspergillus_cell_index
+                # move the phagocyte to the location of the aspergillus
+                phagocyte_cell['point'] = aspergillus_cell['point']
+                phagocyte.cells.update_voxel_index([phagocyte_cell_index])
 
     # All phagocytes are activated by their interaction, except with resting conidia
     if aspergillus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA:
