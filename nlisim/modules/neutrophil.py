@@ -218,6 +218,8 @@ class Neutrophil(PhagocyteModel):
                         if rg.uniform() < neutrophil.pr_n_hyphae:
                             interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
+                                phagocyte_cell_index=neutrophil_cell_index,
+                                phagocyte_cells=neutrophil.cells,
                                 aspergillus_cell=aspergillus_cell,
                                 aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,
@@ -236,6 +238,8 @@ class Neutrophil(PhagocyteModel):
                         if rg.uniform() < neutrophil.pr_n_phagocyte:
                             interact_with_aspergillus(
                                 phagocyte_cell=neutrophil_cell,
+                                phagocyte_cell_index=neutrophil_cell_index,
+                                phagocyte_cells=neutrophil.cells,
                                 aspergillus_cell=aspergillus_cell,
                                 aspergillus_cell_index=aspergillus_cell_index,
                                 phagocyte=neutrophil,

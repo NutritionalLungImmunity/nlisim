@@ -317,13 +317,14 @@ class Afumigatus(ModuleModel):
                     continue
 
                 Afumigatus.fungus_macrophage_interaction(
-                    afumigatus,
-                    afumigatus_cell,
-                    afumigatus_cell_index,
-                    macrophage,
-                    macrophage_cell,
-                    iron,
-                    grid,
+                    afumigatus=afumigatus,
+                    afumigatus_cell=afumigatus_cell,
+                    afumigatus_cell_index=afumigatus_cell_index,
+                    macrophage=macrophage,
+                    macrophage_cell=macrophage_cell,
+                    macrophage_cell_index=macrophage_index,
+                    iron=iron,
+                    grid=grid,
                 )
 
             # -----------
@@ -337,6 +338,7 @@ class Afumigatus(ModuleModel):
         afumigatus_cell_index: int,
         macrophage: 'MacrophageState',
         macrophage_cell: 'MacrophageCellData',
+        macrophage_cell_index: int,
         iron: IronState,
         grid: RectangularGrid,
     ):
@@ -355,10 +357,12 @@ class Afumigatus(ModuleModel):
         # now they interact
 
         interact_with_aspergillus(
-            macrophage_cell,
-            afumigatus_cell,
-            afumigatus_cell_index,
-            macrophage,
+            phagocyte_cell=macrophage_cell,
+            phagocyte_cell_index=macrophage_cell_index,
+            phagocyte_cells=macrophage.cells,
+            aspergillus_cell=afumigatus_cell,
+            aspergillus_cell_index=afumigatus_cell_index,
+            phagocyte=macrophage,
             phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE,
         )
 
@@ -761,7 +765,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
         uniform distribution
     """
     # norm should be approx 1, can delete for performance
-    cell_vec = cell_vec / np.linalg.norm(cell_vec)
+    cell_vec /= np.linalg.norm(cell_vec)
 
     # create orthogonal basis adapted to cell's direction
     # get first orthogonal vector
