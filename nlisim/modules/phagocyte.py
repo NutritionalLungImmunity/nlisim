@@ -139,6 +139,7 @@ def interact_with_aspergillus(
     *,
     phagocyte_cell: PhagocyteCellData,
     phagocyte_cell_index: int,
+    phagocyte_cells: CellList,
     aspergillus_cell: 'AfumigatusCellData',
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
@@ -183,7 +184,7 @@ def interact_with_aspergillus(
                 phagocyte_cell['phagosome'][0] = aspergillus_cell_index
                 # move the phagocyte to the location of the aspergillus
                 phagocyte_cell['point'] = aspergillus_cell['point']
-                phagocyte.cells.update_voxel_index([phagocyte_cell_index])
+                phagocyte_cells.update_voxel_index([phagocyte_cell_index])
 
     # All phagocytes are activated by their interaction, except with resting conidia
     if aspergillus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA:

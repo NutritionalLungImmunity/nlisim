@@ -359,6 +359,7 @@ class Afumigatus(ModuleModel):
         interact_with_aspergillus(
             phagocyte_cell=macrophage_cell,
             phagocyte_cell_index=macrophage_cell_index,
+            phagocyte_cells=macrophage.cells,
             aspergillus_cell=afumigatus_cell,
             aspergillus_cell_index=afumigatus_cell_index,
             phagocyte=macrophage,
@@ -764,7 +765,7 @@ def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
         uniform distribution
     """
     # norm should be approx 1, can delete for performance
-    cell_vec = cell_vec / np.linalg.norm(cell_vec)
+    cell_vec /= np.linalg.norm(cell_vec)
 
     # create orthogonal basis adapted to cell's direction
     # get first orthogonal vector
