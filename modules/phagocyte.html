@@ -90,6 +90,11 @@ class PhagocyteModel(ModuleModel):
             the global simulation state
         cell : PhagocyteCellData
             the cell to move
+        cell_index : int
+            index of cell in cell_list
+        cell_list : CellList
+            the CellList for the cell-type (macrophage/neutrophil/etc) of cell
+
 
         Returns
         -------
@@ -160,7 +165,10 @@ class PhagocyteStatus(IntEnum):
 
 # noinspection PyUnresolvedReferences
 def interact_with_aspergillus(
+    *,
     phagocyte_cell: PhagocyteCellData,
+    phagocyte_cell_index: int,
+    phagocyte_cells: CellList,
     aspergillus_cell: &#39;AfumigatusCellData&#39;,
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
@@ -172,6 +180,7 @@ def interact_with_aspergillus(
     Parameters
     ----------
     phagocyte_cell : PhagocyteCellData
+    phagocyte_cell_index: int
     aspergillus_cell : AfumigatusCellData
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
@@ -202,6 +211,9 @@ def interact_with_aspergillus(
                 # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
                 phagocyte_cell[&#39;phagosome&#39;].sort()
                 phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
+                # move the phagocyte to the location of the aspergillus
+                phagocyte_cell[&#39;point&#39;] = aspergillus_cell[&#39;point&#39;]
+                phagocyte_cells.update_voxel_index([phagocyte_cell_index])
 
     # All phagocytes are activated by their interaction, except with resting conidia
     if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
@@ -226,13 +238,15 @@ def interact_with_aspergillus(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="nlisim.modules.phagocyte.interact_with_aspergillus"><code class="name flex">
-<span>def <span class="ident">interact_with_aspergillus</span></span>(<span>phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, aspergillus_cell: AfumigatusCellData, aspergillus_cell_index: int, phagocyte: <a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a>, phagocytize: bool = False)</span>
+<span>def <span class="ident">interact_with_aspergillus</span></span>(<span>*, phagocyte_cell: <a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a>, phagocyte_cell_index: int, phagocyte_cells: <a title="nlisim.cell.CellList" href="../cell.html#nlisim.cell.CellList">CellList</a>, aspergillus_cell: AfumigatusCellData, aspergillus_cell_index: int, phagocyte: <a title="nlisim.modules.phagocyte.PhagocyteModuleState" href="#nlisim.modules.phagocyte.PhagocyteModuleState">PhagocyteModuleState</a>, phagocytize: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Possibly have a phagocyte phagocytize a fungal cell.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>phagocyte_cell</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>phagocyte_cell_index</code></strong> :&ensp;<code>int</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>aspergillus_cell</code></strong> :&ensp;<code>AfumigatusCellData</code></dt>
 <dd>&nbsp;</dd>
@@ -248,7 +262,10 @@ def interact_with_aspergillus(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def interact_with_aspergillus(
+    *,
     phagocyte_cell: PhagocyteCellData,
+    phagocyte_cell_index: int,
+    phagocyte_cells: CellList,
     aspergillus_cell: &#39;AfumigatusCellData&#39;,
     aspergillus_cell_index: int,
     phagocyte: PhagocyteModuleState,
@@ -260,6 +277,7 @@ def interact_with_aspergillus(
     Parameters
     ----------
     phagocyte_cell : PhagocyteCellData
+    phagocyte_cell_index: int
     aspergillus_cell : AfumigatusCellData
     aspergillus_cell_index : int
     phagocyte : PhagocyteState
@@ -290,6 +308,9 @@ def interact_with_aspergillus(
                 # sorting makes sure that an &#39;empty&#39; i.e. -1 slot is first
                 phagocyte_cell[&#39;phagosome&#39;].sort()
                 phagocyte_cell[&#39;phagosome&#39;][0] = aspergillus_cell_index
+                # move the phagocyte to the location of the aspergillus
+                phagocyte_cell[&#39;point&#39;] = aspergillus_cell[&#39;point&#39;]
+                phagocyte_cells.update_voxel_index([phagocyte_cell_index])
 
     # All phagocytes are activated by their interaction, except with resting conidia
     if aspergillus_cell[&#39;status&#39;] == AfumigatusCellStatus.RESTING_CONIDIA:
@@ -425,6 +446,11 @@ associated with each cell.</p>
             the global simulation state
         cell : PhagocyteCellData
             the cell to move
+        cell_index : int
+            index of cell in cell_list
+        cell_list : CellList
+            the CellList for the cell-type (macrophage/neutrophil/etc) of cell
+
 
         Returns
         -------
@@ -545,6 +571,10 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
 <dd>the global simulation state</dd>
 <dt><strong><code>cell</code></strong> :&ensp;<code><a title="nlisim.modules.phagocyte.PhagocyteCellData" href="#nlisim.modules.phagocyte.PhagocyteCellData">PhagocyteCellData</a></code></dt>
 <dd>the cell to move</dd>
+<dt><strong><code>cell_index</code></strong> :&ensp;<code>int</code></dt>
+<dd>index of cell in cell_list</dd>
+<dt><strong><code>cell_list</code></strong> :&ensp;<code>CellList</code></dt>
+<dd>the CellList for the cell-type (macrophage/neutrophil/etc) of cell</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -569,6 +599,11 @@ def release_phagosome(state: State, phagocyte_cell: PhagocyteCellData) -&gt; Non
         the global simulation state
     cell : PhagocyteCellData
         the cell to move
+    cell_index : int
+        index of cell in cell_list
+    cell_list : CellList
+        the CellList for the cell-type (macrophage/neutrophil/etc) of cell
+
 
     Returns
     -------
