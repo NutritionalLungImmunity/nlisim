@@ -7,12 +7,14 @@ Created on Mon Oct 25 12:36:15 2021
 """
 
 import math
-from typing import Any, Dict
+from enum import IntEnum
+from typing import Any, Dict, Tuple
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
+from nlisim.cell import CellData, CellFields
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
@@ -25,10 +27,14 @@ from nlisim.state import State
 from nlisim.util import TissueType, activation_function
 
 
-class FibroblastCellData(PhagocyteCellData):
-    MACROPHAGE_FIELDS: CellFields = [
+class FibroblastStatus(IntEnum):
+    RESTING = 0
+    ACTIVE = 1
+
+
+class FibroblastCellData(CellData):
+    FIBROBLAST_FIELDS: CellFields = [
         ('status', np.uint8),
-        ('state', np.uint8),
         ('fpn', bool),
         ('fpn_iteration', np.int64),
         ('tf', bool),  # TODO: descriptive name, transferrin?
@@ -36,11 +42,10 @@ class FibroblastCellData(PhagocyteCellData):
         ('iron_pool', np.float64),
         ('status_iteration', np.uint64),
         ('velocity', np.float64, 3),
+        ('color', 'red', 'puce', 'green'),
     ]
 
-    dtype = np.dtype(
-        CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
-    )  # type: ignore
+    dtype = np.dtype(CellData.FIELDS + FIBROBLAST_FIELDS, align=True)  # type: ignore
 
     @classmethod
     def create_cell_tuple(
@@ -48,8 +53,7 @@ class FibroblastCellData(PhagocyteCellData):
         **kwargs,
     ) -> Tuple:
         initializer = {
-            'status': kwargs.get('status', PhagocyteStatus.RESTING),
-            'state': kwargs.get('state', PhagocyteState.FREE),
+            'status': kwargs.get('status', FibroblastStatus.RESTING),
             'fpn': kwargs.get('fpn', True),
             'fpn_iteration': kwargs.get('fpn_iteration', 0),
             'tf': kwargs.get('tf', False),
@@ -60,7 +64,6 @@ class FibroblastCellData(PhagocyteCellData):
         }
 
         # ensure that these come in the correct order
-        return PhagocyteCellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, *_ in MacrophageCellData.MACROPHAGE_FIELDS]
+        return CellData.create_cell_tuple(**kwargs) + tuple(
+            [initializer[key] for key, *_ in FibroblastCellData.FIBROBLAST_FIELDS]
         )
-
