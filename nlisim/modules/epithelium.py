@@ -36,6 +36,7 @@ class EpithelialCellStatus(IntEnum):
     ANERGIC = 8
     INTERACTING = 9
 
+
 BOOL_NET_SIZE = 4
 NUM_CONNECTIONS = 10
 
@@ -82,7 +83,7 @@ class EpithelialCellList(CellList):
     CellDataClass = EpithelialCellData
 
 
-def cell_list_factory(self: 'EpithelialCellState') ->EpithelialCellList:
+def cell_list_factory(self: 'EpithelialCellState') -> EpithelialCellList:
     return EpithelialCellList(grid=self.global_state.grid)
 
 
@@ -91,7 +92,7 @@ class EpithelialCellState(ModuleState):
     cells: EpithelialCellList = attr.ib(default=attr.Factory(cell_list_factory, takes_self=True))
     time_to_rest: float  # units: min
     iter_to_rest: int  # units: steps
-    internal_iron: float # units: atto-mols
+    internal_iron: float  # units: atto-mols
 
 
 class EpithelialCell(ModuleModel):
@@ -105,13 +106,12 @@ class EpithelialCell(ModuleModel):
         lung_tissue = state.lung_tissue
 
         epithelial.time_to_rest = self.config.getint('time_to_rest')  # units: min
-        epithelial.internal_iron = self.config.getfloat('internal_iron') # units: atto-mols
+        epithelial.internal_iron = self.config.getfloat('internal_iron')  # units: atto-mols
 
         # computed values
         epithelial.iter_to_rest = int(
             epithelial.time_to_rest / self.time_step
         )  # units: min / (min/step) = steps
-
 
         # initialize cells TODO: This is dumb. Do something that makes sense.
         locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
@@ -162,21 +162,7 @@ class EpithelialCell(ModuleModel):
                 else:
                     macrophage_cell['fpn_iteration'] += 1
 
-            # Movement
-            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                max_move_step = (
-                    macrophage.ma_move_rate_act * self.time_step
-                )  # (µm/min) * (min/step) = µm * step
-            else:
-                max_move_step = (
-                    macrophage.ma_move_rate_rest * self.time_step
-                )  # (µm/min) * (min/step) = µm * step
-            move_step: int = rg.poisson(max_move_step)
-            # move the cell 1 µm, move_step number of times
-            for _ in range(move_step):
-                self.single_step_move(
-                    state, macrophage_cell, macrophage_cell_index, macrophage.cells
-                )
+
 
         # Recruitment
         self.recruit_macrophages(state)
