@@ -38,7 +38,7 @@ To run the same simulation up to 50 hours using the first example config:
 mkdir -p output
 docker run \
     --rm \
-    --mount type=bind,source="$(pwd)/config.ini.example",destination=/opt/nlisim/config.ini,readonly \
+    --mount type=bind,source="$(pwd)/config.ini",destination=/opt/nlisim/config.ini,readonly \
     --mount type=bind,source="$(pwd)/output/",destination=/opt/nlisim/output/ \
     nutritionallungimmunity/nlisim run 50
 ```
