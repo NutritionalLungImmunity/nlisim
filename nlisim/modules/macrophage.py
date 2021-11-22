@@ -16,6 +16,7 @@ from nlisim.modules.phagocyte import (
     PhagocyteState,
     PhagocyteStatus,
 )
+from nlisim.modules.ros import ROSState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import choose_voxel_by_prob
@@ -88,6 +89,8 @@ class MacrophageState(PhagocyteModuleState):
     ma_move_rate_act: float  # µm/min
     ma_move_rate_rest: float  # µm/min
     half_life: float  # units: hours
+    ros_secretion_unit_t: float  # number/time step
+    ros_secretion: float  # number/min
     # UNUSED:
     # kd_ma_iron: float
     # ma_vol: float  # units: pL
@@ -121,6 +124,7 @@ class Macrophage(PhagocyteModel):
 
         macrophage.ma_move_rate_act = self.config.getfloat('ma_move_rate_act')  # µm/min
         macrophage.ma_move_rate_rest = self.config.getfloat('ma_move_rate_rest')  # µm/min
+        macrophage.ros_secretion = self.config.getfloat('ros_secretion')  # number/min
 
         macrophage.half_life = self.config.getfloat('ma_half_life')  # units: hours
 
@@ -139,6 +143,8 @@ class Macrophage(PhagocyteModel):
         macrophage.prob_death_per_timestep = -math.log(0.5) / (
             macrophage.half_life * (60 / time_step_size)
         )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
+
+        macrophage.ros_secretion_unit_t = macrophage.ros_secretion*time_step_size
 
         # initialize cells, placing them randomly
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
@@ -166,9 +172,15 @@ class Macrophage(PhagocyteModel):
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         macrophage: MacrophageState = state.macrophage
+        ros: ROSState = state.ros
+        grid: RectangularGrid = state.grid
 
         for macrophage_cell_index in macrophage.cells.alive():
-            macrophage_cell = macrophage.cells[macrophage_cell_index]
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+
+            if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
+                voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+                ros.grid[tuple(voxel)] += macrophage.ros_secretion_unit_t
 
             num_cells_in_phagosome = np.sum(macrophage_cell['phagosome'] >= 0)
 
