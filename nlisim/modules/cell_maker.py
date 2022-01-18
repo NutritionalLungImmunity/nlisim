@@ -1,7 +1,12 @@
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Tuple, Type, Union
 
-import numpy as np
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
+import numpy as np
+
+# noinspection PyPackageRequirements
 from numpy import dtype
 
 from nlisim.cell import CellData
@@ -9,18 +14,25 @@ from nlisim.cell import CellData
 datatype = Union[str, dtype, Type[Any]]
 
 
+# noinspection PyUnusedLocal
+def name_validator(_, field_name, name: str):
+    if not name.isidentifier() or not name.islower():
+        raise ValueError("Invalid Name")
+
+
 @attrs(kw_only=True)
-class CellDataMaker:
-    parent_class: CellData = attrib(default=CellData)
+class CellDataFactory:
+    name: str = attrib(validator=name_validator)
+    parent_class: Type[CellData] = attrib(default=CellData)
     fields: Dict[str, Tuple[datatype, int, Callable]] = attrib(factory=dict)
 
     def add_field(
-            self,
-            field_name: str,
-            data_type: datatype,
-            multiplicity: int = 1,
-            initializer: Optional = None,
-    ) -> 'CellDataMaker':
+        self,
+        field_name: str,
+        data_type: datatype,
+        initializer,
+        multiplicity: int = 1,
+    ) -> 'CellDataFactory':
         if field_name in self.fields:
             raise RuntimeError(f"Trying to create the field {field_name} twice!")
         if multiplicity < 1:
@@ -83,7 +95,23 @@ class CellDataMaker:
         fields = self.parent_class.FIELDS + new_fields
         parent_class = self.parent_class
 
-        class CreatedCellData(CellData):
+        module_name = 'nlisim.modules.' + self.name
+        class_name = self.name.capitalize() + 'CellData'
+        qual_name = module_name + '.' + class_name
+
+        class Metaclass(type):
+            def __new__(mcs, cls_name, bases, attributes):
+                attributes = {
+                    attr: v
+                    for attr, v in attributes.items()
+                    if attr not in ['__module__', '__qualname__', '__name__']
+                }
+                attributes['__module__'] = module_name
+                attributes['__qualname__'] = qual_name
+                # attrs['__name__'] = class_name
+                return super(Metaclass, mcs).__new__(mcs, class_name, bases, attributes)
+
+        class CreatedCellData(parent_class, metaclass=Metaclass):
             OWN_FIELDS = new_fields
             FIELDS = fields
             dtype = np.dtype(fields, align=True)  # type: ignore

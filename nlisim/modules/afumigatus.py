@@ -2,16 +2,17 @@ from enum import IntEnum, unique
 import math
 from queue import Queue
 import random
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellFields, CellList
+from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.cell_maker import CellDataFactory
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
@@ -80,84 +81,65 @@ def random_sphere_point() -> np.ndarray:
     )
 
 
-class AfumigatusCellData(CellData):
-    AFUMIGATUS_FIELDS: CellFields = [
-        ('iron_pool', np.float64),  # units: atto-mol
-        ('state', np.uint8),
-        ('status', np.uint8),
-        ('is_root', bool),
-        ('root', np.float64, 3),
-        ('tip', np.float64, 3),
-        ('vec', np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
-        ('growable', bool),
-        ('branchable', bool),
-        ('activation_iteration', np.int64),
-        ('growth_iteration', np.int64),
-        ('boolean_network', 'b1', len(NetworkSpecies)),
-        ('next_branch', np.int64),
-        ('next_septa', np.int64),
-        ('previous_septa', np.int64),
-        ('bn_iteration', np.int64),
-    ]
+def initial_boolean_network() -> np.ndarray:
+    init_afumigatus_boolean_species = {
+        NetworkSpecies.hapX: True,
+        NetworkSpecies.sreA: False,
+        NetworkSpecies.HapX: True,
+        NetworkSpecies.SreA: False,
+        NetworkSpecies.RIA: True,
+        NetworkSpecies.EstB: True,
+        NetworkSpecies.MirB: True,
+        NetworkSpecies.SidA: True,
+        NetworkSpecies.TAFC: True,
+        NetworkSpecies.ICP: False,
+        NetworkSpecies.LIP: False,
+        NetworkSpecies.CccA: False,
+        NetworkSpecies.FC0fe: True,
+        NetworkSpecies.FC1fe: False,
+        NetworkSpecies.VAC: False,
+        NetworkSpecies.ROS: False,
+        NetworkSpecies.Yap1: False,
+        NetworkSpecies.SOD2_3: False,
+        NetworkSpecies.Cat1_2: False,
+        NetworkSpecies.ThP: False,
+        NetworkSpecies.Fe: False,
+        NetworkSpecies.Oxygen: False,
+    }
+    return np.asarray(
+        [init_afumigatus_boolean_species[species] for species in NetworkSpecies], dtype=bool
+    )
 
-    FIELDS = CellData.FIELDS + AFUMIGATUS_FIELDS
-    dtype = np.dtype(FIELDS, align=True)  # type: ignore
 
-    @classmethod
-    def create_cell_tuple(cls, **kwargs) -> Tuple:
-        initializer = {
-            'iron_pool': kwargs.get('iron_pool', 0),
-            'state': kwargs.get('state', AfumigatusCellState.FREE),
-            'status': kwargs.get('status', AfumigatusCellStatus.RESTING_CONIDIA),
-            'is_root': kwargs.get('is_root', True),
-            'root': kwargs.get('root', np.zeros(3, dtype=np.float64)),
-            'tip': kwargs.get('tip', np.zeros(3, dtype=np.float64)),
-            'vec': kwargs.get('vec', random_sphere_point()),  # dx, dy, dz
-            'growable': kwargs.get('growable', True),
-            'branchable': kwargs.get('branchable', False),
-            'activation_iteration': kwargs.get('activation_iteration', 0),
-            'growth_iteration': kwargs.get('growth_iteration', 0),
-            'boolean_network': kwargs.get('boolean_network', cls.initial_boolean_network()),
-            'bn_iteration': kwargs.get('bn_iteration', 0),
-            'next_branch': kwargs.get('next_branch', -1),
-            'next_septa': kwargs.get('next_septa', -1),
-            'previous_septa': kwargs.get('previous_septa', -1),
-        }
-
-        # ensure that these come in the correct order
-        return CellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, *_ in AfumigatusCellData.AFUMIGATUS_FIELDS]
-        )
-
-    @classmethod
-    def initial_boolean_network(cls) -> np.ndarray:
-        init_afumigatus_boolean_species = {
-            NetworkSpecies.hapX: True,
-            NetworkSpecies.sreA: False,
-            NetworkSpecies.HapX: True,
-            NetworkSpecies.SreA: False,
-            NetworkSpecies.RIA: True,
-            NetworkSpecies.EstB: True,
-            NetworkSpecies.MirB: True,
-            NetworkSpecies.SidA: True,
-            NetworkSpecies.TAFC: True,
-            NetworkSpecies.ICP: False,
-            NetworkSpecies.LIP: False,
-            NetworkSpecies.CccA: False,
-            NetworkSpecies.FC0fe: True,
-            NetworkSpecies.FC1fe: False,
-            NetworkSpecies.VAC: False,
-            NetworkSpecies.ROS: False,
-            NetworkSpecies.Yap1: False,
-            NetworkSpecies.SOD2_3: False,
-            NetworkSpecies.Cat1_2: False,
-            NetworkSpecies.ThP: False,
-            NetworkSpecies.Fe: False,
-            NetworkSpecies.Oxygen: False,
-        }
-        return np.asarray(
-            [init_afumigatus_boolean_species[species] for species in NetworkSpecies], dtype=bool
-        )
+AfumigatusCellData = (
+    CellDataFactory(name='afumigatus')
+    .add_field(field_name='iron_pool', data_type=np.float64, initializer=0.0)  # units: atto-mol
+    .add_field(field_name='state', data_type=np.uint8, initializer=AfumigatusCellState.FREE)
+    .add_field(
+        field_name='status', data_type=np.uint8, initializer=AfumigatusCellStatus.RESTING_CONIDIA
+    )
+    .add_field(field_name='is_root', data_type=bool, initializer=True)
+    .add_field(field_name='root', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0])
+    .add_field(field_name='tip', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0])
+    .add_field(
+        field_name='vec', data_type=np.float64, multiplicity=3, initializer=random_sphere_point
+    )  # unit vector, length is in afumigatus.hyphal_length
+    .add_field(field_name='growable', data_type=bool, initializer=True)
+    .add_field(field_name='branchable', data_type=bool, initializer=False)
+    .add_field(field_name='activation_iteration', data_type=np.int64, initializer=0)
+    .add_field(field_name='growth_iteration', data_type=np.int64, initializer=0)
+    .add_field(
+        field_name='boolean_network',
+        data_type='b1',
+        multiplicity=len(NetworkSpecies),
+        initializer=initial_boolean_network,
+    )
+    .add_field(field_name='next_branch', data_type=np.int64, initializer=-1)
+    .add_field(field_name='next_septa', data_type=np.int64, initializer=-1)
+    .add_field(field_name='previous_septa', data_type=np.int64, initializer=-1)
+    .add_field(field_name='bn_iteration', data_type=np.int64, initializer=0)
+    .get_cell_data_class()
+)
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
