@@ -18,6 +18,7 @@ CellType = Any
 CellFields = List[
     Union[
         Tuple[str, dtype],
+        Tuple[str, dtype, int],
         Tuple[str, Type[Any]],
         Tuple[str, Type[Any], int],
         Tuple[str, str],
