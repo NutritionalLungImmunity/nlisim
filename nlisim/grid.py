@@ -22,11 +22,13 @@ implemented.  For these grids, all voxels are hyper-rectangles and are aligned
 along the domains axes.  See the `simulation.grid.RectangularGrid` implementation
 for details.
 """
+from enum import IntEnum
 from functools import reduce
 from itertools import product
 from typing import Iterable, Iterator, List, Tuple, cast
 
 import attr
+from attr import attrs
 from h5py import File as H5File
 import numpy as np
 
@@ -38,7 +40,94 @@ SpacingType = Tuple[float, float, float]
 _dtype_float64 = np.dtype('float64')
 
 
-@attr.s(auto_attribs=True, repr=False)
+class TissueType(IntEnum):
+    BRONCHIOLE = 0
+    BLOOD = 1
+    EPITHELIUM = 2
+    SURFACTANT = 3
+
+
+@attrs(auto_attribs=True, repr=False)
+class UnstructuredGrid(object):
+
+    points: np.ndarray
+    cells: np.ndarray
+
+
+    @classmethod
+    def load(cls, file) -> 'UnstructuredGrid':
+        ...
+
+    def get_element_index(self, point: Point) -> int:
+        """
+        Get the index label of the element containing the point `point`.
+
+        Parameters
+        ----------
+        point: int
+            a point in 3-space
+
+        Returns
+        -------
+        integer label of the element
+        """
+        ...
+
+    def get_element_geometric_type(self, element_index: int) -> int:
+        """
+        Get element type as a vtk cell type.
+
+        e.g. VTK_HEXAHEDRON, VTK_WEDGE, VTK_PYRAMID, VTK_HEXAGONAL_PRISM
+
+        Parameters
+        ----------
+        element_index: int
+            integer label of the cell
+
+        Returns
+        -------
+        integer representing the vtk cell type of the element
+        """
+        ...
+
+    def get_element_tissue_type(self, element_index: int) -> TissueType:
+        """
+        Get tissue type of an element.
+
+        e.g. blood, epithelium, ...
+
+        Parameters
+        ----------
+        element_index: int
+            integer label of the cell
+
+        Returns
+        -------
+        TissueType (IntEnum) representing the tissue type of the element
+        """
+        ...
+
+    def element_volume(self, element_index: int) -> float:
+        ...
+
+    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
+        """Allocate a numpy array defined over this grid."""
+        return np.zeros(self.shape, dtype=dtype)
+
+    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
+        """Return an iterator over all neighbors of a given voxel.
+
+        Parameters
+        ----------
+        voxel : simulation.coordinates.Voxel
+            The target voxel
+        corners : bool
+            Include voxels sharing corners and edges in addition to those sharing sides.
+
+        """
+        ...
+
+@attrs(auto_attribs=True, repr=False)
 class RectangularGrid(object):
     r"""
     A class representation of a rectangular grid.
