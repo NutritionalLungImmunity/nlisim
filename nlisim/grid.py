@@ -27,10 +27,11 @@ from functools import reduce
 from itertools import product
 from typing import Iterable, Iterator, List, Tuple, cast
 
-import attr
-from attr import attrs
+from attr import attrs, attrib
 from h5py import File as H5File
 import numpy as np
+from vtkmodules.util.numpy_support import vtk_to_numpy
+from vtkmodules.all import vtkXMLUnstructuredGridReader
 
 from nlisim.coordinates import Point, Voxel
 
@@ -41,22 +42,66 @@ _dtype_float64 = np.dtype('float64')
 
 
 class TissueType(IntEnum):
-    BRONCHIOLE = 0
-    BLOOD = 1
-    EPITHELIUM = 2
-    SURFACTANT = 3
+    BRONCHIOLAR_EPITHELIUM = 0
+    CAPILLARY = 1
+    ALVEOLAR_EPITHELIUM = 2
+    ALVEOLAR_SURFACTANT = 3
 
 
 @attrs(auto_attribs=True, repr=False)
 class UnstructuredGrid(object):
+    """
+    I welcome any better prefix/name, rather than g_cell. It is meant to indicate geometric rather
+    than biological cell.
 
-    points: np.ndarray
-    cells: np.ndarray
+    points is an (N,3) array of points in euclidean 3-space
 
+    g_cell_data is the semi-internal vtk data structure, a singly indexed int-array consisting of
+    sequences such as [12, 4314, 2996, 844, 31030, 1314, 28624, 14217, 29297, 11087, 23365,
+    23364, 37073] for which
+    1) the first entry indicates that the next 12 entries are part of the same record
+    2) each following integers specifies a point via its index in the `points` array
+    This is basically a way of packing a ragged array.
+
+    g_cell_location records offsets (locations of the first indices in the sequences above) for
+    quick lookup. Actually, the beginning of cell `i` should be at `i+g_cell_location[i]`
+
+    g_cell_type records the vtk cell type i.e. as a geometric cell not a biological cell.
+    e.g. hexahedron, wedge, hex-prism etc. We are only using 3D linear types.
+    See https://vtk.org/doc/nightly/html/vtkCellType_8h_source.html
+
+    g_cell_tissue_type records what type of tissue is present in the geometric cell.
+    e.g. bronchiolar or alveolar epithelium, capillary. Also, "tissue" such as surfactant or air.
+
+    """
+    points: np.ndarray = attrib()
+    g_cell_data: np.ndarray = attrib()
+    g_cell_location: np.ndarray = attrib()
+    g_cell_type: np.ndarray  = attrib()
+    g_cell_tissue_type: np.ndarray  = attrib()
 
     @classmethod
-    def load(cls, file) -> 'UnstructuredGrid':
-        ...
+    def load(cls, filename: str) -> 'UnstructuredGrid':
+
+        reader = vtkXMLUnstructuredGridReader()
+        reader.SetFileName(filename)
+        # noinspection PyArgumentList
+        reader.Update()
+
+        data = reader.GetOutput()
+        points = vtk_to_numpy(data.GetPoints().GetData())
+        g_cell_type = vtk_to_numpy(data.GetCellTypesArray())
+        g_cell_location = vtk_to_numpy(data.GetCellLocationsArray())
+        g_cell_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
+        g_cell_data = vtk_to_numpy(data.GetCells().GetData())
+
+        return cls(
+            points=points,
+            g_cell_type=g_cell_type,
+            g_cell_location=g_cell_location,
+            g_cell_tissue_type=g_cell_tissue_type,
+            g_cell_data=g_cell_data
+        )
 
     def get_element_index(self, point: Point) -> int:
         """
@@ -126,6 +171,7 @@ class UnstructuredGrid(object):
 
         """
         ...
+
 
 @attrs(auto_attribs=True, repr=False)
 class RectangularGrid(object):
