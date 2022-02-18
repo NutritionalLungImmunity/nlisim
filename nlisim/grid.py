@@ -133,7 +133,7 @@ class UnstructuredGrid(object):
         -------
         integer representing the vtk cell type of the element
         """
-        ...
+        return self.g_cell_type[element_index]
 
     def get_element_tissue_type(self, element_index: int) -> TissueType:
         """
@@ -150,26 +150,16 @@ class UnstructuredGrid(object):
         -------
         TissueType (IntEnum) representing the tissue type of the element
         """
-        ...
+        return self.g_cell_tissue_type[element_index]
 
     def element_volume(self, element_index: int) -> float:
         ...
 
     def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined over this grid."""
-        return np.zeros(self.shape, dtype=dtype)
+        return np.zeros(self.points.shape, dtype=dtype)
 
-    def get_adjacent_voxels(self, voxel: Voxel, corners: bool = False) -> Iterator[Voxel]:
-        """Return an iterator over all neighbors of a given voxel.
-
-        Parameters
-        ----------
-        voxel : simulation.coordinates.Voxel
-            The target voxel
-        corners : bool
-            Include voxels sharing corners and edges in addition to those sharing sides.
-
-        """
+    def get_adjacent_elements(self, element_index: int) -> Iterator[int]:
         ...
 
 
