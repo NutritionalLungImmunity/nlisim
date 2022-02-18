@@ -86,11 +86,7 @@ class AfumigatusCellData(CellData):
         ('state', np.uint8),
         ('status', np.uint8),
         ('is_root', bool),
-        ('root', np.float64, 3),
-        ('tip', np.float64, 3),
         ('vec', np.float64, 3),  # unit vector, length is in afumigatus.hyphal_length
-        ('growable', bool),
-        ('branchable', bool),
         ('activation_iteration', np.int64),
         ('growth_iteration', np.int64),
         ('boolean_network', 'b1', len(NetworkSpecies)),
@@ -110,11 +106,7 @@ class AfumigatusCellData(CellData):
             'state': kwargs.get('state', AfumigatusCellState.FREE),
             'status': kwargs.get('status', AfumigatusCellStatus.RESTING_CONIDIA),
             'is_root': kwargs.get('is_root', True),
-            'root': kwargs.get('root', np.zeros(3, dtype=np.float64)),
-            'tip': kwargs.get('tip', np.zeros(3, dtype=np.float64)),
-            'vec': kwargs.get('vec', random_sphere_point()),  # dx, dy, dz
-            'growable': kwargs.get('growable', True),
-            'branchable': kwargs.get('branchable', False),
+            'vec': kwargs.get('vec', random_sphere_point()),  # dz, dy, dx
             'activation_iteration': kwargs.get('activation_iteration', 0),
             'growth_iteration': kwargs.get('growth_iteration', 0),
             'boolean_network': kwargs.get('boolean_network', cls.initial_boolean_network()),
@@ -307,7 +299,8 @@ class Afumigatus(ModuleModel):
                 elongate(
                     afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
                 )
-                branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
+                if afumigatus_cell['next_septa'] != -1:  # only branch if we have already elongated
+                    branch(afumigatus_cell, afumigatus_cell_index, afumigatus.pr_branch, afumigatus)
 
             # ------------ interactions after this point
 
@@ -324,13 +317,14 @@ class Afumigatus(ModuleModel):
                     continue
 
                 Afumigatus.fungus_macrophage_interaction(
-                    afumigatus,
-                    afumigatus_cell,
-                    afumigatus_cell_index,
-                    macrophage,
-                    macrophage_cell,
-                    iron,
-                    grid,
+                    afumigatus=afumigatus,
+                    afumigatus_cell=afumigatus_cell,
+                    afumigatus_cell_index=afumigatus_cell_index,
+                    macrophage=macrophage,
+                    macrophage_cell=macrophage_cell,
+                    macrophage_cell_index=macrophage_index,
+                    iron=iron,
+                    grid=grid,
                 )
 
             # -----------
@@ -344,6 +338,7 @@ class Afumigatus(ModuleModel):
         afumigatus_cell_index: int,
         macrophage: 'MacrophageState',
         macrophage_cell: 'MacrophageCellData',
+        macrophage_cell_index: int,
         iron: IronState,
         grid: RectangularGrid,
     ):
@@ -362,10 +357,12 @@ class Afumigatus(ModuleModel):
         # now they interact
 
         interact_with_aspergillus(
-            macrophage_cell,
-            afumigatus_cell,
-            afumigatus_cell_index,
-            macrophage,
+            phagocyte_cell=macrophage_cell,
+            phagocyte_cell_index=macrophage_cell_index,
+            phagocyte_cells=macrophage.cells,
+            aspergillus_cell=afumigatus_cell,
+            aspergillus_cell_index=afumigatus_cell_index,
+            phagocyte=macrophage,
             phagocytize=afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE,
         )
 
@@ -392,22 +389,25 @@ class Afumigatus(ModuleModel):
         """
         # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
-            afumigatus.cells[afumigatus_cell['next_septa']]['is_root'] = True
-            afumigatus.cells[afumigatus_cell['next_septa']]['previous_septa'] = -1
+            next_septa = afumigatus_cell['next_septa']
+            afumigatus_cell['next_septa'] = -1
+            afumigatus.cells[next_septa]['is_root'] = True
+            afumigatus.cells[next_septa]['previous_septa'] = -1
         if afumigatus_cell['next_branch'] != -1:
-            afumigatus.cells[afumigatus_cell['next_branch']]['is_root'] = True
-            afumigatus.cells[afumigatus_cell['next_branch']]['previous_septa'] = -1
+            next_branch = afumigatus_cell['next_branch']
+            afumigatus_cell['next_branch'] = -1
+            afumigatus.cells[next_branch]['is_root'] = True
+            afumigatus.cells[next_branch]['previous_septa'] = -1
 
         # unlink from parent, if exists
         parent_id = afumigatus_cell['previous_septa']
         if parent_id != -1:
+            afumigatus_cell['previous_septa'] = -1
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
             if parent_cell['next_septa'] == afumigatus_cell_index:
                 parent_cell['next_septa'] = -1
-                parent_cell['growable'] = True
             elif parent_cell['next_branch'] == afumigatus_cell_index:
                 parent_cell['next_branch'] = -1
-                parent_cell['branchable'] = True
             else:
                 raise AssertionError("The fungal tree structure is malformed.")
 
@@ -537,13 +537,6 @@ def cell_self_update(
         afumigatus_cell['status'] = AfumigatusCellStatus.GERM_TUBE
         afumigatus_cell['activation_iteration'] = 0
 
-    # Ensure that fungus is growable/branchable if it does not have a next septa/branch, even if
-    # it previously had one which was eaten.
-    if afumigatus_cell['next_septa'] == -1:
-        afumigatus_cell['growable'] = True
-    if afumigatus_cell['next_branch'] == -1:
-        afumigatus_cell['branchable'] = True
-
     # TODO: verify this, 1 turn on internalizing then free?
     if afumigatus_cell['state'] in {
         AfumigatusCellState.INTERNALIZING,
@@ -669,7 +662,7 @@ def elongate(
     afumigatus: AfumigatusState,
 ):
     if (
-        not afumigatus_cell['growable']
+        afumigatus_cell['next_septa'] != -1  # already has a next septa
         or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]
     ):
         return
@@ -680,16 +673,18 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['growth_iteration'] = 0
-            afumigatus_cell['growable'] = False
-            afumigatus_cell['branchable'] = True
             afumigatus_cell['iron_pool'] /= 2.0
-            next_septa_root = afumigatus_cell['root'] + afumigatus_cell['vec']
+            next_septa_center_point = (
+                afumigatus_cell['point'] + hyphal_length * afumigatus_cell['vec']
+            )  # center to center is two half hyphal lengths
 
             # create the new septa
             next_septa: CellData = AfumigatusCellData.create_cell(
-                point=Point(x=next_septa_root[2], y=next_septa_root[1], z=next_septa_root[0]),
-                root=next_septa_root,
-                tip=next_septa_root + hyphal_length * afumigatus_cell['vec'],
+                point=Point(
+                    x=next_septa_center_point[2],
+                    y=next_septa_center_point[1],
+                    z=next_septa_center_point[0],
+                ),
                 vec=afumigatus_cell['vec'],
                 iron_pool=0,
                 status=AfumigatusCellStatus.HYPHAE,
@@ -707,9 +702,9 @@ def elongate(
             afumigatus_cell['growth_iteration'] += 1
         else:
             afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
-            afumigatus_cell['tip'] = (
-                afumigatus_cell['root'] + hyphal_length * afumigatus_cell['vec']
-            )
+            # center of cell moves
+            afumigatus_cell['point'] += (hyphal_length / 2) * afumigatus_cell['vec']
+            afumigatus.cells.update_voxel_index([afumigatus_cell_index])
 
 
 def branch(
@@ -719,7 +714,7 @@ def branch(
     afumigatus: AfumigatusState,
 ):
     if (
-        not afumigatus_cell['branchable']
+        afumigatus_cell['next_branch'] != -1  # if it already has a branch
         or afumigatus_cell['status'] != AfumigatusCellStatus.HYPHAE
         or not afumigatus_cell['boolean_network'][NetworkSpecies.LIP]
     ):
@@ -729,13 +724,17 @@ def branch(
     if rg.random() < pr_branch:
         # now we branch
         branch_vector = generate_branch_direction(cell_vec=afumigatus_cell['vec'])
-        root = afumigatus_cell['root']
+        branch_center_point = (
+            afumigatus_cell['point']
+            + (hyphal_length / 2) * afumigatus_cell['vec']
+            + (hyphal_length / 2) * branch_vector
+        )  # center of new branch is offset by rest (half) of this septa and half of the new septa
 
         # create the new septa
         next_branch: CellData = AfumigatusCellData.create_cell(
-            point=Point(x=root[2], y=root[1], z=root[0]),
-            root=root,
-            tip=root + hyphal_length * branch_vector,
+            point=Point(
+                x=branch_center_point[2], y=branch_center_point[1], z=branch_center_point[0]
+            ),
             vec=branch_vector,
             growth_iteration=-1,
             iron_pool=0,
@@ -749,40 +748,52 @@ def branch(
         afumigatus_cell['next_branch'] = next_branch_id
         next_branch['previous_septa'] = afumigatus_cell_index
 
-    # only get one shot at branching
-    afumigatus_cell['branchable'] = False
-
 
 def generate_branch_direction(cell_vec: np.ndarray) -> np.ndarray:
-    # form a random unit vector on a 45 degree cone
-    theta = rg.random() * 2 * np.pi
+    """
+    Generate a direction vector for branches.
+
+    Parameters
+    ----------
+    cell_vec : np.ndarray
+        a unit 3-vector
+
+    Returns
+    -------
+    np.ndarray
+        a random unit 3-vector at a 45 degree angle to `cell_vec`, sampled from the
+        uniform distribution
+    """
+    # norm should be approx 1, can delete for performance
+    cell_vec /= np.linalg.norm(cell_vec)
 
     # create orthogonal basis adapted to cell's direction
-    cell_vec_norm = np.linalg.norm(cell_vec)
-    normed_cell_vec = cell_vec / cell_vec_norm
-
     # get first orthogonal vector
     u: np.ndarray
-    epsilon = 0.01
+    epsilon = 0.1
     e1 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
     e2 = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-    # if the cell vector isn't too close to e1, just use that. otherwise use e2.
-    # (we can't be too close to both)
-    if (
-        np.linalg.norm(normed_cell_vec - e1) > epsilon
-        or np.linalg.norm(normed_cell_vec + e1) > epsilon
-    ):
-        u = np.cross(normed_cell_vec, e1)
-    else:
-        u = np.cross(normed_cell_vec, e2)
+    # if the cell vector isn't too close to +/- e1, generate the orthogonal vector using the cross
+    # product with e1. otherwise use e2. (we can't be too close to both)
+    u = (
+        np.cross(cell_vec, e1)
+        if (np.linalg.norm(cell_vec - e1) > epsilon and np.linalg.norm(cell_vec + e1) > epsilon)
+        else np.cross(cell_vec, e2)
+    )
+    u /= np.linalg.norm(u)  # unlike the other normalizations, this is non-optional
 
-    # get second orthogonal vector
-    v = np.cross(normed_cell_vec, u)
+    # get second orthogonal vector, orthogonal to both the cell vec and the first orthogonal vector
+    v = np.cross(cell_vec, u)
+    # norm should be approx 1, can delete for performance
+    v /= np.linalg.norm(v)
 
     # change of coordinates matrix
-    p_matrix = np.array([normed_cell_vec, u, v]).T
-    branch_direction = (
-        cell_vec_norm * p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
-    )
+    p_matrix = np.array([cell_vec, u, v]).T
+
+    # form a random unit vector on a 45 degree cone
+    theta = rg.random() * 2 * np.pi
+    branch_direction = p_matrix @ np.array([1.0, np.cos(theta), np.sin(theta)]) / np.sqrt(2)
+    # norm should be approx 1, can delete for performance
+    branch_direction /= np.linalg.norm(branch_direction)
 
     return branch_direction
