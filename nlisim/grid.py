@@ -22,6 +22,7 @@ implemented.  For these grids, all voxels are hyper-rectangles and are aligned
 along the domains axes.  See the `simulation.grid.RectangularGrid` implementation
 for details.
 """
+from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
 from itertools import product
@@ -69,6 +70,7 @@ class TetrahedralGrid(object):
 
     points: np.ndarray = attrib()
     element_point_indices: np.ndarray = attrib()
+    element_neighbors: np.ndarray = attrib()
     element_tissue_type: np.ndarray = attrib()
 
     @classmethod
@@ -92,9 +94,40 @@ class TetrahedralGrid(object):
         element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((5, -1))[1:, :]
         element_point_indices.flags['WRITEABLE'] = False
 
+        element_neighbors: np.ndarray
+        if data.GetCells().HasArray("neighbors") == 1:
+            # use any precomputed dual
+            element_neighbors = vtk_to_numpy(data.GetCellData().GetArray("neighbors"))
+        else:
+            # if we don't have a precomputed 1-skeleton of the dual, compute it now
+            # collect all faces and their incident tetrahedra
+            face_tets = defaultdict(list)
+            for tet_index in range(element_point_indices.shape[0]):
+                point_indices = np.array(sorted(element_point_indices[tet_index, :]))
+                for omitted_idx in range(4):
+                    face = tuple(point_indices[[k for k in range(4) if k != omitted_idx]])
+                    tet_list = face_tets[face]
+                    tet_list.append(tet_index)
+            # read the tetrahedra incidence lists from the faces
+            element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
+            for face, tets in face_tets.items():
+                assert 0 < len(tets) <= 2, f"Not a manifold at face: {face}"
+                if len(tets) == 1:
+                    continue
+                tetA, tetB = tets
+                # insert tetB into incidence list for tetA
+                idx = np.argmin(element_neighbors[tetA])
+                element_neighbors[tetA, idx] = tetB
+                # insert tetA into incidence list for tetB
+                idx = np.argmin(element_neighbors[tetB])
+                element_neighbors[tetB, idx] = tetA
+
+        element_neighbors.flags['WRITEABLE'] = False
+
         return cls(
             points=points,
             element_point_indices=element_point_indices,
+            element_neighbors=element_neighbors,
             element_tissue_type=element_tissue_type,
         )
 
@@ -104,7 +137,7 @@ class TetrahedralGrid(object):
 
         try:
             # find position of the point in tetrahedral coordinates
-            sln = np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0,:])
+            sln = np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :])
             return np.all(0.0 <= sln) and np.all(sln <= 1.0) and np.sum(sln) <= 1.0
         except np.linalg.LinAlgError:
             assert False, "Bad mesh: contains a singular tetrahedron"
@@ -170,7 +203,7 @@ class TetrahedralGrid(object):
         return np.zeros(self.element_point_indices.shape[0], dtype=dtype)
 
     def get_adjacent_elements(self, element_index: int) -> Iterator[int]:
-        ...
+        return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
 
 
 @attrs(auto_attribs=True, repr=False)
