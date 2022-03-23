@@ -27,11 +27,11 @@ from functools import reduce
 from itertools import product
 from typing import Iterable, Iterator, List, Tuple, cast
 
-from attr import attrs, attrib
+from attr import attrib, attrs
 from h5py import File as H5File
 import numpy as np
+from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
-from vtkmodules.all import vtkXMLUnstructuredGridReader
 
 from nlisim.coordinates import Point, Voxel
 
@@ -49,59 +49,65 @@ class TissueType(IntEnum):
 
 
 @attrs(auto_attribs=True, repr=False)
-class UnstructuredGrid(object):
+class TetrahedralGrid(object):
     """
-    I welcome any better prefix/name, rather than g_cell. It is meant to indicate geometric rather
-    than biological cell.
+    A class representation of a tetrahedral mesh.
 
     points is an (N,3) array of points in euclidean 3-space
 
-    g_cell_data is the semi-internal vtk data structure, a singly indexed int-array consisting of
+    element_data is the semi-internal vtk data structure, a singly indexed int-array consisting of
     sequences such as [12, 4314, 2996, 844, 31030, 1314, 28624, 14217, 29297, 11087, 23365,
     23364, 37073] for which
     1) the first entry indicates that the next 12 entries are part of the same record
     2) each following integers specifies a point via its index in the `points` array
     This is basically a way of packing a ragged array.
 
-    g_cell_location records offsets (locations of the first indices in the sequences above) for
-    quick lookup. Actually, the beginning of cell `i` should be at `i+g_cell_location[i]`
-
-    g_cell_type records the vtk cell type i.e. as a geometric cell not a biological cell.
-    e.g. hexahedron, wedge, hex-prism etc. We are only using 3D linear types.
-    See https://vtk.org/doc/nightly/html/vtkCellType_8h_source.html
-
-    g_cell_tissue_type records what type of tissue is present in the geometric cell.
+    element_tissue_type records what type of tissue is present in the geometric cell.
     e.g. bronchiolar or alveolar epithelium, capillary. Also, "tissue" such as surfactant or air.
 
     """
+
     points: np.ndarray = attrib()
-    g_cell_data: np.ndarray = attrib()
-    g_cell_location: np.ndarray = attrib()
-    g_cell_type: np.ndarray  = attrib()
-    g_cell_tissue_type: np.ndarray  = attrib()
+    element_point_indices: np.ndarray = attrib()
+    element_tissue_type: np.ndarray = attrib()
 
     @classmethod
-    def load(cls, filename: str) -> 'UnstructuredGrid':
-
+    def load(cls, filename: str) -> 'TetrahedralGrid':
         reader = vtkXMLUnstructuredGridReader()
         reader.SetFileName(filename)
         # noinspection PyArgumentList
         reader.Update()
 
         data = reader.GetOutput()
+
+        element_type = vtk_to_numpy(data.GetCellTypesArray())
+        assert np.all(element_type == VTK_TETRA), f"{filename} is not a tetrahedral mesh!"
+
         points = vtk_to_numpy(data.GetPoints().GetData())
-        g_cell_type = vtk_to_numpy(data.GetCellTypesArray())
-        g_cell_location = vtk_to_numpy(data.GetCellLocationsArray())
-        g_cell_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
-        g_cell_data = vtk_to_numpy(data.GetCells().GetData())
+        points.flags['WRITEABLE'] = False
+
+        element_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
+        element_tissue_type.flags['WRITEABLE'] = False
+
+        element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((5, -1))[1:, :]
+        element_point_indices.flags['WRITEABLE'] = False
 
         return cls(
             points=points,
-            g_cell_type=g_cell_type,
-            g_cell_location=g_cell_location,
-            g_cell_tissue_type=g_cell_tissue_type,
-            g_cell_data=g_cell_data
+            element_point_indices=element_point_indices,
+            element_tissue_type=element_tissue_type,
         )
+
+    def is_in_element(self, element_index: int, point: Point) -> bool:
+        """Determine if a given point is in a given element."""
+        tet_points = self.points[self.element_point_indices[element_index, :], :]
+
+        try:
+            # find position of the point in tetrahedral coordinates
+            sln = np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0,:])
+            return np.all(0.0 <= sln) and np.all(sln <= 1.0) and np.sum(sln) <= 1.0
+        except np.linalg.LinAlgError:
+            assert False, "Bad mesh: contains a singular tetrahedron"
 
     def get_element_index(self, point: Point) -> int:
         """
@@ -109,31 +115,18 @@ class UnstructuredGrid(object):
 
         Parameters
         ----------
-        point: int
+        point: Point
             a point in 3-space
 
         Returns
         -------
-        integer label of the element
+        integer label of the element, -1 if not in an element
         """
-        ...
-
-    def get_element_geometric_type(self, element_index: int) -> int:
-        """
-        Get element type as a vtk cell type.
-
-        e.g. VTK_HEXAHEDRON, VTK_WEDGE, VTK_PYRAMID, VTK_HEXAGONAL_PRISM
-
-        Parameters
-        ----------
-        element_index: int
-            integer label of the cell
-
-        Returns
-        -------
-        integer representing the vtk cell type of the element
-        """
-        return self.g_cell_type[element_index]
+        # TODO: This is the most naïve algorithm, replace it.
+        for tet_index in range(self.element_point_indices.shape[0]):
+            if self.is_in_element(tet_index, point):
+                return True
+        return False
 
     def get_element_tissue_type(self, element_index: int) -> TissueType:
         """
@@ -144,20 +137,37 @@ class UnstructuredGrid(object):
         Parameters
         ----------
         element_index: int
-            integer label of the cell
+            integer label of the element
 
         Returns
         -------
         TissueType (IntEnum) representing the tissue type of the element
         """
-        return self.g_cell_tissue_type[element_index]
+        return self.element_tissue_type[element_index]
 
     def element_volume(self, element_index: int) -> float:
-        ...
+        """
+        Get unsigned volume of an element.
 
-    def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
-        """Allocate a numpy array defined over this grid."""
+        Parameters
+        ----------
+        element_index: int
+            integer label of the element
+
+        Returns
+        -------
+        float with units equal to (linear units)^3
+        """
+        tet_points = self.points[self.element_point_indices[element_index, :], :]
+        return np.abs(np.linalg.det(tet_points[1:, :] - tet_points[0, :]) / 6.0)
+
+    def allocate_point_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
+        """Allocate a numpy array defined on the points of this mesh."""
         return np.zeros(self.points.shape, dtype=dtype)
+
+    def allocate_element_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
+        """Allocate a numpy array defined on the (3-dimensional) elements of this mesh."""
+        return np.zeros(self.element_point_indices.shape[0], dtype=dtype)
 
     def get_adjacent_elements(self, element_index: int) -> Iterator[int]:
         ...
