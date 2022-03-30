@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -14,7 +14,7 @@ from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'IL10State') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -65,7 +65,7 @@ class IL10(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
         voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
         for macrophage_cell_index in macrophage.cells.alive():
@@ -107,7 +107,7 @@ class IL10(ModuleModel):
         )
 
         # Diffusion of IL10
-        il10.grid[:] = apply_diffusion(
+        il10.grid[:] = apply_grid_diffusion(
             variable=il10.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

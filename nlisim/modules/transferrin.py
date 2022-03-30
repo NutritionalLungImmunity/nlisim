@@ -5,7 +5,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
@@ -14,7 +14,7 @@ from nlisim.util import iron_tf_reaction
 
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
     return np.zeros(
-        shape=self.global_state.grid.shape,
+        shape=self.global_state.mesh.shape,
         dtype=[('Tf', np.float64), ('TfFe', np.float64), ('TfFe2', np.float64)],
     )
 
@@ -116,7 +116,7 @@ class Transferrin(ModuleModel):
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -186,7 +186,7 @@ class Transferrin(ModuleModel):
 
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
-            transferrin.grid[component][:] = apply_diffusion(
+            transferrin.grid[component][:] = apply_grid_diffusion(
                 variable=transferrin.grid[component],
                 laplacian=molecules.laplacian,
                 diffusivity=molecules.diffusion_constant,

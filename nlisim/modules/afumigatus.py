@@ -158,7 +158,7 @@ class AfumigatusCellList(CellList):
 
 
 def cell_list_factory(self: 'AfumigatusState') -> AfumigatusCellList:
-    return AfumigatusCellList(grid=self.global_state.grid)
+    return AfumigatusCellList(grid=self.global_state.mesh)
 
 
 @attrs(kw_only=True)
@@ -245,16 +245,16 @@ class Afumigatus(ModuleModel):
 
         # place cells for initial infection
         locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
+        dz_field: np.ndarray = state.mesh.delta(axis=0)
+        dy_field: np.ndarray = state.mesh.delta(axis=1)
+        dx_field: np.ndarray = state.mesh.delta(axis=2)
         for vox_z, vox_y, vox_x in random.choices(
             locations, k=self.config.getint('init_infection_num')
         ):
             # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
+            z = state.mesh.z[vox_z]
+            y = state.mesh.y[vox_y]
+            x = state.mesh.x[vox_x]
             dz = dz_field[vox_z, vox_y, vox_x]
             dy = dy_field[vox_z, vox_y, vox_x]
             dx = dx_field[vox_z, vox_y, vox_x]
@@ -278,7 +278,7 @@ class Afumigatus(ModuleModel):
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
         iron: IronState = state.iron
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         lung_tissue: np.ndarray = state.lung_tissue
 
         # update live cells
@@ -305,7 +305,7 @@ class Afumigatus(ModuleModel):
             # ------------ interactions after this point
 
             # interact with macrophages, possibly internalizing the aspergillus cell
-            for macrophage_index in macrophage.cells.get_cells_in_voxel(voxel):
+            for macrophage_index in macrophage.cells.get_cells_in_element(voxel):
                 macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
 
                 # Only healthy macrophages can internalize
@@ -704,7 +704,7 @@ def elongate(
             afumigatus_cell['status'] = AfumigatusCellStatus.HYPHAE
             # center of cell moves
             afumigatus_cell['point'] += (hyphal_length / 2) * afumigatus_cell['vec']
-            afumigatus.cells.update_voxel_index([afumigatus_cell_index])
+            afumigatus.cells.update_element_index([afumigatus_cell_index])
 
 
 def branch(

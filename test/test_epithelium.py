@@ -9,7 +9,7 @@ from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 
 @fixture
 def iron():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(10)
     yield i
@@ -17,7 +17,7 @@ def iron():
 
 @fixture
 def n_cyto():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
@@ -25,7 +25,7 @@ def n_cyto():
 
 @fixture
 def m_cyto():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
@@ -33,7 +33,7 @@ def m_cyto():
 
 @fixture
 def tissue():
-    # a 10 x 10 x 10 grid of blood
+    # a 10 x 10 x 10 mesh of blood
     t = np.empty((10, 10, 10))
     t.fill(3)
     yield t
@@ -91,7 +91,7 @@ def test_internalize_conidia_none(
 ):
     cell = populated_epithelium[0]
     vox = grid.get_voxel(cell['point'])
-    assert len(fungus_list.get_cells_in_voxel(vox)) == 0
+    assert len(fungus_list.get_cells_in_element(vox)) == 0
 
     populated_epithelium.internalize_conidia(0, 10, 1, grid, fungus_list)
 

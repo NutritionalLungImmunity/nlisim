@@ -59,9 +59,9 @@ def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     vtk_grid = vtkStructuredPoints()
     vtk_grid.SetDimensions(len(x), len(y), len(z))
 
-    # In theory, the rectangular grid used in our code is more general than
+    # In theory, the rectangular mesh used in our code is more general than
     # than a vtkStructuredPoints object.  In practice, we always construct
-    # a uniform grid, so we choose to use the more efficient vtk data structure.
+    # a uniform mesh, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])
     return vtk_grid
@@ -78,11 +78,11 @@ def create_vtk_geometry(grid: RectangularGrid, lung_tissue: np.ndarray) -> vtkSt
     return vtk_grid
 
 
-# def create_vtk_molecules(grid: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
-#     vtk_grid = create_vtk_volume(grid)
+# def create_vtk_molecules(mesh: RectangularGrid, molecules: MoleculesState) -> vtkStructuredPoints:
+#     vtk_grid = create_vtk_volume(mesh)
 #     point_data = vtk_grid.GetPointData()
-#     for name in molecules.grid.concentrations.dtype.names:
-#         data = numpy_to_vtk(molecules.grid.concentrations[name].ravel())
+#     for name in molecules.mesh.concentrations.dtype.names:
+#         data = numpy_to_vtk(molecules.mesh.concentrations[name].ravel())
 #         data.SetName(name)
 #         point_data.AddArray(data)
 #
@@ -111,8 +111,8 @@ def generate_vtk_objects(
     state: State,
 ) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
     """Generate the vtk objects for each module. (e.g. for upload)"""
-    volume = create_vtk_geometry(state.grid, state.lung_tissue)
-    molecules_grid = create_vtk_volume(state.grid)
+    volume = create_vtk_geometry(state.mesh, state.lung_tissue)
+    molecules_grid = create_vtk_volume(state.mesh)
     cells = dict()
     for module in state.config.modules:
         data_type, content = module.visualization_data(state)

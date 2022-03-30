@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
@@ -14,7 +14,7 @@ from nlisim.util import EPSILON, iron_tf_reaction, michaelian_kinetics, turnover
 
 def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
     return np.zeros(
-        shape=self.global_state.grid.shape,
+        shape=self.global_state.mesh.shape,
         dtype=[
             ('Lactoferrin', np.float64),
             ('LactoferrinFe', np.float64),
@@ -86,7 +86,7 @@ class Lactoferrin(ModuleModel):
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         voxel_volume = state.voxel_volume
 
         # macrophages uptake iron from lactoferrin
@@ -235,7 +235,7 @@ class Lactoferrin(ModuleModel):
 
         # Diffusion of lactoferrin
         for component in {'Lactoferrin', 'LactoferrinFe', 'LactoferrinFe2'}:
-            lactoferrin.grid[component][:] = apply_diffusion(
+            lactoferrin.grid[component][:] = apply_grid_diffusion(
                 variable=lactoferrin.grid[component],
                 laplacian=molecules.laplacian,
                 diffusivity=molecules.diffusion_constant,

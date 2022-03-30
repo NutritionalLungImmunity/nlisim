@@ -9,7 +9,7 @@ from nlisim.oldmodules.macrophage import MacrophageCellData, MacrophageCellList
 
 @fixture
 def iron():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(10)
     yield i
@@ -17,7 +17,7 @@ def iron():
 
 @fixture
 def cyto():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
@@ -25,7 +25,7 @@ def cyto():
 
 @fixture
 def tissue():
-    # a 10 x 10 x 10 grid of blood
+    # a 10 x 10 x 10 mesh of blood
     t = np.empty((10, 10, 10))
     t.fill(1)
     t[6:] = 3
@@ -279,7 +279,7 @@ def test_internalize_conidia_none(
 
     cell = populated_macrophage[0]
     vox = grid.get_voxel(cell['point'])
-    assert len(populated_fungus.get_cells_in_voxel(vox)) == 1
+    assert len(populated_fungus.get_cells_in_element(vox)) == 1
 
     populated_macrophage.internalize_conidia(m_det, 50, 1, grid, populated_fungus)
 
@@ -301,9 +301,9 @@ def test_internalize_conidia_0(
 
     vox = grid.get_voxel(macrophage_list[0]['point'])
 
-    assert len(fungus_list.get_cells_in_voxel(vox)) == 1
+    assert len(fungus_list.get_cells_in_element(vox)) == 1
 
-    f_index = int(fungus_list.get_cells_in_voxel(vox))  # 0
+    f_index = int(fungus_list.get_cells_in_element(vox))  # 0
     assert f_index == 0
 
     fungus_list[f_index]['form'] = FungusCellData.Form.CONIDIA

@@ -3,13 +3,13 @@ from typing import Any, Dict
 import attr
 import numpy as np
 
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
 
 def molecule_grid_factory(self: 'ROSState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -56,7 +56,7 @@ class ROS(ModuleModel):
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
 
         # Diffusion of ros
-        ros.grid[:] = apply_diffusion(
+        ros.grid[:] = apply_grid_diffusion(
             variable=ros.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

@@ -1,20 +1,26 @@
+from typing import Any, Tuple
+
 import numpy as np
-from scipy.sparse import csr_matrix, dok_matrix, eye
+from scipy.sparse import csr_matrix, dok_matrix, eye, identity
 from scipy.sparse.linalg import cg
+from skfem import Basis, ElementTetP1, MeshTet1, condense
+from skfem.models import laplace
+from skfem.utils import solve
 
 from nlisim.coordinates import Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.grid import RectangularGrid, TetrahedralMesh
+from nlisim.state import State
 
 _dtype_float64 = np.dtype('float64')
 
 
 def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.dtype = _dtype_float64
+    grid: RectangularGrid, mask: np.ndarray, dtype: np.DTypeLike = _dtype_float64
 ) -> csr_matrix:
-    """Return a discrete laplacian operator for the given restricted grid.
+    """Return a discrete laplacian operator for the given restricted mesh.
 
     This computes a standard laplacian operator as a scipy linear operator, except it is
-    restricted to a grid mask.  The use case for this is to compute surface diffusion
+    restricted to a mesh mask.  The use case for this is to compute surface diffusion
     on a gridded variable.  The mask is generated from a category on the lung_tissue
     variable.
     """
@@ -56,7 +62,7 @@ def periodic_discrete_laplacian(
     """Return a laplacian operator with periodic boundary conditions.
 
     This computes a standard laplacian operator as a scipy linear operator, except it is
-    restricted to a grid mask.  The use case for this is to compute surface diffusion
+    restricted to a mesh mask.  The use case for this is to compute surface diffusion
     on a gridded variable.  The mask is generated from a category on the lung_tissue
     variable.
     """
@@ -99,7 +105,7 @@ def periodic_discrete_laplacian(
     return laplacian.tocsr()
 
 
-def apply_diffusion(
+def apply_grid_diffusion(
     variable: np.ndarray,
     laplacian: csr_matrix,
     diffusivity: float,
@@ -118,7 +124,7 @@ def apply_diffusion(
     by a mask from the `lung_tissue` variable, e.g.
 
         surface_mask = lung_tissue == TissueTypes.EPITHELIUM
-        laplacian = discrete_laplacian(grid, mask)
+        laplacian = discrete_laplacian(mesh, mask)
         iron_concentration[:] = apply_diffusion(iron_concentration, laplacian, diffusivity, dt)
     """
     a = eye(*laplacian.shape) - (diffusivity * dt / 2.0) * laplacian
@@ -130,3 +136,35 @@ def apply_diffusion(
         raise Exception(f'CG failed ({info})')
 
     return np.maximum(0.0, var_next.reshape(variable.shape))
+
+
+def assemble_mesh_laplacian_crank_nicholson(
+    state: State,
+    diffusivity: float,
+    dt: float,
+) -> Tuple[csr_matrix, csr_matrix, Any]:
+    mesh: TetrahedralMesh = state.mesh
+
+    # load a tetrahedral mesh, will be a MeshTet1
+    skmesh: MeshTet1 = MeshTet1(doflocs=mesh.points, t=mesh.element_point_indices)
+    basis = Basis(skmesh, ElementTetP1())
+
+    # create matrices for Crank-Nicholson method
+    a = identity(basis.dofs.N) + 0.5 * dt * diffusivity * laplace.assemble(basis)
+    b = identity(basis.dofs.N) - 0.5 * dt * diffusivity * laplace.assemble(basis)
+
+    # Empty call to get_dofs() matches all boundary DOFs.
+    dofs = basis.get_dofs()
+
+    return a, b, dofs
+
+
+def apply_mesh_diffusion_crank_nicholson(
+    *,
+    variable: np.ndarray,
+    cn_a: csr_matrix,
+    cn_b: csr_matrix,
+    dofs: Any,
+    tolerance: float = 1e-10,
+):
+    return solve(*condense(cn_a, cn_b @ variable, D=dofs), tolerance=tolerance)

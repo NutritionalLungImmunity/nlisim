@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -14,7 +14,7 @@ from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'TGFBState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -65,7 +65,7 @@ class TGFB(ModuleModel):
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -115,7 +115,7 @@ class TGFB(ModuleModel):
         )
 
         # Diffusion of TGFB
-        tgfb.grid[:] = apply_diffusion(
+        tgfb.grid[:] = apply_grid_diffusion(
             variable=tgfb.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

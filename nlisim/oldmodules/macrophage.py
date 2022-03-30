@@ -133,7 +133,7 @@ class MacrophageCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
                             hyphae_count += 1
@@ -193,12 +193,12 @@ class MacrophageCellList(CellList):
             )
 
             cell['point'] = ending_cell_point
-            self.update_voxel_index([cell_index])
+            self.update_element_index([cell_index])
 
             for i in range(0, self.len_phagosome(cell_index)):
                 f_index = cell['phagosome'][i]
                 fungus[f_index]['point'] = ending_cell_point
-                fungus.update_voxel_index([f_index])
+                fungus.update_element_index([f_index])
 
     def internalize_conidia(self, m_det, max_spores, p_in, grid, fungus: FungusCellList):
         for i in self.alive():
@@ -216,7 +216,7 @@ class MacrophageCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if (
                             fungus[index]['form'] == FungusCellData.Form.CONIDIA
@@ -247,7 +247,7 @@ class MacrophageCellList(CellList):
 
 
 def cell_list_factory(self: 'MacrophageState'):
-    return MacrophageCellList(grid=self.global_state.grid)
+    return MacrophageCellList(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -272,7 +272,7 @@ class Macrophage(ModuleModel):
 
     def initialize(self, state: State):
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         macrophage.rec_r = self.config.getfloat('rec_r')
         macrophage.p_rec_r = self.config.getfloat('p_rec_r')
@@ -293,9 +293,9 @@ class Macrophage(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         m_cells: MacrophageCellList = macrophage.cells
         tissue = state.geometry.lung_tissue
-        grid = state.grid
-        cyto = state.molecules.grid['m_cyto']
-        n_cyto = state.molecules.grid['n_cyto']
+        grid = state.mesh
+        cyto = state.molecules.mesh['m_cyto']
+        n_cyto = state.molecules.mesh['n_cyto']
         fungus: FungusCellList = state.fungus.cells
         health = state.fungus.health
 

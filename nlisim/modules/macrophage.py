@@ -67,7 +67,7 @@ class MacrophageCellList(CellList):
 
 
 def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
-    return MacrophageCellList(grid=self.global_state.grid)
+    return MacrophageCellList(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -142,14 +142,14 @@ class Macrophage(PhagocyteModel):
 
         # initialize cells, placing them randomly
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
+        dz_field: np.ndarray = state.mesh.delta(axis=0)
+        dy_field: np.ndarray = state.mesh.delta(axis=1)
+        dx_field: np.ndarray = state.mesh.delta(axis=2)
         for vox_z, vox_y, vox_x in random.choices(locations, k=macrophage.init_num_macrophages):
             # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
+            z = state.mesh.z[vox_z]
+            y = state.mesh.y[vox_y]
+            x = state.mesh.x[vox_x]
             dz = dz_field[vox_z, vox_y, vox_x]
             dy = dy_field[vox_z, vox_y, vox_x]
             dx = dx_field[vox_z, vox_y, vox_x]
@@ -305,17 +305,17 @@ class Macrophage(PhagocyteModel):
                     )
                 )
             )
-            dz_field: np.ndarray = state.grid.delta(axis=0)
-            dy_field: np.ndarray = state.grid.delta(axis=1)
-            dx_field: np.ndarray = state.grid.delta(axis=2)
+            dz_field: np.ndarray = state.mesh.delta(axis=0)
+            dy_field: np.ndarray = state.mesh.delta(axis=1)
+            dx_field: np.ndarray = state.mesh.delta(axis=2)
             for coordinates in rg.choice(
                 tuple(activation_voxels), size=number_to_recruit, replace=True
             ):
                 vox_z, vox_y, vox_x = coordinates
                 # the x,y,z coordinates are in the centers of the grids
-                z = state.grid.z[vox_z]
-                y = state.grid.y[vox_y]
-                x = state.grid.x[vox_x]
+                z = state.mesh.z[vox_z]
+                y = state.mesh.y[vox_y]
+                x = state.mesh.x[vox_x]
                 dz = dz_field[vox_z, vox_y, vox_x]
                 dy = dy_field[vox_z, vox_y, vox_x]
                 dx = dx_field[vox_z, vox_y, vox_x]
@@ -352,7 +352,7 @@ class Macrophage(PhagocyteModel):
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 

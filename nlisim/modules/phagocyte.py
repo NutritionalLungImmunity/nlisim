@@ -71,13 +71,13 @@ class PhagocyteModel(ModuleModel):
         -------
         nothing
         """
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # At this moment, there is no inter-voxel geometry.
         cell_voxel: Voxel = grid.get_voxel(cell['point'])
         new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
         cell['point'] = new_point
-        cell_list.update_voxel_index([cell_index])
+        cell_list.update_element_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
@@ -184,7 +184,7 @@ def interact_with_aspergillus(
                 phagocyte_cell['phagosome'][0] = aspergillus_cell_index
                 # move the phagocyte to the location of the aspergillus
                 phagocyte_cell['point'] = aspergillus_cell['point']
-                phagocyte_cells.update_voxel_index([phagocyte_cell_index])
+                phagocyte_cells.update_element_index([phagocyte_cell_index])
 
     # All phagocytes are activated by their interaction, except with resting conidia
     if aspergillus_cell['status'] == AfumigatusCellStatus.RESTING_CONIDIA:

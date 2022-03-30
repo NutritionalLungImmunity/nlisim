@@ -3,7 +3,7 @@ from typing import Any, Dict
 import attr
 import numpy as np
 
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
@@ -11,7 +11,7 @@ from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'AntiTNFaState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -91,7 +91,7 @@ class AntiTNFa(ModuleModel):
         )
 
         # Diffusion of AntiTNFa
-        anti_tnf_a.grid[:] = apply_diffusion(
+        anti_tnf_a.grid[:] = apply_grid_diffusion(
             variable=anti_tnf_a.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

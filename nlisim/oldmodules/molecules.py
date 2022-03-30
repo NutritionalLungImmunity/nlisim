@@ -12,7 +12,7 @@ from nlisim.util import TissueType
 
 
 def molecule_grid_factory(self: 'MoleculesState'):
-    return MoleculeGrid(grid=self.global_state.grid)
+    return MoleculeGrid(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -79,24 +79,24 @@ class Molecules(ModuleModel):
         """Advance the state by a single time step."""
         molecules: MoleculesState = state.molecules
 
-        # iron = molecules.grid['iron']
+        # iron = molecules.mesh['iron']
         # with open('testfile.txt', 'w') as outfile:
         #     for data_slice in iron:
         #         np.savetxt(outfile, data_slice, fmt='%-7.2f')
 
-        # for molecule in molecules.grid.types:
-        #    self.degrade(molecules.grid[molecule])
-        #    self.diffuse(molecules.grid[molecule], state.grid, state.geometry.lung_tissue)
+        # for molecule in molecules.mesh.types:
+        #    self.degrade(molecules.mesh[molecule])
+        #    self.diffuse(molecules.mesh[molecule], state.mesh, state.geometry.lung_tissue)
 
         # self.diffuse_iron(
-        #     molecules.grid['iron'], state.grid, state.geometry.lung_tissue, molecules.iron_max
+        #     molecules.mesh['iron'], state.mesh, state.geometry.lung_tissue, molecules.iron_max
         # )
 
-        # self.degrade(molecules.grid['m_cyto'], molecules.cyto_evap_m)
-        # self.diffuse(molecules.grid['m_cyto'], state.grid, state.geometry.lung_tissue)
+        # self.degrade(molecules.mesh['m_cyto'], molecules.cyto_evap_m)
+        # self.diffuse(molecules.mesh['m_cyto'], state.mesh, state.geometry.lung_tissue)
 
-        # self.degrade(molecules.grid['n_cyto'], molecules.cyto_evap_n)
-        # self.diffuse(molecules.grid['n_cyto'], state.grid, state.geometry.lung_tissue)
+        # self.degrade(molecules.mesh['n_cyto'], molecules.cyto_evap_n)
+        # self.diffuse(molecules.mesh['n_cyto'], state.mesh, state.geometry.lung_tissue)
 
         for _ in range(3):
             molecules.grid.incr()
@@ -144,7 +144,7 @@ class Molecules(ModuleModel):
     #     return
 
     # @classmethod
-    # def diffuse_iron(cls, iron: np.ndarray, grid: RectangularGrid, tissue, iron_max):
+    # def diffuse_iron(cls, iron: np.ndarray, mesh: RectangularGrid, tissue, iron_max):
     #     # TODO These 2 functions should be implemented for all moleculess
     #     # the rest of the behavior (uptake, secretion, etc.) should be
     #     # handled in the cell specific module.
@@ -166,7 +166,7 @@ class Molecules(ModuleModel):
     #                     yj = index[1] + y
     #                     xi = index[2] + x
 
-    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                     if mesh.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
     #                         temp[index[0], index[1], index[2]] += iron[zk, yj, xi] / 26
 
     #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:
@@ -177,7 +177,7 @@ class Molecules(ModuleModel):
     #     return
 
     # @classmethod
-    # def diffuse(cls, molecule: np.ndarray, grid: RectangularGrid, tissue):
+    # def diffuse(cls, molecule: np.ndarray, mesh: RectangularGrid, tissue):
     #     # TODO These 2 functions should be implemented for all moleculess
     #     # the rest of the behavior (uptake, secretion, etc.) should be
     #     # handled in the cell specific module.
@@ -195,7 +195,7 @@ class Molecules(ModuleModel):
     #                     yj = index[1] + y
     #                     xi = index[2] + x
 
-    #                     if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
+    #                     if mesh.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
     #                         temp[index[0], index[1], index[2]] += molecule[zk, yj, xi] / 26
 
     #         if tissue[index[0], index[1], index[2]] == TissueTypes.AIR.value:

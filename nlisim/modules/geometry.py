@@ -50,7 +50,7 @@ class Geometry(ModuleModel):
         path = Path(__file__).parent / 'geometry.hdf5'
         try:
             with h5py.File(path, 'r') as f:
-                if f['geometry'][:].shape != state.grid.shape:
+                if f['geometry'][:].shape != state.mesh.shape:
                     raise ValidationError("shape doesn't match")
                 geometry.lung_tissue[:] = f['geometry'][:]
         except Exception:

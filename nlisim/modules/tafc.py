@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -15,7 +15,7 @@ from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
 def molecule_grid_factory(self: 'TAFCState') -> np.ndarray:
     # note the expansion to another axis to account for 0 or 1 bound Fe's.
     return np.zeros(
-        shape=self.global_state.grid.shape, dtype=[('TAFC', np.float64), ('TAFCBI', np.float64)]
+        shape=self.global_state.mesh.shape, dtype=[('TAFC', np.float64), ('TAFCBI', np.float64)]
     )
 
 
@@ -82,7 +82,7 @@ class TAFC(ModuleModel):
         iron: IronState = state.iron
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         voxel_volume: float = state.voxel_volume  # units: L
 
         # interaction with transferrin
@@ -173,7 +173,7 @@ class TAFC(ModuleModel):
 
         # Diffusion of TAFC
         for component in {'TAFC', 'TAFCBI'}:
-            tafc.grid[component][:] = apply_diffusion(
+            tafc.grid[component][:] = apply_grid_diffusion(
                 variable=tafc.grid[component],
                 laplacian=molecules.laplacian,
                 diffusivity=molecules.diffusion_constant,

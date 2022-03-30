@@ -100,7 +100,7 @@ class NeutrophilCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
                             hyphae_count += 1
@@ -164,7 +164,7 @@ class NeutrophilCellList(CellList):
             )
 
             cell['point'] = ending_cell_point
-            self.update_voxel_index([cell_index])
+            self.update_element_index([cell_index])
 
     def damage_hyphae(self, n_det, n_kill, time, health, grid, fungus: FungusCellList, iron):
         for i in self.alive(self.cell_data['granule_count'] > 0):
@@ -182,7 +182,7 @@ class NeutrophilCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     if len(index_arr) > 0:
                         iron[zi, yj, xk] = 0
                     for index in index_arr:
@@ -210,7 +210,7 @@ class NeutrophilCellList(CellList):
 
 
 def cell_list_factory(self: 'NeutrophilState'):
-    return NeutrophilCellList(grid=self.global_state.grid)
+    return NeutrophilCellList(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -235,7 +235,7 @@ class Neutrophil(ModuleModel):
 
     def initialize(self, state: State):
         neutrophil: NeutrophilState = state.neutrophil
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         neutrophil.neutropenic = self.config.getboolean('neutropenic')
         neutrophil.rec_rate_ph = self.config.getint('rec_rate_ph')
@@ -259,9 +259,9 @@ class Neutrophil(ModuleModel):
         health = state.fungus.health
 
         tissue = state.geometry.lung_tissue
-        grid = state.grid
-        cyto = state.molecules.grid['n_cyto']
-        iron = state.molecules.grid['iron']
+        grid = state.mesh
+        cyto = state.molecules.mesh['n_cyto']
+        iron = state.molecules.mesh['iron']
 
         # recruit new
         n_cells.recruit_new(

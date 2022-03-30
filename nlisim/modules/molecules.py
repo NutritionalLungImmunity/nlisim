@@ -45,7 +45,7 @@ class Molecules(ModuleModel):
 
         # construct the laplacian
         molecules.laplacian = periodic_discrete_laplacian(
-            grid=state.grid, mask=state.lung_tissue != TissueType.AIR
+            grid=state.mesh, mask=state.lung_tissue != TissueType.AIR
         )  # units: µm^-2
 
         return state

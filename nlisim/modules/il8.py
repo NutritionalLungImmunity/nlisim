@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -14,7 +14,7 @@ from nlisim.util import activation_function, turnover_rate
 
 
 def molecule_grid_factory(self: 'IL8State') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -75,7 +75,7 @@ class IL8(ModuleModel):
         molecules: MoleculesState = state.molecules
         neutrophil: NeutrophilState = state.neutrophil
         voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # IL8 activates neutrophils
         for neutrophil_cell_index in neutrophil.cells.alive():
@@ -105,7 +105,7 @@ class IL8(ModuleModel):
         )
 
         # Diffusion of IL8
-        il8.grid[:] = apply_diffusion(
+        il8.grid[:] = apply_grid_diffusion(
             variable=il8.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

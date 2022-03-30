@@ -10,7 +10,7 @@ from nlisim.state import State
 
 
 def molecule_grid_factory(self: 'IronState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -44,7 +44,7 @@ class Iron(ModuleModel):
 
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # dead macrophages contribute their iron to the environment
         for macrophage_cell in macrophage.cells:

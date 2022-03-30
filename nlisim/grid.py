@@ -3,7 +3,7 @@ Domain discretization interface.
 
 This module contains defines a common interface for representing the
 [discretization](https://en.wikipedia.org/wiki/Discretization) of the 3D
-simulation domain.  In this context, the "grid" is a discrete representation of
+simulation domain.  In this context, the "mesh" is a discrete representation of
 the region of 3D space where the simulation occurs (the domain).  The code
 will generally assume the domain is the cartesian product of intervals,
 \[
@@ -14,12 +14,12 @@ Users should assume that the units of these quantities are in physical quantitie
 of the domain in nanometers.  There is also no requirement that the lower left
 corner of the domain is aligned with the origin.
 
-The grid breaks the continuous domain up into discrete "voxels" each of which
+The mesh breaks the continuous domain up into discrete "voxels" each of which
 will be centered about a specific point inside the domain.  In general, the
 geometry of these voxels is arbitrary and unstructured, but currently only
 [rectangular grids](https://en.wikipedia.org/wiki/Regular_grid) are
 implemented.  For these grids, all voxels are hyper-rectangles and are aligned
-along the domains axes.  See the `simulation.grid.RectangularGrid` implementation
+along the domains axes.  See the `simulation.mesh.RectangularGrid` implementation
 for details.
 """
 from collections import defaultdict
@@ -50,7 +50,7 @@ class TissueType(IntEnum):
 
 
 @attrs(auto_attribs=True, repr=False)
-class TetrahedralGrid(object):
+class TetrahedralMesh(object):
     """
     A class representation of a tetrahedral mesh.
 
@@ -72,9 +72,10 @@ class TetrahedralGrid(object):
     element_point_indices: np.ndarray = attrib()
     element_neighbors: np.ndarray = attrib()
     element_tissue_type: np.ndarray = attrib()
+    element_volumes: np.ndarray = attrib()
 
     @classmethod
-    def load(cls, filename: str) -> 'TetrahedralGrid':
+    def load(cls, filename: str) -> 'TetrahedralMesh':
         reader = vtkXMLUnstructuredGridReader()
         reader.SetFileName(filename)
         # noinspection PyArgumentList
@@ -91,44 +92,54 @@ class TetrahedralGrid(object):
         element_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
         element_tissue_type.flags['WRITEABLE'] = False
 
-        element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((5, -1))[1:, :]
+        element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((-1, 5))[:, 1:]
         element_point_indices.flags['WRITEABLE'] = False
 
-        element_neighbors: np.ndarray
-        if data.GetCells().HasArray("neighbors") == 1:
-            # use any precomputed dual
-            element_neighbors = vtk_to_numpy(data.GetCellData().GetArray("neighbors"))
-        else:
-            # if we don't have a precomputed 1-skeleton of the dual, compute it now
-            # collect all faces and their incident tetrahedra
-            face_tets = defaultdict(list)
-            for tet_index in range(element_point_indices.shape[0]):
-                point_indices = np.array(sorted(element_point_indices[tet_index, :]))
-                for omitted_idx in range(4):
-                    face = tuple(point_indices[[k for k in range(4) if k != omitted_idx]])
-                    tet_list = face_tets[face]
-                    tet_list.append(tet_index)
-            # read the tetrahedra incidence lists from the faces
-            element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
-            for face, tets in face_tets.items():
-                assert 0 < len(tets) <= 2, f"Not a manifold at face: {face}"
-                if len(tets) == 1:
-                    continue
-                tetA, tetB = tets
-                # insert tetB into incidence list for tetA
-                idx = np.argmin(element_neighbors[tetA])
-                element_neighbors[tetA, idx] = tetB
-                # insert tetA into incidence list for tetB
-                idx = np.argmin(element_neighbors[tetB])
-                element_neighbors[tetB, idx] = tetA
+        # element_neighbors: np.ndarray
+        # if data.GetCells().HasArray("neighbors") == 1:
+        #     # use any precomputed dual
+        #     element_neighbors = vtk_to_numpy(data.GetCellData().GetArray("neighbors"))
+        # else:
+
+        # TODO: see if vtk has this
+        # if we don't have a precomputed 1-skeleton of the dual, compute it now
+        # collect all faces and their incident tetrahedra
+        face_tets = defaultdict(list)
+        for tet_index in range(element_point_indices.shape[0]):
+            point_indices = np.array(sorted(element_point_indices[tet_index, :]))
+            for omitted_idx in range(4):
+                face = tuple(point_indices[[k for k in range(4) if k != omitted_idx]])
+                tet_list = face_tets[face]
+                tet_list.append(tet_index)
+        # read the tetrahedra incidence lists from the faces
+        element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
+        for face, tets in face_tets.items():
+            assert 0 < len(tets) <= 2, f"Not a manifold at face: {face}"
+            if len(tets) == 1:
+                continue
+            tet_a, tet_b = tets
+            # insert tet_b into incidence list for tet_a
+            idx = np.argmin(element_neighbors[tet_a])
+            element_neighbors[tet_a, idx] = tet_b
+            # insert tet_a into incidence list for tet_b
+            idx = np.argmin(element_neighbors[tet_b])
+            element_neighbors[tet_b, idx] = tet_a
 
         element_neighbors.flags['WRITEABLE'] = False
+
+        # precompute element volumes
+        tet_points = points[element_point_indices, :]
+        element_volumes = np.abs(
+            np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0
+        )
+        element_volumes.flags['WRITEABLE'] = False
 
         return cls(
             points=points,
             element_point_indices=element_point_indices,
             element_neighbors=element_neighbors,
             element_tissue_type=element_tissue_type,
+            element_volumes=element_volumes,
         )
 
     def is_in_element(self, element_index: int, point: Point) -> bool:
@@ -191,34 +202,59 @@ class TetrahedralGrid(object):
         -------
         float with units equal to (linear units)^3
         """
-        tet_points = self.points[self.element_point_indices[element_index, :], :]
-        return np.abs(np.linalg.det(tet_points[1:, :] - tet_points[0, :]) / 6.0)
+        return self.element_volumes[element_index]
 
-    def allocate_point_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
+    def allocate_point_variable(self, dtype: np.DTypeLike = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined on the points of this mesh."""
         return np.zeros(self.points.shape, dtype=dtype)
 
-    def allocate_element_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
-        """Allocate a numpy array defined on the (3-dimensional) elements of this mesh."""
+    def allocate_volume_variable(self, dtype: np.DTypeLike = _dtype_float64) -> np.ndarray:
+        """Allocate a numpy array defined on the 3-dimensional elements of this mesh."""
         return np.zeros(self.element_point_indices.shape[0], dtype=dtype)
 
     def get_adjacent_elements(self, element_index: int) -> Iterator[int]:
+        """Return all 3-dimensional elements which share a face with the given element."""
         return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
+
+    def tetrahedral_proportions(self, element_index: int, point: Point) -> np.ndarray:
+        tet_points = self.points[self.element_point_indices[element_index, :], :]
+
+        ortho_coords = np.min(
+            1.0,
+            np.max(
+                0.0, np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :])
+            ),
+        )
+
+        assert 0.0 <= np.sum(ortho_coords) <= 1.0 and np.isclose(
+            ((tet_points[1:, :] - tet_points[0, :]) @ ortho_coords) + tet_points[0, :], point
+        ), f"Point does not seem to be in the element. {point=} {element_index=} {tet_points=}"
+
+        proportional_coords = np.array(
+            [
+                1 - ortho_coords[0] - ortho_coords[1] - ortho_coords[2],
+                ortho_coords[0],
+                ortho_coords[1],
+                ortho_coords[2],
+            ]
+        )
+
+        return proportional_coords
 
 
 @attrs(auto_attribs=True, repr=False)
 class RectangularGrid(object):
     r"""
-    A class representation of a rectangular grid.
+    A class representation of a rectangular mesh.
 
     This class breaks the simulation domain into a \(n_x \times n_y \times
     n_z\) array of hyper-rectangles.  As is the case for the full domain, each
-    grid element is cartesian product of intervals,
+    mesh element is cartesian product of intervals,
     \[
         \Omega_{i,j,k} = [x_i, x_{i+1}] \times [y_j, y_{j+1}] \times [z_k, z_{k+1}].
     \]
-    In addition, there is a "center" for each grid cell contained within the
-    grid element,
+    In addition, there is a "center" for each mesh cell contained within the
+    mesh element,
     \[
         (\bar{x}_i, \bar{y}_j, \bar{z}_k) \in \Omega_{i,j,k}.
     \]
@@ -250,17 +286,17 @@ class RectangularGrid(object):
     Parameters
     ----------
     x : np.ndarray
-        The `x`-coordinates of the centers of each grid cell.
+        The `x`-coordinates of the centers of each mesh cell.
     y : np.ndarray
-        The `y`-coordinates of the centers of each grid cell.
+        The `y`-coordinates of the centers of each mesh cell.
     z : np.ndarray
-        The `z`-coordinates of the centers of each grid cell.
+        The `z`-coordinates of the centers of each mesh cell.
     xv : np.ndarray
-        The `x`-coordinates of the edges of each grid cell.
+        The `x`-coordinates of the edges of each mesh cell.
     yv : np.ndarray
-        The `y`-coordinates of the edges of each grid cell.
+        The `y`-coordinates of the edges of each mesh cell.
     zv : np.ndarray
-        The `z`-coordinates of the edges of each grid cell.
+        The `z`-coordinates of the edges of each mesh cell.
 
     """
 
@@ -284,7 +320,7 @@ class RectangularGrid(object):
 
     @classmethod
     def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -> 'RectangularGrid':
-        """Create a rectangular grid with uniform spacing in each axis."""
+        """Create a rectangular mesh with uniform spacing in each axis."""
         nz, ny, nx = shape
         dz, dy, dx = spacing
         x, xv = cls._make_coordinate_arrays(nx, dx)
@@ -294,21 +330,23 @@ class RectangularGrid(object):
 
     @property
     def meshgrid(self) -> List[np.ndarray]:
-        """Return the coordinate grid representation.
+        # noinspection PyUnresolvedReferences
+        """Return the coordinate mesh representation.
 
         This returns three 3D arrays containing the z, y, x coordinates
         respectively.  For example,
 
-        >>> Z, Y, X = grid.meshgrid()
+        >>> Z, Y, X = mesh.meshgrid()
 
         `X[zi, yi, xi]` is is the x-coordinate of the point at indices `(xi, yi,
         zi)`.  The data returned is a read-only view into the coordinate arrays
         and is efficient to compute on demand.
         """
+        # noinspection PyTypeChecker
         return np.meshgrid(self.z, self.y, self.x, indexing='ij', copy=False)
 
     def delta(self, axis: int) -> np.ndarray:
-        """Return grid spacing along the given axis."""
+        """Return mesh spacing along the given axis."""
         if axis == 0:
             meshgrid = np.meshgrid(self.zv, self.y, self.x, indexing='ij', copy=False)[axis]
         elif axis == 1:
@@ -322,13 +360,13 @@ class RectangularGrid(object):
 
     @property
     def shape(self) -> ShapeType:
-        return (len(self.z), len(self.y), len(self.x))
+        return len(self.z), len(self.y), len(self.x)
 
     def __len__(self):
         return reduce(lambda x, y: x * y, self.shape, 1)
 
     def allocate_variable(self, dtype: np.dtype = _dtype_float64) -> np.ndarray:
-        """Allocate a numpy array defined over this grid."""
+        """Allocate a numpy array defined over this mesh."""
         return np.zeros(self.shape, dtype=dtype)
 
     def __repr__(self):
@@ -336,14 +374,14 @@ class RectangularGrid(object):
         return f'RectangularGrid(nx={shp[2]}, ny={shp[1]}, nz={shp[0]})'
 
     def save(self, file: H5File) -> None:
-        """Save the grid state into an HDF5 file."""
+        """Save the mesh state into an HDF5 file."""
         for dim in ('x', 'xv', 'y', 'yv', 'z', 'zv'):
             d = file.create_dataset(dim, data=getattr(self, dim))
             d.make_scale(dim)
 
     @classmethod
     def load(cls, file: H5File) -> 'RectangularGrid':
-        """Generate a grid object from an existing HDF5 file."""
+        """Generate a mesh object from an existing HDF5 file."""
         kwargs = {}
         for dim in ('x', 'xv', 'y', 'yv', 'z', 'zv'):
             kwargs[dim] = file[dim][:]
@@ -357,14 +395,14 @@ class RectangularGrid(object):
         return indices[0] - 1
 
     def get_flattened_index(self, voxel: Voxel):
-        """Return the flattened index of a voxel inside the grid.
+        """Return the flattened index of a voxel inside the mesh.
 
         This is a convenience method that wraps numpy.ravel_multi_index.
         """
         return np.ravel_multi_index(cast(Tuple[int, int, int], voxel), self.shape)
 
     def voxel_from_flattened_index(self, index: int) -> 'Voxel':
-        """Create a Voxel from flattened index of the grid.
+        """Create a Voxel from flattened index of the mesh.
 
         This is a convenience method that wraps numpy.unravel_index.
         """
@@ -374,7 +412,7 @@ class RectangularGrid(object):
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.
 
-        For points outside of the grid, this method will return invalid
+        For points outside of the mesh, this method will return invalid
         indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
         `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
         the `is_valid_voxel` method to determine if the voxel is valid.

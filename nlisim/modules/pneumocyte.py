@@ -53,7 +53,7 @@ class PneumocyteCellList(CellList):
 
 
 def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
-    return PneumocyteCellList(grid=self.global_state.grid)
+    return PneumocyteCellList(grid=self.global_state.mesh)
 
 
 @attrs(kw_only=True)
@@ -101,16 +101,16 @@ class Pneumocyte(PhagocyteModel):
         )  # units: probability
 
         # initialize cells, placing one per epithelial voxel
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
+        dz_field: np.ndarray = state.mesh.delta(axis=0)
+        dy_field: np.ndarray = state.mesh.delta(axis=1)
+        dx_field: np.ndarray = state.mesh.delta(axis=2)
         epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
         rg.shuffle(epithelial_voxels)
         for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint('count')]:
             # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
+            z = state.mesh.z[vox_z]
+            y = state.mesh.y[vox_y]
+            x = state.mesh.x[vox_x]
             dz = dz_field[vox_z, vox_y, vox_x]
             dy = dy_field[vox_z, vox_y, vox_x]
             dx = dx_field[vox_z, vox_y, vox_x]
@@ -149,7 +149,7 @@ class Pneumocyte(PhagocyteModel):
         # il6: IL6State = getattr(state, 'il6', None)
         # il8: IL8State = getattr(state, 'il8', None)
         tnfa: TNFaState = state.tnfa
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         voxel_volume: float = state.voxel_volume
 
         for pneumocyte_cell_index in pneumocyte.cells.alive():
@@ -180,7 +180,7 @@ class Pneumocyte(PhagocyteModel):
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.DEAD,
             }:
-                local_aspergillus = afumigatus.cells.get_cells_in_voxel(pneumocyte_cell_voxel)
+                local_aspergillus = afumigatus.cells.get_cells_in_element(pneumocyte_cell_voxel)
                 for aspergillus_index in local_aspergillus:
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
 
@@ -198,11 +198,11 @@ class Pneumocyte(PhagocyteModel):
 
             # # secrete IL6
             # if il6 is not None and pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-            #     il6.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
+            #     il6.mesh[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il6_qtty
             #
             # # secrete IL8
             # if il8 is not None and pneumocyte_cell['tnfa']:
-            #     il8.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
+            #     il8.mesh[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_il8_qtty
 
             # interact with TNFa
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:

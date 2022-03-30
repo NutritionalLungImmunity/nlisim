@@ -119,9 +119,9 @@ class MoleculeGrid(object):
         return self._concentrations.shape
 
     def save(self, group: Group, name: str, metadata: dict) -> Group:
-        """Save the molecule grid.
+        """Save the molecule mesh.
 
-        Save the list of grid as a new composite data structure inside
+        Save the list of mesh as a new composite data structure inside
         an HDF5 group.
         """
         concentrations = self._concentrations
@@ -139,7 +139,7 @@ class MoleculeGrid(object):
 
     @classmethod
     def load(cls, global_state: State, group: Group, name: str, metadata: dict) -> 'MoleculeGrid':
-        """Load a molecule grid object."""
+        """Load a molecule mesh object."""
         composite_dataset = group[name]
 
         # TODO: load back the molecule types
@@ -149,7 +149,7 @@ class MoleculeGrid(object):
         molecule_type = composite_dataset.attrs['molecule_type']
 
         return cls(
-            grid=global_state.grid,
+            grid=global_state.mesh,
             concentrations=concentrations,
             sources=sources,
             molecule_type=molecule_type,

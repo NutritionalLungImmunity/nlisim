@@ -43,7 +43,7 @@ def state(config):
 
 @fixture
 def grid():
-    # a 100 x 100 x 100 unit grid
+    # a 100 x 100 x 100 unit mesh
     yield RectangularGrid.construct_uniform((10, 10, 10), (10, 10, 10))
 
 
@@ -64,7 +64,7 @@ def hdf5_group(hdf5_file):
 
 @fixture
 def epi_geometry():
-    # a 10 x 10 x 10 grid with epithelium
+    # a 10 x 10 x 10 mesh with epithelium
     tissue = np.empty((10, 10, 10))
     tissue.fill(3)
     yield tissue
@@ -72,7 +72,7 @@ def epi_geometry():
 
 @fixture
 def air_geometry():
-    # a 10 x 10 x 10 grid with air
+    # a 10 x 10 x 10 mesh with air
     tissue = np.empty((10, 10, 10))
     tissue.fill(0)
     yield tissue

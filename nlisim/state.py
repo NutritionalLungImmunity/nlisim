@@ -8,7 +8,7 @@ import h5py
 from h5py import File as H5File
 import numpy as np
 
-from nlisim.grid import RectangularGrid
+from nlisim.grid import RectangularGrid, TetrahedralMesh
 from nlisim.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
@@ -25,7 +25,7 @@ class State(object):
     """A container for storing the simulation state at a single time step."""
 
     time: float
-    grid: RectangularGrid
+    mesh: TetrahedralMesh
     lung_tissue: np.ndarray
     voxel_volume: float
     space_volume: float
@@ -83,7 +83,7 @@ class State(object):
         with H5File(arg, 'w') as hf:
             hf.attrs['time'] = self.time
             hf.attrs['config'] = str(self.config)  # TODO: save this in a different format
-            self.grid.save(hf)
+            self.mesh.save(hf)
 
             for module in self.config.modules:
                 module_state = cast('ModuleState', getattr(self, module.name))
@@ -141,7 +141,7 @@ class State(object):
 
     def __repr__(self):
         modules = [m.name for m in self.config.modules]
-        return f'State(time={self.time}, grid={repr(self.grid)}, modules={modules})'
+        return f'State(time={self.time}, mesh={repr(self.mesh)}, modules={modules})'
 
     # expose module state as attributes on the global state object
     def __getattr__(self, module_name: str) -> Any:
@@ -156,7 +156,7 @@ class State(object):
 def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
     """Return an "attr.ib" object defining a gridded state variable.
 
-    A "gridded" variable is one that is discretized on the primary grid.  The
+    A "gridded" variable is one that is discretized on the primary mesh.  The
     attribute returned by this method contains a factory function for
     initialization and a default validation that checks for NaN's.
     """
@@ -164,10 +164,10 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
     from nlisim.validation import ValidationError  # prevent circular imports
 
     def factory(self: 'ModuleState') -> np.ndarray:
-        return self.global_state.grid.allocate_variable(dtype)
+        return self.global_state.mesh.allocate_variable(dtype)
 
     def validate_numeric(self: 'ModuleState', attribute: attr.Attribute, value: np.ndarray) -> None:
-        grid = self.global_state.grid
+        grid = self.global_state.mesh
         if value.shape != grid.shape:
             raise ValidationError(f'Invalid shape for gridded variable {attribute.name}')
         if value.dtype.names:
@@ -178,7 +178,7 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
             if not np.isfinite(value).all():
                 raise ValidationError(f'Invalid value in gridded variable {attribute.name}')
 
-    metadata = {'grid': True}
+    metadata = {'mesh': True}
     return attr.ib(
         default=attr.Factory(factory, takes_self=True),
         validator=validate_numeric,
@@ -188,7 +188,7 @@ def grid_variable(dtype: np.dtype = _dtype_float) -> np.ndarray:
 
 def cell_list(list_class: Type['CellList']) -> 'CellList':
     def factory(self: 'ModuleState'):
-        return list_class(grid=self.global_state.grid)
+        return list_class(grid=self.global_state.mesh)
 
     metadata = {'cell_list': True}
     return attr.ib(default=attr.Factory(factory, takes_self=True), metadata=metadata)

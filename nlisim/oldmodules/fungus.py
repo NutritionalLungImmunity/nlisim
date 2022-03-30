@@ -72,7 +72,7 @@ class FungusCellList(CellList):
         for vox_index in np.argwhere(iron > iron_min):
             vox = Voxel(x=vox_index[2], y=vox_index[1], z=vox_index[0])
 
-            cells_here = self.get_cells_in_voxel(vox)
+            cells_here = self.get_cells_in_element(vox)
 
             indices = []
             for index in cells_here:
@@ -112,7 +112,7 @@ class FungusCellList(CellList):
 
     def initialize_spores(self, tissue: np.ndarray, init_num: int):
         """Initialize spores on epithelium cells."""
-        grid = self.grid
+        grid = self.mesh
         if init_num > 0:
             points = np.zeros((init_num, 3))
             indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
@@ -206,7 +206,7 @@ class FungusCellList(CellList):
     def kill(self):
         """If a cell have 0 health point or out of range, kill the cell."""
         cells = self.cell_data
-        mask = cells.point_mask(cells['point'], self.grid)
+        mask = cells.point_mask(cells['point'], self.mesh)
         indices = self.alive(np.logical_or(cells['health'] <= 0, np.invert(mask)))
 
         cells['status'][indices] = FungusCellData.Status.DEAD
@@ -262,7 +262,7 @@ class FungusCellList(CellList):
 
 
 def cell_list_factory(self: 'FungusState'):
-    return FungusCellList(grid=self.global_state.grid)
+    return FungusCellList(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -288,7 +288,7 @@ class Fungus(ModuleModel):
 
     def initialize(self, state: State):
         fungus: FungusState = state.fungus
-        # grid: RectangularGrid = state.grid
+        # mesh: RectangularGrid = state.mesh
         tissue = state.geometry.lung_tissue
 
         self.init_num = self.config.getint('init_num')
@@ -319,7 +319,7 @@ class Fungus(ModuleModel):
         cells.age()
         cells.change_status(self.p_internal_swell, self.rest_time, self.swell_time)
         if hasattr(state, 'molecules'):
-            iron = state.molecules.grid['iron']
+            iron = state.molecules.mesh['iron']
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 

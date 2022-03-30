@@ -1,11 +1,15 @@
 from typing import Any, Dict
 
-import attr
+from attr import Factory, attrib, attrs
 import numpy as np
+from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.coordinates import Point
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
@@ -13,13 +17,13 @@ from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'IL6State') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class IL6State(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    field: np.ndarray = attrib(
+        default=Factory(molecule_grid_factory, takes_self=True)
     )  # units: atto-mol
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
@@ -30,6 +34,10 @@ class IL6State(ModuleState):
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # units: aM
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class IL6(ModuleModel):
@@ -53,6 +61,7 @@ class IL6(ModuleModel):
             'pneumocyte_secretion_rate'
         )  # units: atto-mol/(cell*h)
         il6.k_d = self.config.getfloat('k_d')  # units: atto-mol
+        il6.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
         # units: %/step + %/min * (min/step) -> %/step
@@ -65,6 +74,14 @@ class IL6(ModuleModel):
         il6.macrophage_secretion_rate_unit_t = il6.macrophage_secretion_rate * (self.time_step / 60)
         il6.neutrophil_secretion_rate_unit_t = il6.neutrophil_secretion_rate * (self.time_step / 60)
         il6.pneumocyte_secretion_rate_unit_t = il6.pneumocyte_secretion_rate * (self.time_step / 60)
+
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state, il6.diffusion_constant, self.time_step
+        )
+        il6.cn_a = cn_a
+        il6.cn_b = cn_b
+        il6.dofs = dofs
 
         return state
 
@@ -80,44 +97,58 @@ class IL6(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
-        grid: RectangularGrid = state.grid
+        mesh: TetrahedralMesh = state.mesh
+
+        def il6_secretion(*, element_index: int, point: Point, amount: float) -> None:
+            proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
+            points = mesh.element_point_indices[element_index]
+            il6.field[points] += proportions * amount
 
         # active Macrophages secrete il6
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
-                il6.grid[tuple(macrophage_cell_voxel)] += il6.macrophage_secretion_rate_unit_t
+                il6_secretion(
+                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    point=macrophage_cell['point'],
+                    amount=il6.macrophage_secretion_rate_unit_t,
+                )
 
         # active Neutrophils secrete il6
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
-                il6.grid[tuple(neutrophil_cell_voxel)] += il6.neutrophil_secretion_rate_unit_t
+                il6_secretion(
+                    element_index=neutrophil.cells.element_index[neutrophil_cell_index],
+                    point=neutrophil_cell['point'],
+                    amount=il6.neutrophil_secretion_rate_unit_t,
+                )
 
         # active Pneumocytes secrete il6
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell['point'])
-                il6.grid[tuple(pneumocyte_cell_voxel)] += il6.pneumocyte_secretion_rate_unit_t
+                il6_secretion(
+                    element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
+                    point=pneumocyte_cell['point'],
+                    amount=il6.pneumocyte_secretion_rate_unit_t,
+                )
 
         # Degrade IL6
-        il6.grid *= il6.half_life_multiplier
-        il6.grid *= turnover_rate(
-            x=np.ones(shape=il6.grid.shape, dtype=np.float64),
+        il6.field *= il6.half_life_multiplier
+        il6.field *= turnover_rate(
+            x=np.ones(shape=il6.field.shape, dtype=np.float64),
             x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
 
         # Diffusion of IL6
-        il6.grid[:] = apply_diffusion(
-            variable=il6.grid,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+        il6.field[:] = apply_mesh_diffusion_crank_nicholson(
+            variable=il6.field,
+            cn_a=il6.cn_a,
+            cn_b=il6.cn_b,
+            dofs=il6.dofs,
         )
 
         return state
@@ -130,9 +161,9 @@ class IL6(ModuleModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (nM)': float(np.mean(il6.grid[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(np.mean(il6.field[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
         il6: IL6State = state.il6
-        return 'molecule', il6.grid
+        return 'molecule', il6.field

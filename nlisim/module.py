@@ -86,7 +86,7 @@ class ModuleState(object):
     @classmethod
     def save_simple_type(cls, group: Group, name: str, value: AttrValue, metadata: dict) -> Dataset:
         kwargs: Dict[str, Any] = {}
-        if metadata.get('grid'):
+        if metadata.get('mesh'):
             kwargs = dict(
                 compression='gzip',  # transparent compression
                 shuffle=True,  # improve compressiblity
@@ -98,8 +98,8 @@ class ModuleState(object):
         # mark the original attribute as a scalar to unwrap the numpy array when loading
         var.attrs['scalar'] = not isinstance(value, np.ndarray)
 
-        if metadata.get('grid'):
-            # attach grid scales to dataset dimensions
+        if metadata.get('mesh'):
+            # attach mesh scales to dataset dimensions
             var.dims[0].attach_scale(var.file['z'])
             var.dims[1].attach_scale(var.file['y'])
             var.dims[2].attach_scale(var.file['x'])

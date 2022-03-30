@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -13,7 +13,7 @@ from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'MIP1BState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attr.s(kw_only=True, repr=False)
@@ -74,7 +74,7 @@ class MIP1B(ModuleModel):
         molecules: MoleculesState = state.molecules
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # interact with pneumocytes
         for pneumocyte_cell_index in pneumocyte.cells.alive():
@@ -102,7 +102,7 @@ class MIP1B(ModuleModel):
         )
 
         # Diffusion of MIP1b
-        mip1b.grid[:] = apply_diffusion(
+        mip1b.grid[:] = apply_grid_diffusion(
             variable=mip1b.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

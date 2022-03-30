@@ -21,7 +21,7 @@ from nlisim.util import TissueType, activation_function
 # hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
     return np.zeros(
-        shape=self.global_state.grid.shape,
+        shape=self.global_state.mesh.shape,
         dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)],
     )
 
@@ -80,7 +80,7 @@ class ErythrocyteModel(ModuleModel):
         hemolysin: HemolysinState = state.hemolysin
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         voxel_volume: float = state.voxel_volume
 
         shape = erythrocyte.cells['count'].shape
@@ -121,7 +121,7 @@ class ErythrocyteModel(ModuleModel):
         )
 
         for z, y, x in zip(*np.where(erythrocytes_to_hemorrhage > 0)):
-            local_macrophages = macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z))
+            local_macrophages = macrophage.cells.get_cells_in_element(Voxel(x=x, y=y, z=z))
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]

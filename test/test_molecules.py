@@ -1,13 +1,13 @@
 import numpy as np
 from pytest import fixture
 
-# from nlisim.grid import RectangularGrid
+# from nlisim.mesh import RectangularGrid
 from nlisim.oldmodules.molecules import Molecules
 
 
 @fixture
 def iron():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(10)
     yield i
@@ -15,7 +15,7 @@ def iron():
 
 @fixture
 def cyto():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(0)
     yield i
@@ -23,7 +23,7 @@ def cyto():
 
 @fixture
 def tissue():
-    # a 10 x 10 x 10 grid of blood
+    # a 10 x 10 x 10 mesh of blood
     t = np.empty((10, 10, 10))
     t.fill(1)
     t[6:] = 3
@@ -32,7 +32,7 @@ def tissue():
 
 @fixture
 def air_tissue():
-    # a 10 x 10 x 10 grid of blood
+    # a 10 x 10 x 10 mesh of blood
     t = np.empty((10, 10, 10))
     t.fill(0)
     t[5, 5, 5] = 3
@@ -42,10 +42,10 @@ def air_tissue():
 # tests
 
 
-# def test_diffuse(tissue, grid: RectangularGrid, cyto):
+# def test_diffuse(tissue, mesh: RectangularGrid, cyto):
 #     cyto[1, 2, 3] = 26
 
-#     Molecules.diffuse(cyto, grid, tissue)
+#     Molecules.diffuse(cyto, mesh, tissue)
 
 #     assert cyto[1, 2, 3] == 1
 #     assert cyto[0, 2, 3] == 1
@@ -94,11 +94,11 @@ def test_degrade(cyto):
     assert cyto[1, 2, 3] == 9
 
 
-# def test_diffuse_iron(iron, grid, tissue):
+# def test_diffuse_iron(iron, mesh, tissue):
 #     iron[:] = 0
 #     iron[1, 2, 3] = 260
 #     tissue[1, 2, 3] = 1
 
-#     Molecules.diffuse_iron(iron, grid, tissue, 26)
+#     Molecules.diffuse_iron(iron, mesh, tissue, 26)
 
 #     assert iron[1, 2, 3] == 1

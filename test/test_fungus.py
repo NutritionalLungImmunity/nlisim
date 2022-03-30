@@ -8,7 +8,7 @@ from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 
 @fixture
 def iron():
-    # a 10 x 10 x 10 grid with 10 iron
+    # a 10 x 10 x 10 mesh with 10 iron
     i = np.empty((10, 10, 10))
     i.fill(10)
     yield i

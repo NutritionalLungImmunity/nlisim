@@ -118,7 +118,7 @@ class EpitheliumCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = spores.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = spores.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if (
                             spores[index]['form'] == FungusCellData.Form.CONIDIA
@@ -153,7 +153,7 @@ class EpitheliumCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if fungus[index]['form'] == FungusCellData.Form.CONIDIA and fungus[index][
                             'status'
@@ -174,7 +174,7 @@ class EpitheliumCellList(CellList):
                 yj = vox.y + dy
                 xk = vox.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    index_arr = fungus.get_cells_in_voxel(Voxel(x=xk, y=yj, z=zi))
+                    index_arr = fungus.get_cells_in_element(Voxel(x=xk, y=yj, z=zi))
                     for index in index_arr:
                         if fungus[index]['form'] == FungusCellData.Form.HYPHAE:
                             hyphae_count += 1
@@ -201,7 +201,7 @@ class EpitheliumCellList(CellList):
 
 
 def cell_list_factory(self: 'EpitheliumState'):
-    return EpitheliumCellList(grid=self.global_state.grid)
+    return EpitheliumCellList(grid=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -224,7 +224,7 @@ class Epithelium(ModuleModel):
 
     def initialize(self, state: State):
         epithelium: EpitheliumState = state.epithelium
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         tissue = state.geometry.lung_tissue
 
         epithelium.init_health = self.config.getfloat('init_health')
@@ -258,13 +258,13 @@ class Epithelium(ModuleModel):
         epi: EpitheliumState = state.epithelium
         cells = epi.cells
 
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         spores = state.fungus.cells
         health = state.fungus.health
 
-        m_cyto = state.molecules.grid['m_cyto']
-        n_cyto = state.molecules.grid['n_cyto']
+        m_cyto = state.molecules.mesh['m_cyto']
+        n_cyto = state.molecules.mesh['n_cyto']
 
         # internalize
         if len(spores.alive(spores.cell_data['form'] == FungusCellData.Form.CONIDIA)) > 0:

@@ -4,7 +4,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
@@ -12,7 +12,7 @@ from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attrs(kw_only=True, repr=False)
@@ -105,7 +105,7 @@ class EstB(ModuleModel):
         )
 
         # Diffusion of EstB
-        estb.grid[:] = apply_diffusion(
+        estb.grid[:] = apply_grid_diffusion(
             variable=estb.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

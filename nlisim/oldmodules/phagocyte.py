@@ -189,7 +189,7 @@ class PhagocyteCellList(CellList):
                             grid.zv[vox.z + vox_list[i][2]], grid.zv[vox.z + vox_list[i][2] + 1]
                         ),
                     )
-                    self.update_voxel_index([index])
+                    self.update_element_index([index])
                     break
 
 

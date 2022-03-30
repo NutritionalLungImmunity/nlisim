@@ -5,7 +5,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_diffusion
+from nlisim.diffusion import apply_grid_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -14,7 +14,7 @@ from nlisim.util import turnover_rate
 
 
 def molecule_grid_factory(self: 'HemoglobinState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attrs(kw_only=True, repr=False)
@@ -52,7 +52,7 @@ class Hemoglobin(ModuleModel):
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
         afumigatus: AfumigatusState = state.afumigatus
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
 
         # afumigatus uptakes iron from hemoglobin
         for afumigatus_cell_index in afumigatus.cells.alive():
@@ -77,7 +77,7 @@ class Hemoglobin(ModuleModel):
         )
 
         # Diffusion of Hemoglobin
-        hemoglobin.grid[:] = apply_diffusion(
+        hemoglobin.grid[:] = apply_grid_diffusion(
             variable=hemoglobin.grid,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,

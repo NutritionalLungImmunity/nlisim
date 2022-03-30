@@ -12,7 +12,7 @@ from nlisim.util import activation_function
 
 
 def molecule_grid_factory(self: 'HepcidinState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.grid.shape, dtype=float)
+    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
 
 
 @attrs(kw_only=True, repr=False)
@@ -61,7 +61,9 @@ class Hepcidin(ModuleModel):
             )
         )
         for z, y, x in activated_voxels:
-            for macrophage_cell_index in macrophage.cells.get_cells_in_voxel(Voxel(x=x, y=y, z=z)):
+            for macrophage_cell_index in macrophage.cells.get_cells_in_element(
+                Voxel(x=x, y=y, z=z)
+            ):
                 macrophage_cell = macrophage.cells[macrophage_cell_index]
                 macrophage_cell['fpn'] = False
                 macrophage_cell['fpn_iteration'] = 0

@@ -2,12 +2,13 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
 import attr
+from attr import attrib
 from h5py import Group
 import numpy as np
 from numpy import dtype
 
 from nlisim.coordinates import Point, Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.grid import TetrahedralMesh
 from nlisim.state import State, get_class_path
 
 MAX_CELL_LIST_SIZE = 1_000_000
@@ -111,25 +112,25 @@ class CellData(np.ndarray):
         """
         return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
 
-    @classmethod
-    def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
-        """Generate a mask array from a set of points.
-
-        The output is a boolean array indicating if the point at that index
-        is a valid location for a cell.
-        """
-        assert points.shape[1] == 3, 'Invalid point array shape'
-        point = points.T.view(Point)
-
-        # TODO: add geometry restriction
-        return (
-            (grid.xv[0] <= point.x)
-            & (point.x <= grid.xv[-1])
-            & (grid.yv[0] <= point.y)
-            & (point.y <= grid.yv[-1])
-            & (grid.zv[0] <= point.z)
-            & (point.z <= grid.zv[-1])
-        )
+    # @classmethod
+    # def point_mask(cls, points: np.ndarray, mesh: TetrahedralMesh):
+    #     """Generate a mask array from a set of points.
+    #
+    #     The output is a boolean array indicating if the point at that index
+    #     is a valid location for a cell.
+    #     """
+    #     assert points.shape[1] == 3, 'Invalid point array shape'
+    #     point = points.T.view(Point)
+    #
+    #     # TODO: add geometry restriction
+    #     return (
+    #         (mesh.xv[0] <= point.x)
+    #         & (point.x <= mesh.xv[-1])
+    #         & (mesh.yv[0] <= point.y)
+    #         & (point.y <= mesh.yv[-1])
+    #         & (mesh.zv[0] <= point.z)
+    #         & (point.z <= mesh.zv[-1])
+    #     )
 
 
 @attr.s(kw_only=True, frozen=True, repr=False)
@@ -150,7 +151,7 @@ class CellList(object):
 
     Parameters
     ------
-    grid : `simulation.grid.RectangularGrid`
+    mesh : `simulation.mesh.RectangularGrid`
     max_cells : int, optional
     cells : `simulation.cell.CellData`, optional
 
@@ -162,13 +163,14 @@ class CellList(object):
     contained in the list.
     """
 
-    grid: RectangularGrid = attr.ib()
+    mesh: TetrahedralMesh = attrib()
     max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
-    _cell_data: CellData = attr.ib()
+    _cell_data: CellData = attrib()
     _ncells: int = attr.ib(init=False)
-    _voxel_index: Dict[Voxel, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
-    _reverse_voxel_index: List[Voxel] = attr.ib(init=False, factory=list)
+    _element_index: Dict[int, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
+    _reverse_element_index: List[int] = attr.ib(init=False, factory=list)
 
+    # noinspection PyUnresolvedReferences
     @_cell_data.default
     def __set_default_cells(self) -> CellData:
         return self.CellDataClass(0)
@@ -182,7 +184,7 @@ class CellList(object):
         if len(cells) > 0:
             self._cell_data[: len(cells)] = cells
 
-        self._compute_voxel_index()
+        self._compute_element_index()
 
     def __len__(self) -> int:
         return self._ncells
@@ -207,11 +209,11 @@ class CellList(object):
         return self._cell_data[: self._ncells]
 
     @property
-    def voxel_index(self):
-        return self._reverse_voxel_index
+    def element_index(self):
+        return self._reverse_element_index
 
     @classmethod
-    def create_from_seed(cls, grid: RectangularGrid, **kwargs) -> 'CellList':
+    def create_from_seed(cls, mesh: TetrahedralMesh, **kwargs) -> 'CellList':
         """Create a new cell list initialized with a single cell.
 
         The kwargs provided are passed on to the `create_cell` method of the
@@ -220,7 +222,7 @@ class CellList(object):
         cell = cls.CellDataClass.create_cell(**kwargs)
         cell_data = cls.CellDataClass([cell])
 
-        return cls(grid=grid, cell_data=cell_data)
+        return cls(mesh=mesh, cell_data=cell_data)
 
     # TODO: this is inconsistent with iterating over the whole CellList, why does this give indices
     #  while the other gives the records
@@ -276,9 +278,9 @@ class CellList(object):
         index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[index] = cell
-        voxel = self.grid.get_voxel(cell['point'])
-        self._voxel_index[voxel].add(index)
-        self._reverse_voxel_index.append(voxel)
+        element_index = self.mesh.get_element_index(cell['point'])
+        self._element_index[element_index].add(index)
+        self._reverse_element_index.append(element_index)
         return index
 
     def extend(self, cells: Iterable[CellData]) -> None:
@@ -318,48 +320,48 @@ class CellList(object):
         max_cells = attrs.get('max_cells', MAX_CELL_LIST_SIZE)
         cell_data = composite_dataset['cell_data'][:].view(cls.CellDataClass)
 
-        return cls(max_cells=max_cells, grid=global_state.grid, cell_data=cell_data)
+        return cls(max_cells=max_cells, mesh=global_state.mesh, cell_data=cell_data)
 
-    def get_cells_in_voxel(self, voxel: Voxel) -> np.ndarray:
-        """Return a list of cell indices contained in a given voxel."""
-        return np.asarray(sorted((self._voxel_index[voxel])))
+    def get_cells_in_element(self, element_index: int) -> np.ndarray:
+        """Return a list of cell indices contained in a given element."""
+        return np.asarray(sorted((self._element_index[element_index])))
 
     def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
-        """Return a list of cells indices in the same voxel."""
-        return self.get_cells_in_voxel(self.grid.get_voxel(cell['point']))
+        """Return a list of cells indices in the same element."""
+        return self.get_cells_in_element(self.mesh.get_element_index(cell['point']))
 
-    def update_voxel_index(self, indices: Iterable = None):
-        """Update the embedded voxel index.
+    def update_element_index(self, indices: Iterable = None):
+        """Update the embedded element index.
 
-        This method will update the voxel indices for a given list of cells,
+        This method will update the element indices for a given list of cells,
         or if no parameter is provided, for all of the cells.  Currently,
         calling this method is only required if the `point` field of a cell
         is changed... i.e. if the cell is moved to a potentially different
-        voxel.
+        element.
         """
         if indices is None:
-            self._voxel_index.clear()
-            self._reverse_voxel_index.clear()
-            self._compute_voxel_index()
+            self._element_index.clear()
+            self._reverse_element_index.clear()
+            self._compute_element_index()
             return
 
         for index in indices:
             cell = self[index]
-            old_voxel = self._reverse_voxel_index[index]
-            new_voxel = self.grid.get_voxel(cell['point'])
-            if old_voxel != new_voxel:
-                self._voxel_index[old_voxel].remove(index)
-                self._voxel_index[new_voxel].add(index)
-                self._reverse_voxel_index[index] = new_voxel
+            old_element = self._reverse_element_index[index]
+            new_element = self.mesh.get_element_index(cell['point'])
+            if old_element != new_element:
+                self._element_index[old_element].remove(index)
+                self._element_index[new_element].add(index)
+                self._reverse_element_index[index] = new_element
 
-    def _compute_voxel_index(self):
-        """Generate a dictionary mapping voxel index to cell index.
+    def _compute_element_index(self):
+        """Generate a dictionary mapping element index to cell index.
 
         This index exists to maintain efficient (sub-linear) access to cells contained
-        in a single voxel.  This method is called automatically on initialization.
+        in a single element.  This method is called automatically on initialization.
         """
         for cell_index in range(len(self)):
             cell = self[cell_index]
-            voxel = self.grid.get_voxel(cell['point'])
-            self._voxel_index[voxel].add(cell_index)
-            self._reverse_voxel_index.append(voxel)
+            element = self.mesh.get_element_index(cell['point'])
+            self._element_index[element].add(cell_index)
+            self._reverse_element_index.append(element)

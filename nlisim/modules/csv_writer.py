@@ -1,14 +1,14 @@
 import csv
 import itertools
 
-import attr
+from attr import attrs
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
 
 
-@attr.s(kw_only=True, repr=False)
+@attrs(kw_only=True, repr=False)
 class CSVWriterState(ModuleState):
     def __repr__(self):
         return 'CSVWriterState()'

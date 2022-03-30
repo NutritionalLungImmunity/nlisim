@@ -65,7 +65,7 @@ class NeutrophilCellList(CellList):
 
 
 def cell_list_factory(self: 'NeutrophilState') -> NeutrophilCellList:
-    return NeutrophilCellList(grid=self.global_state.grid)
+    return NeutrophilCellList(grid=self.global_state.mesh)
 
 
 @attrs(kw_only=True)
@@ -137,14 +137,14 @@ class Neutrophil(PhagocyteModel):
 
         # place initial neutrophils
         locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
+        dz_field: np.ndarray = state.mesh.delta(axis=0)
+        dy_field: np.ndarray = state.mesh.delta(axis=1)
+        dx_field: np.ndarray = state.mesh.delta(axis=2)
         for vox_z, vox_y, vox_x in random.choices(locations, k=neutrophil.init_num_neutrophils):
             # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
+            z = state.mesh.z[vox_z]
+            y = state.mesh.y[vox_y]
+            x = state.mesh.x[vox_x]
             dz = dz_field[vox_z, vox_y, vox_x]
             dy = dy_field[vox_z, vox_y, vox_x]
             dx = dx_field[vox_z, vox_y, vox_x]
@@ -173,7 +173,7 @@ class Neutrophil(PhagocyteModel):
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
         iron: IronState = state.iron
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         voxel_volume: float = state.voxel_volume
         space_volume: float = state.space_volume
 
@@ -204,7 +204,7 @@ class Neutrophil(PhagocyteModel):
                 PhagocyteStatus.DEAD,
             }:
                 # get fungal cells in this voxel
-                local_aspergillus = afumigatus.cells.get_cells_in_voxel(neutrophil_cell_voxel)
+                local_aspergillus = afumigatus.cells.get_cells_in_element(neutrophil_cell_voxel)
                 for aspergillus_cell_index in local_aspergillus:
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_cell_index]
                     if aspergillus_cell['dead']:
@@ -249,7 +249,7 @@ class Neutrophil(PhagocyteModel):
             # if we are apoptotic, give our iron and phagosome to a nearby
             # present macrophage (if empty)
             if neutrophil_cell['status'] == PhagocyteStatus.APOPTOTIC:
-                local_macrophages = macrophage.cells.get_cells_in_voxel(neutrophil_cell_voxel)
+                local_macrophages = macrophage.cells.get_cells_in_element(neutrophil_cell_voxel)
                 for macrophage_index in local_macrophages:
                     macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
                     macrophage_num_cells_in_phagosome = np.sum(macrophage_cell['phagosome'] >= 0)
@@ -348,7 +348,7 @@ class Neutrophil(PhagocyteModel):
 
         neutrophil: NeutrophilState = state.neutrophil
         mip2: MIP2State = state.mip2
-        grid: RectangularGrid = state.grid
+        grid: RectangularGrid = state.mesh
         lung_tissue: np.ndarray = state.lung_tissue
         voxel_volume: float = state.voxel_volume
 
@@ -477,15 +477,15 @@ class Neutrophil(PhagocyteModel):
             )
         )
 
-        dz_field: np.ndarray = state.grid.delta(axis=0)
-        dy_field: np.ndarray = state.grid.delta(axis=1)
-        dx_field: np.ndarray = state.grid.delta(axis=2)
+        dz_field: np.ndarray = state.mesh.delta(axis=0)
+        dy_field: np.ndarray = state.mesh.delta(axis=1)
+        dx_field: np.ndarray = state.mesh.delta(axis=2)
         for coordinates in rg.choice(activation_voxels, size=number_to_recruit, replace=True):
             vox_z, vox_y, vox_x = coordinates
             # the x,y,z coordinates are in the centers of the grids
-            z = state.grid.z[vox_z]
-            y = state.grid.y[vox_y]
-            x = state.grid.x[vox_x]
+            z = state.mesh.z[vox_z]
+            y = state.mesh.y[vox_y]
+            x = state.mesh.x[vox_x]
             dz = dz_field[vox_z, vox_y, vox_x]
             dy = dy_field[vox_z, vox_y, vox_x]
             dx = dx_field[vox_z, vox_y, vox_x]

@@ -54,7 +54,7 @@ class Liver(ModuleModel):
 
         # interact with IL6
         mask = state.lung_tissue != TissueType.AIR
-        global_il6_concentration = np.mean(il6.grid[mask]) / (
+        global_il6_concentration = np.mean(il6.field[mask]) / (
             2 * voxel_volume
         )  # div 2: serum, units: aM
         if global_il6_concentration > liver.il6_threshold:
