@@ -154,14 +154,11 @@ class IL6(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         il6: IL6State = state.il6
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(il6.field[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(mesh.integrate_point_function(il6.field) / 1e9),
         }
 
     def visualization_data(self, state: State):

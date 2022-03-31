@@ -26,7 +26,7 @@ from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple, cast
+from typing import Iterable, Iterator, List, Tuple, Union, cast
 
 from attr import attrib, attrs
 from h5py import File as H5File
@@ -56,16 +56,25 @@ class TetrahedralMesh(object):
 
     points is an (N,3) array of points in euclidean 3-space
 
-    element_data is the semi-internal vtk data structure, a singly indexed int-array consisting of
-    sequences such as [12, 4314, 2996, 844, 31030, 1314, 28624, 14217, 29297, 11087, 23365,
-    23364, 37073] for which
-    1) the first entry indicates that the next 12 entries are part of the same record
-    2) each following integers specifies a point via its index in the `points` array
-    This is basically a way of packing a ragged array.
+    element_point_indices is an (M,4) numpy array of integers where each row encodes the points
+     of a tetrahedron via their index in the points array. M = number of tetrahedra
 
-    element_tissue_type records what type of tissue is present in the geometric cell.
-    e.g. bronchiolar or alveolar epithelium, capillary. Also, "tissue" such as surfactant or air.
+    element_neighbors is an (M,) numpy array of integers where the row i is a list of the tetrahedra
+     which share a face with tetrahedron i via their integer index.
+     M = number of tetrahedra
 
+    element_tissue_type is an (M,) numpy array of integers which records what type of tissue is
+     present in the geometric cell. M = number of tetrahedra
+     e.g. bronchiolar or alveolar epithelium, capillary. Also, "tissue" such as surfactant or air.
+     See the TissueType IntEnum for values.
+
+    element_volumes is an (M,) numpy array of floats which records the volumes of each tetrahedron
+     M = number of tetrahedra
+
+    point_dual_volumes is an (N,) numpy array of floats which records "the part of the volume
+     incident to a point" What we really mean here is the Hodge star operator on 0-forms. That is,
+     the map *_0: C_0 ↦ C^3 from functions to 3-forms. Why we need this: to compute the integral
+     of functions.
     """
 
     points: np.ndarray = attrib()
@@ -73,6 +82,7 @@ class TetrahedralMesh(object):
     element_neighbors: np.ndarray = attrib()
     element_tissue_type: np.ndarray = attrib()
     element_volumes: np.ndarray = attrib()
+    point_dual_volumes: np.ndarray = attrib()
 
     @classmethod
     def load(cls, filename: str) -> 'TetrahedralMesh':
@@ -92,6 +102,7 @@ class TetrahedralMesh(object):
         element_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
         element_tissue_type.flags['WRITEABLE'] = False
 
+        # tetrahedral meshes look like (4, pt, pt, pt, pt, 4, pt, pt, pt, pt, 4, ...)
         element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((-1, 5))[:, 1:]
         element_point_indices.flags['WRITEABLE'] = False
 
@@ -124,7 +135,6 @@ class TetrahedralMesh(object):
             # insert tet_a into incidence list for tet_b
             idx = np.argmin(element_neighbors[tet_b])
             element_neighbors[tet_b, idx] = tet_a
-
         element_neighbors.flags['WRITEABLE'] = False
 
         # precompute element volumes
@@ -134,13 +144,48 @@ class TetrahedralMesh(object):
         )
         element_volumes.flags['WRITEABLE'] = False
 
+        # distribute the volume of tetrahedra evenly amongst its points
+        point_dual_volumes = np.sum(element_volumes[element_point_indices], axis=1) / 4.0
+
         return cls(
             points=points,
             element_point_indices=element_point_indices,
             element_neighbors=element_neighbors,
             element_tissue_type=element_tissue_type,
             element_volumes=element_volumes,
+            point_dual_volumes=point_dual_volumes,
         )
+
+    def integrate_point_function(self, point_function: np.ndarray) -> Union[np.ndarray, float]:
+        """
+        Integrate a point function over the mesh.
+
+        Parameters
+        ----------
+        point_function: np.ndarray
+            a function defined on points, expressed as an (N,) or (N,k) numpy array.
+            N = number of points
+
+        Returns
+        -------
+        integral of the point function. Returns as a float if point_function is (N,) and as an
+        (k,) numpy array if point_function is (N,k)
+        """
+        assert (
+            point_function.shape[0] == self.point_dual_volumes.shape[0]
+        ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
+
+        if len(point_function.shape) == 1:
+            return float(np.sum(point_function * self.point_dual_volumes, axis=0))
+        else:
+            return np.sum(
+                point_function
+                * np.expand_dims(
+                    self.point_dual_volumes,
+                    axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
+                ),
+                axis=0,
+            )
 
     def is_in_element(self, element_index: int, point: Point) -> bool:
         """Determine if a given point is in a given element."""
