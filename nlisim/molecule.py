@@ -1,11 +1,11 @@
 from enum import Enum, unique
 from typing import Dict, List
 
-import attr
+from attr import attrib, attrs
+from grid import TetrahedralMesh
 from h5py import Group
 import numpy as np
 
-from nlisim.grid import RectangularGrid
 from nlisim.state import State, get_class_path
 
 
@@ -34,15 +34,15 @@ class MoleculeTypes(Enum):
     n_cyto = 18
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
+@attrs(kw_only=True, frozen=True, repr=False)
 class MoleculeGrid(object):
     """A class contains a list of grids for each molecule type."""
 
-    grid: RectangularGrid = attr.ib()
-    _concentrations = attr.ib()
-    _sources = attr.ib()
+    grid: TetrahedralMesh = attrib()
+    _concentrations = attrib()
+    _sources = attrib()
     _diffusivity: Dict[str, int] = {}
-    _molecule_type: List[str] = attr.ib(factory=list)
+    _molecule_type: List[str] = attrib(factory=list)
 
     @_concentrations.default
     def __set_default_concentrations(self):
