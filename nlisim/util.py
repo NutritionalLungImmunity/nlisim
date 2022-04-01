@@ -26,11 +26,11 @@ def turnover_rate(
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
     y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
-    result = y / (x + EPSILON)
+    result = np.true_divide(y, x, where=(x != 0.0))
 
     # enforce bounds and zero out problem divides
     result[x == 0] = 0.0
-    result[:] = np.maximum(0.0, np.minimum(1.0, result))
+    np.clip(result, 0.0, 1.0, out=result)
 
     return result
 
