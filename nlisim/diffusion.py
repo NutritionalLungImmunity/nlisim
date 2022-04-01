@@ -139,6 +139,7 @@ def apply_grid_diffusion(
 
 
 def assemble_mesh_laplacian_crank_nicholson(
+    *,
     state: State,
     diffusivity: float,
     dt: float,

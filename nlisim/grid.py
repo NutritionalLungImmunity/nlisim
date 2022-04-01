@@ -82,6 +82,7 @@ class TetrahedralMesh(object):
     element_neighbors: np.ndarray = attrib()
     element_tissue_type: np.ndarray = attrib()
     element_volumes: np.ndarray = attrib()
+    total_volume: float = attrib()
     point_dual_volumes: np.ndarray = attrib()
 
     @classmethod
@@ -144,6 +145,8 @@ class TetrahedralMesh(object):
         )
         element_volumes.flags['WRITEABLE'] = False
 
+        total_volume = float(np.sum(element_volumes))
+
         # distribute the volume of tetrahedra evenly amongst its points
         point_dual_volumes = np.sum(element_volumes[element_point_indices], axis=1) / 4.0
 
@@ -153,6 +156,7 @@ class TetrahedralMesh(object):
             element_neighbors=element_neighbors,
             element_tissue_type=element_tissue_type,
             element_volumes=element_volumes,
+            total_volume=total_volume,
             point_dual_volumes=point_dual_volumes,
         )
 

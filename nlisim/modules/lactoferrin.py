@@ -132,7 +132,7 @@ class Lactoferrin(ModuleModel):
             k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         dfe_dt = michaelian_kinetics(
             substrate=transferrin.grid['TfFe'],
@@ -140,7 +140,7 @@ class Lactoferrin(ModuleModel):
             k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin quantity
         dfex_dt = dfe2_dt + dfe_dt
@@ -161,7 +161,7 @@ class Lactoferrin(ModuleModel):
             k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         dfe_dt_fe = michaelian_kinetics(
             substrate=transferrin.grid['TfFe'],
@@ -169,7 +169,7 @@ class Lactoferrin(ModuleModel):
             k_m=lactoferrin.k_m_tf_lac,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         # - enforce bounds from lactoferrin+Fe quantity
         dfex_dt_fe = dfe2_dt_fe + dfe_dt_fe

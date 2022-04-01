@@ -81,7 +81,7 @@ class EstB(ModuleModel):
             k_m=estb.k_m,
             k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         v2 = michaelian_kinetics(
             substrate=tafc.grid["TAFCBI"],
@@ -89,7 +89,7 @@ class EstB(ModuleModel):
             k_m=estb.k_m,
             k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         tafc.grid["TAFC"] -= v1
         tafc.grid["TAFCBI"] -= v2

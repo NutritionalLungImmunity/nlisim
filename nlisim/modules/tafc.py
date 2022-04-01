@@ -93,7 +93,7 @@ class TAFC(ModuleModel):
             k_m=tafc.k_m_tf_tafc,
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         dfe_dt = michaelian_kinetics(
             substrate=transferrin.grid["TfFe"],
@@ -101,7 +101,7 @@ class TAFC(ModuleModel):
             k_m=tafc.k_m_tf_tafc,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
 
         # - enforce bounds from TAFC quantity

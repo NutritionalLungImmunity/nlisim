@@ -19,7 +19,11 @@ def activation_function(*, x, k_d, h, volume, b=1):
 
 
 def turnover_rate(
-    *, x: np.ndarray, x_system: float, base_turnover_rate: float, rel_cyt_bind_unit_t: float
+    *,
+    x: np.ndarray,
+    x_system: Union[float, np.ndarray],
+    base_turnover_rate: float,
+    rel_cyt_bind_unit_t: float,
 ):
     if x_system == 0.0:
         return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))

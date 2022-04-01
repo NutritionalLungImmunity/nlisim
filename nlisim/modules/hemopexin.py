@@ -72,7 +72,7 @@ class Hemopexin(ModuleModel):
             k_m=hemopexin.k_m,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=hemopexin.k_cat,
-            voxel_volume=voxel_volume,
+            volume=voxel_volume,
         )
         reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.grid], axis=0)
         hemopexin.grid[:] = np.maximum(0.0, hemopexin.grid - reacted_quantity)
