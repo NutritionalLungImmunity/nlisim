@@ -1,7 +1,6 @@
 from enum import IntEnum
 from typing import Tuple, Union
 
-from numba import jit
 import numpy as np
 
 from nlisim.coordinates import Voxel
@@ -11,7 +10,6 @@ from nlisim.random import rg
 EPSILON = 1e-50
 
 
-@jit(cache=True)
 def activation_function(*, x, k_d, h, volume, b=1):
     # units:
     # x: atto-mol
@@ -71,7 +69,6 @@ def iron_tf_reaction(
     return rel_tf_fe
 
 
-@jit(cache=True)
 def michaelian_kinetics(
     *,
     substrate: np.ndarray,
