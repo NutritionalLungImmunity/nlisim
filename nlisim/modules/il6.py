@@ -24,7 +24,7 @@ def molecule_grid_factory(self: 'IL6State') -> np.ndarray:
 class IL6State(ModuleState):
     field: np.ndarray = attrib(
         default=Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mol
+    )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol/(cell*h)
@@ -33,7 +33,7 @@ class IL6State(ModuleState):
     macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
-    k_d: float  # units: aM
+    k_d: float  # units: atto-M
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -64,10 +64,12 @@ class IL6(ModuleModel):
         il6.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
+
         # units: %/step + %/min * (min/step) -> %/step
         il6.half_life_multiplier = 0.5 ** (
             self.time_step / il6.half_life
         )  # units in exponent: (min/step) / min -> 1/step
+
         # time unit conversions
         # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
@@ -77,7 +79,7 @@ class IL6(ModuleModel):
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state, il6.diffusion_constant, self.time_step
+            state=state, diffusivity=il6.diffusion_constant, dt=self.time_step
         )
         il6.cn_a = cn_a
         il6.cn_b = cn_b
@@ -102,7 +104,12 @@ class IL6(ModuleModel):
         def il6_secretion(*, element_index: int, point: Point, amount: float) -> None:
             proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
             points = mesh.element_point_indices[element_index]
-            il6.field[points] += proportions * amount
+            # new pt concentration = (old pt amount + new amount) / pt dual volume
+            #    = (old conc * pt dual volume + new amount) / pt dual volume
+            #    = old conc + (new amount / pt dual volume)
+            il6.field[points] += (
+                proportions * amount / mesh.point_dual_volumes[points]
+            )  # units: prop * atto-mol / L = atto-M
 
         # active Macrophages secrete il6
         for macrophage_cell_index in macrophage.cells.alive():
@@ -158,7 +165,9 @@ class IL6(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(mesh.integrate_point_function(il6.field) / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(il6.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):
