@@ -76,7 +76,7 @@ def michaelian_kinetics(
     k_m: float,
     h: float,
     k_cat: float = 1.0,
-    voxel_volume: float,
+    volume: Union[float, np.ndarray],
 ) -> np.ndarray:
     """
     Compute Michaelis–Menten kinetics.
@@ -93,7 +93,7 @@ def michaelian_kinetics(
     """
     # Note: was originally defined by converting to molarity, but can be redefined in terms
     # of mols. This is algebraically equivalent and reduces the number of operations.
-    return h * k_cat * enzyme * substrate / (substrate + k_m * voxel_volume)
+    return h * k_cat * enzyme * substrate / (substrate + k_m * volume)
 
 
 class TissueType(IntEnum):
