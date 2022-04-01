@@ -2,8 +2,10 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import apply_grid_diffusion
+from nlisim.diffusion import apply_grid_diffusion, assemble_mesh_laplacian_crank_nicholson
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
@@ -11,12 +13,12 @@ from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'AntiTNFaState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class AntiTNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(
+    field: np.ndarray = attr.ib(
         default=attr.Factory(molecule_grid_factory, takes_self=True)
     )  # units: atto-mol
     half_life: float  # units: min
@@ -24,7 +26,11 @@ class AntiTNFaState(ModuleState):
     react_time_unit: float  # units: hour/step
     k_m: float  # units: aM
     system_concentration: float  # units: aM
-    system_amount_per_voxel: float  # units: atto-mol
+    system_amount_per_point: np.ndarray  # units: atto-mol
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class AntiTNFa(ModuleModel):
@@ -35,8 +41,8 @@ class AntiTNFa(ModuleModel):
         from nlisim.util import TissueType
 
         anti_tnf_a: AntiTNFaState = state.antitnfa
+        mesh: TetrahedralMesh = state.mesh
         voxel_volume = state.voxel_volume
-        lung_tissue = state.lung_tissue
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')  # units: min
@@ -45,17 +51,28 @@ class AntiTNFa(ModuleModel):
         )  # units: sec TODO: understand this
         anti_tnf_a.k_m = self.config.getfloat('k_m')  # units: aM
         anti_tnf_a.system_concentration = self.config.getfloat('system_concentration')  # units: aM
+        anti_tnf_a.diffusion_constant = self.config.getfloat(
+            'diffusion_constant'
+        )  # units: µm^2/min
 
         # computed values
-        anti_tnf_a.system_amount_per_voxel = (
-            anti_tnf_a.system_concentration * voxel_volume
+        anti_tnf_a.system_amount_per_point = (
+            anti_tnf_a.system_concentration * mesh.point_dual_volumes
         )  # units: aM * L = atto-mol
         anti_tnf_a.half_life_multiplier = 0.5 ** (
             self.time_step / anti_tnf_a.half_life
         )  # units in exponent: (min/step) / min -> 1/step
 
         # initialize concentration field
-        anti_tnf_a.grid[lung_tissue != TissueType.AIR] = anti_tnf_a.system_amount_per_voxel
+        anti_tnf_a.field = anti_tnf_a.system_amount_per_point
+
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=anti_tnf_a.diffusion_constant, dt=self.time_step
+        )
+        anti_tnf_a.cn_a = cn_a
+        anti_tnf_a.cn_b = cn_b
+        anti_tnf_a.dofs = dofs
 
         return state
 
@@ -65,34 +82,34 @@ class AntiTNFa(ModuleModel):
 
         anti_tnf_a: AntiTNFaState = state.antitnfa
         molecules: MoleculesState = state.molecules
-        voxel_volume = state.voxel_volume
         tnf_a: TNFaState = state.tnfa
+        mesh: TetrahedralMesh = state.mesh
 
         # AntiTNFa / TNFa reaction
         reacted_quantity = michaelian_kinetics(
-            substrate=anti_tnf_a.grid,
-            enzyme=tnf_a.grid,
+            substrate=anti_tnf_a.field,
+            enzyme=tnf_a.mesh,
             k_m=anti_tnf_a.k_m,
             h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
             k_cat=1.0,  # default TODO use k_cat to reparameterize into hours
-            voxel_volume=voxel_volume,
+            volume=mesh.point_dual_volumes,
         )
-        reacted_quantity = np.min([reacted_quantity, anti_tnf_a.grid, tnf_a.grid], axis=0)
-        anti_tnf_a.grid[:] = np.maximum(0.0, anti_tnf_a.grid - reacted_quantity)
-        tnf_a.grid[:] = np.maximum(0.0, tnf_a.grid - reacted_quantity)
+        reacted_quantity = np.min([reacted_quantity, anti_tnf_a.field, tnf_a.mesh], axis=0)
+        anti_tnf_a.field[:] = np.maximum(0.0, anti_tnf_a.field - reacted_quantity)
+        tnf_a.mesh[:] = np.maximum(0.0, tnf_a.mesh - reacted_quantity)
 
         # Degradation of AntiTNFa
-        anti_tnf_a.system_amount_per_voxel *= anti_tnf_a.half_life_multiplier
-        anti_tnf_a.grid *= turnover_rate(
-            x=anti_tnf_a.grid,
-            x_system=anti_tnf_a.system_amount_per_voxel,
+        anti_tnf_a.system_amount_per_point *= anti_tnf_a.half_life_multiplier
+        anti_tnf_a.field *= turnover_rate(
+            x=anti_tnf_a.field,
+            x_system=anti_tnf_a.system_amount_per_point,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
 
         # Diffusion of AntiTNFa
-        anti_tnf_a.grid[:] = apply_grid_diffusion(
-            variable=anti_tnf_a.grid,
+        anti_tnf_a.field[:] = apply_grid_diffusion(
+            variable=anti_tnf_a.field,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
             dt=self.time_step,
@@ -101,16 +118,13 @@ class AntiTNFa(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         anti_tnf_a: AntiTNFaState = state.antitnfa
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(anti_tnf_a.grid[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(mesh.integrate_point_function(anti_tnf_a.field) / 1e9),
         }
 
     def visualization_data(self, state: State):
         anti_tnf_a: AntiTNFaState = state.antitnfa
-        return 'molecule', anti_tnf_a.grid
+        return 'molecule', anti_tnf_a.field
