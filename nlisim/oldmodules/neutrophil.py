@@ -260,8 +260,8 @@ class Neutrophil(ModuleModel):
 
         tissue = state.geometry.lung_tissue
         grid = state.mesh
-        cyto = state.molecules.mesh['n_cyto']
-        iron = state.molecules.mesh['iron']
+        cyto = state.molecules.field['n_cyto']
+        iron = state.molecules.field['iron']
 
         # recruit new
         n_cells.recruit_new(

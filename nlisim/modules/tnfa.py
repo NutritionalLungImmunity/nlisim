@@ -19,7 +19,7 @@ def molecule_grid_factory(self: 'TNFaState') -> np.ndarray:
 
 @attr.s(kw_only=True, repr=False)
 class TNFaState(ModuleState):
-    grid: np.ndarray = attr.ib(
+    mesh: np.ndarray = attr.ib(
         default=attr.Factory(molecule_grid_factory, takes_self=True)
     )  # units: atto-mol
     half_life: float  # units: min
@@ -90,12 +90,12 @@ class TNFa(ModuleModel):
             macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                tnfa.grid[tuple(macrophage_cell_voxel)] += tnfa.macrophage_secretion_rate_unit_t
+                tnfa.mesh[tuple(macrophage_cell_voxel)] += tnfa.macrophage_secretion_rate_unit_t
 
             if macrophage_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
                 if (
                     activation_function(
-                        x=tnfa.grid[tuple(macrophage_cell_voxel)],
+                        x=tnfa.mesh[tuple(macrophage_cell_voxel)],
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
@@ -116,12 +116,12 @@ class TNFa(ModuleModel):
             neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
 
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                tnfa.grid[tuple(neutrophil_cell_voxel)] += tnfa.neutrophil_secretion_rate_unit_t
+                tnfa.mesh[tuple(neutrophil_cell_voxel)] += tnfa.neutrophil_secretion_rate_unit_t
 
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
                 if (
                     activation_function(
-                        x=tnfa.grid[tuple(neutrophil_cell_voxel)],
+                        x=tnfa.mesh[tuple(neutrophil_cell_voxel)],
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
@@ -138,8 +138,8 @@ class TNFa(ModuleModel):
                     neutrophil_cell['tnfa'] = True
 
         # Degrade TNFa
-        tnfa.grid *= tnfa.half_life_multiplier
-        tnfa.grid *= turnover_rate(
+        tnfa.mesh *= tnfa.half_life_multiplier
+        tnfa.mesh *= turnover_rate(
             x=np.array(1.0, dtype=np.float64),
             x_system=0.0,
             base_turnover_rate=molecules.turnover_rate,
@@ -147,8 +147,8 @@ class TNFa(ModuleModel):
         )
 
         # Diffusion of TNFa
-        tnfa.grid[:] = apply_grid_diffusion(
-            variable=tnfa.grid,
+        tnfa.mesh[:] = apply_grid_diffusion(
+            variable=tnfa.mesh,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
             dt=self.time_step,
@@ -164,9 +164,9 @@ class TNFa(ModuleModel):
         mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (nM)': float(np.mean(tnfa.grid[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(np.mean(tnfa.mesh[mask]) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
         tnfa: TNFaState = state.tnfa
-        return 'molecule', tnfa.grid
+        return 'molecule', tnfa.mesh

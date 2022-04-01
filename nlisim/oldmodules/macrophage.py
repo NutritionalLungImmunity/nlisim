@@ -294,8 +294,8 @@ class Macrophage(ModuleModel):
         m_cells: MacrophageCellList = macrophage.cells
         tissue = state.geometry.lung_tissue
         grid = state.mesh
-        cyto = state.molecules.mesh['m_cyto']
-        n_cyto = state.molecules.mesh['n_cyto']
+        cyto = state.molecules.field['m_cyto']
+        n_cyto = state.molecules.field['n_cyto']
         fungus: FungusCellList = state.fungus.cells
         health = state.fungus.health
 

@@ -263,8 +263,8 @@ class Epithelium(ModuleModel):
         spores = state.fungus.cells
         health = state.fungus.health
 
-        m_cyto = state.molecules.mesh['m_cyto']
-        n_cyto = state.molecules.mesh['n_cyto']
+        m_cyto = state.molecules.field['m_cyto']
+        n_cyto = state.molecules.field['n_cyto']
 
         # internalize
         if len(spores.alive(spores.cell_data['form'] == FungusCellData.Form.CONIDIA)) > 0:

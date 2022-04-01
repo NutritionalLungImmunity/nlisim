@@ -319,7 +319,7 @@ class Fungus(ModuleModel):
         cells.age()
         cells.change_status(self.p_internal_swell, self.rest_time, self.swell_time)
         if hasattr(state, 'molecules'):
-            iron = state.molecules.mesh['iron']
+            iron = state.molecules.field['iron']
             cells.iron_uptake(iron, self.iron_max, self.iron_min, self.iron_absorb)
         cells.grow_hyphae(self.iron_min_grow, self.grow_time, self.p_branch, self.spacing)
 

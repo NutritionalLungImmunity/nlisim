@@ -6,7 +6,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.coordinates import Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
@@ -20,9 +20,8 @@ from nlisim.util import TissueType, activation_function
 # note: treating these a bit more like molecules than cells.
 # hence the adaptation of molecule_grid_factory
 def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
-    return np.zeros(
-        shape=self.global_state.mesh.shape,
-        dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)],
+    return self.global_state.mesh.allocate_point_variable(
+        dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)]
     )
 
 
@@ -80,7 +79,7 @@ class ErythrocyteModel(ModuleModel):
         hemolysin: HemolysinState = state.hemolysin
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
-        grid: RectangularGrid = state.mesh
+        mesh: TetrahedralMesh = state.mesh
         voxel_volume: float = state.voxel_volume
 
         shape = erythrocyte.cells['count'].shape

@@ -12,15 +12,17 @@ from nlisim.util import michaelian_kinetics, turnover_rate
 
 
 def molecule_grid_factory(self: 'EstBState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attrs(kw_only=True, repr=False)
 class EstBState(ModuleState):
-    grid: np.ndarray = attrib(
+    field: np.ndarray = attrib(
         default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mols
-    iron_buffer: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    )  # units: atto-M
+    iron_buffer: np.ndarray = attrib(
+        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     k_m: float  # units: aM
@@ -55,7 +57,7 @@ class EstB(ModuleModel):
         estb.system_amount_per_voxel = estb.system_concentration * voxel_volume
 
         # initialize concentration field
-        estb.grid[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
+        estb.field[lung_tissue != TissueType.AIR] = estb.system_amount_per_voxel
 
         return state
 
@@ -77,7 +79,7 @@ class EstB(ModuleModel):
         # interact with TAFC
         v1 = michaelian_kinetics(
             substrate=tafc.grid["TAFC"],
-            enzyme=estb.grid,
+            enzyme=estb.field,
             k_m=estb.k_m,
             k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
@@ -85,7 +87,7 @@ class EstB(ModuleModel):
         )
         v2 = michaelian_kinetics(
             substrate=tafc.grid["TAFCBI"],
-            enzyme=estb.grid,
+            enzyme=estb.field,
             k_m=estb.k_m,
             k_cat=estb.k_cat,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
@@ -96,17 +98,17 @@ class EstB(ModuleModel):
         estb.iron_buffer += v2  # set equal to zero previously
 
         # Degrade EstB
-        estb.grid *= estb.half_life_multiplier
-        estb.grid *= turnover_rate(
-            x=estb.grid,
+        estb.field *= estb.half_life_multiplier
+        estb.field *= turnover_rate(
+            x=estb.field,
             x_system=estb.system_amount_per_voxel,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
 
         # Diffusion of EstB
-        estb.grid[:] = apply_grid_diffusion(
-            variable=estb.grid,
+        estb.field[:] = apply_grid_diffusion(
+            variable=estb.field,
             laplacian=molecules.laplacian,
             diffusivity=molecules.diffusion_constant,
             dt=self.time_step,
@@ -119,9 +121,9 @@ class EstB(ModuleModel):
         voxel_volume = state.voxel_volume
 
         return {
-            'concentration (nM)': float(np.mean(estb.grid) / voxel_volume / 1e9),
+            'concentration (nM)': float(np.mean(estb.field) / voxel_volume / 1e9),
         }
 
     def visualization_data(self, state: State):
         estb: EstBState = state.estb
-        return 'molecule', estb.grid
+        return 'molecule', estb.field

@@ -208,7 +208,7 @@ class Pneumocyte(PhagocyteModel):
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
                 if (
                     activation_function(
-                        x=tnfa.grid[tuple(pneumocyte_cell_voxel)],
+                        x=tnfa.mesh[tuple(pneumocyte_cell_voxel)],
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=voxel_volume,
@@ -220,7 +220,7 @@ class Pneumocyte(PhagocyteModel):
                     pneumocyte_cell['tnfa'] = True
 
                 # secrete TNFa
-                tnfa.grid[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
+                tnfa.mesh[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
 
         return state
 
