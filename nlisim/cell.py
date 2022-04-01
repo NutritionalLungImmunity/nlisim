@@ -1,13 +1,12 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
-import attr
-from attr import attrib
+from attr import attrib, attrs
 from h5py import Group
 import numpy as np
 from numpy import dtype
 
-from nlisim.coordinates import Point, Voxel
+from nlisim.coordinates import Point
 from nlisim.grid import TetrahedralMesh
 from nlisim.state import State, get_class_path
 
@@ -113,7 +112,7 @@ class CellData(np.ndarray):
         return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
 
     # @classmethod
-    # def point_mask(cls, points: np.ndarray, mesh: TetrahedralMesh):
+    # def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
     #     """Generate a mask array from a set of points.
     #
     #     The output is a boolean array indicating if the point at that index
@@ -124,16 +123,16 @@ class CellData(np.ndarray):
     #
     #     # TODO: add geometry restriction
     #     return (
-    #         (mesh.xv[0] <= point.x)
-    #         & (point.x <= mesh.xv[-1])
-    #         & (mesh.yv[0] <= point.y)
-    #         & (point.y <= mesh.yv[-1])
-    #         & (mesh.zv[0] <= point.z)
-    #         & (point.z <= mesh.zv[-1])
+    #         (grid.xv[0] <= point.x)
+    #         & (point.x <= grid.xv[-1])
+    #         & (grid.yv[0] <= point.y)
+    #         & (point.y <= grid.yv[-1])
+    #         & (grid.zv[0] <= point.z)
+    #         & (point.z <= grid.zv[-1])
     #     )
 
 
-@attr.s(kw_only=True, frozen=True, repr=False)
+@attrs(kw_only=True, frozen=True, repr=False)
 class CellList(object):
     # noinspection PyUnresolvedReferences
     """A python view on top of a CellData array.
@@ -164,11 +163,11 @@ class CellList(object):
     """
 
     mesh: TetrahedralMesh = attrib()
-    max_cells: int = attr.ib(default=MAX_CELL_LIST_SIZE)
+    max_cells: int = attrib(default=MAX_CELL_LIST_SIZE)
     _cell_data: CellData = attrib()
-    _ncells: int = attr.ib(init=False)
-    _element_index: Dict[int, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
-    _reverse_element_index: List[int] = attr.ib(init=False, factory=list)
+    _ncells: int = attrib(init=False)
+    _element_index: Dict[int, Set[int]] = attrib(init=False, factory=lambda: defaultdict(set))
+    _reverse_element_index: List[int] = attrib(init=False, factory=list)
 
     # noinspection PyUnresolvedReferences
     @_cell_data.default
@@ -288,6 +287,7 @@ class CellList(object):
         for cell in cells:
             self.append(cell)
 
+    # noinspection PyUnusedLocal
     def save(self, group: Group, name: str, metadata: dict) -> Group:
         """Save the cell list.
 
@@ -306,6 +306,7 @@ class CellList(object):
         composite_group.create_dataset(name='cell_data', data=self.cell_data)
         return composite_group
 
+    # noinspection PyUnusedLocal
     @classmethod
     def load(cls, global_state: State, group: Group, name: str, metadata: dict) -> 'CellList':
         """Load a cell list object.
@@ -316,8 +317,8 @@ class CellList(object):
         """
         composite_dataset = group[name]
 
-        attrs = composite_dataset.attrs
-        max_cells = attrs.get('max_cells', MAX_CELL_LIST_SIZE)
+        dataset_attrs = composite_dataset.attrs
+        max_cells = dataset_attrs.get('max_cells', MAX_CELL_LIST_SIZE)
         cell_data = composite_dataset['cell_data'][:].view(cls.CellDataClass)
 
         return cls(max_cells=max_cells, mesh=global_state.mesh, cell_data=cell_data)
