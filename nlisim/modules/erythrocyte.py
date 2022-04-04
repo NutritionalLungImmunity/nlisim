@@ -19,7 +19,7 @@ from nlisim.util import TissueType, activation_function
 
 # note: treating these a bit more like molecules than cells.
 # hence the adaptation of molecule_grid_factory
-def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
+def molecule_point_field_factory(self: 'ErythrocyteState') -> np.ndarray:
     return self.global_state.mesh.allocate_point_variable(
         dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)]
     )
@@ -27,7 +27,7 @@ def cell_grid_factory(self: 'ErythrocyteState') -> np.ndarray:
 
 @attrs(kw_only=True)
 class ErythrocyteState(ModuleState):
-    cells: np.ndarray = attrib(default=attr.Factory(cell_grid_factory, takes_self=True))
+    cells: np.ndarray = attrib(default=attr.Factory(molecule_point_field_factory, takes_self=True))
     kd_hemo: float
     init_erythrocyte_level: int  # units: count
     max_erythrocyte_voxel: int  # units: count
@@ -138,7 +138,7 @@ class ErythrocyteModel(ModuleModel):
         for fungal_cell_index in afumigatus.cells.alive():
             fungal_cell = afumigatus.cells[fungal_cell_index]
             if fungal_cell['status'] == AfumigatusCellStatus.HYPHAE:
-                fungal_voxel: Voxel = grid.get_voxel(fungal_cell['point'])
+                fungal_element: int = mesh.get_element_index(fungal_cell['point'])
                 erythrocyte.cells['hemorrhage'][tuple(fungal_voxel)] = True
 
         return state

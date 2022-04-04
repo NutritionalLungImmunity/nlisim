@@ -4,7 +4,10 @@ import attr
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import apply_grid_diffusion, assemble_mesh_laplacian_crank_nicholson
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -12,21 +15,20 @@ from nlisim.state import State
 from nlisim.util import michaelian_kinetics, turnover_rate
 
 
-def molecule_grid_factory(self: 'AntiTNFaState') -> np.ndarray:
+def molecule_point_field_factory(self: 'AntiTNFaState') -> np.ndarray:
     return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class AntiTNFaState(ModuleState):
     field: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-mol
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     react_time_unit: float  # units: hour/step
     k_m: float  # units: aM
     system_concentration: float  # units: aM
-    system_amount_per_point: np.ndarray  # units: atto-mol
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -38,11 +40,8 @@ class AntiTNFa(ModuleModel):
     StateClass = AntiTNFaState
 
     def initialize(self, state: State) -> State:
-        from nlisim.util import TissueType
-
         anti_tnf_a: AntiTNFaState = state.antitnfa
         mesh: TetrahedralMesh = state.mesh
-        voxel_volume = state.voxel_volume
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')  # units: min
@@ -99,20 +98,22 @@ class AntiTNFa(ModuleModel):
         tnf_a.mesh[:] = np.maximum(0.0, tnf_a.mesh - reacted_quantity)
 
         # Degradation of AntiTNFa
-        anti_tnf_a.system_amount_per_point *= anti_tnf_a.half_life_multiplier
+        anti_tnf_a.system_concentration *= (
+            anti_tnf_a.half_life_multiplier
+        )  # TODO: document meaning of this
         anti_tnf_a.field *= turnover_rate(
             x=anti_tnf_a.field,
-            x_system=anti_tnf_a.system_amount_per_point,
+            x_system=anti_tnf_a.system_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
 
         # Diffusion of AntiTNFa
-        anti_tnf_a.field[:] = apply_grid_diffusion(
+        anti_tnf_a.field[:] = apply_mesh_diffusion_crank_nicholson(
             variable=anti_tnf_a.field,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+            cn_a=anti_tnf_a.cn_a,
+            cn_b=anti_tnf_a.cn_b,
+            dofs=anti_tnf_a.dofs,
         )
 
         return state

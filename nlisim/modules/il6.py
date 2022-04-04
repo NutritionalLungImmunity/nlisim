@@ -16,14 +16,14 @@ from nlisim.state import State
 from nlisim.util import turnover_rate
 
 
-def molecule_grid_factory(self: 'IL6State') -> np.ndarray:
+def molecule_point_field_factory(self: 'IL6State') -> np.ndarray:
     return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attrs(kw_only=True, repr=False)
 class IL6State(ModuleState):
     field: np.ndarray = attrib(
-        default=Factory(molecule_grid_factory, takes_self=True)
+        default=Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
