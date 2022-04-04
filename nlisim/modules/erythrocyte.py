@@ -96,8 +96,8 @@ class ErythrocyteModel(ModuleModel):
         # ---------- interactions
 
         # uptake hemoglobin
-        erythrocyte.cells['hemoglobin'] += hemoglobin.grid
-        hemoglobin.grid.fill(0.0)
+        erythrocyte.cells['hemoglobin'] += hemoglobin.field
+        hemoglobin.field.fill(0.0)
 
         # interact with hemolysin. pop goes the blood cell
         # TODO: avg? variable name improvement?
