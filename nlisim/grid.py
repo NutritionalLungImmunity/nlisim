@@ -191,6 +191,30 @@ class TetrahedralMesh(object):
                 axis=0,
             )
 
+    def integrate_element_function(self, element_function: np.ndarray) -> Union[np.ndarray, float]:
+        """
+        Integrate an element function over the mesh.
+
+        Parameters
+        ----------
+        element_function: np.ndarray
+            a function defined on elements, expressed as an (M,) or (M,k) numpy array.
+            M = number of elements
+
+        Returns
+        -------
+        integral of the element function. Returns as a float if element_function is (M,) and as an
+        (k,) numpy array if element_function is (M,k)
+        """
+        assert (
+            element_function.shape[0] == self.element_volumes.shape[0]
+        ), f"Dimension mismatch! {element_function.shape} and {self.element_volumes.shape}"
+
+        if len(element_function.shape) == 1:
+            return float(np.sum(element_function, axis=0))
+        else:
+            return np.sum(element_function, axis=0)
+
     def is_in_element(self, element_index: int, point: Point) -> bool:
         """Determine if a given point is in a given element."""
         tet_points = self.points[self.element_point_indices[element_index, :], :]
