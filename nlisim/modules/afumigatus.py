@@ -158,7 +158,7 @@ class AfumigatusCellList(CellList):
 
 
 def cell_list_factory(self: 'AfumigatusState') -> AfumigatusCellList:
-    return AfumigatusCellList(grid=self.global_state.mesh)
+    return AfumigatusCellList(mesh=self.global_state.mesh)
 
 
 @attrs(kw_only=True)
