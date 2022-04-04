@@ -191,6 +191,47 @@ class TetrahedralMesh(object):
                 axis=0,
             )
 
+    def integrate_point_function_single_element(
+        self, element_index: Union[int, np.ndarray], point_function: np.ndarray
+    ) -> Union[float, np.ndarray]:
+        """
+        Integrate a point function over a single element of the mesh.
+
+        Parameters
+        ----------
+        element_index: int or np.ndarray
+            an element of the mesh or elements if given as an (L,) numpy array of ints
+        point_function: np.ndarray
+            a function defined on points, expressed as an (N,) or (N,k) numpy array.
+            N = number of points
+
+        Returns
+        -------
+        integral of the point function over the given element(s). If a single element is given,
+         returns as a float when point_function is (N,) and as an (k,) numpy array if
+         point_function is (N,k). When an (L,) array of elements are passed, an (L,) or (L,k)
+         array is returned, respectively.
+        """
+        assert (
+                point_function.shape[0] == self.point_dual_volumes.shape[0]
+        ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
+
+        if len(point_function.shape) == 1:
+            value = point_function[element_index] * self.point_dual_volumes[element_index]
+            if isinstance(element_index, int):
+                return float(value)
+            else:
+                return value
+        else:
+            return np.sum(
+                    point_function[element_index]
+                    * np.expand_dims(
+                            self.point_dual_volumes[element_index],
+                            axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
+                            ),
+                    axis=0,
+                    )
+
     def integrate_element_function(self, element_function: np.ndarray) -> Union[np.ndarray, float]:
         """
         Integrate an element function over the mesh.
