@@ -213,7 +213,7 @@ class TetrahedralMesh(object):
          array is returned, respectively.
         """
         assert (
-                point_function.shape[0] == self.point_dual_volumes.shape[0]
+            point_function.shape[0] == self.point_dual_volumes.shape[0]
         ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
 
         if len(point_function.shape) == 1:
@@ -224,13 +224,13 @@ class TetrahedralMesh(object):
                 return value
         else:
             return np.sum(
-                    point_function[element_index]
-                    * np.expand_dims(
-                            self.point_dual_volumes[element_index],
-                            axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
-                            ),
-                    axis=0,
-                    )
+                point_function[element_index]
+                * np.expand_dims(
+                    self.point_dual_volumes[element_index],
+                    axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
+                ),
+                axis=0,
+            )
 
     def integrate_element_function(self, element_function: np.ndarray) -> Union[np.ndarray, float]:
         """

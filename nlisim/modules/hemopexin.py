@@ -68,15 +68,15 @@ class Hemopexin(ModuleModel):
         # Hemopexin / Hemoglobin reaction
         reacted_quantity = michaelian_kinetics(
             substrate=hemopexin.grid,
-            enzyme=hemoglobin.grid,
+            enzyme=hemoglobin.field,
             k_m=hemopexin.k_m,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=hemopexin.k_cat,
             volume=voxel_volume,
         )
-        reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.grid], axis=0)
+        reacted_quantity = np.min([reacted_quantity, hemopexin.grid, hemoglobin.field], axis=0)
         hemopexin.grid[:] = np.maximum(0.0, hemopexin.grid - reacted_quantity)
-        hemoglobin.grid[:] = np.maximum(0.0, hemoglobin.grid - reacted_quantity)
+        hemoglobin.field[:] = np.maximum(0.0, hemoglobin.field - reacted_quantity)
 
         # Degrade Hemopexin
         hemopexin.grid *= hemopexin.half_life_multiplier

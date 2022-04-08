@@ -20,7 +20,6 @@ pytest-cov = "*"
 tox = ">=3"
 
 [packages]
-numba = "~=0.55.1"
 h5py = "~=3.6.0"
 click-pathlib = "~=2020.3.13.0"
 matplotlib = "~=3.5.1"
