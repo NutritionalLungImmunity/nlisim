@@ -112,7 +112,9 @@ class Hemoglobin(ModuleModel):
 
         afumigatus_cells_taking_iron = afumigatus.cells.cell_data[iron_uptaking_afumigatus]
         afumigatus_cells_taking_iron['iron_pool'] += 4 * actual_hemoglobin_uptake
-        hemoglobin.field[afumigatus_elements] -= actual_hemoglobin_uptake
+        np.subtract.at(
+            hemoglobin.field, afumigatus_elements, actual_hemoglobin_uptake
+        )  # Note: this is required for duplicate elements
 
         # Degrade Hemoglobin
         hemoglobin.field *= turnover_rate(

@@ -43,6 +43,7 @@ class Hemolysin(ModuleModel):
         # config file values
         hemolysin.hemolysin_qtty = self.config.getfloat('hemolysin_qtty')
         # constant from setting rate of secretion rate to 1
+        hemolysin.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values (none)
 

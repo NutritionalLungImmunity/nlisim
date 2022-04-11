@@ -23,7 +23,7 @@ def molecule_point_field_factory(self: 'AntiTNFaState') -> np.ndarray:
 class AntiTNFaState(ModuleState):
     field: np.ndarray = attr.ib(
         default=attr.Factory(molecule_point_field_factory, takes_self=True)
-    )  # units: atto-mol
+    )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     react_time_unit: float  # units: hour/step
@@ -55,15 +55,12 @@ class AntiTNFa(ModuleModel):
         )  # units: µm^2/min
 
         # computed values
-        anti_tnf_a.system_amount_per_point = (
-            anti_tnf_a.system_concentration * mesh.point_dual_volumes
-        )  # units: aM * L = atto-mol
         anti_tnf_a.half_life_multiplier = 0.5 ** (
             self.time_step / anti_tnf_a.half_life
         )  # units in exponent: (min/step) / min -> 1/step
 
-        # initialize concentration field
-        anti_tnf_a.field = anti_tnf_a.system_amount_per_point
+        # initialize concentration field TODO: tissue vs. air
+        anti_tnf_a.field = anti_tnf_a.system_concentration
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
