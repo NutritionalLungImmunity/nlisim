@@ -5,8 +5,10 @@ from attr import attrib, attrs
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Point, Voxel
-from nlisim.diffusion import apply_grid_diffusion, assemble_mesh_laplacian_crank_nicholson
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -59,11 +61,7 @@ class Hemoglobin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        from nlisim.modules.afumigatus import (
-            AfumigatusCellData,
-            AfumigatusCellStatus,
-            AfumigatusState,
-        )
+        from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 
         hemoglobin: HemoglobinState = state.hemoglobin
         molecules: MoleculesState = state.molecules
@@ -82,10 +80,20 @@ class Hemoglobin(ModuleModel):
                 == AfumigatusCellStatus.GERM_TUBE,
             )
         ]
+        # you could have too many aspergillus in an element, vying for just a little hemoglobin
+
+        # The snippet below is kind of clever, if I do say so myself, but it needs some explanation.
+        # by example:
+        # >>> arr = np.array([0, 0, 1, 1, 1, 2, 10])
+        # >>> np.bincount(arr)
+        # array([2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1])
+        # >>> np.bincount(arr)[arr]
+        # array([2, 2, 3, 3, 3, 1, 1])
         afumigatus_elements = np.array(afumigatus.cells.element_index)[
             iron_uptaking_afumigatus
-        ]  # TODO: convert _reverse_element_index in CellList to ndarray
-        # you could have too many aspergillus in an element, vying for just a little hemoglobin
+        ]  # TODO: consider converting _reverse_element_index in CellList to ndarray
+        afumigatus_count_in_same_element = np.bincount(afumigatus_elements)[afumigatus_elements]
+
         desired_hemoglobin_uptake = (
             hemoglobin.uptake_rate
             * hemoglobin.field[mesh.element_point_indices[afumigatus_elements]]
@@ -93,30 +101,18 @@ class Hemoglobin(ModuleModel):
         available_hemoglobin = mesh.integrate_point_function_single_element(
             element_index=afumigatus_elements, point_function=hemoglobin.field
         )
+        actual_hemoglobin_uptake = (
+            desired_hemoglobin_uptake
+            + np.minimum(
+                0.0,
+                available_hemoglobin - desired_hemoglobin_uptake * afumigatus_count_in_same_element,
+            )
+            / afumigatus_count_in_same_element
+        )
 
-        # line below is kind of clever, if I do say so myself, but it needs some explanation.
-        # by example:
-        # >>> arr = np.array([0, 0, 1, 1, 1, 2, 10])
-        # >>> np.bincount(arr)
-        # array([2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1])
-        # >>> np.bincount(arr)[arr]
-        # array([2, 2, 3, 3, 3, 1, 1])
-        afumigatus_count_in_same_element = np.bincount(afumigatus_elements)[afumigatus_elements]
-
-        afumigatus_cells = afumigatus.cells.cell_data[iron_uptaking_afumigatus]
-
-        for afumigatus_cell_index in afumigatus.cells.alive():
-            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            if afumigatus_cell['status'] in {
-                AfumigatusCellStatus.HYPHAE,
-                AfumigatusCellStatus.GERM_TUBE,
-            }:
-                afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
-                fungal_absorbed_hemoglobin = (
-                    hemoglobin.uptake_rate * hemoglobin.field[tuple(afumigatus_cell_voxel)]
-                )
-                hemoglobin.field[tuple(afumigatus_cell_voxel)] -= fungal_absorbed_hemoglobin
-                afumigatus_cell['iron_pool'] += 4 * fungal_absorbed_hemoglobin
+        afumigatus_cells_taking_iron = afumigatus.cells.cell_data[iron_uptaking_afumigatus]
+        afumigatus_cells_taking_iron['iron_pool'] += 4 * actual_hemoglobin_uptake
+        hemoglobin.field[afumigatus_elements] -= actual_hemoglobin_uptake
 
         # Degrade Hemoglobin
         hemoglobin.field *= turnover_rate(
@@ -127,21 +123,21 @@ class Hemoglobin(ModuleModel):
         )
 
         # Diffusion of Hemoglobin
-        hemoglobin.field[:] = apply_grid_diffusion(
+        hemoglobin.field[:] = apply_mesh_diffusion_crank_nicholson(
             variable=hemoglobin.field,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+            cn_a=hemoglobin.cn_a,
+            cn_b=hemoglobin.cn_b,
+            dofs=hemoglobin.dofs,
         )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         hemoglobin: HemoglobinState = state.hemoglobin
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(hemoglobin.field) / voxel_volume / 1e9),
+            'concentration (nM)': float(mesh.integrate_point_function(hemoglobin.field) / 1e9),
         }
 
     def visualization_data(self, state: State):
