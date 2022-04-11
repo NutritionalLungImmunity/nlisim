@@ -123,7 +123,9 @@ class AntiTNFa(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(mesh.integrate_point_function(anti_tnf_a.field) / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(anti_tnf_a.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):

@@ -133,7 +133,9 @@ class EstB(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(mesh.integrate_point_function(estb.field) / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(estb.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):
