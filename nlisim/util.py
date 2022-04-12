@@ -183,9 +183,7 @@ def uptake_in_element(
 
     # weight by amount, i'm not completely convinced that this is geometrically jutified,
     # but it _does_ prevent the numbers from going negative
-    point_field_proportions = point_field[points] / np.sum(
-        point_field[points], axis=1
-    )
+    point_field_proportions = point_field[points] / np.sum(point_field[points], axis=1)
 
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume

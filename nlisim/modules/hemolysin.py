@@ -5,7 +5,6 @@ from attr import attrib, attrs
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Point
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
