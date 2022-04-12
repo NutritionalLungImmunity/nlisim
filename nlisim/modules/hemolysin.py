@@ -14,7 +14,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import secretion_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'HemolysinState') -> np.ndarray:
@@ -74,19 +74,11 @@ class Hemolysin(ModuleModel):
             afumigatus.cells.cell_data[live_afumigatus]['status'] == AfumigatusCellStatus.HYPHAE
         ]
 
-        def hemolysin_secretion(*, element_index: int, point: Point, amount: float) -> None:
-            proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
-            points = mesh.element_point_indices[element_index]
-            # new pt concentration = (old pt amount + new amount) / pt dual volume
-            #    = (old conc * pt dual volume + new amount) / pt dual volume
-            #    = old conc + (new amount / pt dual volume)
-            hemolysin.field[points] += (
-                proportions * amount / mesh.point_dual_volumes[points]
-            )  # units: prop * atto-mol / L = atto-M
-
         for afumigatus_cell_index in hemolysin_releasing_afumigatus:
             afumigatus_cell = afumigatus.cells[afumigatus_cell_index]
-            hemolysin_secretion(
+            secretion_in_element(
+                mesh=mesh,
+                point_field=hemolysin.field,
                 element_index=afumigatus.cells.element_index[afumigatus_cell_index],
                 point=afumigatus_cell['point'],
                 amount=hemolysin.hemolysin_qtty,

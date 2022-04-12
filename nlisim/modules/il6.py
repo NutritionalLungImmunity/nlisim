@@ -4,7 +4,6 @@ from attr import Factory, attrib, attrs
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Point
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
@@ -13,7 +12,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import secretion_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'IL6State') -> np.ndarray:
@@ -101,21 +100,13 @@ class IL6(ModuleModel):
         pneumocyte: PneumocyteState = state.pneumocyte
         mesh: TetrahedralMesh = state.mesh
 
-        def il6_secretion(*, element_index: int, point: Point, amount: float) -> None:
-            proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
-            points = mesh.element_point_indices[element_index]
-            # new pt concentration = (old pt amount + new amount) / pt dual volume
-            #    = (old conc * pt dual volume + new amount) / pt dual volume
-            #    = old conc + (new amount / pt dual volume)
-            il6.field[points] += (
-                proportions * amount / mesh.point_dual_volumes[points]
-            )  # units: prop * atto-mol / L = atto-M
-
         # active Macrophages secrete il6
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                il6_secretion(
+                secretion_in_element(
+                    mesh=mesh,
+                    point_field=il6.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],
                     point=macrophage_cell['point'],
                     amount=il6.macrophage_secretion_rate_unit_t,
@@ -125,7 +116,9 @@ class IL6(ModuleModel):
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                il6_secretion(
+                secretion_in_element(
+                    mesh=mesh,
+                    point_field=il6.field,
                     element_index=neutrophil.cells.element_index[neutrophil_cell_index],
                     point=neutrophil_cell['point'],
                     amount=il6.neutrophil_secretion_rate_unit_t,
@@ -135,7 +128,9 @@ class IL6(ModuleModel):
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                il6_secretion(
+                secretion_in_element(
+                    mesh=mesh,
+                    point_field=il6.field,
                     element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
                     point=pneumocyte_cell['point'],
                     amount=il6.pneumocyte_secretion_rate_unit_t,

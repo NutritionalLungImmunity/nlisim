@@ -3,7 +3,8 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from nlisim.coordinates import Voxel
+from nlisim.coordinates import Point, Voxel
+from nlisim.grid import TetrahedralMesh
 from nlisim.random import rg
 
 # ϵ is used in a divide by zero fix: 1/x -> 1/(x+ϵ)
@@ -151,3 +152,21 @@ def choose_voxel_by_prob(
         return default_value
     else:
         return voxels[random_voxel_idx]
+
+
+def secretion_in_element(
+    *,
+    mesh: TetrahedralMesh,
+    point_field: np.ndarray,
+    element_index: int,
+    point: Point,
+    amount: float,
+) -> None:
+    proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
+    points = mesh.element_point_indices[element_index]
+    # new pt concentration = (old pt amount + new amount) / pt dual volume
+    #    = (old conc * pt dual volume + new amount) / pt dual volume
+    #    = old conc + (new amount / pt dual volume)
+    point_field[points] += (
+        proportions * amount / mesh.point_dual_volumes[points]
+    )  # units: prop * atto-mol / L = atto-M
