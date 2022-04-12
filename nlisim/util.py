@@ -158,15 +158,38 @@ def secretion_in_element(
     *,
     mesh: TetrahedralMesh,
     point_field: np.ndarray,
-    element_index: int,
-    point: Point,
-    amount: float,
+    element_index: Union[int, np.ndarray],
+    point: Union[Point, np.ndarray],
+    amount: Union[float, np.ndarray],
 ) -> None:
-    proportions = np.asarray(mesh.tetrahedral_proportions(element_index, point))
+    proportions = mesh.tetrahedral_proportions(element_index, point)
     points = mesh.element_point_indices[element_index]
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume
     #    = old conc + (new amount / pt dual volume)
-    point_field[points] += (
-        proportions * amount / mesh.point_dual_volumes[points]
+    np.add.at(
+        point_field, points, proportions * amount / mesh.point_dual_volumes[points]
+    )  # units: prop * atto-mol / L = atto-M
+
+
+def uptake_in_element(
+    *,
+    mesh: TetrahedralMesh,
+    point_field: np.ndarray,
+    element_index: Union[int, np.ndarray],
+    amount: Union[float, np.ndarray],
+) -> None:
+    points = mesh.element_point_indices[element_index]
+
+    # weight by amount, i'm not completely convinced that this is geometrically jutified,
+    # but it _does_ prevent the numbers from going negative
+    point_field_proportions = point_field[points] / np.sum(
+        point_field[points], axis=1
+    )
+
+    # new pt concentration = (old pt amount + new amount) / pt dual volume
+    #    = (old conc * pt dual volume + new amount) / pt dual volume
+    #    = old conc + (new amount / pt dual volume)
+    np.subtract.at(
+        point_field, points, point_field_proportions * amount / mesh.point_dual_volumes[points]
     )  # units: prop * atto-mol / L = atto-M

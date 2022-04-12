@@ -13,7 +13,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import turnover_rate, uptake_in_element
 
 
 def molecule_point_field_factory(self: 'HemoglobinState') -> np.ndarray:
@@ -72,7 +72,7 @@ class Hemoglobin(ModuleModel):
 
         # find the cells that will take up iron
         live_afumigatus = afumigatus.cells.alive()
-        iron_uptaking_afumigatus = live_afumigatus[
+        iron_uptaking_afumigatus_indices = live_afumigatus[
             np.logical_or(
                 afumigatus.cells.cell_data[live_afumigatus]['status']
                 == AfumigatusCellStatus.HYPHAE,
@@ -90,31 +90,28 @@ class Hemoglobin(ModuleModel):
         # >>> np.bincount(arr)[arr]
         # array([2, 2, 3, 3, 3, 1, 1])
         afumigatus_elements = np.array(afumigatus.cells.element_index)[
-            iron_uptaking_afumigatus
+            iron_uptaking_afumigatus_indices
         ]  # TODO: consider converting _reverse_element_index in CellList to ndarray
         afumigatus_count_in_same_element = np.bincount(afumigatus_elements)[afumigatus_elements]
 
-        desired_hemoglobin_uptake = (
-            hemoglobin.uptake_rate
-            * hemoglobin.field[mesh.element_point_indices[afumigatus_elements]]
-        )
         available_hemoglobin = mesh.integrate_point_function_single_element(
             element_index=afumigatus_elements, point_function=hemoglobin.field
         )
-        actual_hemoglobin_uptake = (
-            desired_hemoglobin_uptake
-            + np.minimum(
-                0.0,
-                available_hemoglobin - desired_hemoglobin_uptake * afumigatus_count_in_same_element,
-            )
-            / afumigatus_count_in_same_element
+        hemoglobin_uptake = np.where(
+            hemoglobin.uptake_rate * afumigatus_count_in_same_element
+            <= 1.0,  # uptakes less than 100%
+            available_hemoglobin * hemoglobin.uptake_rate,  # uptake as normal
+            available_hemoglobin / afumigatus_count_in_same_element,  # divide evenly
         )
 
-        afumigatus_cells_taking_iron = afumigatus.cells.cell_data[iron_uptaking_afumigatus]
-        afumigatus_cells_taking_iron['iron_pool'] += 4 * actual_hemoglobin_uptake
-        np.subtract.at(
-            hemoglobin.field, afumigatus_elements, actual_hemoglobin_uptake
-        )  # Note: this is required for duplicate elements
+        afumigatus_cells_taking_iron = afumigatus.cells.cell_data[iron_uptaking_afumigatus_indices]
+        afumigatus_cells_taking_iron['iron_pool'] += 4 * hemoglobin_uptake
+        uptake_in_element(
+            mesh=mesh,
+            point_field=hemoglobin.field,
+            element_index=afumigatus_elements,
+            amount=hemoglobin_uptake,
+        )
 
         # Degrade Hemoglobin
         hemoglobin.field *= turnover_rate(
