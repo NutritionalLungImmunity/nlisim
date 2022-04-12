@@ -330,19 +330,21 @@ class TetrahedralMesh(object):
         """Return all 3-dimensional elements which share a face with the given element."""
         return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
 
-    def tetrahedral_proportions(self, element_index: int, point: Point) -> np.ndarray:
+    def tetrahedral_proportions(
+        self, element_index: int, point: Point, check_bounds: bool = False
+    ) -> np.ndarray:
         tet_points = self.points[self.element_point_indices[element_index, :], :]
 
-        ortho_coords = np.min(
-            1.0,
-            np.max(
-                0.0, np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :])
-            ),
+        ortho_coords = np.linalg.solve(
+            tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :]
         )
 
-        assert 0.0 <= np.sum(ortho_coords) <= 1.0 and np.isclose(
-            ((tet_points[1:, :] - tet_points[0, :]) @ ortho_coords) + tet_points[0, :], point
-        ), f"Point does not seem to be in the element. {point=} {element_index=} {tet_points=}"
+        if check_bounds and not (
+            np.alltrue(0.0 <= ortho_coords <= 1.0) and 0.0 <= np.sum(ortho_coords) <= 1.0
+        ):
+            raise RuntimeError(
+                "Point does not seem to be in the element. {point=} {element_index=} {tet_points=}"
+            )
 
         proportional_coords = np.array(
             [
@@ -354,6 +356,16 @@ class TetrahedralMesh(object):
         )
 
         return proportional_coords
+
+    def in_tetrahedral_element(
+        self, element_index: int, point: Point, interior: bool = False
+    ) -> bool:
+        try:
+            tet_proportions = self.tetrahedral_proportions(element_index, point, check_bounds=True)
+        except RuntimeError:
+            return False
+
+        return not interior or np.alltrue(0.0 < tet_proportions < 1.0)
 
 
 @attrs(auto_attribs=True, repr=False)
