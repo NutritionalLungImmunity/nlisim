@@ -132,12 +132,7 @@ class SimulationConfig(ConfigParser):
 
         This is a helper method for `getlist`, split out for code sharing.
         """
-        values = []
-        for value in re.split('[\n ,]+', value):
-            stripped = value.strip()
-            if stripped:
-                values.append(stripped)
-        return values
+        return [val.strip() for val in re.split('[\n ,]+', value) if val.strip()]
 
     def __str__(self):
         f = StringIO()
