@@ -64,7 +64,9 @@ class Hepcidin(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # interaction with macrophages
-        live_macrophage_cells: MacrophageCellData = macrophage.cells.cell_data[macrophage.cells.alive()]
+        live_macrophage_cells: MacrophageCellData = macrophage.cells.cell_data[
+            macrophage.cells.alive()
+        ]
         hepcidin_concentration_at_macrophages = mesh.evaluate_point_function(
             point_function=hepcidin.field,
             element_index=macrophage.cells.element_index[macrophage.cells.alive()],
@@ -86,7 +88,7 @@ class Hepcidin(ModuleModel):
         #     macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
         #     hepcidin_concentration_at_macrophage = mesh.evaluate_point_function(
         #         point_function=hepcidin.field,
-        #         element_index=macrophage.cells.element_index[macrophage_cell],
+        #         element_index=macrophage.cells.element_index[macrophage_index],
         #         point=macrophage_cell['point'],
         #     )
         #     if (
