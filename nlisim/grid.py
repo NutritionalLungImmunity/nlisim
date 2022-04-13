@@ -160,6 +160,28 @@ class TetrahedralMesh(object):
             point_dual_volumes=point_dual_volumes,
         )
 
+    def evaluate_point_function(
+        self, point_function: np.ndarray, point: Point, element_index: int
+    ) -> Union[float, np.ndarray]:
+        """
+        Evaluate a point function on the interior of a tetrahedral element.
+
+        Parameters
+        ----------
+        point_function: np.ndarray
+            a function defined on the points of the mesh
+        point: Point
+            a point in a tetrahedron. no checking that this is in the element is performed.
+        element_index: int
+            the index of the tetrahedral element.
+
+        Returns
+        -------
+        Value of the function, defined using linear interpolation.
+        """
+        proportions = self.tetrahedral_proportions(element_index=element_index, point=point)
+        return point_function[self.element_point_indices[element_index]] @ proportions
+
     def integrate_point_function(self, point_function: np.ndarray) -> Union[np.ndarray, float]:
         """
         Integrate a point function over the mesh.
