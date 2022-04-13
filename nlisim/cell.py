@@ -167,7 +167,9 @@ class CellList(object):
     _cell_data: CellData = attrib()
     _ncells: int = attrib(init=False)
     _element_index: Dict[int, Set[int]] = attrib(init=False, factory=lambda: defaultdict(set))
-    _reverse_element_index: List[int] = attrib(init=False, factory=list)
+    _reverse_element_index: np.ndarray = attrib(
+        init=False, factory=lambda: np.full(MAX_CELL_LIST_SIZE, -1)
+    )
 
     # noinspection PyUnresolvedReferences
     @_cell_data.default
@@ -274,13 +276,13 @@ class CellList(object):
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
 
-        index = self._ncells
+        cell_index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
-        self._cell_data[index] = cell
+        self._cell_data[cell_index] = cell
         element_index = self.mesh.get_element_index(cell['point'])
-        self._element_index[element_index].add(index)
-        self._reverse_element_index.append(element_index)
-        return index
+        self._element_index[element_index].add(cell_index)
+        self._reverse_element_index[cell_index] = element_index
+        return cell_index
 
     def extend(self, cells: Iterable[CellData]) -> None:
         """Extend the cell list by multiple cells."""
@@ -342,7 +344,7 @@ class CellList(object):
         """
         if indices is None:
             self._element_index.clear()
-            self._reverse_element_index.clear()
+            self._reverse_element_index[:] = -1
             self._compute_element_index()
             return
 
@@ -365,4 +367,4 @@ class CellList(object):
             cell = self[cell_index]
             element = self.mesh.get_element_index(cell['point'])
             self._element_index[element].add(cell_index)
-            self._reverse_element_index.append(element)
+            self._reverse_element_index[cell_index] = element
