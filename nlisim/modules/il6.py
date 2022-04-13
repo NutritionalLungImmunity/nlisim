@@ -33,6 +33,7 @@ class IL6State(ModuleState):
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # units: atto-M
+    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -47,6 +48,7 @@ class IL6(ModuleModel):
 
     def initialize(self, state: State) -> State:
         il6: IL6State = state.il6
+        molecules: MoleculesState = state.molecules
 
         # config file values
         il6.half_life = self.config.getfloat('half_life')
@@ -63,7 +65,12 @@ class IL6(ModuleModel):
         il6.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-
+        il6.turnover_rate = turnover_rate(
+            x=1.0,
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         # units: %/step + %/min * (min/step) -> %/step
         il6.half_life_multiplier = 0.5 ** (
             self.time_step / il6.half_life
@@ -94,7 +101,6 @@ class IL6(ModuleModel):
         from nlisim.modules.pneumocyte import PneumocyteState
 
         il6: IL6State = state.il6
-        molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
@@ -137,13 +143,7 @@ class IL6(ModuleModel):
                 )
 
         # Degrade IL6
-        il6.field *= il6.half_life_multiplier
-        il6.field *= turnover_rate(
-            x=np.ones(shape=il6.field.shape, dtype=np.float64),
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
+        il6.field *= il6.half_life_multiplier * il6.turnover_rate
 
         # Diffusion of IL6
         il6.field[:] = apply_mesh_diffusion_crank_nicholson(

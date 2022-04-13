@@ -3,21 +3,22 @@ from typing import Any, Dict
 import attr
 import numpy as np
 
-from nlisim.coordinates import Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.state import State
+from nlisim.util import secretion_in_element
 
 
-def molecule_grid_factory(self: 'IronState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+def molecule_point_field_factory(self: 'IronState') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mols
+    field: np.ndarray = attr.ib(
+            default=attr.Factory(molecule_point_field_factory, takes_self=True)
+            )  # units: atto-M
 
 
 class Iron(ModuleModel):
@@ -44,20 +45,28 @@ class Iron(ModuleModel):
 
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.mesh
+        mesh: TetrahedralMesh = state.mesh
 
         # dead macrophages contribute their iron to the environment
-        for macrophage_cell in macrophage.cells:
+        for macrophage_cell_index in macrophage.cells.alive():
+            macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+
             if macrophage_cell['status'] in {
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.DEAD,
-            }:
-                macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
-                iron.grid[tuple(macrophage_cell_voxel)] += macrophage_cell['iron_pool']
+                }:
+                internal_iron = macrophage_cell['iron_pool']
                 macrophage_cell['iron_pool'] = 0.0
+                secretion_in_element(
+                        mesh=mesh,
+                        point_field=iron.field,
+                        element_index=macrophage.cells.element_index[macrophage_cell_index],
+                        point=macrophage_cell['point'],
+                        amount=internal_iron,
+                        )
 
-        # Degrade Iron
+                # Degrade Iron
         # turnover done by liver, if at all (2/4/2021: not currently)
 
         # iron does not diffuse
@@ -66,12 +75,13 @@ class Iron(ModuleModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         iron: IronState = state.iron
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(iron.grid) / voxel_volume / 1e9),
-        }
+            'concentration (nM)': float(
+                mesh.integrate_point_function(iron.field) / 1e9 / mesh.total_volume),
+            }
 
     def visualization_data(self, state: State):
         iron: IronState = state.iron
-        return 'molecule', iron.grid
+        return 'molecule', iron.field

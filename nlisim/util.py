@@ -21,7 +21,7 @@ def activation_function(*, x, k_d, h, volume, b=1):
 
 def turnover_rate(
     *,
-    x: np.ndarray,
+    x: Union[float, np.ndarray],
     x_system: Union[float, np.ndarray],
     base_turnover_rate: float,
     rel_cyt_bind_unit_t: float,

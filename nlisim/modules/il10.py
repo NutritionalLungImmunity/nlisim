@@ -2,31 +2,38 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+    )
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover_rate
+from nlisim.util import activation_function, secretion_in_element, turnover_rate
 
 
-def molecule_grid_factory(self: 'IL10State') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+def molecule_point_field_factory(self: 'IL10State') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class IL10State(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: aM
+    field: np.ndarray = attr.ib(
+            default=attr.Factory(molecule_point_field_factory, takes_self=True)
+            )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * h^-1
     k_d: float  # units: aM
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class IL10(ModuleModel):
@@ -41,19 +48,27 @@ class IL10(ModuleModel):
         # config file values
         il10.half_life = self.config.getfloat('half_life')  # units: min
         il10.macrophage_secretion_rate = self.config.getfloat(
-            'macrophage_secretion_rate'
-        )  # units: atto-mol * cell^-1 * h^-1
+                'macrophage_secretion_rate'
+                )  # units: atto-mol * cell^-1 * h^-1
         il10.k_d = self.config.getfloat('k_d')  # units: aM
+        il10.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
         il10.half_life_multiplier = 0.5 ** (
-            self.time_step / il10.half_life
+                self.time_step / il10.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
         il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * (
-            self.time_step / 60
+                self.time_step / 60
         )  # units: atto-mol * cell^-1 * h^-1 * (min/step) / (min/hour)
 
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+                state=state, diffusivity=il10.diffusion_constant, dt=self.time_step
+                )
+        il10.cn_a = cn_a
+        il10.cn_b = cn_b
+        il10.dofs = dofs
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
@@ -64,69 +79,75 @@ class IL10(ModuleModel):
         il10: IL10State = state.il10
         macrophage: MacrophageState = state.macrophage
         molecules: MoleculesState = state.molecules
-        voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.mesh
+        mesh: TetrahedralMesh = state.mesh
 
         # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
 
             if (
-                macrophage_cell['status'] == PhagocyteStatus.ACTIVE
-                and macrophage_cell['state'] == PhagocyteState.INTERACTING
+                    macrophage_cell['status'] == PhagocyteStatus.ACTIVE
+                    and macrophage_cell['state'] == PhagocyteState.INTERACTING
             ):
-                il10.grid[tuple(macrophage_cell_voxel)] += il10.macrophage_secretion_rate_unit_t
+                secretion_in_element(
+                        mesh=mesh,
+                        point_field=il10.field,
+                        element_index=macrophage.cells.element_index[macrophage_cell_index],
+                        point=macrophage_cell['point'],
+                        amount=il10.macrophage_secretion_rate_unit_t,
+                        )
 
             if macrophage_cell['status'] not in {
                 PhagocyteStatus.DEAD,
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.NECROTIC,
-            } and (
-                activation_function(
-                    x=il10.grid[tuple(macrophage_cell_voxel)],
-                    k_d=il10.k_d,
-                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                    volume=voxel_volume,
-                    b=1,
-                )
-                > rg.uniform()
-            ):
-                # inactive cells stay inactive, others become inactivating
-                if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
-                    macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
-                macrophage_cell['status_iteration'] = 0
+                }:
+                il10_concentration_at_macrophage = mesh.evaluate_point_function(
+                        point_function=il10.field,
+                        element_index=macrophage.cells.element_index[macrophage_cell_index],
+                        point=macrophage_cell['point'],
+                        )
+                if activation_function(
+                        x=il10_concentration_at_macrophage,
+                        k_d=il10.k_d,
+                        h=self.time_step / 60,  # units: (min/step) / (min/hour)
+                        volume=1,  # already a concentration
+                        b=1,
+                        ) > rg.uniform():
+                    # inactive cells stay inactive, others become inactivating
+                    if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
+                        macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
+                    macrophage_cell['status_iteration'] = 0
 
         # Degrade IL10
-        il10.grid *= il10.half_life_multiplier
-        il10.grid *= turnover_rate(
-            x=np.ones(shape=il10.grid.shape, dtype=np.float64),
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
+        il10.field *= il10.half_life_multiplier
+        il10.field *= turnover_rate(
+                x=np.ones(shape=il10.field.shape, dtype=np.float64),
+                x_system=0.0,
+                base_turnover_rate=molecules.turnover_rate,
+                rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+                )
 
         # Diffusion of IL10
-        il10.grid[:] = apply_grid_diffusion(
-            variable=il10.grid,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
-        )
+        il10.field[:] = apply_mesh_diffusion_crank_nicholson(
+                variable=il10.field,
+                cn_a=il10.cn_a,
+                cn_b=il10.cn_b,
+                dofs=il10.dofs,
+                )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         il10: IL10State = state.il10
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(il10.grid[mask]) / voxel_volume / 1e9),
-        }
+            'concentration (nM)': float(
+                    mesh.integrate_point_function(il10.field) / 1e9 / mesh.total_volume
+                    ),
+            }
 
     def visualization_data(self, state: State):
         il10: IL10State = state.il10
-        return 'molecule', il10.grid
+        return 'molecule', il10.field
