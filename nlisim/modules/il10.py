@@ -7,7 +7,7 @@ from scipy.sparse import csr_matrix
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
-    )
+)
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -23,8 +23,8 @@ def molecule_point_field_factory(self: 'IL10State') -> np.ndarray:
 @attr.s(kw_only=True, repr=False)
 class IL10State(ModuleState):
     field: np.ndarray = attr.ib(
-            default=attr.Factory(molecule_point_field_factory, takes_self=True)
-            )  # units: atto-M
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
+    )  # units: atto-M
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
@@ -48,24 +48,24 @@ class IL10(ModuleModel):
         # config file values
         il10.half_life = self.config.getfloat('half_life')  # units: min
         il10.macrophage_secretion_rate = self.config.getfloat(
-                'macrophage_secretion_rate'
-                )  # units: atto-mol * cell^-1 * h^-1
+            'macrophage_secretion_rate'
+        )  # units: atto-mol * cell^-1 * h^-1
         il10.k_d = self.config.getfloat('k_d')  # units: aM
         il10.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
         il10.half_life_multiplier = 0.5 ** (
-                self.time_step / il10.half_life
+            self.time_step / il10.half_life
         )  # units in exponent: (min/step) / min -> 1/step
         # time unit conversions
         il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * (
-                self.time_step / 60
+            self.time_step / 60
         )  # units: atto-mol * cell^-1 * h^-1 * (min/step) / (min/hour)
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-                state=state, diffusivity=il10.diffusion_constant, dt=self.time_step
-                )
+            state=state, diffusivity=il10.diffusion_constant, dt=self.time_step
+        )
         il10.cn_a = cn_a
         il10.cn_b = cn_b
         il10.dofs = dofs
@@ -86,34 +86,37 @@ class IL10(ModuleModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
 
             if (
-                    macrophage_cell['status'] == PhagocyteStatus.ACTIVE
-                    and macrophage_cell['state'] == PhagocyteState.INTERACTING
+                macrophage_cell['status'] == PhagocyteStatus.ACTIVE
+                and macrophage_cell['state'] == PhagocyteState.INTERACTING
             ):
                 secretion_in_element(
-                        mesh=mesh,
-                        point_field=il10.field,
-                        element_index=macrophage.cells.element_index[macrophage_cell_index],
-                        point=macrophage_cell['point'],
-                        amount=il10.macrophage_secretion_rate_unit_t,
-                        )
+                    mesh=mesh,
+                    point_field=il10.field,
+                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    point=macrophage_cell['point'],
+                    amount=il10.macrophage_secretion_rate_unit_t,
+                )
 
             if macrophage_cell['status'] not in {
                 PhagocyteStatus.DEAD,
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.NECROTIC,
-                }:
+            }:
                 il10_concentration_at_macrophage = mesh.evaluate_point_function(
-                        point_function=il10.field,
-                        element_index=macrophage.cells.element_index[macrophage_cell_index],
-                        point=macrophage_cell['point'],
-                        )
-                if activation_function(
+                    point_function=il10.field,
+                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    point=macrophage_cell['point'],
+                )
+                if (
+                    activation_function(
                         x=il10_concentration_at_macrophage,
                         k_d=il10.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=1,  # already a concentration
                         b=1,
-                        ) > rg.uniform():
+                    )
+                    > rg.uniform()
+                ):
                     # inactive cells stay inactive, others become inactivating
                     if macrophage_cell['status'] != PhagocyteStatus.INACTIVE:
                         macrophage_cell['status'] = PhagocyteStatus.INACTIVATING
@@ -122,19 +125,19 @@ class IL10(ModuleModel):
         # Degrade IL10
         il10.field *= il10.half_life_multiplier
         il10.field *= turnover_rate(
-                x=np.ones(shape=il10.field.shape, dtype=np.float64),
-                x_system=0.0,
-                base_turnover_rate=molecules.turnover_rate,
-                rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-                )
+            x=np.ones(shape=il10.field.shape, dtype=np.float64),
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of IL10
         il10.field[:] = apply_mesh_diffusion_crank_nicholson(
-                variable=il10.field,
-                cn_a=il10.cn_a,
-                cn_b=il10.cn_b,
-                dofs=il10.dofs,
-                )
+            variable=il10.field,
+            cn_a=il10.cn_a,
+            cn_b=il10.cn_b,
+            dofs=il10.dofs,
+        )
 
         return state
 
@@ -144,9 +147,9 @@ class IL10(ModuleModel):
 
         return {
             'concentration (nM)': float(
-                    mesh.integrate_point_function(il10.field) / 1e9 / mesh.total_volume
-                    ),
-            }
+                mesh.integrate_point_function(il10.field) / 1e9 / mesh.total_volume
+            ),
+        }
 
     def visualization_data(self, state: State):
         il10: IL10State = state.il10

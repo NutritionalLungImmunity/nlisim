@@ -17,8 +17,8 @@ def molecule_point_field_factory(self: 'IronState') -> np.ndarray:
 @attr.s(kw_only=True, repr=False)
 class IronState(ModuleState):
     field: np.ndarray = attr.ib(
-            default=attr.Factory(molecule_point_field_factory, takes_self=True)
-            )  # units: atto-M
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
+    )  # units: atto-M
 
 
 class Iron(ModuleModel):
@@ -55,16 +55,16 @@ class Iron(ModuleModel):
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.APOPTOTIC,
                 PhagocyteStatus.DEAD,
-                }:
+            }:
                 internal_iron = macrophage_cell['iron_pool']
                 macrophage_cell['iron_pool'] = 0.0
                 secretion_in_element(
-                        mesh=mesh,
-                        point_field=iron.field,
-                        element_index=macrophage.cells.element_index[macrophage_cell_index],
-                        point=macrophage_cell['point'],
-                        amount=internal_iron,
-                        )
+                    mesh=mesh,
+                    point_field=iron.field,
+                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    point=macrophage_cell['point'],
+                    amount=internal_iron,
+                )
 
                 # Degrade Iron
         # turnover done by liver, if at all (2/4/2021: not currently)
@@ -79,8 +79,9 @@ class Iron(ModuleModel):
 
         return {
             'concentration (nM)': float(
-                mesh.integrate_point_function(iron.field) / 1e9 / mesh.total_volume),
-            }
+                mesh.integrate_point_function(iron.field) / 1e9 / mesh.total_volume
+            ),
+        }
 
     def visualization_data(self, state: State):
         iron: IronState = state.iron
