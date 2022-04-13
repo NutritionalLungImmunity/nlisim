@@ -5,10 +5,10 @@ from attr import attrib, attrs
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
 from nlisim.diffusion import assemble_mesh_laplacian_crank_nicholson
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -64,27 +64,41 @@ class Hepcidin(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # interaction with macrophages
-        hepcidin_concentration_at_macrophage = hepcidin.field[
-            mesh.element_point_indices[macrophage.cells.element_index]
-        ]
+        live_macrophage_cells: MacrophageCellData = macrophage.cells.cell_data[macrophage.cells.alive()]
+        hepcidin_concentration_at_macrophages = mesh.evaluate_point_function(
+            point_function=hepcidin.field,
+            element_index=macrophage.cells.element_index[macrophage.cells.alive()],
+            point=live_macrophage_cells['point'],
+        )
+        activation_mask = activation_function(
+            x=hepcidin_concentration_at_macrophages,
+            k_d=hepcidin.k_d,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour),
+            volume=1,  # already a concentration
+            b=1,
+        ) > rg.random(hepcidin_concentration_at_macrophages.shape)
+        live_macrophage_cells[activation_mask]['fpn'] = False
+        live_macrophage_cells[activation_mask]['fpn_iteration'] = 0
 
-        # activated_voxels = zip(
-        #     *np.where(
+        # # python for-loop version of the same:
+        # live_macrophage_indices = macrophage.cells.alive()
+        # for macrophage_index in live_macrophage_indices:
+        #     macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
+        #     hepcidin_concentration_at_macrophage = mesh.evaluate_point_function(
+        #         point_function=hepcidin.field,
+        #         element_index=macrophage.cells.element_index[macrophage_cell],
+        #         point=macrophage_cell['point'],
+        #     )
+        #     if (
         #         activation_function(
-        #             x=hepcidin.field,
+        #             x=hepcidin_concentration_at_macrophage,
         #             k_d=hepcidin.k_d,
-        #             h=self.time_step / 60,  # units: (min/step) / (min/hour)
-        #             volume=mesh.point_dual_volumes,
+        #             h=self.time_step / 60,  # units: (min/step) / (min/hour),
+        #             volume=1,  # already a concentration
         #             b=1,
         #         )
-        #         > rg.random(size=hepcidin.field.shape)
-        #     )
-        # )
-        # for z, y, x in activated_voxels:
-        #     for macrophage_cell_index in macrophage.cells.get_cells_in_element(
-        #         Voxel(x=x, y=y, z=z)
+        #         > rg.random()
         #     ):
-        #         macrophage_cell = macrophage.cells[macrophage_cell_index]
         #         macrophage_cell['fpn'] = False
         #         macrophage_cell['fpn_iteration'] = 0
 
