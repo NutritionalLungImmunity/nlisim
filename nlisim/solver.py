@@ -108,8 +108,10 @@ def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[Tuple
     4. Finalize the simulation (yielding the result)
     """
     attr.set_run_validators(config.getboolean('simulation', 'validate'))
-    initial_state = initialize(State.create(config))
+    initial_state: State = initialize(State.create(config))
     yield initial_state, Status.initialize
+
+    state: State = initial_state
 
     for state in advance(initial_state, target_time):
         yield state, Status.time_step
