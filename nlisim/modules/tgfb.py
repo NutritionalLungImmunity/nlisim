@@ -2,10 +2,14 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
@@ -13,20 +17,25 @@ from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
 
 
-def molecule_grid_factory(self: 'TGFBState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+def molecule_point_field_factory(self: 'TGFBState') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class TGFBState(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    field: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-mols
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # aM
+    turnover_rate: float
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class TGFB(ModuleModel):
@@ -37,6 +46,7 @@ class TGFB(ModuleModel):
 
     def initialize(self, state: State) -> State:
         tgfb: TGFBState = state.tgfb
+        molecules: MoleculesState = state.molecules
 
         # config file values
         tgfb.half_life = self.config.getfloat('half_life')  # units: min
@@ -44,8 +54,15 @@ class TGFB(ModuleModel):
             'macrophage_secretion_rate'
         )  # units: atto-mol * cell^-1 * h^-1
         tgfb.k_d = self.config.getfloat('k_d')  # units: aM
+        tgfb.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
+        tgfb.turnover_rate = turnover_rate(
+            x=1.0,
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         tgfb.half_life_multiplier = 0.5 ** (
             self.time_step / tgfb.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -53,6 +70,14 @@ class TGFB(ModuleModel):
         tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
+
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=tgfb.diffusion_constant, dt=self.time_step
+        )
+        tgfb.cn_a = cn_a
+        tgfb.cn_b = cn_b
+        tgfb.dofs = dofs
 
         return state
 
@@ -62,10 +87,9 @@ class TGFB(ModuleModel):
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         tgfb: TGFBState = state.tgfb
-        molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
+        mesh: TetrahedralMesh = state.mesh
         voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -106,32 +130,28 @@ class TGFB(ModuleModel):
                     ] = 0  # Previously, was no reset of the status iteration
 
         # Degrade TGFB
-        tgfb.grid *= tgfb.half_life_multiplier
-        tgfb.grid *= turnover_rate(
-            x=np.array(1.0, dtype=np.float64),
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
+        tgfb.field *= tgfb.half_life_multiplier * tgfb.turnover_rate
 
         # Diffusion of TGFB
-        tgfb.grid[:] = apply_grid_diffusion(
-            variable=tgfb.grid,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+        tgfb.field[:] = apply_mesh_diffusion_crank_nicholson(
+            variable=tgfb.field,
+            cn_a=tgfb.cn_a,
+            cn_b=tgfb.cn_b,
+            dofs=tgfb.dofs,
         )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         tgfb: TGFBState = state.tgfb
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(tgfb.grid) / voxel_volume / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(tgfb.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):
         tgfb: TGFBState = state.tgfb
-        return 'molecule', tgfb.grid
+        return 'molecule', tgfb.field

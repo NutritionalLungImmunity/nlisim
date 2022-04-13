@@ -2,33 +2,33 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import apply_grid_diffusion, assemble_mesh_laplacian_crank_nicholson
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import EPSILON, iron_tf_reaction, michaelian_kinetics, turnover_rate
 
 
-def molecule_grid_factory(self: 'LactoferrinState') -> np.ndarray:
-    return np.zeros(
-        shape=self.global_state.mesh.shape,
+def molecule_point_field_factory(self: 'LactoferrinState') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(
         dtype=[
             ('Lactoferrin', np.float64),
             ('LactoferrinFe', np.float64),
             ('LactoferrinFe2', np.float64),
-        ],
+        ]
     )
 
 
 @attr.s(kw_only=True, repr=False)
 class LactoferrinState(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mols
-    k_m_tf_lac: float  # units: aM
+    field: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
+    )  # units: atto-M
+    k_m_tf_lac: float  # units: atto-M
     p1: float  # units: none
     p2: float  # units: none
     p3: float  # units: none
@@ -36,6 +36,10 @@ class LactoferrinState(ModuleState):
     ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
     neutrophil_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class Lactoferrin(ModuleModel):
@@ -68,6 +72,14 @@ class Lactoferrin(ModuleModel):
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
 
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=lactoferrin.diffusion_constant, dt=self.time_step
+        )
+        lactoferrin.cn_a = cn_a
+        lactoferrin.cn_b = cn_b
+        lactoferrin.dofs = dofs
+
         return state
 
     # noinspection SpellCheckingInspection
@@ -86,8 +98,7 @@ class Lactoferrin(ModuleModel):
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
-        grid: RectangularGrid = state.mesh
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         # macrophages uptake iron from lactoferrin
         live_macrophages = macrophage.cells.alive()
@@ -246,11 +257,23 @@ class Lactoferrin(ModuleModel):
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         lactoferrin: LactoferrinState = state.lactoferrin
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
-        concentration_0fe = np.mean(lactoferrin.grid['Lactoferrin']) / voxel_volume / 1e9
-        concentration_1fe = np.mean(lactoferrin.grid['LactoferrinFe']) / voxel_volume / 1e9
-        concentration_2fe = np.mean(lactoferrin.grid['LactoferrinFe2']) / voxel_volume / 1e9
+        concentration_0fe = (
+            mesh.integrate_point_function(lactoferrin.field['Lactoferrin'])
+            / 1e9
+            / mesh.total_volume
+        )
+        concentration_1fe = (
+            mesh.integrate_point_function(lactoferrin.field['LactoferrinFe'])
+            / 1e9
+            / mesh.total_volume
+        )
+        concentration_2fe = (
+            mesh.integrate_point_function(lactoferrin.field['LactoferrinFe2'])
+            / 1e9
+            / mesh.total_volume
+        )
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
@@ -264,4 +287,4 @@ class Lactoferrin(ModuleModel):
     def visualization_data(self, state: State):
         lactoferrin: LactoferrinState = state.lactoferrin
 
-        return 'molecule', lactoferrin.grid
+        return 'molecule', lactoferrin.field

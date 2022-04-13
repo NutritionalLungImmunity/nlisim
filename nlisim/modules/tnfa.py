@@ -2,10 +2,11 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import assemble_mesh_laplacian_crank_nicholson
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
@@ -13,14 +14,14 @@ from nlisim.state import State
 from nlisim.util import activation_function, turnover_rate
 
 
-def molecule_grid_factory(self: 'TNFaState') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+def molecule_point_field_factory(self: 'TNFaState') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class TNFaState(ModuleState):
-    mesh: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    field: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-mol
     half_life: float  # units: min
     half_life_multiplier: float  # units: proportion
@@ -31,6 +32,11 @@ class TNFaState(ModuleState):
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     epithelial_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # aM
+    turnover_rate: float
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class TNFa(ModuleModel):
@@ -39,6 +45,7 @@ class TNFa(ModuleModel):
 
     def initialize(self, state: State) -> State:
         tnfa: TNFaState = state.tnfa
+        molecules: MoleculesState = state.molecules
 
         # config file values
         tnfa.half_life = self.config.getfloat('half_life')  # units: min
@@ -52,8 +59,15 @@ class TNFa(ModuleModel):
             'epithelial_secretion_rate'
         )  # units: atto-mol/(cell*h)
         tnfa.k_d = self.config.getfloat('k_d')  # units: aM
+        tnfa.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
+        tnfa.turnover_rate = turnover_rate(
+            x=1.0,
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         tnfa.half_life_multiplier = 0.5 ** (
             self.time_step / tnfa.half_life
         )  # units: (min/step) / min -> 1/step
@@ -70,6 +84,14 @@ class TNFa(ModuleModel):
             self.time_step / 60
         )
 
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=tnfa.diffusion_constant, dt=self.time_step
+        )
+        tnfa.cn_a = cn_a
+        tnfa.cn_b = cn_b
+        tnfa.dofs = dofs
+
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
@@ -82,8 +104,7 @@ class TNFa(ModuleModel):
         molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
-        voxel_volume: float = state.voxel_volume
-        grid: RectangularGrid = state.mesh
+        mesh: TetrahedralMesh = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -138,20 +159,14 @@ class TNFa(ModuleModel):
                     neutrophil_cell['tnfa'] = True
 
         # Degrade TNFa
-        tnfa.mesh *= tnfa.half_life_multiplier
-        tnfa.mesh *= turnover_rate(
-            x=np.array(1.0, dtype=np.float64),
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
+        tnfa.mesh *= tnfa.half_life_multiplier * tnfa.turnover_rate
 
         # Diffusion of TNFa
-        tnfa.mesh[:] = apply_grid_diffusion(
-            variable=tnfa.mesh,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+        tnfa.field[:] = apply_mesh_diffusion_crank_nicholson(
+            variable=tnfa.field,
+            cn_a=tnfa.cn_a,
+            cn_b=tnfa.cn_b,
+            dofs=tnfa.dofs,
         )
 
         return state
@@ -160,6 +175,7 @@ class TNFa(ModuleModel):
         from nlisim.util import TissueType
 
         tnfa: TNFaState = state.tnfa
+        mesh: TetrahedralMesh = state.mesh
         voxel_volume = state.voxel_volume
         mask = state.lung_tissue != TissueType.AIR
 

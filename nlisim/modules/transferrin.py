@@ -3,26 +3,29 @@ from typing import Any, Dict
 import attr
 from attr import attrib, attrs
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 from nlisim.util import iron_tf_reaction
 
 
-def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
-    return np.zeros(
-        shape=self.global_state.mesh.shape,
-        dtype=[('Tf', np.float64), ('TfFe', np.float64), ('TfFe2', np.float64)],
+def molecule_point_field_factory(self: 'TransferrinState') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(
+        dtype=[('Tf', np.float64), ('TfFe', np.float64), ('TfFe2', np.float64)]
     )
 
 
 @attrs(kw_only=True, repr=False)
 class TransferrinState(ModuleState):
-    grid: np.ndarray = attrib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
+    field: np.ndarray = attrib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-mols
     k_m_tf_tafc: float  # units: aM
     p1: float
@@ -42,6 +45,10 @@ class TransferrinState(ModuleState):
     ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
     ma_iron_export_rate: float  # units: proportion * cell^-1 * step^-1
     ma_iron_export_rate_vol: float  # units: L * cell^-1 * h^-1
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class Transferrin(ModuleModel):
@@ -98,10 +105,18 @@ class Transferrin(ModuleModel):
             transferrin.ma_iron_export_rate_vol / voxel_volume / (self.time_step / 60)
         )  # units: proportion * cell^-1 * step^-1
 
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=transferrin.diffusion_constant, dt=self.time_step
+        )
+        transferrin.cn_a = cn_a
+        transferrin.cn_b = cn_b
+        transferrin.dofs = dofs
+
         # initialize the molecular field
-        transferrin.grid['Tf'] = transferrin.default_apotf_concentration * voxel_volume
-        transferrin.grid['TfFe'] = transferrin.default_tffe_concentration * voxel_volume
-        transferrin.grid['TfFe2'] = transferrin.default_tffe2_concentration * voxel_volume
+        transferrin.field['Tf'] = transferrin.default_apotf_concentration
+        transferrin.field['TfFe'] = transferrin.default_tffe_concentration
+        transferrin.field['TfFe2'] = transferrin.default_tffe2_concentration
 
         return state
 
@@ -109,14 +124,11 @@ class Transferrin(ModuleModel):
         """Advance the state by a single time step."""
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
-        from nlisim.modules.molecules import MoleculesState
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
-        molecules: MoleculesState = state.molecules
-        grid: RectangularGrid = state.mesh
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -178,7 +190,7 @@ class Transferrin(ModuleModel):
         transferrin.grid['Tf'] -= tffe_qtty + tffe2_qtty
         transferrin.grid['TfFe'] += tffe_qtty
         transferrin.grid['TfFe2'] += tffe2_qtty
-        iron.grid -= potential_reactive_quantity
+        iron.field -= potential_reactive_quantity
         # Note: asked Henrique why there is no transferrin+Fe -> transferrin+2Fe reaction
         # answer was that this should already be accounted for
 
@@ -186,25 +198,28 @@ class Transferrin(ModuleModel):
 
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
-            transferrin.grid[component][:] = apply_grid_diffusion(
-                variable=transferrin.grid[component],
-                laplacian=molecules.laplacian,
-                diffusivity=molecules.diffusion_constant,
-                dt=self.time_step,
+            transferrin.field[component][:] = apply_mesh_diffusion_crank_nicholson(
+                variable=transferrin.field[component],
+                cn_a=transferrin.cn_a,
+                cn_b=transferrin.cn_b,
+                dofs=transferrin.dofs,
             )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         transferrin: TransferrinState = state.transferrin
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
+        mesh: TetrahedralMesh = state.mesh
 
-        concentration_0fe = np.mean(transferrin.grid['Tf'][mask]) / voxel_volume / 1e9
-        concentration_1fe = np.mean(transferrin.grid['TfFe'][mask]) / voxel_volume / 1e9
-        concentration_2fe = np.mean(transferrin.grid['TfFe2'][mask]) / voxel_volume / 1e9
+        concentration_0fe = (
+            mesh.integrate_point_function(transferrin.field['Tf']) / 1e9 / mesh.total_volume
+        )
+        concentration_1fe = (
+            mesh.integrate_point_function(transferrin.field['TfFe']) / 1e9 / mesh.total_volume
+        )
+        concentration_2fe = (
+            mesh.integrate_point_function(transferrin.field['TfFe2']) / 1e9 / mesh.total_volume
+        )
 
         concentration = concentration_0fe + concentration_1fe + concentration_2fe
 
@@ -217,4 +232,4 @@ class Transferrin(ModuleModel):
 
     def visualization_data(self, state: State):
         transferrin: TransferrinState = state.transferrin
-        return 'molecule', transferrin.grid
+        return 'molecule', transferrin.field

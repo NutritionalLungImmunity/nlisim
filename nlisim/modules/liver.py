@@ -13,7 +13,7 @@ from nlisim.util import turnover_rate
 class LiverState(ModuleState):
     hep_slope: float
     hep_intercept: float
-    il6_threshold: float  # units: aM
+    il6_threshold: float  # units: atto-M
     threshold_log_hep: float
     threshold_hep: float
 
@@ -50,7 +50,6 @@ class Liver(ModuleModel):
         il6: IL6State = state.il6
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
-        voxel_volume: float = state.voxel_volume
 
         # interact with IL6
         mask = state.lung_tissue != TissueType.AIR
@@ -96,8 +95,8 @@ class Liver(ModuleModel):
             if log_hepcidin == float('-inf') or log_hepcidin > liver.threshold_log_hep
             else math.pow(10.0, log_hepcidin)
         )
-        hepcidin.grid *= turnover_rate(
-            x=hepcidin.grid,
+        hepcidin.field *= turnover_rate(
+            x=hepcidin.field,
             x_system=system_concentration * voxel_volume,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,

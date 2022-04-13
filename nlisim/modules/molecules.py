@@ -1,8 +1,6 @@
 from attr import attrs
 import numpy as np
-from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import periodic_discrete_laplacian
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -13,7 +11,7 @@ class MoleculesState(ModuleState):
     cyt_bind_t: float  # units: min
     rel_cyt_bind_unit_t: float
     diffusion_constant: float  # units: µm^2 * min^-1
-    laplacian: csr_matrix  # units: µm^-2
+    # laplacian: csr_matrix  # units: µm^-2
 
 
 class Molecules(ModuleModel):
@@ -22,8 +20,6 @@ class Molecules(ModuleModel):
 
     # noinspection SpellCheckingInspection
     def initialize(self, state: State):
-        from nlisim.util import TissueType
-
         molecules: MoleculesState = state.molecules
 
         molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')  # units: min
@@ -43,9 +39,9 @@ class Molecules(ModuleModel):
             30 / 2
         )  # TODO: still hardcoding the 2, move to individual molecules?
 
-        # construct the laplacian
-        molecules.laplacian = periodic_discrete_laplacian(
-            grid=state.mesh, mask=state.lung_tissue != TissueType.AIR
-        )  # units: µm^-2
+        # # construct the laplacian
+        # molecules.laplacian = periodic_discrete_laplacian(
+        #     grid=state.mesh, mask=state.lung_tissue != TissueType.AIR
+        # )  # units: µm^-2
 
         return state

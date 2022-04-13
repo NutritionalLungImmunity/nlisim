@@ -2,26 +2,30 @@ from typing import Any, Dict
 
 import attr
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from nlisim.coordinates import Voxel
-from nlisim.diffusion import apply_grid_diffusion
-from nlisim.grid import RectangularGrid
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover_rate
+from nlisim.util import activation_function, secretion_in_element, turnover_rate
 
 
-def molecule_grid_factory(self: 'MIP2State') -> np.ndarray:
-    return np.zeros(shape=self.global_state.mesh.shape, dtype=float)
+def molecule_point_field_factory(self: 'MIP2State') -> np.ndarray:
+    return self.global_state.mesh.allocate_point_variable(dtype=np.float64)
 
 
 @attr.s(kw_only=True, repr=False)
 class MIP2State(ModuleState):
-    grid: np.ndarray = attr.ib(
-        default=attr.Factory(molecule_grid_factory, takes_self=True)
-    )  # units: atto-mol
+    field: np.ndarray = attr.ib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
+    )  # units: atto-M
     half_life: float
     half_life_multiplier: float  # units: proportion
     macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
@@ -31,6 +35,11 @@ class MIP2State(ModuleState):
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # aM
+    turnover_rate: float
+    diffusion_constant: float  # units: µm^2/min
+    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
+    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
+    dofs: Any  # degrees of freedom in mesh
 
 
 class MIP2(ModuleModel):
@@ -41,6 +50,7 @@ class MIP2(ModuleModel):
 
     def initialize(self, state: State) -> State:
         mip2: MIP2State = state.mip2
+        molecules: MoleculesState = state.molecules
 
         # config file values
         mip2.half_life = self.config.getfloat('half_life')
@@ -56,6 +66,12 @@ class MIP2(ModuleModel):
         mip2.k_d = self.config.getfloat('k_d')  # units: atto-mol * cell^-1 * h^-1
 
         # computed values
+        mip2.turnover_rate = turnover_rate(
+            x=1.0,
+            x_system=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
         mip2.half_life_multiplier = 0.5 ** (
             self.time_step / mip2.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -72,6 +88,14 @@ class MIP2(ModuleModel):
             self.time_step / 60
         )
 
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=mip2.diffusion_constant, dt=self.time_step
+        )
+        mip2.cn_a = cn_a
+        mip2.cn_b = cn_b
+        mip2.dofs = dofs
+
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
@@ -86,8 +110,7 @@ class MIP2(ModuleModel):
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
-        grid: RectangularGrid = state.mesh
-        voxel_volume = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(
@@ -117,47 +140,50 @@ class MIP2(ModuleModel):
             pneumocyte_cell: PneumocyteCellData = pneumocyte.cells[pneumocyte_cell_index]
 
             if pneumocyte_cell['tnfa']:
-                pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell['point'])
-                mip2.grid[tuple(pneumocyte_cell_voxel)] += mip2.pneumocyte_secretion_rate_unit_t
+                secretion_in_element(
+                    mesh=mesh,
+                    point_field=mip2.field,
+                    element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
+                    point=pneumocyte_cell['point'],
+                    amount=mip2.pneumocyte_secretion_rate_unit_t,
+                )
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
 
             if macrophage_cell['tnfa']:
-                macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
-                mip2.grid[tuple(macrophage_cell_voxel)] += mip2.macrophage_secretion_rate_unit_t
+                secretion_in_element(
+                    mesh=mesh,
+                    point_field=mip2.field,
+                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    point=macrophage_cell['point'],
+                    amount=mip2.macrophage_secretion_rate_unit_t,
+                )
 
         # Degrade MIP2
-        mip2.grid *= mip2.half_life_multiplier
-        mip2.grid *= turnover_rate(
-            x=np.array(1.0, dtype=np.float64),
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
+        mip2.field *= mip2.half_life_multiplier * mip2.turnover_rate
 
         # Diffusion of MIP2
-        mip2.grid[:] = apply_grid_diffusion(
-            variable=mip2.grid,
-            laplacian=molecules.laplacian,
-            diffusivity=molecules.diffusion_constant,
-            dt=self.time_step,
+        mip2.field[:] = apply_mesh_diffusion_crank_nicholson(
+            variable=mip2.field,
+            cn_a=mip2.cn_a,
+            cn_b=mip2.cn_b,
+            dofs=mip2.dofs,
         )
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         mip2: MIP2State = state.mip2
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
+        mesh: TetrahedralMesh = state.mesh
 
         return {
-            'concentration (nM)': float(np.mean(mip2.grid[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(mip2.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):
         mip2: MIP2State = state.mip2
-        return 'molecule', mip2.grid
+        return 'molecule', mip2.field
