@@ -12,7 +12,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secretion_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'MCP1State') -> np.ndarray:
@@ -104,7 +104,7 @@ class MCP1(ModuleModel):
             pneumocyte_cell: PneumocyteCellData = pneumocyte.cells[pneumocyte_cell_index]
 
             if pneumocyte_cell['tnfa']:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=mcp1.field,
                     element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
@@ -117,7 +117,7 @@ class MCP1(ModuleModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
 
             if macrophage_cell['tnfa']:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=mcp1.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],

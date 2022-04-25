@@ -154,7 +154,7 @@ def choose_voxel_by_prob(
         return voxels[random_voxel_idx]
 
 
-def secretion_in_element(
+def secrete_in_element(
     *,
     mesh: TetrahedralMesh,
     point_field: np.ndarray,

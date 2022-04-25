@@ -13,7 +13,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secretion_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'HemolysinState') -> np.ndarray:
@@ -75,7 +75,7 @@ class Hemolysin(ModuleModel):
 
         for afumigatus_cell_index in hemolysin_releasing_afumigatus:
             afumigatus_cell = afumigatus.cells[afumigatus_cell_index]
-            secretion_in_element(
+            secrete_in_element(
                 mesh=mesh,
                 point_field=hemolysin.field,
                 element_index=afumigatus.cells.element_index[afumigatus_cell_index],

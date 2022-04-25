@@ -14,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secretion_in_element, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'MIP2State') -> np.ndarray:
@@ -140,7 +140,7 @@ class MIP2(ModuleModel):
             pneumocyte_cell: PneumocyteCellData = pneumocyte.cells[pneumocyte_cell_index]
 
             if pneumocyte_cell['tnfa']:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=mip2.field,
                     element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
@@ -153,7 +153,7 @@ class MIP2(ModuleModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
 
             if macrophage_cell['tnfa']:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=mip2.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],

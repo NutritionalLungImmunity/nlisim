@@ -7,7 +7,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.state import State
-from nlisim.util import secretion_in_element
+from nlisim.util import secrete_in_element
 
 
 def molecule_point_field_factory(self: 'IronState') -> np.ndarray:
@@ -58,7 +58,7 @@ class Iron(ModuleModel):
             }:
                 internal_iron = macrophage_cell['iron_pool']
                 macrophage_cell['iron_pool'] = 0.0
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=iron.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],

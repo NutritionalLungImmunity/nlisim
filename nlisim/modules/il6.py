@@ -12,7 +12,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secretion_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'IL6State') -> np.ndarray:
@@ -110,7 +110,7 @@ class IL6(ModuleModel):
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],
@@ -122,7 +122,7 @@ class IL6(ModuleModel):
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
                     element_index=neutrophil.cells.element_index[neutrophil_cell_index],
@@ -134,7 +134,7 @@ class IL6(ModuleModel):
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
                     element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],

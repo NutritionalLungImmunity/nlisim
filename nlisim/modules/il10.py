@@ -13,7 +13,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secretion_in_element, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'IL10State') -> np.ndarray:
@@ -90,7 +90,7 @@ class IL10(ModuleModel):
                 macrophage_cell['status'] == PhagocyteStatus.ACTIVE
                 and macrophage_cell['state'] == PhagocyteState.INTERACTING
             ):
-                secretion_in_element(
+                secrete_in_element(
                     mesh=mesh,
                     point_field=il10.field,
                     element_index=macrophage.cells.element_index[macrophage_cell_index],
