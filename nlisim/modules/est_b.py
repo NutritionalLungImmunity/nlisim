@@ -85,7 +85,7 @@ class EstB(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # contribute our iron buffer to the iron pool
-        iron.grid += estb.iron_buffer
+        iron.field += estb.iron_buffer
         estb.iron_buffer[:] = 0.0
 
         # interact with TAFC
@@ -105,8 +105,8 @@ class EstB(ModuleModel):
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             volume=mesh.point_dual_volumes,
         )
-        tafc.grid["TAFC"] -= v1
-        tafc.grid["TAFCBI"] -= v2
+        tafc.field["TAFC"] -= v1
+        tafc.field["TAFCBI"] -= v2
         estb.iron_buffer += v2  # set equal to zero previously
 
         # Degrade EstB
