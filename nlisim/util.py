@@ -191,3 +191,21 @@ def uptake_in_element(
     np.subtract.at(
         point_field, points, point_field_proportions * amount / mesh.point_dual_volumes[points]
     )  # units: prop * atto-mol / L = atto-M
+
+
+def sample_point_from_simplex(dimension: int = 3) -> np.ndarray:
+    """
+    Generate a uniformly distributed random point from a simplex in probability coordinates.
+
+    Parameters
+    ----------
+    dimension: int
+        The dimension of the simplex. e.g. a triangle has dimension 2 and tetrahedron has
+        dimension 3. Default value is 3.
+
+    Returns
+    -------
+    A shape (dimension+1,) np.ndarray of floats between 0.0 and 1.0 which sum to 1.0.
+
+    """
+    return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
