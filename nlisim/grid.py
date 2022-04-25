@@ -31,6 +31,7 @@ from typing import Iterable, Iterator, List, Tuple, Union, cast
 from attr import attrib, attrs
 from h5py import File as H5File
 import numpy as np
+from numpy.typing import DTypeLike
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
 
@@ -340,11 +341,11 @@ class TetrahedralMesh(object):
         """
         return self.element_volumes[element_index]
 
-    def allocate_point_variable(self, dtype: np.DTypeLike = _dtype_float64) -> np.ndarray:
+    def allocate_point_variable(self, dtype: DTypeLike = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined on the points of this mesh."""
         return np.zeros(self.points.shape, dtype=dtype)
 
-    def allocate_volume_variable(self, dtype: np.DTypeLike = _dtype_float64) -> np.ndarray:
+    def allocate_volume_variable(self, dtype: DTypeLike = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined on the 3-dimensional elements of this mesh."""
         return np.zeros(self.element_point_indices.shape[0], dtype=dtype)
 

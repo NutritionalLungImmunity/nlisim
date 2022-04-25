@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union,
 from attr import attrib, attrs
 from h5py import Group
 import numpy as np
-from numpy import dtype
+from numpy.typing import DTypeLike
 
 from nlisim.coordinates import Point
 from nlisim.grid import TetrahedralMesh
@@ -17,12 +17,8 @@ CellType = Any
 
 CellFields = List[
     Union[
-        Tuple[str, dtype],
-        Tuple[str, dtype, int],
-        Tuple[str, Type[Any]],
-        Tuple[str, Type[Any], int],
-        Tuple[str, str],
-        Tuple[str, str, int],
+        Tuple[str, DTypeLike],
+        Tuple[str, DTypeLike, int],
     ]
 ]
 
