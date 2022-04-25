@@ -7,7 +7,6 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -71,11 +70,9 @@ class PhagocyteModel(ModuleModel):
         -------
         nothing
         """
-        grid: RectangularGrid = state.mesh
-
         # At this moment, there is no inter-voxel geometry.
-        cell_voxel: Voxel = grid.get_voxel(cell['point'])
-        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_voxel)
+        cell_element_index = cell_list._reverse_element_index[cell_index]
+        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element_index)
         cell['point'] = new_point
         cell_list.update_element_index([cell_index])
 
