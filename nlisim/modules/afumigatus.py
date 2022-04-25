@@ -1,7 +1,6 @@
 from enum import IntEnum, unique
 import math
 from queue import Queue
-import random
 from typing import Any, Dict, Tuple
 
 import attr
@@ -9,14 +8,14 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
-from nlisim.coordinates import Point, Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.coordinates import Point
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import TissueType, sample_point_from_simplex, secrete_in_element
 
 
 @unique
@@ -69,7 +68,7 @@ def random_sphere_point() -> np.ndarray:
     while np.linalg.norm(u) > 1.0:
         u = 2 * rg.random(size=2) - 1
 
-    norm_squared_u = float(np.dot(u, u))
+    norm_squared_u = np.dot(u, u)
     return np.array(
         [
             2 * u[0] * np.sqrt(1 - norm_squared_u),
@@ -164,7 +163,6 @@ def cell_list_factory(self: 'AfumigatusState') -> AfumigatusCellList:
 @attrs(kw_only=True)
 class AfumigatusState(ModuleState):
     cells: AfumigatusCellList = attrib(default=attr.Factory(cell_list_factory, takes_self=True))
-    pr_ma_hyphae: float  # units: probability
     pr_ma_hyphae_param: float  # units: M
     pr_ma_phag: float  # units: probability
     pr_ma_phag_param: float  # units: M
@@ -195,8 +193,7 @@ class Afumigatus(ModuleModel):
 
     def initialize(self, state: State):
         afumigatus: AfumigatusState = state.afumigatus
-        voxel_volume = state.voxel_volume  # units: L
-        lung_tissue = state.lung_tissue
+        mesh: TetrahedralMesh = state.mesh
 
         afumigatus.pr_ma_hyphae_param = self.config.getfloat('pr_ma_hyphae_param')
         afumigatus.pr_ma_phag_param = self.config.getfloat('pr_ma_phag_param')
@@ -223,13 +220,6 @@ class Afumigatus(ModuleModel):
 
         afumigatus.rel_phag_affinity_unit_t = self.time_step / afumigatus.phag_affinity_t
 
-        afumigatus.pr_ma_hyphae = -math.expm1(
-            -afumigatus.rel_phag_affinity_unit_t / (afumigatus.pr_ma_hyphae_param * voxel_volume)
-        )  # exponent units:  ?/(?*L) = TODO
-        afumigatus.pr_ma_phag = -math.expm1(
-            -afumigatus.rel_phag_affinity_unit_t / (voxel_volume * afumigatus.pr_ma_phag_param)
-        )  # exponent units:  ?/(?*L) = TODO
-
         afumigatus.iter_to_swelling = max(
             0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
@@ -243,27 +233,23 @@ class Afumigatus(ModuleModel):
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
 
-        # place cells for initial infection
-        locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
-        dz_field: np.ndarray = state.mesh.delta(axis=0)
-        dy_field: np.ndarray = state.mesh.delta(axis=1)
-        dx_field: np.ndarray = state.mesh.delta(axis=2)
-        for vox_z, vox_y, vox_x in random.choices(
-            locations, k=self.config.getint('init_infection_num')
-        ):
-            # the x,y,z coordinates are in the centers of the grids
-            z = state.mesh.z[vox_z]
-            y = state.mesh.y[vox_y]
-            x = state.mesh.x[vox_x]
-            dz = dz_field[vox_z, vox_y, vox_x]
-            dy = dy_field[vox_z, vox_y, vox_x]
-            dx = dx_field[vox_z, vox_y, vox_x]
+        # place fungal cells for initial infection. Cells will be distributed into the
+        # sufactant layer, in a uniformly random manner.
+        init_infection_num = self.config.getint('init_infection_num')
+        locations = np.where(mesh.element_tissue_type == TissueType.SURFACTANT)[0]
+        volumes = mesh.element_volumes[locations]
+        probabilities = volumes / np.sum(volumes)
+        for _ in range(init_infection_num):
+            element_index = locations[np.argmax(np.random.random() < probabilities)]
+            simplex_coords = sample_point_from_simplex()
+            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
+
             afumigatus.cells.append(
                 AfumigatusCellData.create_cell(
                     point=Point(
-                        x=x + rg.uniform(-dx / 2, dx / 2),
-                        y=y + rg.uniform(-dy / 2, dy / 2),
-                        z=z + rg.uniform(-dz / 2, dz / 2),
+                        x=point[2],
+                        y=point[1],
+                        z=point[0],
                     ),
                     iron_pool=afumigatus.init_iron,
                 )
@@ -272,20 +258,18 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-        from nlisim.grid import RectangularGrid
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 
         afumigatus: AfumigatusState = state.afumigatus
         macrophage: MacrophageState = state.macrophage
         iron: IronState = state.iron
-        grid: RectangularGrid = state.mesh
-        lung_tissue: np.ndarray = state.lung_tissue
+        mesh: TetrahedralMesh = state.mesh
 
         # update live cells
         for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
+            cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
 
             # ------------ update cell
 
@@ -294,7 +278,7 @@ class Afumigatus(ModuleModel):
             # ------------ cell growth
             if (
                 afumigatus_cell['state'] == AfumigatusCellState.FREE
-                and lung_tissue[tuple(voxel)] != TissueType.AIR
+                and mesh.element_tissue_type[cell_element_index] != TissueType.AIR
             ):
                 elongate(
                     afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
@@ -305,7 +289,9 @@ class Afumigatus(ModuleModel):
             # ------------ interactions after this point
 
             # interact with macrophages, possibly internalizing the aspergillus cell
-            for macrophage_index in macrophage.cells.get_cells_in_element(voxel):
+            for macrophage_index in macrophage.cells.get_cells_in_element(
+                element_index=cell_element_index
+            ):
                 macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
 
                 # Only healthy macrophages can internalize
@@ -324,7 +310,7 @@ class Afumigatus(ModuleModel):
                     macrophage_cell=macrophage_cell,
                     macrophage_cell_index=macrophage_index,
                     iron=iron,
-                    grid=grid,
+                    mesh=mesh,
                 )
 
             # -----------
@@ -340,14 +326,23 @@ class Afumigatus(ModuleModel):
         macrophage_cell: 'MacrophageCellData',
         macrophage_cell_index: int,
         iron: IronState,
-        grid: RectangularGrid,
+        mesh: TetrahedralMesh,
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
-        probability_of_interaction = (
-            afumigatus.pr_ma_hyphae
-            if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE
-            else afumigatus.pr_ma_phag
+        cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
+        element_volume = mesh.element_volumes[cell_element_index]
+
+        probability_of_interaction = -np.expm1(
+            -afumigatus.rel_phag_affinity_unit_t
+            / (
+                (
+                    afumigatus.pr_ma_hyphae_param
+                    if afumigatus_cell['status'] == AfumigatusCellStatus.HYPHAE
+                    else -afumigatus.rel_phag_affinity_unit_t
+                )
+                * element_volume
+            )
         )
 
         # return if they do not interact
@@ -372,16 +367,21 @@ class Afumigatus(ModuleModel):
             and macrophage_cell['status'] == PhagocyteStatus.ACTIVE
         ):
             Afumigatus.kill_fungal_cell(
-                afumigatus, afumigatus_cell, afumigatus_cell_index, iron, grid
+                afumigatus=afumigatus,
+                afumigatus_cell=afumigatus_cell,
+                afumigatus_cell_index=afumigatus_cell_index,
+                iron=iron,
+                mesh=mesh,
             )
 
     @staticmethod
     def kill_fungal_cell(
+        *,
         afumigatus: AfumigatusState,
         afumigatus_cell: AfumigatusCellData,
         afumigatus_cell_index: int,
         iron: IronState,
-        grid: RectangularGrid,
+        mesh: TetrahedralMesh,
     ):
         """Kill a fungal cell.
 
@@ -412,8 +412,14 @@ class Afumigatus(ModuleModel):
                 raise AssertionError("The fungal tree structure is malformed.")
 
         # kill the cell off and release its iron
-        voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
-        iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
+        cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
+        secrete_in_element(
+            mesh=mesh,
+            point_field=iron.field,
+            element_index=cell_element_index,
+            point=afumigatus_cell['point'],
+            amount=afumigatus_cell['iron_pool'],
+        )
         afumigatus_cell['iron_pool'] = 0.0
         afumigatus_cell['dead'] = True
         afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
