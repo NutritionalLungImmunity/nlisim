@@ -84,15 +84,15 @@ class AntiTNFa(ModuleModel):
         # AntiTNFa / TNFa reaction
         reacted_quantity = michaelian_kinetics(
             substrate=anti_tnf_a.field,
-            enzyme=tnf_a.mesh,
+            enzyme=tnf_a.field,
             k_m=anti_tnf_a.k_m,
             h=anti_tnf_a.react_time_unit,  # TODO: understand why units are seconds here
             k_cat=1.0,  # default TODO use k_cat to reparameterize into hours
             volume=mesh.point_dual_volumes,
         )
-        reacted_quantity = np.min([reacted_quantity, anti_tnf_a.field, tnf_a.mesh], axis=0)
+        reacted_quantity = np.min([reacted_quantity, anti_tnf_a.field, tnf_a.field], axis=0)
         anti_tnf_a.field[:] = np.maximum(0.0, anti_tnf_a.field - reacted_quantity)
-        tnf_a.mesh[:] = np.maximum(0.0, tnf_a.mesh - reacted_quantity)
+        tnf_a.field[:] = np.maximum(0.0, tnf_a.field - reacted_quantity)
 
         # Degradation of AntiTNFa
         anti_tnf_a.system_concentration *= (
