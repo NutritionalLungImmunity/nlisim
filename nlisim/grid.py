@@ -279,6 +279,28 @@ class TetrahedralMesh(object):
         else:
             return np.sum(element_function, axis=0)
 
+    def elements_incident_to(self, points: Union[int, np.ndarray]) -> np.ndarray:
+        """
+        Compute an array of element indices that are incident to a collection of points.
+
+        Parameters
+        ----------
+        points: int or np.ndarray
+            a point index or points indices
+
+        Returns
+        -------
+        the indices of any tetrahedral elements that include at least one of the points given
+          in `points`
+
+        """
+        if isinstance(points, int) or points.shape == () or points.shape == (1,):
+            return np.where(np.any(self.element_point_indices == points, axis=1))[0]
+        else:
+            return np.where(
+                np.any(self.element_point_indices[:, :, np.newaxis] == points, axis=(1, 2))
+            )[0]
+
     def is_in_element(self, element_index: int, point: Point) -> bool:
         """Determine if a given point is in a given element."""
         tet_points = self.points[self.element_point_indices[element_index, :], :]

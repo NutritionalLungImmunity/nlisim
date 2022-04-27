@@ -71,14 +71,14 @@ class PhagocyteModel(ModuleModel):
         nothing
         """
         # At this moment, there is no inter-voxel geometry.
-        cell_element_index = cell_list._reverse_element_index[cell_index]
+        cell_element_index: int = cell_list._reverse_element_index[cell_index]
         new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element_index)
         cell['point'] = new_point
         cell_list.update_element_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
-        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+        self, state: State, cell: PhagocyteCellData, element_index: int
     ) -> Point:
         ...
 

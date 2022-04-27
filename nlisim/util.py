@@ -209,3 +209,22 @@ def sample_point_from_simplex(dimension: int = 3) -> np.ndarray:
 
     """
     return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
+
+
+def tetrahedral_gradient(*, field: np.ndarray, points: np.ndarray) -> np.ndarray:
+    """
+    Compute the gradient of a (linear) function defined at the points of a tetrahedron
+
+    Parameters
+    ----------
+    points : a shape=(4,3) np.ndarray of points of a tetrahedron
+    field : a shape=(4,) np.ndarray of point values of a function at the points of the tetrahedron
+
+    Returns
+    -------
+    the gradient of the function as an (3,) np.ndarray
+    """
+    base_point = points[0, :]
+    basis_vectors = points[1:, :] - base_point
+    dfield = np.linalg.solve(basis_vectors, field[1:] - field[0])
+    return dfield

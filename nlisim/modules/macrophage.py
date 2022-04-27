@@ -1,5 +1,4 @@
 import math
-import random
 from typing import Any, Dict, Tuple
 
 import attr
@@ -7,8 +6,8 @@ from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
-from nlisim.coordinates import Point, Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.coordinates import Point
+from nlisim.grid import TetrahedralMesh
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
     PhagocyteModel,
@@ -18,7 +17,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import choose_voxel_by_prob
+from nlisim.util import sample_point_from_simplex, tetrahedral_gradient
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -67,7 +66,7 @@ class MacrophageCellList(CellList):
 
 
 def cell_list_factory(self: 'MacrophageState') -> MacrophageCellList:
-    return MacrophageCellList(grid=self.global_state.mesh)
+    return MacrophageCellList(mesh=self.global_state.mesh)
 
 
 @attr.s(kw_only=True)
@@ -83,7 +82,6 @@ class MacrophageState(PhagocyteModuleState):
     min_ma: int  # units: count
     init_num_macrophages: int  # units: count
     recruitment_rate: float
-    rec_bias: float
     drift_bias: float
     ma_move_rate_act: float  # µm/min
     ma_move_rate_rest: float  # µm/min
@@ -101,8 +99,8 @@ class Macrophage(PhagocyteModel):
         from nlisim.util import TissueType
 
         macrophage: MacrophageState = state.macrophage
-        lung_tissue = state.lung_tissue
         time_step_size: float = self.time_step
+        mesh: TetrahedralMesh = state.mesh
 
         macrophage.max_conidia = self.config.getint(
             'max_conidia'
@@ -116,7 +114,6 @@ class Macrophage(PhagocyteModel):
         macrophage.init_num_macrophages = self.config.getint('init_num_macrophages')  # units: count
 
         macrophage.recruitment_rate = self.config.getfloat('recruitment_rate')
-        macrophage.rec_bias = self.config.getfloat('rec_bias')
         macrophage.drift_bias = self.config.getfloat('drift_bias')
 
         macrophage.ma_move_rate_act = self.config.getfloat('ma_move_rate_act')  # µm/min
@@ -140,24 +137,21 @@ class Macrophage(PhagocyteModel):
             macrophage.half_life * (60 / time_step_size)
         )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
 
-        # initialize cells, placing them randomly
-        locations = list(zip(*np.where(lung_tissue != TissueType.AIR)))
-        dz_field: np.ndarray = state.mesh.delta(axis=0)
-        dy_field: np.ndarray = state.mesh.delta(axis=1)
-        dx_field: np.ndarray = state.mesh.delta(axis=2)
-        for vox_z, vox_y, vox_x in random.choices(locations, k=macrophage.init_num_macrophages):
-            # the x,y,z coordinates are in the centers of the grids
-            z = state.mesh.z[vox_z]
-            y = state.mesh.y[vox_y]
-            x = state.mesh.x[vox_x]
-            dz = dz_field[vox_z, vox_y, vox_x]
-            dy = dy_field[vox_z, vox_y, vox_x]
-            dx = dx_field[vox_z, vox_y, vox_x]
+        # initialize macrophages cells. Cells will be distributed into non-air layers, in a
+        # uniformly random manner.
+        init_infection_num = self.config.getint('init_infection_num')
+        locations = np.where(mesh.element_tissue_type != TissueType.AIR)[0]
+        volumes = mesh.element_volumes[locations]
+        probabilities = volumes / np.sum(volumes)
+        for _ in range(init_infection_num):
+            element_index = locations[np.argmax(np.random.random() < probabilities)]
+            simplex_coords = sample_point_from_simplex()
+            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
             self.create_macrophage(
                 state=state,
-                x=x + rg.uniform(-dx / 2, dx / 2),
-                y=y + rg.uniform(-dy / 2, dy / 2),
-                z=z + rg.uniform(-dz / 2, dz / 2),
+                x=point[2],
+                y=point[1],
+                z=point[0],
                 iron_pool=macrophage.ma_internal_iron,
             )
 
@@ -269,65 +263,51 @@ class Macrophage(PhagocyteModel):
         nothing
         """
         from nlisim.modules.mip1b import MIP1BState
-        from nlisim.util import TissueType, activation_function
+        from nlisim.util import activation_function
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
-        voxel_volume: float = state.voxel_volume
-        space_volume: float = state.space_volume
-        lung_tissue = state.lung_tissue
+        mesh: TetrahedralMesh = state.mesh
 
         # 1. compute number of macrophages to recruit
         num_live_macrophages = len(macrophage.cells.alive())
         avg = (
             macrophage.recruitment_rate
-            * np.sum(mip1b.grid)
+            * (mesh.integrate_point_function(mip1b.field) / mesh.total_volume)
             * (1 - num_live_macrophages / macrophage.max_ma)
-            / (mip1b.k_d * space_volume)
+            / mip1b.k_d
         )
         number_to_recruit = max(
-            np.random.poisson(avg) if avg > 0 else 0, macrophage.min_ma - num_live_macrophages
+            rg.poisson(avg) if avg > 0 else 0, macrophage.min_ma - num_live_macrophages
         )
         # 2. get voxels for new macrophages, based on activation
         if number_to_recruit > 0:
-            activation_voxels = zip(
-                *np.where(
-                    np.logical_and(
-                        activation_function(
-                            x=mip1b.grid,
-                            k_d=mip1b.k_d,
-                            h=self.time_step / 60,
-                            volume=voxel_volume,
-                            b=macrophage.rec_bias,
-                        )
-                        < rg.uniform(size=mip1b.grid.shape),
-                        lung_tissue != TissueType.AIR,
-                    )
+            activated_points = np.where(
+                activation_function(
+                    x=mip1b.field,
+                    k_d=mip1b.k_d,
+                    h=self.time_step / 60,
+                    volume=1.0,  # mip1b.field already in concentration (M) units
+                    b=1.0,
                 )
+                < rg.uniform(size=mip1b.field.shape)
             )
-            dz_field: np.ndarray = state.mesh.delta(axis=0)
-            dy_field: np.ndarray = state.mesh.delta(axis=1)
-            dx_field: np.ndarray = state.mesh.delta(axis=2)
-            for coordinates in rg.choice(
-                tuple(activation_voxels), size=number_to_recruit, replace=True
+            activated_elements = mesh.elements_incident_to(points=activated_points)
+            for element_index in rg.choice(
+                activated_elements, size=number_to_recruit, replace=True
             ):
-                vox_z, vox_y, vox_x = coordinates
-                # the x,y,z coordinates are in the centers of the grids
-                z = state.mesh.z[vox_z]
-                y = state.mesh.y[vox_y]
-                x = state.mesh.x[vox_x]
-                dz = dz_field[vox_z, vox_y, vox_x]
-                dy = dy_field[vox_z, vox_y, vox_x]
-                dx = dx_field[vox_z, vox_y, vox_x]
+                simplex_coords = sample_point_from_simplex()
+                point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
                 self.create_macrophage(
                     state=state,
-                    x=x + rg.uniform(-dx / 2, dx / 2),
-                    y=y + rg.uniform(-dy / 2, dy / 2),
-                    z=z + rg.uniform(-dz / 2, dz / 2),
+                    x=point[2],
+                    y=point[1],
+                    z=point[0],
+                    iron_pool=macrophage.ma_internal_iron,
                 )
 
     def single_step_probabilistic_drift(
-        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+        self, state: State, cell: PhagocyteCellData, element_index: int
     ) -> Point:
         """
         Calculate a 1µm movement of a macrophage
@@ -338,8 +318,8 @@ class Macrophage(PhagocyteModel):
             global simulation state
         cell : MacrophageCellData
             a macrophage cell
-        voxel : Voxel
-            current voxel position of the macrophage
+        element_index : int
+            index of the current tetrahedral element occupied by the macrophage
 
         Returns
         -------
@@ -352,43 +332,27 @@ class Macrophage(PhagocyteModel):
 
         macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
-        grid: RectangularGrid = state.mesh
-        lung_tissue: np.ndarray = state.lung_tissue
-        voxel_volume: float = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         # compute chemokine influence on velocity, with some randomness.
         # macrophage has a non-zero probability of moving into non-air voxels.
         # if not any of these, stay in place. This could happen if e.g. you are
         # somehow stranded in air.
-        nearby_voxels: Tuple[Voxel, ...] = tuple(grid.get_adjacent_voxels(voxel, corners=True))
-        weights = np.array(
-            [
-                0.0
-                if lung_tissue[tuple(vxl)] == TissueType.AIR
-                else activation_function(
-                    x=mip1b.grid[tuple(vxl)],
-                    k_d=mip1b.k_d,
-                    h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                    volume=voxel_volume,
-                    b=1,
-                )
-                + macrophage.drift_bias
-                for vxl in nearby_voxels
-            ],
-            dtype=np.float64,
+        chemokine_levels = mip1b.field[mesh.element_point_indices[element_index]]
+        weights = activation_function(
+            x=chemokine_levels,
+            k_d=mip1b.k_d,
+            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            volume=1.0,  # already in concentration (M)
+            b=1.0,
         )
 
-        voxel_movement_direction: Voxel = choose_voxel_by_prob(
-            voxels=nearby_voxels, default_value=voxel, weights=weights
-        )
-
-        # get normalized direction vector
-        dp_dt: np.ndarray = grid.get_voxel_center(voxel_movement_direction) - grid.get_voxel_center(
-            voxel
-        )
-        norm = np.linalg.norm(dp_dt)
-        if norm > 0.0:
-            dp_dt /= norm
+        # movement tends toward the gradient direction
+        dp_dt = tetrahedral_gradient(
+            field=weights, points=mesh.points[mesh.element_point_indices[element_index]]
+        ) + rg.normal(
+            scale=0.1, size=3
+        )  # TODO: expose scale to config file
 
         # average and re-normalize with existing velocity
         dp_dt += cell['velocity']
@@ -396,17 +360,22 @@ class Macrophage(PhagocyteModel):
         if norm > 0.0:
             dp_dt /= norm
 
-        # we need to determine if this movement will put us into an air voxel. This can happen
-        # when pushed there by momentum. If that happens, we stay in place and zero out the
-        # momentum. Otherwise, velocity is updated to dp/dt and movement is as expected.
+        # we need to determine if this movement will put us into an air element.  If that happens,
+        # we reduce the rate of movement exponentially (up to 4 times) until we stay within a
+        # non-air element. If exponential shortening is unsucessful after 4 tries, we stay in place.
+        # Velocity is updated to dp/dt in either case.
         new_position = cell['point'] + dp_dt
-        new_voxel: Voxel = grid.get_voxel(new_position)
-        if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
-            cell['velocity'][:] = np.zeros(3, dtype=np.float64)
-            return cell['point']
+        new_element_index: int = mesh.get_element_index(new_position)
+        for iteration in range(4):
+            if mesh.element_tissue_type[new_element_index] != TissueType.AIR:
+                cell['velocity'][:] = dp_dt
+                return new_position
+            dp_dt /= 2.0
+            new_position = cell['point'] + dp_dt
+            new_element_index: int = mesh.get_element_index(new_position)
         else:
-            cell['velocity'][:] = dp_dt
-            return new_position
+            cell['velocity'].fill(0.0)
+            return cell['point']
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
