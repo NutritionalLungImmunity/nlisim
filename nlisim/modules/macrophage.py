@@ -330,7 +330,6 @@ class Macrophage(PhagocyteModel):
         from nlisim.modules.mip1b import MIP1BState
         from nlisim.util import TissueType, activation_function
 
-        macrophage: MacrophageState = state.macrophage
         mip1b: MIP1BState = state.mip1b
         mesh: TetrahedralMesh = state.mesh
 
@@ -373,9 +372,9 @@ class Macrophage(PhagocyteModel):
             dp_dt /= 2.0
             new_position = cell['point'] + dp_dt
             new_element_index: int = mesh.get_element_index(new_position)
-        else:
-            cell['velocity'].fill(0.0)
-            return cell['point']
+
+        cell['velocity'].fill(0.0)
+        return cell['point']
 
     @staticmethod
     def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
@@ -391,7 +390,7 @@ class Macrophage(PhagocyteModel):
         z : float
             coordinates of created macrophage
         kwargs
-            parameters for macrophage, will give
+            parameters for macrophage, passed to MacrophageCellData.create_cell
 
         Returns
         -------
