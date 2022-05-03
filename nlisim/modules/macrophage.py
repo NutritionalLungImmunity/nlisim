@@ -139,11 +139,11 @@ class Macrophage(PhagocyteModel):
 
         # initialize macrophages cells. Cells will be distributed into non-air layers, in a
         # uniformly random manner.
-        init_infection_num = self.config.getint('init_infection_num')
+        init_num_macrophages = self.config.getint('init_num_macrophages')
         locations = np.where(mesh.element_tissue_type != TissueType.AIR)[0]
         volumes = mesh.element_volumes[locations]
         probabilities = volumes / np.sum(volumes)
-        for _ in range(init_infection_num):
+        for _ in range(init_num_macrophages):
             element_index = locations[np.argmax(np.random.random() < probabilities)]
             simplex_coords = sample_point_from_simplex()
             point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
