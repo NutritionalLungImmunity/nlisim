@@ -7,7 +7,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point, Voxel
-from nlisim.grid import RectangularGrid
+from nlisim.grid import TetrahedralMesh
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
     PhagocyteModel,
@@ -16,7 +16,12 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType, activation_function
+from nlisim.util import (
+    TissueType,
+    activation_function,
+    sample_point_from_simplex,
+    secrete_in_element,
+)
 
 
 class PneumocyteCellData(PhagocyteCellData):
@@ -53,7 +58,7 @@ class PneumocyteCellList(CellList):
 
 
 def cell_list_factory(self: 'PneumocyteState') -> PneumocyteCellList:
-    return PneumocyteCellList(grid=self.global_state.mesh)
+    return PneumocyteCellList(mesh=self.global_state.mesh)
 
 
 @attrs(kw_only=True)
@@ -79,7 +84,7 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte: PneumocyteState = state.pneumocyte
         voxel_volume: float = state.voxel_volume
         time_step_size: float = self.time_step
-        lung_tissue: np.ndarray = state.lung_tissue
+        mesh: TetrahedralMesh = state.mesh
 
         pneumocyte.max_conidia = self.config.getint('max_conidia')  # units: conidia
         pneumocyte.time_to_rest = self.config.getint('time_to_rest')  # units: hours
@@ -100,26 +105,21 @@ class Pneumocyte(PhagocyteModel):
             -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
         )  # units: probability
 
-        # initialize cells, placing one per epithelial voxel
-        dz_field: np.ndarray = state.mesh.delta(axis=0)
-        dy_field: np.ndarray = state.mesh.delta(axis=1)
-        dx_field: np.ndarray = state.mesh.delta(axis=2)
-        epithelial_voxels = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
-        rg.shuffle(epithelial_voxels)
-        for vox_z, vox_y, vox_x in epithelial_voxels[: self.config.getint('count')]:
-            # the x,y,z coordinates are in the centers of the grids
-            z = state.mesh.z[vox_z]
-            y = state.mesh.y[vox_y]
-            x = state.mesh.x[vox_x]
-            dz = dz_field[vox_z, vox_y, vox_x]
-            dy = dy_field[vox_z, vox_y, vox_x]
-            dx = dx_field[vox_z, vox_y, vox_x]
+        # initialize cells, placing one per epithelial element TODO: something better
+        locations = np.where(mesh.element_tissue_type == TissueType.EPITHELIUM)[0]
+        volumes = mesh.element_volumes[locations]
+        probabilities = volumes / np.sum(volumes)
+        for _ in range(len(locations)):
+            element_index = locations[np.argmax(np.random.random() < probabilities)]
+            simplex_coords = sample_point_from_simplex()
+            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
+
             pneumocyte.cells.append(
                 PneumocyteCellData.create_cell(
                     point=Point(
-                        x=x + rg.uniform(-dx / 2, dx / 2),
-                        y=y + rg.uniform(-dy / 2, dy / 2),
-                        z=z + rg.uniform(-dz / 2, dz / 2),
+                        x=point[2],
+                        y=point[1],
+                        z=point[0],
                     )
                 )
             )
@@ -149,12 +149,11 @@ class Pneumocyte(PhagocyteModel):
         # il6: IL6State = getattr(state, 'il6', None)
         # il8: IL8State = getattr(state, 'il8', None)
         tnfa: TNFaState = state.tnfa
-        grid: RectangularGrid = state.mesh
-        voxel_volume: float = state.voxel_volume
+        mesh: TetrahedralMesh = state.mesh
 
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
-            pneumocyte_cell_voxel: Voxel = grid.get_voxel(pneumocyte_cell['point'])
+            pneumocyte_cell_element = pneumocyte.cells.element_index[pneumocyte_cell_index]
 
             # self update
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
@@ -180,7 +179,7 @@ class Pneumocyte(PhagocyteModel):
                 PhagocyteStatus.NECROTIC,
                 PhagocyteStatus.DEAD,
             }:
-                local_aspergillus = afumigatus.cells.get_cells_in_element(pneumocyte_cell_voxel)
+                local_aspergillus = afumigatus.cells.get_cells_in_element(pneumocyte_cell_element)
                 for aspergillus_index in local_aspergillus:
                     aspergillus_cell: AfumigatusCellData = afumigatus.cells[aspergillus_index]
 
@@ -208,10 +207,12 @@ class Pneumocyte(PhagocyteModel):
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
                 if (
                     activation_function(
-                        x=tnfa.mesh[tuple(pneumocyte_cell_voxel)],
+                        x=mesh.evaluate_point_function(
+                            tnfa.field, pneumocyte_cell['point'], pneumocyte_cell_element
+                        ),
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                        volume=voxel_volume,
+                        volume=1.0,
                         b=1,
                     )
                     < rg.uniform()
@@ -220,7 +221,13 @@ class Pneumocyte(PhagocyteModel):
                     pneumocyte_cell['tnfa'] = True
 
                 # secrete TNFa
-                tnfa.mesh[tuple(pneumocyte_cell_voxel)] += pneumocyte.p_tnf_qtty
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=tnfa.field,
+                    element_index=pneumocyte_cell_element,
+                    point=pneumocyte_cell['point'],
+                    amount=pneumocyte.p_tnf_qtty,
+                )
 
         return state
 
