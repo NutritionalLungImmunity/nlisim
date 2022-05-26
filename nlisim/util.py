@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 from numba import jit
 import numpy as np
@@ -150,3 +150,13 @@ def choose_voxel_by_prob(
         return default_value
     else:
         return voxels[random_voxel_idx]
+
+
+# noinspection PyUnusedLocal
+def name_validator(_, field_name, name: str):
+    if not name.isidentifier() or not name.islower():
+        raise ValueError("Invalid Name")
+
+
+Datatype = Union[str, np.dtype, Type[Any]]
+StateFields = List[Tuple[str, type, Optional[Callable]]]
