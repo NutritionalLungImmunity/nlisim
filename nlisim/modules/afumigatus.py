@@ -9,10 +9,10 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellList
+from nlisim.cell_maker import CellDataFactory
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
-from nlisim.modules.cell_maker import CellDataFactory
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg

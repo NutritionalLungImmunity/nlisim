@@ -1,35 +1,22 @@
-from typing import Any, Callable, Dict, Tuple, Type, Union
+from typing import Callable, Dict, Tuple, Type
 
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
 
-# noinspection PyPackageRequirements
-from numpy import dtype
-
 from nlisim.cell import CellData
-
-datatype = Union[str, dtype, Type[Any]]
-
-
-# noinspection PyUnusedLocal
-def name_validator(_, field_name, name: str):
-    if not name.isidentifier() or not name.islower():
-        raise ValueError("Invalid Name")
+from nlisim.util import Datatype, name_validator
 
 
 @attrs(kw_only=True)
 class CellDataFactory:
     name: str = attrib(validator=name_validator)
     parent_class: Type[CellData] = attrib(default=CellData)
-    fields: Dict[str, Tuple[datatype, int, Callable]] = attrib(factory=dict)
+    fields: Dict[str, Tuple[Datatype, int, Callable]] = attrib(factory=dict)
 
     def add_field(
         self,
         field_name: str,
-        data_type: datatype,
+        data_type: Datatype,
         initializer,
         multiplicity: int = 1,
     ) -> 'CellDataFactory':
