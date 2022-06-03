@@ -4,8 +4,13 @@ import sys
 import typing
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
+# noinspection PyPackageRequirements
 import attr
+
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.diffusion import apply_diffusion
@@ -13,13 +18,162 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import Datatype, name_validator, turnover_rate
+from nlisim.util import Datatype, TissueType, name_validator, turnover_rate
 
-AdvanceAction = Callable[[State, ModuleModel], State]
+AdvanceAction = Callable[[State, 'MoleculeModel'], State]
 
 
 def upper_first(s: str) -> str:
     return s[0].upper() + s[1:]
+
+
+def molecule_grid_factory(self) -> np.ndarray:
+    """Factory method for creating molecular field"""
+    if self.components is None:
+        return np.zeros(shape=self.global_state.grid.shape, dtype=np.float64)
+    else:
+        return np.zeros(shape=self.global_state.grid.shape, dtype=self.components)
+
+
+@attr.define
+class MoleculeState(ModuleState):
+    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
+    components: Optional[List[Tuple[str, Datatype]]] = attrib(default=None)
+
+
+@attr.define
+class MoleculeModel(ModuleModel):
+    """A generic model for a molecule."""
+
+    name: str = attrib()
+    StateClass: MoleculeState = attrib()
+    components: Optional[List[Tuple[str, Datatype]]] = attrib()
+    config_fields: Dict[str, Datatype] = attrib()
+    computed_fields: Dict[str, Tuple[Datatype, Callable]] = attrib()
+    advance_actions: List[Tuple[int, AdvanceAction]] = attrib()
+    record_min_concentration: bool = attrib()
+    record_max_concentration: bool = attrib()
+
+    def get_state(self, state: State) -> MoleculeState:
+        try:
+            module_state = getattr(state, self.name)
+            return module_state
+        except AttributeError:
+            print(f"{self.name} not found in global state!", file=sys.stderr)
+            sys.exit(-1)
+
+    def initialize(self, state: State) -> State:
+        module_state = self.get_state(state)
+
+        # first thing to do is to read values from the configuration file. After all are done, we
+        # can use them in the computed values.
+
+        # config file values
+        config_vals: Dict[str, Any] = dict()
+        for field, field_type in self.config_fields.items():
+            if field_type == int:
+                setattr(module_state, field, self.config.getint(field))
+            elif field_type == float:
+                setattr(module_state, field, self.config.getfloat(field))
+            config_vals[field] = getattr(module_state, field)
+
+        # computed values
+        for field, (field_type, initializer) in self.computed_fields.items():
+            signature = inspect.signature(initializer).parameters.keys()
+            params = {
+                variable: value for variable, value in config_vals.items() if variable in signature
+            }
+            computed_value = initializer(**params)
+            setattr(module_state, field, computed_value)
+
+        return state
+
+    def advance(self, state: State, previous_time: float) -> State:
+
+        # shuffle and then sort by order (alone) to randomize the order for actions of equal order
+        rg.shuffle(self.advance_actions)
+        self.advance_actions.sort(key=lambda order_action: order_action[0])
+
+        for _, action in self.advance_actions:
+            action(state, self)
+
+        return state
+
+    def summary_stats(self, state: State) -> Dict[str, Any]:
+        module_state: MoleculeState = self.get_state(state)
+        voxel_volume = state.voxel_volume
+        mask = state.lung_tissue != TissueType.AIR
+
+        stats_dict = dict()
+
+        if self.components is None:
+            stats_dict.update(
+                {
+                    'concentration (nM)': float(
+                        np.mean(module_state.grid[mask]) / voxel_volume / 1e9
+                    ),
+                }
+            )
+            if self.record_min_concentration:
+                stats_dict.update(
+                    {
+                        'min voxel concentration (nM)': float(
+                            np.min(module_state.grid[mask]) / voxel_volume / 1e9
+                        ),
+                    }
+                )
+            if self.record_max_concentration:
+                stats_dict.update(
+                    {
+                        'max voxel concentration (nM)': float(
+                            np.max(module_state.grid[mask]) / voxel_volume / 1e9
+                        ),
+                    }
+                )
+        else:
+            concentrations = {
+                component: float(np.mean(module_state.grid[component][mask]) / voxel_volume / 1e9)
+                for component, _ in self.components
+            }
+            stats_dict.update({'concentration (nM)': sum(concentrations.values())})
+            stats_dict.update(
+                {
+                    component + ' concentration (nM)': concentration
+                    for component, concentration in concentrations.items()
+                }
+            )
+            if self.record_min_concentration:
+                min_concentrations = {
+                    component: float(
+                        np.min(module_state.grid[component][mask]) / voxel_volume / 1e9
+                    )
+                    for component, _ in self.components
+                }
+                stats_dict.update(
+                    {
+                        'min ' + component + ' voxel concentration (nM)': concentration
+                        for component, concentration in min_concentrations.items()
+                    }
+                )
+            if self.record_max_concentration:
+                max_concentrations = {
+                    component: float(
+                        np.max(module_state.grid[component][mask]) / voxel_volume / 1e9
+                    )
+                    for component, _ in self.components
+                }
+                stats_dict.update(
+                    {
+                        'max ' + component + ' voxel concentration (nM)': concentration
+                        for component, concentration in max_concentrations.items()
+                    }
+                )
+
+        return stats_dict
+
+    def visualization_data(self, state: State):
+        module_state: MoleculeState = self.get_state(state)
+        return 'molecule', module_state.grid
 
 
 @attrs(kw_only=True)
@@ -29,8 +183,8 @@ class MoleculeFactory:
     config_fields: Dict[str, Datatype] = attrib(factory=dict)
     computed_fields: Dict[str, Tuple[Datatype, Callable]] = attrib(factory=dict)
     advance_actions: List[Tuple[int, AdvanceAction]] = attrib(factory=list)
-    custom_summary_stats: Optional[Callable] = attrib(default=None)
-    custom_visualization_data: Optional[Callable] = attrib(default=None)
+    record_min_concentration: bool = attrib(default=False)
+    record_max_concentration: bool = attrib(default=False)
 
     def get_module_state(self, state: State) -> ModuleState:
         """
@@ -47,8 +201,7 @@ class MoleculeFactory:
             The state class for this module.
         """
         try:
-            module_state = getattr(state, self.module_name)
-            return module_state
+            return getattr(state, self.module_name)
         except AttributeError:
             print(f"{self.module_name} not found in global state!", file=sys.stderr)
             sys.exit(-1)
@@ -68,7 +221,7 @@ class MoleculeFactory:
         """
         module_state = self.get_module_state(state)
         try:
-            grid = getattr(module_state, 'grid')
+            return getattr(module_state, 'grid')
         except AttributeError:
             print(
                 f"{self.module_name} does not have a `grid` field! Is this really a molecule?",
@@ -76,11 +229,10 @@ class MoleculeFactory:
             )
             sys.exit(-1)
 
-        return grid
-
     def set_components(self, components: Optional[List[str]] = None) -> 'MoleculeFactory':
         """
-        Set the components of the molecular field.
+        Set the components of the molecular field. Defaults to None, which indicates a single,
+        unnamed component.
 
         Parameters
         ----------
@@ -99,13 +251,13 @@ class MoleculeFactory:
             self.components = deepcopy(components)
         return self
 
-    def add_diffusion(self, priority: int = 0) -> 'MoleculeFactory':
+    def add_diffusion(self, order: int = 0) -> 'MoleculeFactory':
         """
         Add a diffusion step to the advance function.
 
         Parameters
         ----------
-        priority : int, optional
+        order : int, optional
             Used to set the order in which the step is performed. (low to high)
 
         Returns
@@ -134,13 +286,13 @@ class MoleculeFactory:
                 )
             return state
 
-        self.advance_actions.append((priority, diffusion))
+        self.advance_actions.append((order, diffusion))
 
         return self
 
     def add_degradation(
         self,
-        priority: int = 0,
+        order: int = 0,
         half_life_multiplier_name: Optional[str] = None,
         turnover: bool = True,
         system_amount_per_voxel_name: Optional[str] = None,
@@ -150,7 +302,7 @@ class MoleculeFactory:
 
         Parameters
         ----------
-        priority : int, optional
+        order : int, optional
             Used to set the order in which the step is performed. (low to high)
         half_life_multiplier_name : str, optional
             Name of the field (in the state class) which holds the per-time-step
@@ -169,7 +321,7 @@ class MoleculeFactory:
         # noinspection PyUnusedLocal
         def degradation(state: State, module_model: ModuleModel) -> State:
             module_state = self.get_module_state(state)
-            molecules: MoleculesState = state.molecules
+            molecules: MoleculeState = state.molecules
 
             grid = getattr(module_state, 'grid')
 
@@ -187,11 +339,11 @@ class MoleculeFactory:
                 )
             return state
 
-        self.advance_actions.append((priority, degradation))
+        self.advance_actions.append((order, degradation))
 
         return self
 
-    def add_advance_action(self, action: AdvanceAction, priority: int = 0) -> 'MoleculeFactory':
+    def add_advance_action(self, action: AdvanceAction, order: int = 0) -> 'MoleculeFactory':
         """
         Add an action to the advance function.
 
@@ -199,14 +351,14 @@ class MoleculeFactory:
         ----------
         action : AdvanceAction, a function taking the global state and the module's model class
             The action to be performed
-        priority : int, optional
+        order : int, optional
             Used to set the order in which the step is performed. (low to high)
 
         Returns
         -------
         MoleculeFactory (self), for chaining
         """
-        self.advance_actions.append((priority, action))
+        self.advance_actions.append((order, action))
         return self
 
     def add_config_field(
@@ -271,13 +423,33 @@ class MoleculeFactory:
         self.computed_fields[field_name] = (data_type, initializer)
         return self
 
-    def build(self) -> Tuple[Type[MoleculesState], Type[ModuleModel]]:
+    def record_min_concentration_stats(self):
+        """
+        Make the summary stats method record the minimum concentration found in a voxel.
+
+        Returns
+        -------
+        None
+        """
+        self.record_min_concentration = True
+
+    def record_max_concentration_stats(self):
+        """
+        Make the summary stats method record the maximum concentration found in a voxel.
+
+        Returns
+        -------
+        None
+        """
+        self.record_max_concentration = True
+
+    def build(self) -> Tuple[Type[MoleculeState], Type[ModuleModel]]:
         """
         Construct the state and model classes.
 
         Returns
         -------
-        Tuple of the state class (MoleculesState) and the model class (ModuleModel)
+        Tuple of the state class (MoleculeState) and the model class (ModuleModel)
         """
         module_state_class = molecule_state_class_builder(
             module_name=self.module_name,
@@ -289,27 +461,14 @@ class MoleculeFactory:
         module_model_class = molecule_model_class_builder(
             module_name=self.module_name,
             state_class=module_state_class,
+            components=self.components,
             config_fields=self.config_fields,
             computed_fields=self.computed_fields,
             advance_actions=self.advance_actions,
-            summary_stats=self.custom_summary_stats,
-            visualization_data=self.custom_visualization_data,
+            record_min_concentration=self.record_min_concentration,
+            record_max_concentration=self.record_max_concentration,
         )
         return module_state_class, module_model_class
-
-
-def molecule_grid_factory(self) -> np.ndarray:
-    """Factory method for creating molecular field"""
-    if self.components is not None:
-        return np.zeros(shape=self.global_state.grid.shape, dtype=self.components)
-    else:
-        return np.zeros(shape=self.global_state.grid.shape, dtype=np.float64)
-
-
-@attr.define
-class MoleculeState(ModuleState):
-    grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
-    components: Optional[List[Tuple[str, Datatype]]] = attrib(default=None)
 
 
 def molecule_state_class_builder(
@@ -317,8 +476,8 @@ def molecule_state_class_builder(
     module_name: str,
     state_fields: Dict[str, Any],
     components: Optional[List[Tuple[str, Datatype]]] = None,
-) -> Type[MoleculesState]:
-    new_class: Type[MoleculesState] = typing.cast(
+) -> Type[MoleculeState]:
+    new_class: Type[MoleculeState] = typing.cast(
         attr.make_class(
             name=upper_first(module_name) + "State",
             attrs={
@@ -329,137 +488,52 @@ def molecule_state_class_builder(
                     for field_name, (field_type, initializer) in state_fields.items()
                 },
             },
-            bases=(MoleculesState,),
+            bases=(MoleculeState,),
             kw_only=True,
             repr=False,
         ),
-        MoleculesState,
+        MoleculeState,
     )
     return new_class
 
 
 def molecule_model_class_builder(
     *,
+    docstring=None,
     module_name: str,
-    state_class: Type[ModuleState],
+    state_class: Type[MoleculeState],
+    components: Optional[List[Tuple[str, Datatype]]],
     config_fields: Dict[str, Datatype],
     computed_fields: Dict[str, Tuple[Datatype, Callable]],
     advance_actions: List[Tuple[int, AdvanceAction]],
-    docstring=None,
-) -> Type[ModuleModel]:
-    initialize = create_initialize(
-        module_name=module_name, config_fields=config_fields, computed_fields=computed_fields
-    )
-    advance = create_advance(module_name=module_name, advance_actions=advance_actions)
-    summary_stats = create_summary_stats(module_name=module_name)
-    visualization_data = create_visualization_data(module_name=module_name)
+    record_min_concentration: bool,
+    record_max_concentration: bool,
+) -> Type[MoleculeModel]:
 
-    new_class = typing.cast(
+    new_class: Type[MoleculeModel] = typing.cast(
         type(
             upper_first(module_name),
-            (ModuleModel,),
+            (MoleculeModel,),
             {
-                "name": module_name,
                 "__doc__": docstring if docstring is not None else upper_first(module_name),
-                "StateClass": state_class,
-                "initialize": initialize,
-                "advance": advance,
-                "summary_stats": summary_stats,
-                "visualization_data": visualization_data,
+                "name": attrib(default=module_name, type=str),
+                "StateClass": attrib(default=state_class, type=MoleculeState),
+                "components": attrib(default=components, type=Optional[List[Tuple[str, Datatype]]]),
+                "config_fields": attrib(default=config_fields, type=Dict[str, Datatype]),
+                "computed_fields": attrib(
+                    default=computed_fields, type=Dict[str, Tuple[Datatype, Callable]]
+                ),
+                "advance_actions": attrib(
+                    default=advance_actions, type=List[Tuple[int, AdvanceAction]]
+                ),
+                'record_min_concentration': attrib(default=record_min_concentration, type=bool),
+                'record_max_concentration': attrib(default=record_max_concentration, type=bool),
             },
         ),
-        ModuleModel,
+        MoleculeModel,
     )
 
     return new_class
-
-
-def create_initialize(
-    *,
-    module_name: str,
-    config_fields: Dict[str, Datatype],
-    computed_fields: Dict[str, Tuple[Datatype, Callable]],
-):
-    def initialize_prototype(self, state: State) -> State:
-        try:
-            module_state = getattr(state, module_name)
-        except AttributeError:
-            print(f"{module_name} not found in global state!", file=sys.stderr)
-            sys.exit(-1)
-
-        # first thing to do is to read values from the configuration file. After all are done, we
-        # can use them to compute the computed values.
-
-        # config file values
-        config_vals: Dict[str, Any] = dict()
-        for field, field_type in config_fields.items():
-            if field_type == int:
-                setattr(module_state, field, self.config.getint(field))
-            elif field_type == float:
-                setattr(module_state, field, self.config.getfloat(field))
-            config_vals[field] = getattr(module_state, field)
-
-        # computed values
-        for field, (field_type, initializer) in computed_fields.items():
-            signature = inspect.signature(initializer).parameters.keys()
-            params = {
-                variable: value for variable, value in config_vals.items() if variable in signature
-            }
-            computed_value = initializer(**params)
-            setattr(module_state, field, computed_value)
-
-        return state
-
-    return initialize_prototype
-
-
-def create_advance(*, module_name: str, advance_actions: List[Tuple[int, AdvanceAction]]):
-    def advance(self, state: State) -> State:
-        rg.shuffle(advance_actions)
-        advance_actions.sort(key=lambda k, a: k)
-
-        for priority, action in advance_actions:
-            pass
-
-        return state
-
-    return advance
-
-
-def create_summary_stats(*, module_name: str, custom_function: Callable = None):
-    if custom_function is not None:
-        return custom_function
-
-    def summary_stats(self, state: State) -> Dict[str, Any]:
-        try:
-            module_state = getattr(state, module_name)
-        except AttributeError:
-            print(f"{module_name} not found in global state!", file=sys.stderr)
-            sys.exit(-1)
-
-        voxel_volume = state.voxel_volume
-
-        return {
-            'concentration (nM)': float(np.mean(module_state.grid) / voxel_volume / 1e9),
-        }
-
-    return summary_stats
-
-
-def create_visualization_data(*, module_name: str, custom_function: Callable = None):
-    if custom_function is not None:
-        return custom_function
-
-    def visualization_data(self, state: State):
-        try:
-            module_state = getattr(state, module_name)
-        except AttributeError:
-            print(f"{module_name} not found in global state!", file=sys.stderr)
-            sys.exit(-1)
-
-        return 'molecule', module_state.grid
-
-    return visualization_data
 
 
 # TODO: Hold off on this for the moment, see afumigatus.py and cell_maker.py
