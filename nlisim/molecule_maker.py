@@ -484,8 +484,8 @@ def molecule_state_class_builder(
             name=upper_first(module_name) + "State",
             attrs={
                 'grid': attrib(default=attr.Factory(molecule_grid_factory, takes_self=True)),
-                'components': attrib(default=components)
-                ** {
+                'components': attrib(default=components),
+                **{
                     field_name: attrib(type=field_type)
                     for field_name, field_type in config_fields.items()
                 },
