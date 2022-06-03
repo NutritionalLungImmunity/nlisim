@@ -176,7 +176,7 @@ class MoleculeModel(ModuleModel):
         return 'molecule', module_state.grid
 
 
-@attrs(kw_only=True)
+@attrs
 class MoleculeFactory:
     module_name: str = attrib(validator=name_validator)
     components: Optional[List[str]] = attrib(default=None)
