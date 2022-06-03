@@ -453,7 +453,8 @@ class MoleculeFactory:
         """
         module_state_class = molecule_state_class_builder(
             module_name=self.module_name,
-            state_fields=dict(**self.config_fields, **self.computed_fields),
+            config_fields=self.config_fields,
+            computed_fields=self.computed_fields,
             components=None
             if self.components is None
             else list(zip(self.components, itertools.repeat(np.float64))),
@@ -474,7 +475,8 @@ class MoleculeFactory:
 def molecule_state_class_builder(
     *,
     module_name: str,
-    state_fields: Dict[str, Any],
+    config_fields: Dict[str, Datatype],
+    computed_fields: Dict[str, Tuple[Datatype, Callable]],
     components: Optional[List[Tuple[str, Datatype]]] = None,
 ) -> Type[MoleculeState]:
     new_class: Type[MoleculeState] = typing.cast(
@@ -485,7 +487,11 @@ def molecule_state_class_builder(
                 'components': attrib(default=components)
                 ** {
                     field_name: attrib(type=field_type)
-                    for field_name, (field_type, initializer) in state_fields.items()
+                    for field_name, field_type in config_fields.items()
+                },
+                **{
+                    field_name: attrib(type=field_type)
+                    for field_name, (field_type, initializer) in computed_fields.items()
                 },
             },
             bases=(MoleculeState,),
