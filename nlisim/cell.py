@@ -15,15 +15,15 @@ MAX_CELL_LIST_SIZE = 1_000_000
 # the way numpy types single records is strange...
 CellType = Any
 
-CellFields = List[
-    Union[
-        Tuple[str, dtype],
-        Tuple[str, Type[Any]],
-        Tuple[str, Type[Any], int],
-        Tuple[str, str],
-        Tuple[str, str, int],
-    ]
+CellField = Union[
+    Tuple[str, dtype],
+    Tuple[str, Type[Any]],
+    Tuple[str, Type[Any], int],
+    Tuple[str, str],
+    Tuple[str, str, int],
 ]
+
+CellFields = List[CellField]
 
 
 class CellData(np.ndarray):

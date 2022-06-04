@@ -1,6 +1,5 @@
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.modules.molecules import MoleculesState
 from nlisim.molecule_maker import MoleculeFactory, MoleculeModel
 from nlisim.state import State
 
@@ -10,7 +9,6 @@ def afumigatus_uptakes_iron_from_hemoglobin(state: State, hemoglobin_model: Mole
     from nlisim.modules.afumigatus import AfumigatusCellData, AfumigatusCellStatus, AfumigatusState
 
     hemoglobin: HemoglobinState = state.hemoglobin
-    molecules: MoleculesState = state.molecules
     afumigatus: AfumigatusState = state.afumigatus
     grid: RectangularGrid = state.grid
 

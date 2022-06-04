@@ -4,6 +4,7 @@ from importlib import import_module
 from io import StringIO, TextIOBase
 from pathlib import PurePath
 import re
+import typing
 from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
 
 if TYPE_CHECKING:
@@ -55,7 +56,9 @@ class SimulationConfig(ConfigParser):
         """Load a module class, returning the class constructor."""
         module_path, func_name = path.rsplit('.', 1)
         module = import_module(module_path)
-        func = getattr(module, func_name, None)
+        func = typing.cast(Optional[Type['ModuleModel']], getattr(module, func_name, None))
+        if func is None:
+            raise RuntimeError(f"Module {module} not found")
 
         cls.validate_module(func, path)
 
@@ -133,8 +136,8 @@ class SimulationConfig(ConfigParser):
         This is a helper method for `getlist`, split out for code sharing.
         """
         values = []
-        for value in re.split('[\n ,]+', value):
-            stripped = value.strip()
+        for val in re.split('[\n ,]+', value):
+            stripped = val.strip()
             if stripped:
                 values.append(stripped)
         return values

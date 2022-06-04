@@ -18,35 +18,31 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import Datatype, TissueType, name_validator, turnover_rate
+from nlisim.util import Datatype, TissueType, name_validator, turnover_rate, upper_first
 
 AdvanceAction = Callable[[State, 'MoleculeModel'], State]
 
 
-def upper_first(s: str) -> str:
-    return s[0].upper() + s[1:]
-
-
 def molecule_grid_factory(self) -> np.ndarray:
-    """Factory method for creating molecular field"""
+    """Create the molecular field."""
     if self.components is None:
         return np.zeros(shape=self.global_state.grid.shape, dtype=np.float64)
     else:
         return np.zeros(shape=self.global_state.grid.shape, dtype=self.components)
 
 
-@attr.define
+@attr.s
 class MoleculeState(ModuleState):
     grid: np.ndarray = attrib(default=attr.Factory(molecule_grid_factory, takes_self=True))
     components: Optional[List[Tuple[str, Datatype]]] = attrib(default=None)
 
 
-@attr.define
+@attr.s
 class MoleculeModel(ModuleModel):
     """A generic model for a molecule."""
 
     name: str = attrib()
-    StateClass: MoleculeState = attrib()
+    StateClass: Type[MoleculeState] = attrib()
     components: Optional[List[Tuple[str, Datatype]]] = attrib()
     config_fields: Dict[str, Datatype] = attrib()
     computed_fields: Dict[str, Tuple[Datatype, Callable]] = attrib()
@@ -54,16 +50,28 @@ class MoleculeModel(ModuleModel):
     record_min_concentration: bool = attrib()
     record_max_concentration: bool = attrib()
 
-    def get_state(self, state: State) -> MoleculeState:
+    def get_module_state(self, state: State) -> MoleculeState:
+        """
+        Get the state class for this module.
+
+        Parameters
+        ----------
+        state : State
+            Global simulation state
+
+        Returns
+        -------
+        MoleculeState
+            The state class for this module.
+        """
         try:
-            module_state = getattr(state, self.name)
-            return module_state
+            return getattr(state, self.name)
         except AttributeError:
             print(f"{self.name} not found in global state!", file=sys.stderr)
             sys.exit(-1)
 
     def initialize(self, state: State) -> State:
-        module_state = self.get_state(state)
+        module_state = self.get_module_state(state)
 
         # first thing to do is to read values from the configuration file. After all are done, we
         # can use them in the computed values.
@@ -78,7 +86,7 @@ class MoleculeModel(ModuleModel):
             config_vals[field] = getattr(module_state, field)
 
         # computed values
-        for field, (field_type, initializer) in self.computed_fields.items():
+        for field, (_, initializer) in self.computed_fields.items():
             signature = inspect.signature(initializer).parameters.keys()
             params = {
                 variable: value for variable, value in config_vals.items() if variable in signature
@@ -89,7 +97,6 @@ class MoleculeModel(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
-
         # shuffle and then sort by order (alone) to randomize the order for actions of equal order
         rg.shuffle(self.advance_actions)
         self.advance_actions.sort(key=lambda order_action: order_action[0])
@@ -100,7 +107,7 @@ class MoleculeModel(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        module_state: MoleculeState = self.get_state(state)
+        module_state: MoleculeState = self.get_module_state(state)
         voxel_volume = state.voxel_volume
         mask = state.lung_tissue != TissueType.AIR
 
@@ -172,7 +179,7 @@ class MoleculeModel(ModuleModel):
         return stats_dict
 
     def visualization_data(self, state: State):
-        module_state: MoleculeState = self.get_state(state)
+        module_state: MoleculeState = self.get_module_state(state)
         return 'molecule', module_state.grid
 
 
@@ -186,53 +193,11 @@ class MoleculeFactory:
     record_min_concentration: bool = attrib(default=False)
     record_max_concentration: bool = attrib(default=False)
 
-    def get_module_state(self, state: State) -> ModuleState:
-        """
-        Get the state class for this module.
-
-        Parameters
-        ----------
-        state : State
-            Global simulation state
-
-        Returns
-        -------
-        ModuleState
-            The state class for this module.
-        """
-        try:
-            return getattr(state, self.module_name)
-        except AttributeError:
-            print(f"{self.module_name} not found in global state!", file=sys.stderr)
-            sys.exit(-1)
-
-    def get_grid(self, state: State) -> np.ndarray:
-        """
-        Get the grid array for this molecule.
-
-        Parameters
-        ----------
-        state : State
-            Global Simulation state
-
-        Returns
-        -------
-        numpy array for the molecule
-        """
-        module_state = self.get_module_state(state)
-        try:
-            return getattr(module_state, 'grid')
-        except AttributeError:
-            print(
-                f"{self.module_name} does not have a `grid` field! Is this really a molecule?",
-                file=sys.stderr,
-            )
-            sys.exit(-1)
-
     def set_components(self, components: Optional[List[str]] = None) -> 'MoleculeFactory':
         """
-        Set the components of the molecular field. Defaults to None, which indicates a single,
-        unnamed component.
+        Set the components of the molecular field.
+
+        Defaults to None, which indicates a single, unnamed component.
 
         Parameters
         ----------
@@ -243,7 +208,7 @@ class MoleculeFactory:
         -------
         MoleculeFactory (self), for chaining
         """
-        if len(components) <= 0:
+        if components is None or len(components) <= 0:
             self.components = None
         else:
             from copy import deepcopy
@@ -265,8 +230,9 @@ class MoleculeFactory:
         MoleculeFactory (self), for chaining
         """
 
-        def diffusion(state: State, module_model: ModuleModel) -> State:
-            grid = self.get_grid(state)
+        def diffusion(state: State, module_model: MoleculeModel) -> State:
+            module_state: MoleculeState = module_model.get_module_state(state)
+            grid = module_state.grid
             molecules: MoleculesState = state.molecules
 
             if self.components is not None:
@@ -317,13 +283,12 @@ class MoleculeFactory:
         -------
         MoleculeFactory (self), for chaining
         """
-
         # noinspection PyUnusedLocal
-        def degradation(state: State, module_model: ModuleModel) -> State:
-            module_state = self.get_module_state(state)
-            molecules: MoleculeState = state.molecules
+        def degradation(state: State, module_model: MoleculeModel) -> State:
+            module_state: MoleculeState = module_model.get_module_state(state)
+            molecules: MoleculesState = state.molecules
 
-            grid = getattr(module_state, 'grid')
+            grid = module_state.grid
 
             if half_life_multiplier_name is not None:
                 grid *= getattr(module_state, half_life_multiplier_name)
@@ -443,7 +408,7 @@ class MoleculeFactory:
         """
         self.record_max_concentration = True
 
-    def build(self) -> Tuple[Type[MoleculeState], Type[ModuleModel]]:
+    def build(self) -> Tuple[Type[MoleculeState], Type[MoleculeModel]]:
         """
         Construct the state and model classes.
 
@@ -480,10 +445,13 @@ def molecule_state_class_builder(
     components: Optional[List[Tuple[str, Datatype]]] = None,
 ) -> Type[MoleculeState]:
     new_class: Type[MoleculeState] = typing.cast(
+        Type[MoleculeState],
         attr.make_class(
             name=upper_first(module_name) + "State",
             attrs={
-                'grid': attrib(default=attr.Factory(molecule_grid_factory, takes_self=True)),
+                'grid': attrib(  # noqa
+                    default=attr.Factory(molecule_grid_factory, takes_self=True)
+                ),
                 'components': attrib(default=components),
                 **{
                     field_name: attrib(type=field_type)
@@ -498,7 +466,6 @@ def molecule_state_class_builder(
             kw_only=True,
             repr=False,
         ),
-        MoleculeState,
     )
     return new_class
 
@@ -508,23 +475,23 @@ def molecule_model_class_builder(
     docstring=None,
     module_name: str,
     state_class: Type[MoleculeState],
-    components: Optional[List[Tuple[str, Datatype]]],
+    components: Optional[List[str]],
     config_fields: Dict[str, Datatype],
     computed_fields: Dict[str, Tuple[Datatype, Callable]],
     advance_actions: List[Tuple[int, AdvanceAction]],
     record_min_concentration: bool,
     record_max_concentration: bool,
 ) -> Type[MoleculeModel]:
-
     new_class: Type[MoleculeModel] = typing.cast(
+        Type[MoleculeModel],
         type(
             upper_first(module_name),
             (MoleculeModel,),
             {
                 "__doc__": docstring if docstring is not None else upper_first(module_name),
-                "name": attrib(default=module_name, type=str),
-                "StateClass": attrib(default=state_class, type=MoleculeState),
-                "components": attrib(default=components, type=Optional[List[Tuple[str, Datatype]]]),
+                "name": attrib(default=module_name, type=str),  # noqa
+                "StateClass": attrib(default=state_class, type=MoleculeState),  # noqa
+                "components": attrib(default=components, type=Optional[List[str]]),
                 "config_fields": attrib(default=config_fields, type=Dict[str, Datatype]),
                 "computed_fields": attrib(
                     default=computed_fields, type=Dict[str, Tuple[Datatype, Callable]]
@@ -536,7 +503,6 @@ def molecule_model_class_builder(
                 'record_max_concentration': attrib(default=record_max_concentration, type=bool),
             },
         ),
-        MoleculeModel,
     )
 
     return new_class

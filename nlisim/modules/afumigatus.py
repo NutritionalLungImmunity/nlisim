@@ -2,7 +2,7 @@ from enum import IntEnum, unique
 import math
 from queue import Queue
 import random
-from typing import Any, Dict
+from typing import Any, Dict, Type
 
 import attr
 from attr import attrib, attrs
@@ -111,7 +111,7 @@ def initial_boolean_network() -> np.ndarray:
     )
 
 
-AfumigatusCellData = (
+AfumigatusCellData: Type[CellData] = (
     CellDataFactory(name='afumigatus')
     .add_field(field_name='iron_pool', data_type=np.float64, initializer=0.0)  # units: atto-mol
     .add_field(field_name='state', data_type=np.uint8, initializer=AfumigatusCellState.FREE)
@@ -138,7 +138,7 @@ AfumigatusCellData = (
     .add_field(field_name='next_septa', data_type=np.int64, initializer=-1)
     .add_field(field_name='previous_septa', data_type=np.int64, initializer=-1)
     .add_field(field_name='bn_iteration', data_type=np.int64, initializer=0)
-    .get_cell_data_class()
+    .build()
 )
 
 

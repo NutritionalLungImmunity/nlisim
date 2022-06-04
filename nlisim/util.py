@@ -160,3 +160,7 @@ def name_validator(_, field_name, name: str):
 
 Datatype = Union[str, np.dtype, Type[Any]]
 StateFields = List[Tuple[str, type, Optional[Callable]]]
+
+
+def upper_first(s: str) -> str:
+    return s[0].upper() + s[1:]
