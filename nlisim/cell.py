@@ -5,6 +5,7 @@ import attr
 from h5py import Group
 import numpy as np
 from numpy import dtype
+from typing_extensions import TypeAlias
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
@@ -15,15 +16,12 @@ MAX_CELL_LIST_SIZE = 1_000_000
 # the way numpy types single records is strange...
 CellType = Any
 
-CellField = Union[
-    Tuple[str, dtype],
-    Tuple[str, Type[Any]],
-    Tuple[str, Type[Any], int],
-    Tuple[str, str],
-    Tuple[str, str, int],
+CellField: TypeAlias = Union[
+    Tuple[str, Union[dtype, Type[Any], str]],
+    Tuple[str, Union[dtype, Type[Any], str], int],
 ]
 
-CellFields = List[CellField]
+CellFields: TypeAlias = List[CellField]
 
 
 class CellData(np.ndarray):

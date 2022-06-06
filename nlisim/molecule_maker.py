@@ -408,7 +408,7 @@ class MoleculeFactory:
         """
         self.record_max_concentration = True
 
-    def build(self) -> Tuple[Type[MoleculeState], Type[MoleculeModel]]:
+    def build(self) -> Tuple[type, type]:
         """
         Construct the state and model classes.
 
@@ -443,7 +443,7 @@ def molecule_state_class_builder(
     config_fields: Dict[str, Datatype],
     computed_fields: Dict[str, Tuple[Datatype, Callable]],
     components: Optional[List[Tuple[str, Datatype]]] = None,
-) -> Type[MoleculeState]:
+) -> type:
     new_class: Type[MoleculeState] = typing.cast(
         Type[MoleculeState],
         attr.make_class(
@@ -474,7 +474,7 @@ def molecule_model_class_builder(
     *,
     docstring=None,
     module_name: str,
-    state_class: Type[MoleculeState],
+    state_class: type,
     components: Optional[List[str]],
     config_fields: Dict[str, Datatype],
     computed_fields: Dict[str, Tuple[Datatype, Callable]],

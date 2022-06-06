@@ -2,7 +2,7 @@ from enum import IntEnum, unique
 import math
 from queue import Queue
 import random
-from typing import Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict
 
 import attr
 from attr import attrib, attrs
@@ -111,35 +111,50 @@ def initial_boolean_network() -> np.ndarray:
     )
 
 
-AfumigatusCellData: Type[CellData] = (
-    CellDataFactory(name='afumigatus')
-    .add_field(field_name='iron_pool', data_type=np.float64, initializer=0.0)  # units: atto-mol
-    .add_field(field_name='state', data_type=np.uint8, initializer=AfumigatusCellState.FREE)
-    .add_field(
-        field_name='status', data_type=np.uint8, initializer=AfumigatusCellStatus.RESTING_CONIDIA
+if TYPE_CHECKING:
+    # This does nothing for an actual, running program. (only the else-clause fires) However, the
+    # type checker (mypy) does not recognize that the generated classes are sub-classes of the
+    # appropriate type, and throws many errors. This works around that problem.
+    class AfumigatusCellData(CellData):
+        # stub class for type checking
+        pass
+
+else:
+    AfumigatusCellData: type = (
+        CellDataFactory(name='afumigatus')
+        .add_field(field_name='iron_pool', data_type=np.float64, initializer=0.0)  # units: atto-mol
+        .add_field(field_name='state', data_type=np.uint8, initializer=AfumigatusCellState.FREE)
+        .add_field(
+            field_name='status',
+            data_type=np.uint8,
+            initializer=AfumigatusCellStatus.RESTING_CONIDIA,
+        )
+        .add_field(field_name='is_root', data_type=bool, initializer=True)
+        .add_field(
+            field_name='root', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0]
+        )
+        .add_field(
+            field_name='tip', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0]
+        )
+        .add_field(
+            field_name='vec', data_type=np.float64, multiplicity=3, initializer=random_sphere_point
+        )  # unit vector, length is in afumigatus.hyphal_length
+        .add_field(field_name='growable', data_type=bool, initializer=True)
+        .add_field(field_name='branchable', data_type=bool, initializer=False)
+        .add_field(field_name='activation_iteration', data_type=np.int64, initializer=0)
+        .add_field(field_name='growth_iteration', data_type=np.int64, initializer=0)
+        .add_field(
+            field_name='boolean_network',
+            data_type='b1',
+            multiplicity=len(NetworkSpecies),
+            initializer=initial_boolean_network,
+        )
+        .add_field(field_name='next_branch', data_type=np.int64, initializer=-1)
+        .add_field(field_name='next_septa', data_type=np.int64, initializer=-1)
+        .add_field(field_name='previous_septa', data_type=np.int64, initializer=-1)
+        .add_field(field_name='bn_iteration', data_type=np.int64, initializer=0)
+        .build()
     )
-    .add_field(field_name='is_root', data_type=bool, initializer=True)
-    .add_field(field_name='root', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0])
-    .add_field(field_name='tip', data_type=np.float64, multiplicity=3, initializer=[0.0, 0.0, 0.0])
-    .add_field(
-        field_name='vec', data_type=np.float64, multiplicity=3, initializer=random_sphere_point
-    )  # unit vector, length is in afumigatus.hyphal_length
-    .add_field(field_name='growable', data_type=bool, initializer=True)
-    .add_field(field_name='branchable', data_type=bool, initializer=False)
-    .add_field(field_name='activation_iteration', data_type=np.int64, initializer=0)
-    .add_field(field_name='growth_iteration', data_type=np.int64, initializer=0)
-    .add_field(
-        field_name='boolean_network',
-        data_type='b1',
-        multiplicity=len(NetworkSpecies),
-        initializer=initial_boolean_network,
-    )
-    .add_field(field_name='next_branch', data_type=np.int64, initializer=-1)
-    .add_field(field_name='next_septa', data_type=np.int64, initializer=-1)
-    .add_field(field_name='previous_septa', data_type=np.int64, initializer=-1)
-    .add_field(field_name='bn_iteration', data_type=np.int64, initializer=0)
-    .build()
-)
 
 
 @attrs(kw_only=True, frozen=True, repr=False)

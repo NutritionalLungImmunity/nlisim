@@ -1,6 +1,8 @@
+from typing import TYPE_CHECKING
+
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
-from nlisim.molecule_maker import MoleculeFactory, MoleculeModel
+from nlisim.molecule_maker import MoleculeFactory, MoleculeModel, MoleculeState
 from nlisim.state import State
 
 
@@ -29,12 +31,25 @@ def afumigatus_uptakes_iron_from_hemoglobin(state: State, hemoglobin_model: Mole
     return state
 
 
-HemoglobinState, Hemoglobin = (
-    MoleculeFactory('hemoglobin')
-    .add_config_field('uptake_rate', float)
-    .add_config_field('ma_heme_import_rate', float)
-    .add_advance_action(action=afumigatus_uptakes_iron_from_hemoglobin, order=0)
-    .add_degradation(order=1)
-    .add_diffusion(order=2)
-    .build()
-)
+if TYPE_CHECKING:
+    # This does nothing for an actual, running program. (only the else-clause fires) However, the
+    # type checker (mypy) does not recognize that the generated classes are sub-classes of the
+    # appropriate type, and throws many errors. This works around that problem.
+    class HemoglobinState(MoleculeState):
+        # stub class for type checking
+        uptake_rate: float
+
+    class Hemoglobin(MoleculeModel):
+        # stub class for type checking
+        pass
+
+else:
+    HemoglobinState, Hemoglobin = (
+        MoleculeFactory('hemoglobin')
+        .add_config_field('uptake_rate', float)
+        .add_config_field('ma_heme_import_rate', float)
+        .add_advance_action(action=afumigatus_uptakes_iron_from_hemoglobin, order=0)
+        .add_degradation(order=1)
+        .add_diffusion(order=2)
+        .build()
+    )

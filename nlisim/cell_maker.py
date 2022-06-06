@@ -5,7 +5,7 @@ import attr
 from attr import attrib, attrs
 import numpy as np
 
-from nlisim.cell import CellData, CellField
+from nlisim.cell import CellData, CellField, CellFields
 from nlisim.util import Datatype, name_validator, upper_first
 
 
@@ -14,23 +14,17 @@ class GeneratedCellData(CellData):
     fields: List[Tuple[CellField, Callable]] = attrib()
     dtype: np.dtype = attrib()
 
-    # dtype = np.dtype(
-    #     CellData.FIELDS + PhagocyteCellData.PHAGOCYTE_FIELDS + MACROPHAGE_FIELDS, align=True
-    # )  # type: ignore
-
     @classmethod
     def create_cell_tuple(
         cls,
         **kwargs,
     ) -> Tuple:
-        initializer = {
-            field_name: kwargs.get(field_name, initializer())
-            for (field_name, *_), initializer in cls.fields
-        }
-
         # ensure that these come in the correct order
         return CellData.create_cell_tuple(**kwargs) + tuple(
-            [initializer[key] for key, *_ in cls.fields]
+            [
+                kwargs[field_name] if field_name in kwargs else initializer()
+                for (field_name, *_), initializer in cls.fields
+            ]
         )
 
 
@@ -71,7 +65,7 @@ class CellDataFactory:
         return self
 
     def build(self) -> Type[CellData]:
-        new_fields = [
+        new_fields: CellFields = [
             (field_name, data_type, multiplicity) if multiplicity > 1 else (field_name, data_type)
             for field_name, (data_type, multiplicity, initializer) in self.fields.items()
         ]
