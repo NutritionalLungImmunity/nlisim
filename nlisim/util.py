@@ -96,13 +96,38 @@ def michaelian_kinetics(
     k_m : aM
     h: sec/step
     k_cat: 1/sec
-    voxel_volume: L
+    volume: L
 
     result: atto-mol/step
     """
     # Note: was originally defined by converting to molarity, but can be redefined in terms
     # of mols. This is algebraically equivalent and reduces the number of operations.
     return h * k_cat * enzyme * substrate / (substrate + k_m * volume)
+
+
+def michaelian_kinetics_molarity(
+    *,
+    substrate: np.ndarray,
+    enzyme: np.ndarray,
+    k_m: float,
+    h: float,
+    k_cat: float = 1.0,
+) -> np.ndarray:
+    """
+    Compute Michaelis–Menten kinetics.
+
+    units:
+    substrate : atto-M
+    enzyme : atto-M
+    k_m : atto-M
+    h: sec/step
+    k_cat: 1/sec
+
+    result: atto-M/step
+    """
+    # Note: was originally defined by converting to molarity, but can be redefined in terms
+    # of mols. This is algebraically equivalent and reduces the number of operations.
+    return h * k_cat * enzyme * substrate / (substrate + k_m)
 
 
 class TissueType(IntEnum):
