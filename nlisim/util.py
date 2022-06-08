@@ -189,7 +189,7 @@ def secrete_in_element(
     point_field: np.ndarray,
     element_index: Union[int, np.ndarray],
     point: Union[Point, np.ndarray],
-    amount: Union[float, np.ndarray],
+    amount: Union[float, np.ndarray],  # units: atto-mol
 ) -> None:
     proportions = mesh.tetrahedral_proportions(element_index, point)
     points = mesh.element_point_indices[element_index]
