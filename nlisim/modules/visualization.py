@@ -1,9 +1,13 @@
 from enum import Enum
 import json
 
-# Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
+# noinspection PyPackageRequirements
 import attr
+
+# noinspection PyPackageRequirements
 import numpy as np
+
+# Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 from vtkmodules.util.numpy_support import numpy_to_vtk
 
 # noinspection PyUnresolvedReferences

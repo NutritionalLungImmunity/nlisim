@@ -1,6 +1,7 @@
 from pathlib import Path
 import shutil
 
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
 
 from nlisim.module import ModuleModel, ModuleState

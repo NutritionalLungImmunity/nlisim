@@ -2,7 +2,10 @@ from abc import abstractmethod
 from enum import IntEnum, unique
 from typing import TYPE_CHECKING, Tuple
 
+# noinspection PyPackageRequirements
 from attr import attrs
+
+# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList

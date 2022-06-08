@@ -28,9 +28,16 @@ from functools import reduce
 from itertools import product
 from typing import Iterable, Iterator, List, Tuple, Union, cast
 
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
 from h5py import File as H5File
+
+# noinspection PyPackageRequirements
 import numpy as np
+
+# noinspection PyPackageRequirements
 from numpy.typing import DTypeLike
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy

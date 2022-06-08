@@ -1,6 +1,9 @@
 from typing import Any, Dict
 
+# noinspection PyPackageRequirements
 import attr
+
+# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.grid import TetrahedralMesh

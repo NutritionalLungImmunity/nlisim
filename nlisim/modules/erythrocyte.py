@@ -1,8 +1,13 @@
 import math
 from typing import Any, Dict
 
+# noinspection PyPackageRequirements
 import attr
+
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.coordinates import Voxel
@@ -18,7 +23,7 @@ from nlisim.util import TissueType, activation_function
 
 
 # note: treating these a bit more like molecules than cells.
-# hence the adaptation of molecule_grid_factory
+# hence the adaptation of molecule_point_field_factory
 def molecule_point_field_factory(self: 'ErythrocyteState') -> np.ndarray:
     return self.global_state.mesh.allocate_point_variable(
         dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)]

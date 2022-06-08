@@ -1,6 +1,7 @@
 from enum import IntEnum
 from typing import Tuple, Union
 
+# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.coordinates import Point, Voxel
