@@ -32,7 +32,6 @@ class Iron(ModuleModel):
 
     def initialize(self, state: State) -> State:
         # iron: IronState = state.iron
-        # geometry: GeometryState = state.geometry
         # voxel_volume = geometry.voxel_volume
 
         # config file values

@@ -169,7 +169,7 @@ class TetrahedralMesh(object):
         )
 
     def evaluate_point_function(
-        self, point_function: np.ndarray, point: Point, element_index: int
+        self, *, point_function: np.ndarray, point: Point, element_index: int
     ) -> Union[float, np.ndarray]:
         """
         Evaluate a point function on the interior of a tetrahedral element.

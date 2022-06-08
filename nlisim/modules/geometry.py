@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 from pathlib import Path
 
 import attr
@@ -11,7 +11,7 @@ from nlisim.validation import ValidationError
 
 
 # I am not quite sure if we should put the definition of the lung tissue types here
-class TissueTypes(Enum):
+class TissueTypes(IntEnum):
     AIR = 0
     BLOOD = 1
     OTHER = 2

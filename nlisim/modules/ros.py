@@ -41,8 +41,6 @@ class ROS(ModuleModel):
 
     def initialize(self, state: State) -> State:
         ros: ROSState = state.ros
-        # geometry: GeometryState = state.geometry
-        # voxel_volume = geometry.voxel_volume
 
         # config file values
 

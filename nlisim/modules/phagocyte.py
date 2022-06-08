@@ -9,7 +9,7 @@ from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
-from nlisim.coordinates import Point, Voxel
+from nlisim.coordinates import Point
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 

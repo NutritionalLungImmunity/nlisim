@@ -100,9 +100,7 @@ class AntiTNFa(ModuleModel):
         tnf_a.field[:] = np.maximum(0.0, tnf_a.field - reacted_quantity)
 
         # Degradation of AntiTNFa
-        anti_tnf_a.system_concentration *= (
-            anti_tnf_a.half_life_multiplier
-        )  # TODO: document meaning of this
+        anti_tnf_a.system_concentration *= anti_tnf_a.half_life_multiplier
         anti_tnf_a.field *= turnover_rate(
             x=anti_tnf_a.field,
             x_system=anti_tnf_a.system_concentration,
