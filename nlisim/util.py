@@ -60,10 +60,13 @@ def iron_tf_reaction(
     total_binding_site: np.ndarray = 2 * (tf + tf_fe)
     total_iron: np.ndarray = iron + tf_fe  # it does not count TfFe2
 
-    rel_total_iron: np.ndarray = total_iron / (total_binding_site + EPSILON)
-    # enforce bounds and zero out problem divides
-    rel_total_iron[total_binding_site == 0] = 0.0
-    rel_total_iron[:] = np.maximum(np.minimum(rel_total_iron, 1.0), 0.0)
+    rel_total_iron: np.ndarray = np.divide(  # safe division, defaults to zero when dividing by zero
+        total_iron,
+        total_binding_site,
+        out=np.zeros_like(total_iron),  # source of defaults
+        where=total_binding_site != 0.0,
+    )
+    np.clip(rel_total_iron, 0.0, 1.0, out=rel_total_iron)  # fix any remaining problem divides
 
     rel_tf_fe: np.ndarray = np.maximum(
         0.0, ((p1 * rel_total_iron + p2) * rel_total_iron + p3) * rel_total_iron
