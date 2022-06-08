@@ -10,7 +10,6 @@ from attr import attrib, attrs
 # noinspection PyPackageRequirements
 import numpy as np
 
-from nlisim.coordinates import Voxel
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
@@ -85,7 +84,6 @@ class ErythrocyteModel(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
-        voxel_volume: float = state.voxel_volume
 
         shape = erythrocyte.cells['count'].shape
 
@@ -105,12 +103,11 @@ class ErythrocyteModel(ModuleModel):
         hemoglobin.field.fill(0.0)
 
         # interact with hemolysin. pop goes the blood cell
-        # TODO: avg? variable name improvement?
         avg_lysed_erythrocytes = erythrocyte.cells['count'] * activation_function(
-            x=hemolysin.grid,
+            x=hemolysin.field,
             k_d=erythrocyte.kd_hemo,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
-            volume=voxel_volume,
+            volume=1.0,  # already a concentration
             b=1,
         )
         number_lysed = np.minimum(
@@ -124,8 +121,8 @@ class ErythrocyteModel(ModuleModel):
             erythrocyte.pr_macrophage_phagocytize_erythrocyte * erythrocyte.cells['count'], shape
         )
 
-        for z, y, x in zip(*np.where(erythrocytes_to_hemorrhage > 0)):
-            local_macrophages = macrophage.cells.get_cells_in_element(Voxel(x=x, y=y, z=z))
+        for element_idx in mesh.elements_incident_to(np.where(erythrocytes_to_hemorrhage > 0)[0]):
+            local_macrophages = macrophage.cells.get_cells_in_element(element_idx)
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
                 macrophage_cell = macrophage.cells[macrophage_index]
@@ -144,13 +141,12 @@ class ErythrocyteModel(ModuleModel):
             fungal_cell = afumigatus.cells[fungal_cell_index]
             if fungal_cell['status'] == AfumigatusCellStatus.HYPHAE:
                 fungal_element: int = mesh.get_element_index(fungal_cell['point'])
-                erythrocyte.cells['hemorrhage'][tuple(fungal_voxel)] = True
+                erythrocyte.cells['hemorrhage'][fungal_element] = True
 
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
         erythrocyte: ErythrocyteState = state.erythrocyte
-        # voxel_volume = state.voxel_volume
 
         return {
             'count': int(np.sum(erythrocyte.cells['count'])),
