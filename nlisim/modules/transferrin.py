@@ -88,8 +88,12 @@ class Transferrin(ModuleModel):
             'default_tffe2_rel_concentration'
         )  # units: proportion
 
-        transferrin.ma_iron_import_rate_vol = self.config.getfloat('ma_iron_import_rate_vol')
-        transferrin.ma_iron_export_rate_vol = self.config.getfloat('ma_iron_export_rate_vol')
+        transferrin.ma_iron_import_rate_vol = self.config.getfloat(
+            'ma_iron_import_rate_vol'
+        )  # units: L * cell^-1 * h^-1
+        transferrin.ma_iron_export_rate_vol = self.config.getfloat(
+            'ma_iron_export_rate_vol'
+        )  # units: L * cell^-1 * h^-1
 
         # computed values
         transferrin.default_tf_concentration = (
