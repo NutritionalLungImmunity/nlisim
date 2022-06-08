@@ -9,13 +9,17 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
 from nlisim.diffusion import apply_mesh_diffusion_crank_nicholson
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import EPSILON, michaelian_kinetics, turnover_rate
+from nlisim.util import (
+    michaelian_kinetics_molarity,
+    secrete_in_element,
+    turnover_rate,
+    uptake_in_element,
+)
 
 
 def molecule_point_field_factory(self: 'TAFCState') -> np.ndarray:
@@ -103,32 +107,32 @@ class TAFC(ModuleModel):
 
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
-        dfe2_dt = michaelian_kinetics(
-            substrate=transferrin.feild["TfFe2"],
-            enzyme=tafc.field["TAFC"],
-            k_m=tafc.k_m_tf_tafc,
+        dfe2_dt = michaelian_kinetics_molarity(
+            substrate=transferrin.field["TfFe2"],  # units: atto-M
+            enzyme=tafc.field["TAFC"],  # units: atto-M
+            k_m=tafc.k_m_tf_tafc,  # units: atto-M
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
-            volume=mesh.point_dual_volumes,
-        )
-        dfe_dt = michaelian_kinetics(
-            substrate=transferrin.field["TfFe"],
-            enzyme=tafc.field["TAFC"],
-            k_m=tafc.k_m_tf_tafc,
+        )  # units: atto-M/step
+        dfe_dt = michaelian_kinetics_molarity(
+            substrate=transferrin.field["TfFe"],  # units: atto-M
+            enzyme=tafc.field["TAFC"],  # units: atto-M
+            k_m=tafc.k_m_tf_tafc,  # units: atto-M
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
             k_cat=1.0,  # default
-            volume=mesh.point_dual_volumes,
-        )
+        )  # units: atto-M/step
 
         # - enforce bounds from TAFC quantity
         total_change = dfe2_dt + dfe_dt
-        rel = tafc.field['TAFC'] / (total_change + EPSILON)
-        # enforce bounds and zero out problem divides
-        rel[total_change == 0] = 0.0
-        np.clip(rel, 0.0, 1.0, out=rel)
-
-        dfe2_dt = dfe2_dt * rel
-        dfe_dt = dfe_dt * rel
+        rel = np.divide(  # safe division, defaults to zero when dividing by zero
+            tafc.field['TAFC'],
+            total_change,
+            out=np.zeros_like(tafc.field['TAFC']),  # source of defaults
+            where=total_change != 0.0,
+        )
+        np.clip(rel, 0.0, 1.0, out=rel)  # fix any remaining problem divides
+        np.multiply(dfe2_dt, rel, out=dfe2_dt)
+        np.multiply(dfe_dt, rel, out=dfe_dt)
 
         # transferrin+2Fe loses an iron, becomes transferrin+Fe
         transferrin.field['TfFe2'] -= dfe2_dt
@@ -155,16 +159,25 @@ class TAFC(ModuleModel):
             if afumigatus_cell['state'] != AfumigatusCellState.FREE:
                 continue
 
-            afumigatus_cell_voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
+            afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
             afumigatus_bool_net: np.ndarray = afumigatus_cell['boolean_network']
 
             # uptake iron from TAFCBI
             if afumigatus_bool_net[NetworkSpecies.MirB] & afumigatus_bool_net[NetworkSpecies.EstB]:
                 quantity = (
-                    tafc.field['TAFCBI'][tuple(afumigatus_cell_voxel)]
+                    mesh.evaluate_point_function(
+                        point_function=tafc.field['TAFCBI'],
+                        point=afumigatus_cell['Point'],
+                        element_index=afumigatus_cell_element,
+                    )
                     * tafc.tafcbi_uptake_rate_unit_t
                 )
-                tafc.field['TAFCBI'][tuple(afumigatus_cell_voxel)] -= quantity
+                uptake_in_element(
+                    mesh=mesh,
+                    point_field=tafc.field['TAFCBI'],
+                    element_index=afumigatus_cell_element,
+                    amount=quantity,
+                )
                 afumigatus_cell['iron_pool'] += quantity
 
             # secrete TAFC
@@ -173,9 +186,13 @@ class TAFC(ModuleModel):
                 AfumigatusCellStatus.HYPHAE,
                 AfumigatusCellStatus.GERM_TUBE,
             }:
-                tafc.field['TAFC'][
-                    tuple(afumigatus_cell_voxel)
-                ] += tafc.afumigatus_secretion_rate_unit_t
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=tafc.field['TAFC'],
+                    element_index=afumigatus_cell_element,
+                    point=afumigatus_cell['point'],
+                    amount=tafc.afumigatus_secretion_rate_unit_t,
+                )
 
         # Degrade TAFC
         trnvr_rt = turnover_rate(
