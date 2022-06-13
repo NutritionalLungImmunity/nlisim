@@ -213,7 +213,9 @@ class Pneumocyte(PhagocyteModel):
                 if (
                     activation_function(
                         x=mesh.evaluate_point_function(
-                            tnfa.field, pneumocyte_cell['point'], pneumocyte_cell_element
+                            point_function=tnfa.field,
+                            point=pneumocyte_cell['point'],
+                            element_index=pneumocyte_cell_element,
                         ),
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)

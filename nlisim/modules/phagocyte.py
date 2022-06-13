@@ -74,8 +74,8 @@ class PhagocyteModel(ModuleModel):
         nothing
         """
         # At this moment, there is no inter-voxel geometry.
-        cell_element_index: int = cell_list._reverse_element_index[cell_index]
-        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element_index)
+        cell_element = cell_list.element_index[cell_index]
+        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element)
         cell['point'] = new_point
         cell_list.update_element_index([cell_index])
 
@@ -151,7 +151,8 @@ def interact_with_aspergillus(
     Parameters
     ----------
     phagocyte_cell : PhagocyteCellData
-    phagocyte_cell_index: int
+    phagocyte_cell_index : int
+    phagocyte_cells : CellList
     aspergillus_cell : AfumigatusCellData
     aspergillus_cell_index : int
     phagocyte : PhagocyteState

@@ -9,7 +9,6 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
@@ -93,21 +92,19 @@ class TGFB(ModuleModel):
 
         tgfb: TGFBState = state.tgfb
         macrophage: MacrophageState = state.macrophage
-        mesh: TetrahedralMesh = state.mesh
-        voxel_volume: float = state.voxel_volume
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
 
             if macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
-                tgfb.grid[tuple(macrophage_cell_voxel)] += tgfb.macrophage_secretion_rate_unit_t
+                tgfb.field[macrophage_cell_element] += tgfb.macrophage_secretion_rate_unit_t
                 if (
                     activation_function(
-                        x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                        x=tgfb.field[macrophage_cell_element],
                         k_d=tgfb.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                        volume=voxel_volume,
+                        volume=1.0,  # already a concentration
                         b=1,
                     )
                     > rg.uniform()
@@ -121,10 +118,10 @@ class TGFB(ModuleModel):
             }:
                 if (
                     activation_function(
-                        x=tgfb.grid[tuple(macrophage_cell_voxel)],
+                        x=tgfb.field[macrophage_cell_element],
                         k_d=tgfb.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                        volume=voxel_volume,
+                        volume=1.0,  # already a concentration
                         b=1,
                     )
                     > rg.uniform()
