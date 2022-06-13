@@ -78,7 +78,7 @@ class TAFC(ModuleModel):
         )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
         tafc.tafcbi_uptake_rate_unit_t = (
             tafc.tafcbi_uptake_rate
-            / voxel_volume
+            / 6.4e-11  # TODO: this magic number is TEMPORARY, was voxel_volume
             * (self.time_step / 60)
             # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
             # = proportion * cell^-1 * step^-1

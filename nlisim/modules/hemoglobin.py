@@ -1,8 +1,15 @@
 from typing import Any, Dict
 
+# noinspection PyPackageRequirements
 import attr
+
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
 import numpy as np
+
+# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import (
@@ -22,7 +29,9 @@ def molecule_point_field_factory(self: 'HemoglobinState') -> np.ndarray:
 
 @attrs(kw_only=True, repr=False)
 class HemoglobinState(ModuleState):
-    field: np.ndarray = attrib(default=attr.Factory(molecule_point_field_factory, takes_self=True))
+    field: np.ndarray = attrib(
+        default=attr.Factory(molecule_point_field_factory, takes_self=True)
+    )  # units: atto-M
     uptake_rate: float
     ma_heme_import_rate: float
     diffusion_constant: float  # units: µm^2/min
@@ -105,7 +114,9 @@ class Hemoglobin(ModuleModel):
         )
 
         afumigatus_cells_taking_iron = afumigatus.cells.cell_data[iron_uptaking_afumigatus_indices]
-        afumigatus_cells_taking_iron['iron_pool'] += 4 * hemoglobin_uptake
+        afumigatus_cells_taking_iron['iron_pool'] += (
+            4 * hemoglobin_uptake * mesh.point_dual_volumes[afumigatus_elements]
+        )  # units: atto-M * L = atto-mols
         uptake_in_element(
             mesh=mesh,
             point_field=hemoglobin.field,

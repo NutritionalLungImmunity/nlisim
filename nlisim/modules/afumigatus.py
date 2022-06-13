@@ -274,7 +274,7 @@ class Afumigatus(ModuleModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
+            afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
 
             # ------------ update cell
 
@@ -283,7 +283,7 @@ class Afumigatus(ModuleModel):
             # ------------ cell growth
             if (
                 afumigatus_cell['state'] == AfumigatusCellState.FREE
-                and mesh.element_tissue_type[cell_element_index] != TissueType.AIR
+                and mesh.element_tissue_type[afumigatus_cell_element] != TissueType.AIR
             ):
                 elongate(
                     afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus
@@ -295,7 +295,7 @@ class Afumigatus(ModuleModel):
 
             # interact with macrophages, possibly internalizing the aspergillus cell
             for macrophage_index in macrophage.cells.get_cells_in_element(
-                element_index=cell_element_index
+                element_index=afumigatus_cell_element
             ):
                 macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
 
@@ -335,8 +335,8 @@ class Afumigatus(ModuleModel):
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
-        cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
-        element_volume = mesh.element_volumes[cell_element_index]
+        afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
+        element_volume = mesh.element_volumes[afumigatus_cell_element]
 
         probability_of_interaction = -np.expm1(
             -afumigatus.rel_phag_affinity_unit_t
@@ -417,11 +417,11 @@ class Afumigatus(ModuleModel):
                 raise AssertionError("The fungal tree structure is malformed.")
 
         # kill the cell off and release its iron
-        cell_element_index: int = afumigatus.cells._reverse_element_index[afumigatus_cell]
+        afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
         secrete_in_element(
             mesh=mesh,
             point_field=iron.field,
-            element_index=cell_element_index,
+            element_index=afumigatus_cell_element,
             point=afumigatus_cell['point'],
             amount=afumigatus_cell['iron_pool'],
         )

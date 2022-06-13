@@ -33,7 +33,7 @@ class MacrophageCellData(PhagocyteCellData):
         ('fpn_iteration', np.int64),
         ('tf', bool),  # TODO: descriptive name, transferrin?
         ('tnfa', bool),
-        ('iron_pool', np.float64),
+        ('iron_pool', np.float64),  # units: atto-mols
         ('status_iteration', np.uint64),
         ('velocity', np.float64, 3),
     ]

@@ -46,7 +46,7 @@ class AntiTNFa(ModuleModel):
 
     def initialize(self, state: State) -> State:
         anti_tnf_a: AntiTNFaState = state.antitnfa
-        mesh: TetrahedralMesh = state.mesh
+        # mesh: TetrahedralMesh = state.mesh
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')  # units: min
