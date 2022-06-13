@@ -12,7 +12,6 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
@@ -33,8 +32,8 @@ def molecule_point_field_factory(self: 'TransferrinState') -> np.ndarray:
 class TransferrinState(ModuleState):
     field: np.ndarray = attrib(
         default=attr.Factory(molecule_point_field_factory, takes_self=True)
-    )  # units: atto-mols
-    k_m_tf_tafc: float  # units: aM
+    )  # units: atto-M
+    k_m_tf_tafc: float  # units: atto-M
     p1: float
     p2: float
     p3: float
@@ -42,12 +41,12 @@ class TransferrinState(ModuleState):
     default_apotf_rel_concentration: float  # units: proportion
     default_tffe_rel_concentration: float  # units: proportion
     default_tffe2_rel_concentration: float  # units: proportion
-    default_tf_concentration: float  # units: aM
-    default_apotf_concentration: float  # units: aM
-    default_tffe_concentration: float  # units: aM
-    default_tffe2_concentration: float  # units: aM
-    tf_intercept: float  # units: aM
-    tf_slope: float  # units: aM
+    default_tf_concentration: float  # units: atto-M
+    default_apotf_concentration: float  # units: atto-M
+    default_tffe_concentration: float  # units: atto-M
+    default_tffe2_concentration: float  # units: atto-M
+    tf_intercept: float  # units: atto-M
+    tf_slope: float  # units: atto-M
     ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
     ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
     ma_iron_export_rate: float  # units: proportion * cell^-1 * step^-1
@@ -101,13 +100,13 @@ class Transferrin(ModuleModel):
         )  # based on y--log(x) plot. units: aM * L = aM
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
-        )  # units: aM
+        )  # units: atto-M
         transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
-        )  # units: aM
+        )  # units: atto-M
         transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
-        )  # units: aM
+        )  # units: atto-M
 
         transferrin.ma_iron_import_rate = (
             transferrin.ma_iron_import_rate_vol / voxel_volume / (self.time_step / 60)
@@ -140,21 +139,28 @@ class Transferrin(ModuleModel):
         transferrin: TransferrinState = state.transferrin
         iron: IronState = state.iron
         macrophage: MacrophageState = state.macrophage
+        mesh: TetrahedralMesh = state.mesh
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
 
             uptake_proportion = np.minimum(transferrin.ma_iron_import_rate, 1.0)
-            qtty_fe2 = transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] * uptake_proportion
-            qtty_fe = transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] * uptake_proportion
+            qtty_fe2 = (
+                transferrin.field['TfFe2'][macrophage_cell_element] * uptake_proportion
+            )  # units: atto-M
+            qtty_fe = (
+                transferrin.field['TfFe'][macrophage_cell_element] * uptake_proportion
+            )  # units: atto-M
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
-            transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] -= qtty_fe2
-            transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] -= qtty_fe
-            transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] += qtty_fe + qtty_fe2
-            macrophage_cell['iron_pool'] += 2 * qtty_fe2 + qtty_fe
+            transferrin.field['TfFe2'][macrophage_cell_element] -= qtty_fe2  # units: atto-M
+            transferrin.field['TfFe'][macrophage_cell_element] -= qtty_fe  # units: atto-M
+            transferrin.field['Tf'][macrophage_cell_element] += qtty_fe + qtty_fe2  # units: atto-M
+            macrophage_cell['iron_pool'] += (2 * qtty_fe2 + qtty_fe) * mesh.point_dual_volumes[
+                macrophage_cell_element
+            ]  # units: atto-M * L = atto-mols
 
             if macrophage_cell['fpn'] and macrophage_cell['status'] not in {
                 PhagocyteStatus.ACTIVE,
@@ -164,15 +170,15 @@ class Transferrin(ModuleModel):
                 # as the amount which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],
-                    2 * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
+                    2 * transferrin.field['Tf'][macrophage_cell_element],
                     macrophage_cell['iron_pool']
-                    * transferrin.grid['Tf'][tuple(macrophage_cell_voxel)]
+                    * transferrin.field['Tf'][macrophage_cell_element]
                     * transferrin.ma_iron_export_rate,
                 )
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
-                    tf=transferrin.grid['Tf'][tuple(macrophage_cell_voxel)],
-                    tf_fe=transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)],
+                    tf=transferrin.field['Tf'][macrophage_cell_element],
+                    tf_fe=transferrin.field['TfFe'][macrophage_cell_element],
                     p1=transferrin.p1,
                     p2=transferrin.p2,
                     p3=transferrin.p3,
@@ -180,27 +186,29 @@ class Transferrin(ModuleModel):
                 tffe_qtty = rel_tf_fe * qtty
                 tffe2_qtty = (qtty - tffe_qtty) / 2
 
-                transferrin.grid['Tf'][tuple(macrophage_cell_voxel)] -= tffe_qtty + tffe2_qtty
-                transferrin.grid['TfFe'][tuple(macrophage_cell_voxel)] += tffe_qtty
-                transferrin.grid['TfFe2'][tuple(macrophage_cell_voxel)] += tffe2_qtty
-                macrophage_cell['iron_pool'] -= qtty
+                transferrin.field['Tf'][macrophage_cell_element] -= tffe_qtty + tffe2_qtty
+                transferrin.field['TfFe'][macrophage_cell_element] += tffe_qtty
+                transferrin.field['TfFe2'][macrophage_cell_element] += tffe2_qtty
+                macrophage_cell['iron_pool'] -= (
+                    qtty * mesh.point_dual_volumes[macrophage_cell_element]
+                )  # units: atto-M * L = atto-mols
 
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
-        transferrin_fe_capacity = 2 * transferrin.grid['Tf'] + transferrin.grid['TfFe']
-        potential_reactive_quantity = np.minimum(iron.grid, transferrin_fe_capacity)
+        transferrin_fe_capacity = 2 * transferrin.field['Tf'] + transferrin.field['TfFe']
+        potential_reactive_quantity = np.minimum(iron.field, transferrin_fe_capacity)
         rel_tf_fe = iron_tf_reaction(
             iron=potential_reactive_quantity,
-            tf=transferrin.grid["Tf"],
-            tf_fe=transferrin.grid["TfFe"],
+            tf=transferrin.field["Tf"],
+            tf_fe=transferrin.field["TfFe"],
             p1=transferrin.p1,
             p2=transferrin.p2,
             p3=transferrin.p3,
         )
         tffe_qtty = rel_tf_fe * potential_reactive_quantity
         tffe2_qtty = (potential_reactive_quantity - tffe_qtty) / 2
-        transferrin.grid['Tf'] -= tffe_qtty + tffe2_qtty
-        transferrin.grid['TfFe'] += tffe_qtty
-        transferrin.grid['TfFe2'] += tffe2_qtty
+        transferrin.field['Tf'] -= tffe_qtty + tffe2_qtty
+        transferrin.field['TfFe'] += tffe_qtty
+        transferrin.field['TfFe2'] += tffe2_qtty
         iron.field -= potential_reactive_quantity
         # Note: asked Henrique why there is no transferrin+Fe -> transferrin+2Fe reaction
         # answer was that this should already be accounted for
