@@ -9,7 +9,6 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
 from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
@@ -85,13 +84,13 @@ class MIP2(ModuleModel):
         #        = atto-mol * cell^-1 * step^-1
         mip2.macrophage_secretion_rate_unit_t = mip2.macrophage_secretion_rate * (
             self.time_step / 60
-        )
+        )  # units: atto-mol * cell^-1 * step^-1
         mip2.neutrophil_secretion_rate_unit_t = mip2.neutrophil_secretion_rate * (
             self.time_step / 60
-        )
+        )  # units: atto-mol * cell^-1 * step^-1
         mip2.pneumocyte_secretion_rate_unit_t = mip2.pneumocyte_secretion_rate * (
             self.time_step / 60
-        )
+        )  # units: atto-mol * cell^-1 * step^-1
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
@@ -111,7 +110,6 @@ class MIP2(ModuleModel):
         from nlisim.modules.pneumocyte import PneumocyteCellData, PneumocyteState
 
         mip2: MIP2State = state.mip2
-        molecules: MoleculesState = state.molecules
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
@@ -119,25 +117,31 @@ class MIP2(ModuleModel):
 
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(
-            x=mip2.grid,
+            x=mip2.field,
             k_d=mip2.k_d,
             h=self.time_step / 60,  # units: (min/step) / (min/hour)
-            volume=voxel_volume,
+            volume=1.0,  # already a concentration
             b=1,
         )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
+            neutrophil_cell_element: int = neutrophil.cells.element_index[neutrophil_cell_index]
 
             if (
                 neutrophil_cell['status'] == PhagocyteStatus.RESTING
-                and neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform()
+                and neutrophil_activation[neutrophil_cell_element] > rg.uniform()
             ):
                 neutrophil_cell['status'] = PhagocyteStatus.ACTIVATING
                 neutrophil_cell['status_iteration'] = 0
             elif neutrophil_cell['tnfa']:
-                mip2.grid[tuple(neutrophil_cell_voxel)] += mip2.neutrophil_secretion_rate_unit_t
-                if neutrophil_activation[tuple(neutrophil_cell_voxel)] > rg.uniform():
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=mip2.field,
+                    element_index=neutrophil_cell_element,
+                    point=neutrophil_cell["point"],
+                    amount=mip2.neutrophil_secretion_rate_unit_t,
+                )
+                if neutrophil_activation[neutrophil_cell_element] > rg.uniform():
                     neutrophil_cell['status_iteration'] = 0
 
         # interact with pneumocytes
