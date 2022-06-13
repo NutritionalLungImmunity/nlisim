@@ -9,14 +9,16 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.coordinates import Voxel
-from nlisim.diffusion import assemble_mesh_laplacian_crank_nicholson
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover_rate
 
 
 def molecule_point_field_factory(self: 'TNFaState') -> np.ndarray:
@@ -106,25 +108,30 @@ class TNFa(ModuleModel):
         from nlisim.modules.phagocyte import PhagocyteStatus
 
         tnfa: TNFaState = state.tnfa
-        molecules: MoleculesState = state.molecules
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         mesh: TetrahedralMesh = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_voxel: Voxel = grid.get_voxel(macrophage_cell['point'])
+            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
 
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
-                tnfa.mesh[tuple(macrophage_cell_voxel)] += tnfa.macrophage_secretion_rate_unit_t
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=tnfa.field,
+                    element_index=macrophage_cell_element,
+                    point=macrophage_cell['point'],
+                    amount=tnfa.macrophage_secretion_rate_unit_t,
+                )
 
             if macrophage_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
                 if (
                     activation_function(
-                        x=tnfa.mesh[tuple(macrophage_cell_voxel)],
+                        x=tnfa.field[macrophage_cell_element],
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                        volume=voxel_volume,
+                        volume=1.0,  # already a concentration
                         b=1,
                     )
                     > rg.uniform()
@@ -139,18 +146,24 @@ class TNFa(ModuleModel):
 
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_voxel: Voxel = grid.get_voxel(neutrophil_cell['point'])
+            neutrophil_cell_element: int = neutrophil.cells.element_index[neutrophil_cell_index]
 
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
-                tnfa.mesh[tuple(neutrophil_cell_voxel)] += tnfa.neutrophil_secretion_rate_unit_t
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=tnfa.field,
+                    element_index=neutrophil_cell_element,
+                    point=neutrophil_cell['point'],
+                    amount=tnfa.neutrophil_secretion_rate_unit_t,
+                )
 
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
                 if (
                     activation_function(
-                        x=tnfa.mesh[tuple(neutrophil_cell_voxel)],
+                        x=tnfa.field[neutrophil_cell_element],
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
-                        volume=voxel_volume,
+                        volume=1.0,  # already a concentration
                         b=1,
                     )
                     > rg.uniform()
@@ -164,7 +177,7 @@ class TNFa(ModuleModel):
                     neutrophil_cell['tnfa'] = True
 
         # Degrade TNFa
-        tnfa.mesh *= tnfa.half_life_multiplier * tnfa.turnover_rate
+        tnfa.field *= tnfa.half_life_multiplier * tnfa.turnover_rate
 
         # Diffusion of TNFa
         tnfa.field[:] = apply_mesh_diffusion_crank_nicholson(
@@ -177,17 +190,15 @@ class TNFa(ModuleModel):
         return state
 
     def summary_stats(self, state: State) -> Dict[str, Any]:
-        from nlisim.util import TissueType
-
         tnfa: TNFaState = state.tnfa
         mesh: TetrahedralMesh = state.mesh
-        voxel_volume = state.voxel_volume
-        mask = state.lung_tissue != TissueType.AIR
 
         return {
-            'concentration (nM)': float(np.mean(tnfa.mesh[mask]) / voxel_volume / 1e9),
+            'concentration (nM)': float(
+                mesh.integrate_point_function(tnfa.field) / 1e9 / mesh.total_volume
+            ),
         }
 
     def visualization_data(self, state: State):
         tnfa: TNFaState = state.tnfa
-        return 'molecule', tnfa.mesh
+        return 'molecule', tnfa.field
