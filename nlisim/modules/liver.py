@@ -6,6 +6,7 @@ from attr import attrs
 # noinspection PyPackageRequirements
 import numpy as np
 
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
@@ -53,11 +54,12 @@ class Liver(ModuleModel):
         il6: IL6State = state.il6
         hepcidin: HepcidinState = state.hepcidin
         molecules: MoleculesState = state.molecules
+        mesh: TetrahedralMesh = state.mesh
 
         # interact with IL6
         mask = state.lung_tissue != TissueType.AIR
-        global_il6_concentration = np.mean(il6.field[mask]) / (
-            2 * voxel_volume
+        global_il6_concentration = np.sum(il6.field[mask] * mesh.point_dual_volumes) / (
+            2 * mesh.total_volume
         )  # div 2: serum, units: aM
         if global_il6_concentration > liver.il6_threshold:
             log_hepcidin = liver.hep_intercept + liver.hep_slope * (
@@ -71,26 +73,26 @@ class Liver(ModuleModel):
             transferrin.threshold_log_hep, log_hepcidin
         )  # units: aM
         rate_tf = turnover_rate(
-            x=transferrin.grid['Tf'],
-            x_system=tf * transferrin.default_apotf_rel_concentration * voxel_volume,
+            x=transferrin.field['Tf'],
+            x_system=tf * transferrin.default_apotf_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
         rate_tf_fe = turnover_rate(
-            x=transferrin.grid['TfFe'],
-            x_system=tf * transferrin.default_tffe_rel_concentration * voxel_volume,
+            x=transferrin.field['TfFe'],
+            x_system=tf * transferrin.default_tffe_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
         rate_tf_fe2 = turnover_rate(
-            x=transferrin.grid['TfFe2'],
-            x_system=tf * transferrin.default_tffe2_rel_concentration * voxel_volume,
+            x=transferrin.field['TfFe2'],
+            x_system=tf * transferrin.default_tffe2_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        transferrin.grid['Tf'] *= rate_tf
-        transferrin.grid['TfFe'] *= rate_tf_fe
-        transferrin.grid['TfFe2'] *= rate_tf_fe2
+        transferrin.field['Tf'] *= rate_tf
+        transferrin.field['TfFe'] *= rate_tf_fe
+        transferrin.field['TfFe2'] *= rate_tf_fe2
 
         # interact with hepcidin
         system_concentration = (
@@ -100,7 +102,7 @@ class Liver(ModuleModel):
         )
         hepcidin.field *= turnover_rate(
             x=hepcidin.field,
-            x_system=system_concentration * voxel_volume,
+            x_system=system_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

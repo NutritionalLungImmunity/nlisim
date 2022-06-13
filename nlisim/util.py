@@ -27,6 +27,7 @@ def turnover_rate(
     base_turnover_rate: float,
     rel_cyt_bind_unit_t: float,
 ):
+    # Note: x and x_system should be both either in M or mols, not a mixture of the two.
     if x_system == 0.0:
         return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
