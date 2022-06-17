@@ -14,13 +14,13 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, TissueType
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType, sample_point_from_simplex, secrete_in_element
+from nlisim.util import GridTissueType, sample_point_from_simplex, secrete_in_element
 
 
 @unique
@@ -241,7 +241,9 @@ class Afumigatus(ModuleModel):
         # place fungal cells for initial infection. Cells will be distributed into the
         # sufactant layer, in a uniformly random manner.
         init_infection_num = self.config.getint('init_infection_num')
-        locations = np.where(mesh.element_tissue_type == TissueType.SURFACTANT)[0]
+        locations = np.where(mesh.element_tissue_type == TissueType.ALVEOLAR_SURFACTANT)[0]
+        print(f"{np.max(mesh.element_tissue_type)=}")
+        print(f"{locations=}")
         volumes = mesh.element_volumes[locations]
         probabilities = volumes / np.sum(volumes)
         for _ in range(init_infection_num):
@@ -283,7 +285,7 @@ class Afumigatus(ModuleModel):
             # ------------ cell growth
             if (
                 afumigatus_cell['state'] == AfumigatusCellState.FREE
-                and mesh.element_tissue_type[afumigatus_cell_element] != TissueType.AIR
+                and mesh.element_tissue_type[afumigatus_cell_element] != GridTissueType.AIR
             ):
                 elongate(
                     afumigatus_cell, afumigatus_cell_index, afumigatus.iter_to_grow, afumigatus

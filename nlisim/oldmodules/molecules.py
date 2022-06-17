@@ -8,7 +8,7 @@ from scipy.ndimage import convolve
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.molecule import MoleculeGrid, MoleculeTypes
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import GridTissueType
 
 
 def molecule_grid_factory(self: 'MoleculesState'):
@@ -53,24 +53,24 @@ class Molecules(ModuleModel):
                 raise TypeError(f'Molecule {name} is not implemented yet')
 
             for loc in init_loc:
-                if loc not in [e.name for e in TissueType]:
+                if loc not in [e.name for e in GridTissueType]:
                     raise TypeError(f'Cannot find lung tissue type {loc}')
 
             molecules.grid.append_molecule_type(name)
 
             for loc in init_loc:
                 molecules.grid.concentrations[name][
-                    np.where(lung_tissue == TissueType[loc].value)
+                    np.where(lung_tissue == GridTissueType[loc].value)
                 ] = init_val
 
             if 'source' in molecule:
                 source = molecule['source']
                 incr = molecule['incr']
-                if source not in [e.name for e in TissueType]:
+                if source not in [e.name for e in GridTissueType]:
                     raise TypeError(f'Cannot find lung tissue type {source}')
 
                 molecules.grid.sources[name][
-                    np.where(lung_tissue == TissueType[init_loc[0]].value)
+                    np.where(lung_tissue == GridTissueType[init_loc[0]].value)
                 ] = incr
 
         return state
@@ -119,7 +119,7 @@ class Molecules(ModuleModel):
         weights = np.full((3, 3, 3), 1 / 27)
         molecule[:] = convolve(molecule, weights, mode='constant')
 
-        molecule[(tissue == TissueType.AIR.value)] = 0
+        molecule[(tissue == GridTissueType.AIR.value)] = 0
 
         if threshold:
             molecule[molecule > threshold] = threshold

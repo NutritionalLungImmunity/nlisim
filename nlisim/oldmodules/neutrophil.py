@@ -13,7 +13,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import GridTissueType
 
 
 class NeutrophilCellData(CellData):
@@ -57,7 +57,9 @@ class NeutrophilCellList(CellList):
         if num_reps <= 0:
             return
 
-        cyto_index = np.argwhere(np.logical_and(tissue == TissueType.BLOOD.value, cyto >= rec_r))
+        cyto_index = np.argwhere(
+            np.logical_and(tissue == GridTissueType.BLOOD.value, cyto >= rec_r)
+        )
         if len(cyto_index) <= 0:
             # nowhere to place cells
             return
@@ -125,7 +127,7 @@ class NeutrophilCellList(CellList):
                 yj = cell_voxel.y + dy
                 xk = cell_voxel.x + dx
                 if grid.is_valid_voxel(Voxel(x=xk, y=yj, z=zi)):
-                    if tissue[zi, yj, xk] != TissueType.AIR.value:
+                    if tissue[zi, yj, xk] != GridTissueType.AIR.value:
                         valid_voxel_offsets.append((dx, dy, dz))
                         if cyto[zi, yj, xk] >= rec_r:
                             above_threshold_voxel_offsets.append((cyto[zi, yj, xk], (dx, dy, dz)))

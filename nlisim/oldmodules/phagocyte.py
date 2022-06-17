@@ -10,7 +10,7 @@ from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point, Voxel
 from nlisim.grid import RectangularGrid
 from nlisim.random import rg
-from nlisim.util import TissueType
+from nlisim.util import GridTissueType
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -160,10 +160,10 @@ class PhagocyteCellList(CellList):
                         xi = vox.x + x
                         if grid.is_valid_voxel(Voxel(x=xi, y=yj, z=zk)):
                             if tissue[zk, yj, xi] in [
-                                TissueType.SURFACTANT.value,
-                                TissueType.BLOOD.value,
-                                TissueType.EPITHELIUM.value,
-                                TissueType.PORE.value,
+                                GridTissueType.SURFACTANT.value,
+                                GridTissueType.BLOOD.value,
+                                GridTissueType.EPITHELIUM.value,
+                                GridTissueType.PORE.value,
                             ]:
                                 p[i] = logistic(molecule[zk, yj, xi], drift_lambda, drift_bias)
                                 p_tot += p[i]

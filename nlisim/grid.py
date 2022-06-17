@@ -94,7 +94,32 @@ class TetrahedralMesh(object):
     point_dual_volumes: np.ndarray = attrib()
 
     @classmethod
-    def load(cls, filename: str) -> 'TetrahedralMesh':
+    def load_hdf5(cls, file: H5File) -> 'TetrahedralMesh':
+        points = np.array(file['points'], dtype=_dtype_float64)
+        element_point_indices = np.array(file['element_point_indices'], dtype=int)
+        element_tissue_type = np.array(file['element_tissue_type'], dtype=int)
+        (
+            element_neighbors,
+            element_volumes,
+            point_dual_volumes,
+            total_volume,
+        ) = cls.compute_derived_quantities(element_point_indices, points)
+        return cls(
+            points=points,
+            element_point_indices=element_point_indices,
+            element_neighbors=element_neighbors,
+            element_tissue_type=element_tissue_type,
+            element_volumes=element_volumes,
+            total_volume=total_volume,
+            point_dual_volumes=point_dual_volumes,
+        )
+
+    def save_hdf5(self, file: H5File) -> None:
+        for dim in ('points', 'element_point_indices', 'element_tissue_type'):
+            file.create_dataset(dim, data=getattr(self, dim))
+
+    @classmethod
+    def load_vtk(cls, filename: str) -> 'TetrahedralMesh':
         reader = vtkXMLUnstructuredGridReader()
         reader.SetFileName(filename)
         # noinspection PyArgumentList
@@ -110,17 +135,38 @@ class TetrahedralMesh(object):
 
         element_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
         element_tissue_type.flags['WRITEABLE'] = False
+        print(f"{np.max(element_tissue_type)=}")
 
         # tetrahedral meshes look like (4, pt, pt, pt, pt, 4, pt, pt, pt, pt, 4, ...)
         element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((-1, 5))[:, 1:]
         element_point_indices.flags['WRITEABLE'] = False
 
+        (
+            element_neighbors,
+            element_volumes,
+            point_dual_volumes,
+            total_volume,
+        ) = cls.compute_derived_quantities(element_point_indices, points)
+
+        return cls(
+            points=points,
+            element_point_indices=element_point_indices,
+            element_neighbors=element_neighbors,
+            element_tissue_type=element_tissue_type,
+            element_volumes=element_volumes,
+            total_volume=total_volume,
+            point_dual_volumes=point_dual_volumes,
+        )
+
+    @classmethod
+    def compute_derived_quantities(
+        cls, element_point_indices, points
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         # element_neighbors: np.ndarray
         # if data.GetCells().HasArray("neighbors") == 1:
         #     # use any precomputed dual
         #     element_neighbors = vtk_to_numpy(data.GetCellData().GetArray("neighbors"))
         # else:
-
         # TODO: see if vtk has this
         # if we don't have a precomputed 1-skeleton of the dual, compute it now
         # collect all faces and their incident tetrahedra
@@ -145,28 +191,16 @@ class TetrahedralMesh(object):
             idx = np.argmin(element_neighbors[tet_b])
             element_neighbors[tet_b, idx] = tet_a
         element_neighbors.flags['WRITEABLE'] = False
-
         # precompute element volumes
         tet_points = points[element_point_indices, :]
         element_volumes = np.abs(
             np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0
         )
         element_volumes.flags['WRITEABLE'] = False
-
         total_volume = float(np.sum(element_volumes))
-
         # distribute the volume of tetrahedra evenly amongst its points
         point_dual_volumes = np.sum(element_volumes[element_point_indices], axis=1) / 4.0
-
-        return cls(
-            points=points,
-            element_point_indices=element_point_indices,
-            element_neighbors=element_neighbors,
-            element_tissue_type=element_tissue_type,
-            element_volumes=element_volumes,
-            total_volume=total_volume,
-            point_dual_volumes=point_dual_volumes,
-        )
+        return element_neighbors, element_volumes, point_dual_volumes, total_volume
 
     def evaluate_point_function(
         self, *, point_function: np.ndarray, point: Point, element_index: int

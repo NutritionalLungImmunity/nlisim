@@ -10,7 +10,7 @@ from attr import attrib, attrs
 # noinspection PyPackageRequirements
 import numpy as np
 
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, TissueType
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
@@ -18,13 +18,13 @@ from nlisim.modules.hemolysin import HemolysinState
 from nlisim.modules.macrophage import MacrophageState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import TissueType, activation_function
+from nlisim.util import activation_function
 
 
 # note: treating these a bit more like molecules than cells.
 # hence the adaptation of molecule_point_field_factory
 def molecule_point_field_factory(self: 'ErythrocyteState') -> np.ndarray:
-    return self.global_state.mesh.allocate_point_variable(
+    return self.global_state.mesh.allocate_volume_variable(
         dtype=[('count', np.int64), ('hemoglobin', np.float64), ('hemorrhage', bool)]
     )
 
@@ -46,8 +46,7 @@ class ErythrocyteModel(ModuleModel):
 
     def initialize(self, state: State):
         erythrocyte: ErythrocyteState = state.erythrocyte
-        voxel_volume = state.voxel_volume
-        lung_tissue = state.lung_tissue
+        mesh: TetrahedralMesh = state.mesh
         time_step_size: float = self.time_step
 
         erythrocyte.kd_hemo = self.config.getfloat('kd_hemo')
@@ -66,11 +65,13 @@ class ErythrocyteModel(ModuleModel):
 
         # initialize cells
         # TODO: discuss
-        erythrocyte.cells[lung_tissue == TissueType.BLOOD] = erythrocyte.init_erythrocyte_level
+        erythrocyte.cells[
+            mesh.element_tissue_type == TissueType.CAPILLARY
+        ] = erythrocyte.init_erythrocyte_level
         erythrocyte.pr_macrophage_phagocytize_erythrocyte = -math.expm1(
             -time_step_size
             / 60
-            / voxel_volume
+            / mesh.element_volumes
             / erythrocyte.pr_macrophage_phagocytize_erythrocyte_param
         )
 

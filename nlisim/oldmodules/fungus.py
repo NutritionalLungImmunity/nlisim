@@ -9,7 +9,7 @@ from nlisim.coordinates import Point, Voxel
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import GridTissueType
 
 
 class FungusCellData(CellData):
@@ -115,7 +115,7 @@ class FungusCellList(CellList):
         grid = self.mesh
         if init_num > 0:
             points = np.zeros((init_num, 3))
-            indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
+            indices = np.argwhere(tissue == GridTissueType.EPITHELIUM.value)
             if len(indices) > 0:
                 rg.shuffle(indices)
                 for i in range(init_num):

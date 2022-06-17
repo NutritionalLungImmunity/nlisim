@@ -2,11 +2,15 @@ from pathlib import Path
 import shutil
 from typing import Tuple
 
+# noinspection PyPackageRequirements
 import click
 import click_pathlib
+
+# noinspection PyPackageRequirements
 from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
+from nlisim.solver import Status
 
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
@@ -38,11 +42,17 @@ def run(obj, target_time: float) -> None:
     config = obj['config']
 
     with tqdm(
-        desc='Running simulation',
+        desc='Initializing simulation',
         unit='hour',
         total=target_time,
     ) as pbar:
-        for state, _ in run_iterator(config, target_time):
+        for state, status in run_iterator(config, target_time):
+            if status == Status.initialize:
+                pbar.set_description('Initializing simulation')
+            elif status == Status.time_step:
+                pbar.set_description('Running simulation')
+            elif status == Status.finalize:
+                pbar.set_description('Finalizing simulation')
             pbar.update(state.time - pbar.n)
 
 

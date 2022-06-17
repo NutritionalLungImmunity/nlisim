@@ -47,7 +47,7 @@ class Liver(ModuleModel):
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State
         from nlisim.modules.transferrin import TransferrinState
-        from nlisim.util import TissueType
+        from nlisim.util import GridTissueType
 
         liver: LiverState = state.liver
         transferrin: TransferrinState = state.transferrin
@@ -57,7 +57,7 @@ class Liver(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # interact with IL6
-        mask = state.lung_tissue != TissueType.AIR
+        mask = state.lung_tissue != GridTissueType.AIR
         global_il6_concentration = np.sum(il6.field[mask] * mesh.point_dual_volumes) / (
             2 * mesh.total_volume
         )  # div 2: serum, units: aM

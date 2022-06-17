@@ -13,7 +13,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.oldmodules.fungus import FungusCellData, FungusCellList
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import GridTissueType
 
 MAX_PHAGOSOME_LENGTH = 100
 
@@ -237,7 +237,7 @@ class Epithelium(ModuleModel):
         epithelium.cells = EpitheliumCellList(grid=grid)
         epithelium.p_internalization = self.config.getfloat('p_internalization')
 
-        indices = np.argwhere(tissue == TissueType.EPITHELIUM.value)
+        indices = np.argwhere(tissue == GridTissueType.EPITHELIUM.value)
 
         for i in range(0, len(indices)):
             x = grid.x[indices[i][2]]

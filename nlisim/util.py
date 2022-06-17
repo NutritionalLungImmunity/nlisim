@@ -29,7 +29,12 @@ def turnover_rate(
 ):
     # Note: x and x_system should be both either in M or mols, not a mixture of the two.
     if x_system == 0.0:
-        return np.full(shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t))
+        if isinstance(x, float):
+            return np.exp(-base_turnover_rate * rel_cyt_bind_unit_t)
+        else:
+            return np.full(
+                shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t)
+            )
     # NOTE: in formula, voxel_volume cancels. So I cancelled it.
     y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
 
@@ -131,7 +136,7 @@ def michaelian_kinetics_molarity(
     return h * k_cat * enzyme * substrate / (substrate + k_m)
 
 
-class TissueType(IntEnum):
+class GridTissueType(IntEnum):
     AIR = 0
     BLOOD = 1
     OTHER = 2

@@ -68,6 +68,7 @@ class MIP2(ModuleModel):
             'pneumocyte_secretion_rate'
         )  # units: atto-mol * cell^-1 * h^-1
         mip2.k_d = self.config.getfloat('k_d')  # units: atto-mol * cell^-1 * h^-1
+        mip2.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
         mip2.turnover_rate = turnover_rate(

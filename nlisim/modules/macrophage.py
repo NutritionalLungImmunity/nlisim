@@ -101,7 +101,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        from nlisim.util import TissueType
+        from nlisim.util import GridTissueType
 
         macrophage: MacrophageState = state.macrophage
         time_step_size: float = self.time_step
@@ -145,7 +145,7 @@ class Macrophage(PhagocyteModel):
         # initialize macrophages cells. Cells will be distributed into non-air layers, in a
         # uniformly random manner.
         init_num_macrophages = self.config.getint('init_num_macrophages')
-        locations = np.where(mesh.element_tissue_type != TissueType.AIR)[0]
+        locations = np.where(mesh.element_tissue_type != GridTissueType.AIR)[0]
         volumes = mesh.element_volumes[locations]
         probabilities = volumes / np.sum(volumes)
         for _ in range(init_num_macrophages):
@@ -333,7 +333,7 @@ class Macrophage(PhagocyteModel):
         """
         # macrophages are attracted by MIP1b
         from nlisim.modules.mip1b import MIP1BState
-        from nlisim.util import TissueType, activation_function
+        from nlisim.util import GridTissueType, activation_function
 
         mip1b: MIP1BState = state.mip1b
         mesh: TetrahedralMesh = state.mesh
@@ -371,7 +371,7 @@ class Macrophage(PhagocyteModel):
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
         for iteration in range(4):
-            if mesh.element_tissue_type[new_element_index] != TissueType.AIR:
+            if mesh.element_tissue_type[new_element_index] != GridTissueType.AIR:
                 cell['velocity'][:] = dp_dt
                 return new_position
             dp_dt /= 2.0

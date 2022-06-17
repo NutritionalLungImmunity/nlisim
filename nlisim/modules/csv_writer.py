@@ -24,7 +24,7 @@ class CSVWriter(ModuleModel):
         now = state.time
 
         summary_stats = generate_summary_stats(state)
-        data_columns = [now,] + list(
+        data_columns = [now] + list(
             itertools.chain.from_iterable(
                 list(module_stats.values()) for module, module_stats in summary_stats.items()
             )

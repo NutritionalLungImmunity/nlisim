@@ -1,7 +1,12 @@
 from typing import Any, Tuple
 
+# noinspection PyPackageRequirements
 import numpy as np
+
+# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix, dok_matrix, eye, identity
+
+# noinspection PyPackageRequirements
 from scipy.sparse.linalg import cg
 from skfem import Basis, ElementTetP1, MeshTet1, condense
 from skfem.models import laplace
@@ -14,9 +19,7 @@ from nlisim.state import State
 _dtype_float64 = np.dtype('float64')
 
 
-def discrete_laplacian(
-    grid: RectangularGrid, mask: np.ndarray, dtype: np.DTypeLike = _dtype_float64
-) -> csr_matrix:
+def discrete_laplacian(grid: RectangularGrid, mask: np.ndarray, dtype=_dtype_float64) -> csr_matrix:
     """Return a discrete laplacian operator for the given restricted mesh.
 
     This computes a standard laplacian operator as a scipy linear operator, except it is
@@ -147,7 +150,7 @@ def assemble_mesh_laplacian_crank_nicholson(
     mesh: TetrahedralMesh = state.mesh
 
     # load a tetrahedral mesh, will be a MeshTet1
-    skmesh: MeshTet1 = MeshTet1(doflocs=mesh.points, t=mesh.element_point_indices)
+    skmesh: MeshTet1 = MeshTet1(doflocs=mesh.points.T, t=mesh.element_point_indices.T)
     basis = Basis(skmesh, ElementTetP1())
 
     # create matrices for Crank-Nicholson method

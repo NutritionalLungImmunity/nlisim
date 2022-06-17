@@ -46,7 +46,7 @@ class LactoferrinState(ModuleState):
     p2: float  # units: none
     p3: float  # units: none
     ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
-    ma_iron_import_rate: float  # units: proportion * cell^-1 * step^-1
+    ma_iron_import_rate_vol_unit_t: float  # units: L * cell^-1 * step^-1
     neutrophil_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     diffusion_constant: float  # units: µm^2/min
@@ -63,7 +63,6 @@ class Lactoferrin(ModuleModel):
 
     def initialize(self, state: State) -> State:
         lactoferrin: LactoferrinState = state.lactoferrin
-        voxel_volume: float = state.voxel_volume  # units: L
 
         # config file values
         lactoferrin.k_m_tf_lac = self.config.getfloat('k_m_tf_lac')  # units: aM
@@ -76,14 +75,17 @@ class Lactoferrin(ModuleModel):
         lactoferrin.neutrophil_secretion_rate = self.config.getfloat(
             'neutrophil_secretion_rate'
         )  # units: atto-mol * cell^-1 * h^-1
+        lactoferrin.diffusion_constant = self.config.getfloat(
+            'diffusion_constant'
+        )  # units: µm^2/min
 
         # computed values
-        lactoferrin.ma_iron_import_rate = (
-            lactoferrin.ma_iron_import_rate_vol / voxel_volume * (self.time_step / 60)
-        )  # units: proportion * cell^-1 * step^-1
         lactoferrin.neutrophil_secretion_rate_unit_t = lactoferrin.neutrophil_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
+        lactoferrin.ma_iron_import_rate_vol_unit_t = lactoferrin.ma_iron_import_rate_vol * (
+            self.time_step / 60
+        )  # units: L * cell^-1 * step^-1
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
@@ -119,7 +121,11 @@ class Lactoferrin(ModuleModel):
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_element_index: int = macrophage.cells.element_index[macrophage_cell_index]
 
-            uptake_proportion = np.minimum(lactoferrin.ma_iron_import_rate, 1.0)
+            uptake_proportion = np.minimum(
+                lactoferrin.ma_iron_import_rate_vol_unit_t
+                / mesh.element_volumes[macrophage_element_index],
+                1.0,
+            )  # units: L * cell^-1 * step^-1 / L = proportion * cell^-1 * step^-1
 
             qtty_fe2 = (
                 mesh.evaluate_point_function(
@@ -128,7 +134,7 @@ class Lactoferrin(ModuleModel):
                     element_index=macrophage_element_index,
                 )
                 * uptake_proportion
-            )
+            )  # units: atto-M * cell^-1 * step^-1
             qtty_fe = (
                 mesh.evaluate_point_function(
                     point_function=lactoferrin.field['LactoferrinFe'],
@@ -136,7 +142,7 @@ class Lactoferrin(ModuleModel):
                     element_index=macrophage_element_index,
                 )
                 * uptake_proportion
-            )
+            )  # units: atto-M * cell^-1 * step^-1
 
             uptake_in_element(
                 mesh=mesh,
@@ -150,7 +156,9 @@ class Lactoferrin(ModuleModel):
                 element_index=macrophage_element_index,
                 amount=qtty_fe,
             )
-            macrophage_cell['iron_pool'] += 2 * qtty_fe2 + qtty_fe
+            macrophage_cell['iron_pool'] += (2 * qtty_fe2 + qtty_fe) * mesh.element_volumes[
+                macrophage_element_index
+            ]  # units: atto-M * cell^-1 * step^-1 * L = atto-mol * cell^-1 * step^-1
 
         # active and interacting neutrophils secrete lactoferrin
         for neutrophil_cell_index in neutrophil.cells.alive():

@@ -25,7 +25,7 @@ from nlisim.modules.phagocyte import (
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import (
-    TissueType,
+    GridTissueType,
     activation_function,
     sample_point_from_simplex,
     secrete_in_element,
@@ -140,7 +140,7 @@ class Neutrophil(PhagocyteModel):
 
         # initialize neutrophil cells. Cells will be distributed into non-air layers, in a
         # uniformly random manner.
-        locations = np.where(mesh.element_tissue_type != TissueType.AIR)[0]
+        locations = np.where(mesh.element_tissue_type != GridTissueType.AIR)[0]
         volumes = mesh.element_volumes[locations]
         probabilities = volumes / np.sum(volumes)
         for _ in range(neutrophil.init_num_neutrophils):
@@ -399,7 +399,7 @@ class Neutrophil(PhagocyteModel):
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
         for iteration in range(4):
-            if mesh.element_tissue_type[new_element_index] != TissueType.AIR:
+            if mesh.element_tissue_type[new_element_index] != GridTissueType.AIR:
                 cell['velocity'][:] = dp_dt
                 return new_position
             dp_dt /= 2.0

@@ -22,7 +22,7 @@ from nlisim.modules.phagocyte import (
 from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import (
-    TissueType,
+    GridTissueType,
     activation_function,
     sample_point_from_simplex,
     secrete_in_element,
@@ -77,7 +77,8 @@ class PneumocyteState(PhagocyteModuleState):
     # p_il6_qtty: float  # units: mol * cell^-1 * h^-1
     # p_il8_qtty: float # units: mol * cell^-1 * h^-1
     p_tnf_qtty: float  # units: atto-mol * cell^-1 * h^-1
-    pr_p_int: float  # units: probability
+    # pr_p_int: float  # units: probability
+    pr_non_activating_per_vol: float  # units: probability
     pr_p_int_param: float
 
 
@@ -87,7 +88,6 @@ class Pneumocyte(PhagocyteModel):
 
     def initialize(self, state: State):
         pneumocyte: PneumocyteState = state.pneumocyte
-        voxel_volume: float = state.voxel_volume
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
 
@@ -106,12 +106,15 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
-        pneumocyte.pr_p_int = -math.expm1(
-            -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        # pneumocyte.pr_p_int = -math.expm1(
+        #     -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
+        # )  # units: probability
+        pneumocyte.pr_non_activating_per_vol = math.exp(
+            -time_step_size / 60 / pneumocyte.pr_p_int_param
         )  # units: probability
 
         # initialize cells, placing one per epithelial element TODO: something better
-        locations = np.where(mesh.element_tissue_type == TissueType.EPITHELIUM)[0]
+        locations = np.where(mesh.element_tissue_type == GridTissueType.EPITHELIUM)[0]
         volumes = mesh.element_volumes[locations]
         probabilities = volumes / np.sum(volumes)
         for _ in range(len(locations)):
@@ -193,11 +196,14 @@ class Pneumocyte(PhagocyteModel):
                         continue
 
                     if pneumocyte_cell['status'] != PhagocyteStatus.ACTIVE:
-                        if rg.uniform() < pneumocyte.pr_p_int:
+                        if rg.uniform() > np.float_power(
+                            pneumocyte.pr_non_activating_per_vol,
+                            1 / mesh.element_volumes[pneumocyte_cell_element],
+                        ):
                             pneumocyte_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
-                        # TODO: I don't get this, looks like it zeros out the iteration
-                        #  when activating
+                        # active pneumocytes reset status count (i.e. _hard_ remain active)
+                        # when in the presence of a aspergillus cell
                         pneumocyte_cell['status_iteration'] = 0
 
             # # secrete IL6
