@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -44,6 +45,7 @@ class Hemolysin(ModuleModel):
     StateClass = HemolysinState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         hemolysin: HemolysinState = state.hemolysin
 
         # config file values

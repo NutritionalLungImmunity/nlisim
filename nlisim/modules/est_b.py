@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -53,6 +54,7 @@ class EstB(ModuleModel):
     StateClass = EstBState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         estb: EstBState = state.estb
 
         # config file values

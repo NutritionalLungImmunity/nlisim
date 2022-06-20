@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -53,6 +54,7 @@ class MIP2(ModuleModel):
     StateClass = MIP2State
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         mip2: MIP2State = state.mip2
         molecules: MoleculesState = state.molecules
 

@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -62,6 +63,7 @@ class Lactoferrin(ModuleModel):
     StateClass = LactoferrinState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         lactoferrin: LactoferrinState = state.lactoferrin
 
         # config file values
@@ -148,12 +150,14 @@ class Lactoferrin(ModuleModel):
                 mesh=mesh,
                 point_field=lactoferrin.field['LactoferrinFe2'],
                 element_index=macrophage_element_index,
+                point=macrophage_cell['point'],
                 amount=qtty_fe2,
             )
             uptake_in_element(
                 mesh=mesh,
                 point_field=lactoferrin.field['LactoferrinFe'],
                 element_index=macrophage_element_index,
+                point=macrophage_cell['point'],
                 amount=qtty_fe,
             )
             macrophage_cell['iron_pool'] += (2 * qtty_fe2 + qtty_fe) * mesh.element_volumes[

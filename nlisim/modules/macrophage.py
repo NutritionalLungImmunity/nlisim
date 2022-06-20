@@ -1,5 +1,6 @@
+import logging
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # noinspection PyPackageRequirements
 import attr
@@ -22,7 +23,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import sample_point_from_simplex, tetrahedral_gradient
+from nlisim.util import GridTissueType, sample_point_from_simplex, tetrahedral_gradient
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -101,8 +102,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        from nlisim.util import GridTissueType
-
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         macrophage: MacrophageState = state.macrophage
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -147,17 +147,25 @@ class Macrophage(PhagocyteModel):
         init_num_macrophages = self.config.getint('init_num_macrophages')
         locations = np.where(mesh.element_tissue_type != GridTissueType.AIR)[0]
         volumes = mesh.element_volumes[locations]
-        probabilities = volumes / np.sum(volumes)
-        for _ in range(init_num_macrophages):
-            element_index = locations[np.argmax(np.random.random() < probabilities)]
-            simplex_coords = sample_point_from_simplex()
-            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
+        cdf = np.cumsum(volumes)  # define the cumulative distribution function so that elements
+        cdf /= cdf[-1]  # are selected proportionally to their volumes
+        macrophage_elements = locations[
+            np.argmax(np.random.random((init_num_macrophages, 1)) < cdf, axis=1)
+        ]
+        simplex_coords = sample_point_from_simplex(num_points=init_num_macrophages)
+        points = np.einsum(
+            'ijk,ji->ik',
+            mesh.points[mesh.element_point_indices[macrophage_elements]],
+            simplex_coords,
+        )
+        for element_index, point in zip(macrophage_elements, points):
             self.create_macrophage(
                 state=state,
                 x=point[2],
                 y=point[1],
                 z=point[0],
                 iron_pool=macrophage.ma_internal_iron,
+                element_index=element_index,
             )
 
         return state
@@ -382,7 +390,9 @@ class Macrophage(PhagocyteModel):
         return cell['point']
 
     @staticmethod
-    def create_macrophage(*, state: State, x: float, y: float, z: float, **kwargs) -> None:
+    def create_macrophage(
+        *, state: State, x: float, y: float, z: float, element_index: Optional[int] = None, **kwargs
+    ) -> None:
         """
         Create a new macrophage cell
 
@@ -394,6 +404,8 @@ class Macrophage(PhagocyteModel):
         y : float
         z : float
             coordinates of created macrophage
+        element_index: int
+            id of element that the macrophage lives in, optional.
         kwargs
             parameters for macrophage, passed to MacrophageCellData.create_cell
 
@@ -412,7 +424,8 @@ class Macrophage(PhagocyteModel):
                 point=Point(x=x, y=y, z=z),
                 iron_pool=iron_pool,
                 **kwargs,
-            )
+            ),
+            element_index=element_index,
         )
 
     def update_status(

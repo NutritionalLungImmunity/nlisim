@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -51,6 +52,7 @@ class TNFa(ModuleModel):
     StateClass = TNFaState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         tnfa: TNFaState = state.tnfa
         molecules: MoleculesState = state.molecules
 
@@ -128,7 +130,11 @@ class TNFa(ModuleModel):
             if macrophage_cell['status'] in {PhagocyteStatus.RESTING, PhagocyteStatus.ACTIVE}:
                 if (
                     activation_function(
-                        x=tnfa.field[macrophage_cell_element],
+                        x=mesh.evaluate_point_function(
+                            point_function=tnfa.field,
+                            point=macrophage_cell['point'],
+                            element_index=macrophage_cell_element,
+                        ),
                         k_d=tnfa.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=1.0,  # already a concentration

@@ -1,16 +1,16 @@
+import logging
 import math
 
 # noinspection PyPackageRequirements
 from attr import attrs
-
-# noinspection PyPackageRequirements
-import numpy as np
 
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
+
+# noinspection PyPackageRequirements
 
 
 @attrs(kw_only=True, repr=False)
@@ -29,6 +29,7 @@ class Liver(ModuleModel):
     StateClass = LiverState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         liver: LiverState = state.liver
 
         # config file values
@@ -47,7 +48,6 @@ class Liver(ModuleModel):
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State
         from nlisim.modules.transferrin import TransferrinState
-        from nlisim.util import GridTissueType
 
         liver: LiverState = state.liver
         transferrin: TransferrinState = state.transferrin
@@ -57,8 +57,7 @@ class Liver(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # interact with IL6
-        mask = state.lung_tissue != GridTissueType.AIR
-        global_il6_concentration = np.sum(il6.field[mask] * mesh.point_dual_volumes) / (
+        global_il6_concentration = mesh.integrate_point_function(il6.field) / (
             2 * mesh.total_volume
         )  # div 2: serum, units: aM
         if global_il6_concentration > liver.il6_threshold:

@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -44,6 +45,7 @@ class Hepcidin(ModuleModel):
     StateClass = HepcidinState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values

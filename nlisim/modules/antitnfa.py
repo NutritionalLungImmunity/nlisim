@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -45,6 +46,7 @@ class AntiTNFa(ModuleModel):
     StateClass = AntiTNFaState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         anti_tnf_a: AntiTNFaState = state.antitnfa
         # mesh: TetrahedralMesh = state.mesh
 
@@ -65,7 +67,7 @@ class AntiTNFa(ModuleModel):
         )  # units in exponent: (min/step) / min -> 1/step
 
         # initialize concentration field TODO: tissue vs. air
-        anti_tnf_a.field = anti_tnf_a.system_concentration
+        anti_tnf_a.field.fill(anti_tnf_a.system_concentration)
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

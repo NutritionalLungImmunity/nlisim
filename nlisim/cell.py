@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 from attr import attrib, attrs
 from h5py import Group
@@ -267,7 +267,7 @@ class CellList(object):
         mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
         return sample_indices[mask]
 
-    def append(self, cell: CellType) -> int:
+    def append(self, cell: CellType, element_index: Optional[int] = None) -> int:
         """Append a new cell the the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
@@ -275,7 +275,8 @@ class CellList(object):
         cell_index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[cell_index] = cell
-        element_index = self.mesh.get_element_index(cell['point'])
+        if element_index is None:
+            element_index = self.mesh.get_element_index(cell['point'])
         self._element_index[element_index].add(cell_index)
         self._reverse_element_index[cell_index] = element_index
         return cell_index

@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -40,6 +41,7 @@ class ROS(ModuleModel):
     StateClass = ROSState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         ros: ROSState = state.ros
 
         # config file values

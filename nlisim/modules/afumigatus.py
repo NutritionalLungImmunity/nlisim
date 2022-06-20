@@ -1,4 +1,5 @@
 from enum import IntEnum, unique
+import logging
 import math
 from queue import Queue
 from typing import Any, Dict, Tuple
@@ -197,6 +198,7 @@ class Afumigatus(ModuleModel):
     from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 
     def initialize(self, state: State):
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
@@ -242,15 +244,19 @@ class Afumigatus(ModuleModel):
         # sufactant layer, in a uniformly random manner.
         init_infection_num = self.config.getint('init_infection_num')
         locations = np.where(mesh.element_tissue_type == TissueType.ALVEOLAR_SURFACTANT)[0]
-        print(f"{np.max(mesh.element_tissue_type)=}")
-        print(f"{locations=}")
         volumes = mesh.element_volumes[locations]
-        probabilities = volumes / np.sum(volumes)
-        for _ in range(init_infection_num):
-            element_index = locations[np.argmax(np.random.random() < probabilities)]
-            simplex_coords = sample_point_from_simplex()
-            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
-
+        cdf = np.cumsum(volumes)  # define the cumulative distribution function so that elements
+        cdf /= cdf[-1]  # are selected proportionally to their volumes
+        afumigatus_elements = locations[
+            np.argmax(np.random.random((init_infection_num, 1)) < cdf, axis=1)
+        ]
+        simplex_coords = sample_point_from_simplex(num_points=init_infection_num)
+        points = np.einsum(
+            'ijk,ji->ik',
+            mesh.points[mesh.element_point_indices[afumigatus_elements]],
+            simplex_coords,
+        )
+        for element_index, point in zip(afumigatus_elements, points):
             afumigatus.cells.append(
                 AfumigatusCellData.create_cell(
                     point=Point(
@@ -259,7 +265,8 @@ class Afumigatus(ModuleModel):
                         z=point[0],
                     ),
                     iron_pool=afumigatus.init_iron,
-                )
+                ),
+                element_index=element_index,
             )
 
         return state

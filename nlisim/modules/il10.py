@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -48,6 +49,7 @@ class IL10(ModuleModel):
     StateClass = IL10State
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         il10: IL10State = state.il10
 
         # config file values

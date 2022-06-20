@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -19,7 +20,7 @@ from nlisim.diffusion import (
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction
+from nlisim.util import iron_tf_reaction, secrete_in_element, uptake_in_element
 
 
 def molecule_point_field_factory(self: 'TransferrinState') -> np.ndarray:
@@ -47,10 +48,10 @@ class TransferrinState(ModuleState):
     default_tffe2_concentration: float  # units: atto-M
     tf_intercept: float  # units: atto-M
     tf_slope: float  # units: atto-M
-    ma_iron_import_rate_vol: float  # units: L * cell^-1 * h^-1
-    ma_iron_import_rate_vol_unit_t: float  # units: L * cell^-1 * step^-1
-    ma_iron_export_rate_vol: float  # units: L * cell^-1 * h^-1
-    ma_iron_export_rate_vol_unit_t: float  # units: L * cell^-1 * step^-1
+    ma_iron_import_rate: float  # units: L * cell^-1 * h^-1
+    ma_iron_import_rate_unit_t: float  # units: L * cell^-1 * step^-1
+    ma_iron_export_rate: float  # units: L * mol^-1 * cell^-1 * h^-1
+    ma_iron_export_rate_unit_t: float  # units: L * mol^-1 * cell^-1 * step^-1
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -64,6 +65,7 @@ class Transferrin(ModuleModel):
     StateClass = TransferrinState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         transferrin: TransferrinState = state.transferrin
 
         # config file values
@@ -86,12 +88,12 @@ class Transferrin(ModuleModel):
             'default_tffe2_rel_concentration'
         )  # units: proportion
 
-        transferrin.ma_iron_import_rate_vol = self.config.getfloat(
+        transferrin.ma_iron_import_rate = self.config.getfloat(
             'ma_iron_import_rate_vol'
         )  # units: L * cell^-1 * h^-1
-        transferrin.ma_iron_export_rate_vol = self.config.getfloat(
+        transferrin.ma_iron_export_rate = self.config.getfloat(
             'ma_iron_export_rate_vol'
-        )  # units: L * cell^-1 * h^-1
+        )  # units: L * mol^-1 * cell^-1 * h^-1
 
         transferrin.diffusion_constant = self.config.getfloat(
             'diffusion_constant'
@@ -111,12 +113,12 @@ class Transferrin(ModuleModel):
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
         )  # units: atto-M
 
-        transferrin.ma_iron_import_rate_vol_unit_t = transferrin.ma_iron_import_rate_vol / (
+        transferrin.ma_iron_import_rate_unit_t = transferrin.ma_iron_import_rate / (
             self.time_step / 60
         )  # units: L * cell^-1 * step^-1
-        transferrin.ma_iron_export_rate_vol_unit_t = transferrin.ma_iron_export_rate_vol / (
+        transferrin.ma_iron_export_rate_unit_t = transferrin.ma_iron_export_rate / (
             self.time_step / 60
-        )  # units: L * cell^-1 * step^-1
+        )  # units: L * mol^-1 * cell^-1 * step^-1
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
@@ -127,9 +129,9 @@ class Transferrin(ModuleModel):
         transferrin.dofs = dofs
 
         # initialize the molecular field
-        transferrin.field['Tf'] = transferrin.default_apotf_concentration
-        transferrin.field['TfFe'] = transferrin.default_tffe_concentration
-        transferrin.field['TfFe2'] = transferrin.default_tffe2_concentration
+        transferrin.field['Tf'].fill(transferrin.default_apotf_concentration)
+        transferrin.field['TfFe'].fill(transferrin.default_tffe_concentration)
+        transferrin.field['TfFe2'].fill(transferrin.default_tffe2_concentration)
 
         return state
 
@@ -150,26 +152,49 @@ class Transferrin(ModuleModel):
             macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
 
             uptake_proportion = np.minimum(
-                transferrin.ma_iron_import_rate_vol / mesh.element_volumes[macrophage_cell_element],
+                transferrin.ma_iron_import_rate_unit_t
+                / mesh.element_volumes[macrophage_cell_element],
                 1.0,
             )  # units: L * cell^-1 * step^-1 / L = proportion * cell^-1 * step^-1
             qtty_fe2 = (
-                transferrin.field['TfFe2'][macrophage_cell_element] * uptake_proportion
+                mesh.evaluate_point_function(
+                    point_function=transferrin.field['TfFe2'],
+                    element_index=macrophage_cell_element,
+                    point=macrophage_cell['point'],
+                )
+                * uptake_proportion
             )  # units: atto-M * cell^-1 * step^-1
             qtty_fe = (
-                transferrin.field['TfFe'][macrophage_cell_element] * uptake_proportion
+                mesh.evaluate_point_function(
+                    point_function=transferrin.field['TfFe'],
+                    element_index=macrophage_cell_element,
+                    point=macrophage_cell['point'],
+                )
+                * uptake_proportion
             )  # units: atto-M * cell^-1 * step^-1
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
-            transferrin.field['TfFe2'][
-                macrophage_cell_element
-            ] -= qtty_fe2  # units: atto-M * cell^-1 * step^-1
-            transferrin.field['TfFe'][
-                macrophage_cell_element
-            ] -= qtty_fe  # units: atto-M * cell^-1 * step^-1
-            transferrin.field['Tf'][macrophage_cell_element] += (
-                qtty_fe + qtty_fe2
-            )  # units: atto-M * cell^-1 * step^-1
+            uptake_in_element(
+                mesh=mesh,
+                point_field=transferrin.field['TfFe2'],
+                element_index=macrophage_cell_element,
+                point=macrophage_cell['point'],
+                amount=qtty_fe2,  # units: atto-M * cell^-1 * step^-1
+            )
+            uptake_in_element(
+                mesh=mesh,
+                point_field=transferrin.field['TfFe'],
+                element_index=macrophage_cell_element,
+                point=macrophage_cell['point'],
+                amount=qtty_fe,  # units: atto-M * cell^-1 * step^-1
+            )
+            secrete_in_element(
+                mesh=mesh,
+                point_field=transferrin.field['Tf'],
+                element_index=macrophage_cell_element,
+                point=macrophage_cell['point'],
+                amount=qtty_fe + qtty_fe2,  # units: atto-M * cell^-1 * step^-1
+            )
             macrophage_cell['iron_pool'] += (2 * qtty_fe2 + qtty_fe) * mesh.point_dual_volumes[
                 macrophage_cell_element
             ]  # units: atto-M * cell^-1 * step^-1 * L = atto-mol * cell^-1 * step^-1
@@ -179,14 +204,19 @@ class Transferrin(ModuleModel):
                 PhagocyteStatus.ACTIVATING,
             }:
                 # amount of iron to export is bounded by the amount of iron in the cell as well
-                # as the amount which can be accepted by transferrin TODO: ask why not 2*Tf+TfFe?
+                # as the amount which can be accepted by transferrin
+                transferrin_in_element = mesh.integrate_point_function_single_element(
+                    element_index=macrophage_cell_element,
+                    point_function=transferrin.field['Tf'],
+                )  # units: atto-mols
                 qtty: np.float64 = min(
-                    macrophage_cell['iron_pool'],
-                    2 * transferrin.field['Tf'][macrophage_cell_element] * mesh.element_volumes[macrophage_cell_element],
+                    macrophage_cell['iron_pool'],  # units: atto-mols
+                    2 * transferrin_in_element,  # units: atto-mols
                     macrophage_cell['iron_pool']
-                    * transferrin.field['Tf'][macrophage_cell_element]
-                    * transferrin.ma_iron_export_rate,
-                ) # units: 1) atto-mols 2) atto-M * L = atto-mols 3) atto-mols * att
+                    * transferrin_in_element
+                    / mesh.element_volumes[macrophage_cell_element]  # TODO: verify units
+                    * transferrin.ma_iron_export_rate_unit_t,
+                )  # units: 3) atto-mols * atto-mols * L^-1 * (L * mol^-1 * cell^-1 * step^-1)
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
                     tf=transferrin.field['Tf'][macrophage_cell_element],
@@ -195,12 +225,14 @@ class Transferrin(ModuleModel):
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                tffe_qtty = rel_tf_fe * qtty # units: atto-M
-                tffe2_qtty = (qtty - tffe_qtty) / 2 # units: atto-M
+                tffe_qtty = rel_tf_fe * qtty  # units: atto-M
+                tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-M
 
-                transferrin.field['Tf'][macrophage_cell_element] -= tffe_qtty + tffe2_qtty # units: atto-M
-                transferrin.field['TfFe'][macrophage_cell_element] += tffe_qtty# units: atto-M
-                transferrin.field['TfFe2'][macrophage_cell_element] += tffe2_qtty# units: atto-M
+                transferrin.field['Tf'][macrophage_cell_element] -= (
+                    tffe_qtty + tffe2_qtty
+                )  # units: atto-M
+                transferrin.field['TfFe'][macrophage_cell_element] += tffe_qtty  # units: atto-M
+                transferrin.field['TfFe2'][macrophage_cell_element] += tffe2_qtty  # units: atto-M
                 macrophage_cell['iron_pool'] -= (
                     qtty * mesh.point_dual_volumes[macrophage_cell_element]
                 )  # units: atto-M * L = atto-mols

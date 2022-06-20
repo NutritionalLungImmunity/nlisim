@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -53,6 +54,7 @@ class TAFC(ModuleModel):
     StateClass = TAFCState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         tafc: TAFCState = state.tafc
         molecules: MoleculesState = state.molecules
 
@@ -167,7 +169,7 @@ class TAFC(ModuleModel):
                 quantity = (
                     mesh.evaluate_point_function(
                         point_function=tafc.field['TAFCBI'],
-                        point=afumigatus_cell['Point'],
+                        point=afumigatus_cell['point'],
                         element_index=afumigatus_cell_element,
                     )
                     * tafc.tafcbi_uptake_rate_unit_t
@@ -176,6 +178,7 @@ class TAFC(ModuleModel):
                     mesh=mesh,
                     point_field=tafc.field['TAFCBI'],
                     element_index=afumigatus_cell_element,
+                    point=afumigatus_cell['point'],
                     amount=quantity,
                 )
                 afumigatus_cell['iron_pool'] += quantity

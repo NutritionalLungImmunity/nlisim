@@ -210,15 +210,14 @@ def secrete_in_element(
 def uptake_in_element(
     *,
     mesh: TetrahedralMesh,
-    point_field: np.ndarray,
+    point_field: np.ndarray,  # units: atto-M
     element_index: Union[int, np.ndarray],
-    amount: Union[float, np.ndarray],
+    point: Union[Point, np.ndarray],
+    amount: Union[float, np.ndarray],  # units: atto-mol
 ) -> None:
     points = mesh.element_point_indices[element_index]
-
-    # weight by amount, i'm not completely convinced that this is geometrically jutified,
-    # but it _does_ prevent the numbers from going negative
-    point_field_proportions = point_field[points] / np.sum(point_field[points], axis=1)
+    # TODO: justify
+    point_field_proportions = mesh.tetrahedral_proportions(element_index=element_index, point=point)
 
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume
@@ -228,22 +227,30 @@ def uptake_in_element(
     )  # units: prop * atto-mol / L = atto-M
 
 
-def sample_point_from_simplex(dimension: int = 3) -> np.ndarray:
+def sample_point_from_simplex(num_points: int = 1, dimension: int = 3) -> np.ndarray:
     """
     Generate a uniformly distributed random point from a simplex in probability coordinates.
 
     Parameters
     ----------
+    num_points: int
+        The number of sample points to return
     dimension: int
         The dimension of the simplex. e.g. a triangle has dimension 2 and tetrahedron has
         dimension 3. Default value is 3.
 
     Returns
     -------
-    A shape (dimension+1,) np.ndarray of floats between 0.0 and 1.0 which sum to 1.0.
+    A shape (dimension+1,) or (dimension+1,num_points) np.ndarray of floats between 0.0 and 1.0
+     which sum to 1.0.
 
     """
-    return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
+    if num_points == 1:
+        return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
+    else:
+        return np.diff(
+            np.sort(np.random.random((dimension, num_points))), prepend=0.0, append=1.0, axis=0
+        )
 
 
 def tetrahedral_gradient(*, field: np.ndarray, points: np.ndarray) -> np.ndarray:

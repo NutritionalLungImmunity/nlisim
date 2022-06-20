@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import shutil
 
@@ -47,6 +48,7 @@ class StateOutput(ModuleModel):
                 shutil.rmtree(file)
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         output_dir = self._output_dir
         if output_dir.exists():
             # Since output_dir may be a Docker mount point, don't remove the directory itself.

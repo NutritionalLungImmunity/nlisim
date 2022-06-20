@@ -2,6 +2,9 @@ import csv
 import itertools
 
 # noinspection PyPackageRequirements
+import logging
+
+# noinspection PyPackageRequirements
 from attr import attrs
 
 from nlisim.module import ModuleModel, ModuleState
@@ -36,6 +39,7 @@ class CSVWriter(ModuleModel):
         return state
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         summary_stats = generate_summary_stats(state)
         column_names = ['time'] + list(
             itertools.chain.from_iterable(

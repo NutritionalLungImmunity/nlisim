@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Any, Dict, Tuple
 
@@ -87,6 +88,7 @@ class Pneumocyte(PhagocyteModel):
     StateClass = PneumocyteState
 
     def initialize(self, state: State):
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         pneumocyte: PneumocyteState = state.pneumocyte
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -113,23 +115,31 @@ class Pneumocyte(PhagocyteModel):
             -time_step_size / 60 / pneumocyte.pr_p_int_param
         )  # units: probability
 
+        print(f"tick 1")
         # initialize cells, placing one per epithelial element TODO: something better
         locations = np.where(mesh.element_tissue_type == GridTissueType.EPITHELIUM)[0]
         volumes = mesh.element_volumes[locations]
-        probabilities = volumes / np.sum(volumes)
-        for _ in range(len(locations)):
-            element_index = locations[np.argmax(np.random.random() < probabilities)]
-            simplex_coords = sample_point_from_simplex()
-            point = mesh.points[mesh.element_point_indices[element_index]] @ simplex_coords
-
+        cdf = np.cumsum(volumes)  # define the cumulative distribution function so that elements
+        cdf /= cdf[-1]  # are selected proportionally to their volumes
+        pneumocyte_elements = locations[
+            np.argmax(np.random.random((locations.shape[0], 1)) < cdf, axis=1)
+        ]
+        simplex_coords = sample_point_from_simplex(num_points=locations.shape[0])
+        points = np.einsum(
+            'ijk,ji->ik',
+            mesh.points[mesh.element_point_indices[pneumocyte_elements]],
+            simplex_coords,
+        )
+        for element_index, point in zip(pneumocyte_elements, points):
             pneumocyte.cells.append(
                 PneumocyteCellData.create_cell(
                     point=Point(
                         x=point[2],
                         y=point[1],
                         z=point[0],
-                    )
-                )
+                    ),
+                ),
+                element_index=element_index,
             )
 
         return state

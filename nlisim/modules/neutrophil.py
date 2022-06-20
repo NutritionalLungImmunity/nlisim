@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Any, Dict, Tuple
 
@@ -102,6 +103,7 @@ class Neutrophil(PhagocyteModel):
     StateClass = NeutrophilState
 
     def initialize(self, state: State):
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         neutrophil: NeutrophilState = state.neutrophil
         mesh: TetrahedralMesh = state.mesh
 

@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Any, Dict
 
@@ -45,6 +46,7 @@ class ErythrocyteModel(ModuleModel):
     StateClass = ErythrocyteState
 
     def initialize(self, state: State):
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         erythrocyte: ErythrocyteState = state.erythrocyte
         mesh: TetrahedralMesh = state.mesh
         time_step_size: float = self.time_step

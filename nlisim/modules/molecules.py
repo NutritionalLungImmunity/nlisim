@@ -1,4 +1,7 @@
 # noinspection PyPackageRequirements
+import logging
+
+# noinspection PyPackageRequirements
 from attr import attrs
 
 # noinspection PyPackageRequirements
@@ -23,6 +26,7 @@ class Molecules(ModuleModel):
 
     # noinspection SpellCheckingInspection
     def initialize(self, state: State):
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         molecules: MoleculesState = state.molecules
 
         molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')  # units: min

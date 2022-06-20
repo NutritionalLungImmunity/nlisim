@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -47,6 +48,7 @@ class Hemoglobin(ModuleModel):
     StateClass = HemoglobinState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         hemoglobin: HemoglobinState = state.hemoglobin
 
         # config file values
@@ -121,6 +123,7 @@ class Hemoglobin(ModuleModel):
             mesh=mesh,
             point_field=hemoglobin.field,
             element_index=afumigatus_elements,
+            point=afumigatus_cells_taking_iron['point'],
             amount=hemoglobin_uptake,
         )
 

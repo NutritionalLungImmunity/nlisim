@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -31,6 +32,7 @@ class Iron(ModuleModel):
     StateClass = IronState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         # iron: IronState = state.iron
         # voxel_volume = geometry.voxel_volume
 

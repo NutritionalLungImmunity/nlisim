@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 # noinspection PyPackageRequirements
@@ -49,6 +50,7 @@ class TGFB(ModuleModel):
     StateClass = TGFBState
 
     def initialize(self, state: State) -> State:
+        logging.getLogger('nlisim').debug("Initializing " + self.name)
         tgfb: TGFBState = state.tgfb
         molecules: MoleculesState = state.molecules
 
@@ -92,6 +94,7 @@ class TGFB(ModuleModel):
 
         tgfb: TGFBState = state.tgfb
         macrophage: MacrophageState = state.macrophage
+        mesh: TetrahedralMesh = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -101,7 +104,11 @@ class TGFB(ModuleModel):
                 tgfb.field[macrophage_cell_element] += tgfb.macrophage_secretion_rate_unit_t
                 if (
                     activation_function(
-                        x=tgfb.field[macrophage_cell_element],
+                        x=mesh.evaluate_point_function(
+                            point_function=tgfb.field,
+                            element_index=macrophage_cell_element,
+                            point=macrophage_cell['point'],
+                        ),
                         k_d=tgfb.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=1.0,  # already a concentration
@@ -118,7 +125,11 @@ class TGFB(ModuleModel):
             }:
                 if (
                     activation_function(
-                        x=tgfb.field[macrophage_cell_element],
+                        x=mesh.evaluate_point_function(
+                            point_function=tgfb.field,
+                            element_index=macrophage_cell_element,
+                            point=macrophage_cell['point'],
+                        ),
                         k_d=tgfb.k_d,
                         h=self.time_step / 60,  # units: (min/step) / (min/hour)
                         volume=1.0,  # already a concentration

@@ -8,9 +8,9 @@ from scipy.sparse import csr_matrix, dok_matrix, eye, identity
 
 # noinspection PyPackageRequirements
 from scipy.sparse.linalg import cg
+import skfem
 from skfem import Basis, ElementTetP1, MeshTet1, condense
 from skfem.models import laplace
-from skfem.utils import solve
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid, TetrahedralMesh
@@ -34,7 +34,7 @@ def discrete_laplacian(grid: RectangularGrid, mask: np.ndarray, dtype=_dtype_flo
     delta_y = grid.delta(1)
     delta_x = grid.delta(2)
 
-    for k, j, i in zip(*(mask).nonzero()):
+    for k, j, i in zip(*mask.nonzero()):
         voxel = Voxel(x=i, y=j, z=k)
         voxel_index = grid.get_flattened_index(voxel)
 
@@ -77,7 +77,7 @@ def periodic_discrete_laplacian(
     delta_y = grid.delta(1)
     delta_x = grid.delta(2)
 
-    for k, j, i in zip(*(mask).nonzero()):
+    for k, j, i in zip(*mask.nonzero()):
         voxel = Voxel(x=i, y=j, z=k)
         voxel_index = grid.get_flattened_index(voxel)
 
@@ -169,6 +169,6 @@ def apply_mesh_diffusion_crank_nicholson(
     cn_a: csr_matrix,
     cn_b: csr_matrix,
     dofs: Any,
-    tolerance: float = 1e-10,
+    # tolerance: float = 1e-10,
 ):
-    return solve(*condense(cn_a, cn_b @ variable, D=dofs), tolerance=tolerance)
+    return skfem.utils.solve(*condense(cn_a, cn_b @ variable, D=dofs))  # , tolerance=tolerance)

@@ -135,7 +135,6 @@ class TetrahedralMesh(object):
 
         element_tissue_type = vtk_to_numpy(data.GetCellData().GetArray("tissue-type"))
         element_tissue_type.flags['WRITEABLE'] = False
-        print(f"{np.max(element_tissue_type)=}")
 
         # tetrahedral meshes look like (4, pt, pt, pt, pt, 4, pt, pt, pt, pt, 4, ...)
         element_point_indices = vtk_to_numpy(data.GetCells().GetData()).reshape((-1, 5))[:, 1:]
@@ -177,6 +176,7 @@ class TetrahedralMesh(object):
                 face = tuple(point_indices[[k for k in range(4) if k != omitted_idx]])
                 tet_list = face_tets[face]
                 tet_list.append(tet_index)
+
         # read the tetrahedra incidence lists from the faces
         element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
         for face, tets in face_tets.items():
@@ -191,15 +191,20 @@ class TetrahedralMesh(object):
             idx = np.argmin(element_neighbors[tet_b])
             element_neighbors[tet_b, idx] = tet_a
         element_neighbors.flags['WRITEABLE'] = False
+
         # precompute element volumes
         tet_points = points[element_point_indices, :]
         element_volumes = np.abs(
             np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0
         )
         element_volumes.flags['WRITEABLE'] = False
+
         total_volume = float(np.sum(element_volumes))
+
         # distribute the volume of tetrahedra evenly amongst its points
-        point_dual_volumes = np.sum(element_volumes[element_point_indices], axis=1) / 4.0
+        point_dual_volumes = np.zeros(points.shape[0], dtype=np.float64)
+        np.add.at(point_dual_volumes, element_point_indices.T, element_volumes / 4.0)
+
         return element_neighbors, element_volumes, point_dual_volumes, total_volume
 
     def evaluate_point_function(
@@ -406,7 +411,7 @@ class TetrahedralMesh(object):
 
     def allocate_point_variable(self, dtype: DTypeLike = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined on the points of this mesh."""
-        return np.zeros(self.points.shape, dtype=dtype)
+        return np.zeros(self.points.shape[0], dtype=dtype)
 
     def allocate_volume_variable(self, dtype: DTypeLike = _dtype_float64) -> np.ndarray:
         """Allocate a numpy array defined on the 3-dimensional elements of this mesh."""
@@ -420,7 +425,8 @@ class TetrahedralMesh(object):
         self, element_index: int, point: Point, check_bounds: bool = False
     ) -> np.ndarray:
         tet_points = self.points[self.element_point_indices[element_index, :], :]
-
+        print(f"{point.shape=}")
+        print(f"{tet_points[0, :].shape=}")
         ortho_coords = np.linalg.solve(
             tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :]
         )
