@@ -26,6 +26,7 @@ from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
 from itertools import product
+import sys
 from typing import Iterable, Iterator, List, Tuple, Union, cast
 
 # noinspection PyPackageRequirements
@@ -51,6 +52,7 @@ _dtype_float64 = np.dtype('float64')
 
 
 class TissueType(IntEnum):
+    AIR = -1
     BRONCHIOLAR_EPITHELIUM = 0
     CAPILLARY = 1
     ALVEOLAR_EPITHELIUM = 2
@@ -285,21 +287,17 @@ class TetrahedralMesh(object):
             point_function.shape[0] == self.point_dual_volumes.shape[0]
         ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
 
-        if len(point_function.shape) == 1:
-            value = point_function[element_index] * self.point_dual_volumes[element_index]
-            if isinstance(element_index, int):
-                return float(value)
-            else:
-                return value
+        if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
+            element_index = int(element_index)
+
+        if isinstance(element_index, (int, np.integer)):
+            point_indices = self.element_point_indices[element_index]  # (4,)
+            values = point_function[point_indices]  # (4,)
+            return float(np.sum(values) / 3 * self.element_volumes[element_index])
         else:
-            return np.sum(
-                point_function[element_index]
-                * np.expand_dims(
-                    self.point_dual_volumes[element_index],
-                    axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
-                ),
-                axis=0,
-            )
+            point_indices = self.element_point_indices[element_index]  # (L,4)
+            values = point_function[point_indices]  # (L,4)
+            return np.sum(values, axis=1) / 3 * self.element_volumes[element_index]
 
     def integrate_element_function(self, element_function: np.ndarray) -> Union[np.ndarray, float]:
         """
@@ -374,8 +372,8 @@ class TetrahedralMesh(object):
         # TODO: This is the most naïve algorithm, replace it.
         for tet_index in range(self.element_point_indices.shape[0]):
             if self.is_in_element(tet_index, point):
-                return True
-        return False
+                return tet_index
+        return -1  # TODO: inspect all callers
 
     def get_element_tissue_type(self, element_index: int) -> TissueType:
         """
@@ -422,32 +420,47 @@ class TetrahedralMesh(object):
         return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
 
     def tetrahedral_proportions(
-        self, element_index: int, point: Point, check_bounds: bool = False
+        self, element_index: Union[int, np.ndarray], point: Point, check_bounds: bool = False
     ) -> np.ndarray:
-        tet_points = self.points[self.element_point_indices[element_index, :], :]
-        print(f"{point.shape=}")
-        print(f"{tet_points[0, :].shape=}")
-        ortho_coords = np.linalg.solve(
-            tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :]
-        )
+        if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
+            element_index = int(element_index)
 
-        if check_bounds and not (
-            np.alltrue(0.0 <= ortho_coords <= 1.0) and 0.0 <= np.sum(ortho_coords) <= 1.0
-        ):
-            raise RuntimeError(
-                "Point does not seem to be in the element. {point=} {element_index=} {tet_points=}"
+        if isinstance(element_index, (int, np.integer)):
+            tet_points = self.points[self.element_point_indices[element_index, :], :]
+            ortho_coords = np.linalg.solve(
+                tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :]
             )
 
-        proportional_coords = np.array(
-            [
-                1 - ortho_coords[0] - ortho_coords[1] - ortho_coords[2],
-                ortho_coords[0],
-                ortho_coords[1],
-                ortho_coords[2],
-            ]
-        )
+            if check_bounds and not (
+                np.alltrue(0.0 <= ortho_coords <= 1.0) and 0.0 <= np.sum(ortho_coords) <= 1.0
+            ):
+                raise RuntimeError(
+                    f"Point does not seem to be in the element."
+                    f" {point=}"
+                    f" {element_index=}"
+                    f" {tet_points=}"
+                )
 
-        return proportional_coords
+            proportional_coords = np.array(
+                [
+                    1 - ortho_coords[0] - ortho_coords[1] - ortho_coords[2],
+                    ortho_coords[0],
+                    ortho_coords[1],
+                    ortho_coords[2],
+                ]
+            )
+
+            return proportional_coords
+        else:
+            tet_points = self.points[self.element_point_indices[element_index]]
+            print(f"{element_index=}")
+            print(f"{point.shape=}")
+            print(f"{tet_points.shape=}")
+            print(f"{tet_points[0, :].shape=}")
+            ortho_coords = np.linalg.solve(
+                tet_points[:, 1:, :] - tet_points[:, 0, :], point - tet_points[:, 0, :]
+            )
+            raise RuntimeError("Unhandled!")  # TODO: not this
 
     def in_tetrahedral_element(
         self, element_index: int, point: Point, interior: bool = False

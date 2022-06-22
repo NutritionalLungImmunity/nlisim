@@ -10,7 +10,10 @@ import numpy as np
 # noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import apply_mesh_diffusion_crank_nicholson
+from nlisim.diffusion import (
+    apply_mesh_diffusion_crank_nicholson,
+    assemble_mesh_laplacian_crank_nicholson,
+)
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
@@ -85,6 +88,14 @@ class TAFC(ModuleModel):
             # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
             # = proportion * cell^-1 * step^-1
         )
+
+        # matrices for diffusion
+        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
+            state=state, diffusivity=tafc.diffusion_constant, dt=self.time_step
+        )
+        tafc.cn_a = cn_a
+        tafc.cn_b = cn_b
+        tafc.dofs = dofs
 
         return state
 

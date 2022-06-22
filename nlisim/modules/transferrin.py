@@ -163,7 +163,8 @@ class Transferrin(ModuleModel):
                     point=macrophage_cell['point'],
                 )
                 * uptake_proportion
-            )  # units: atto-M * cell^-1 * step^-1
+                * mesh.element_volumes[macrophage_cell_element]
+            )  # units: atto-mols * cell^-1 * step^-1
             qtty_fe = (
                 mesh.evaluate_point_function(
                     point_function=transferrin.field['TfFe'],
@@ -171,7 +172,8 @@ class Transferrin(ModuleModel):
                     point=macrophage_cell['point'],
                 )
                 * uptake_proportion
-            )  # units: atto-M * cell^-1 * step^-1
+                * mesh.element_volumes[macrophage_cell_element]
+            )  # units: atto-mols * cell^-1 * step^-1
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             uptake_in_element(
@@ -179,25 +181,25 @@ class Transferrin(ModuleModel):
                 point_field=transferrin.field['TfFe2'],
                 element_index=macrophage_cell_element,
                 point=macrophage_cell['point'],
-                amount=qtty_fe2,  # units: atto-M * cell^-1 * step^-1
+                amount=qtty_fe2,  # units: atto-mols * cell^-1 * step^-1
             )
             uptake_in_element(
                 mesh=mesh,
                 point_field=transferrin.field['TfFe'],
                 element_index=macrophage_cell_element,
                 point=macrophage_cell['point'],
-                amount=qtty_fe,  # units: atto-M * cell^-1 * step^-1
+                amount=qtty_fe,  # units: atto-mols * cell^-1 * step^-1
             )
             secrete_in_element(
                 mesh=mesh,
                 point_field=transferrin.field['Tf'],
                 element_index=macrophage_cell_element,
                 point=macrophage_cell['point'],
-                amount=qtty_fe + qtty_fe2,  # units: atto-M * cell^-1 * step^-1
+                amount=qtty_fe + qtty_fe2,  # units: atto-mols * cell^-1 * step^-1
             )
-            macrophage_cell['iron_pool'] += (2 * qtty_fe2 + qtty_fe) * mesh.point_dual_volumes[
-                macrophage_cell_element
-            ]  # units: atto-M * cell^-1 * step^-1 * L = atto-mol * cell^-1 * step^-1
+            macrophage_cell['iron_pool'] += (
+                2 * qtty_fe2 + qtty_fe
+            )  # units: atto-mol * cell^-1 * step^-1
 
             if macrophage_cell['fpn'] and macrophage_cell['status'] not in {
                 PhagocyteStatus.ACTIVE,

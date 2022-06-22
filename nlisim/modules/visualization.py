@@ -175,9 +175,9 @@ class Visualization(ModuleModel):
         json_config = json.loads(variables)
         now = state.time
 
-        for variable in json_config:
-            file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
-            self.visualize(state, variable, file_name)
-            state.visualization.last_visualize = now
+        # for variable in json_config:
+        #     file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
+        #     self.visualize(state, variable, file_name)
+        #     state.visualization.last_visualize = now
 
         return state

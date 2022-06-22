@@ -13,7 +13,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, TissueType
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
     PhagocyteModel,
@@ -379,7 +379,12 @@ class Macrophage(PhagocyteModel):
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
         for iteration in range(4):
-            if mesh.element_tissue_type[new_element_index] != GridTissueType.AIR:
+            print(f"{new_element_index=}")
+            print(f"{mesh.element_tissue_type[new_element_index]=}")
+            if (
+                new_element_index != -1
+                and mesh.element_tissue_type[new_element_index] != TissueType.AIR
+            ):
                 cell['velocity'][:] = dp_dt
                 return new_position
             dp_dt /= 2.0
