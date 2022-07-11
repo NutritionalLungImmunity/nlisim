@@ -149,51 +149,55 @@ class Transferrin(ModuleModel):
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
+            macrophage_element_index: int = macrophage_cell['element_index']
 
             uptake_proportion = np.minimum(
                 transferrin.ma_iron_import_rate_unit_t
-                / mesh.element_volumes[macrophage_cell_element],
+                / mesh.element_volumes[macrophage_element_index],
                 1.0,
             )  # units: L * cell^-1 * step^-1 / L = proportion * cell^-1 * step^-1
             qtty_fe2 = (
                 mesh.evaluate_point_function(
                     point_function=transferrin.field['TfFe2'],
-                    element_index=macrophage_cell_element,
+                    element_index=macrophage_element_index,
                     point=macrophage_cell['point'],
                 )
                 * uptake_proportion
-                * mesh.element_volumes[macrophage_cell_element]
+                * mesh.element_volumes[macrophage_element_index]
             )  # units: atto-mols * cell^-1 * step^-1
             qtty_fe = (
                 mesh.evaluate_point_function(
                     point_function=transferrin.field['TfFe'],
-                    element_index=macrophage_cell_element,
+                    element_index=macrophage_element_index,
                     point=macrophage_cell['point'],
                 )
                 * uptake_proportion
-                * mesh.element_volumes[macrophage_cell_element]
+                * mesh.element_volumes[macrophage_element_index]
             )  # units: atto-mols * cell^-1 * step^-1
+
+            assert mesh.in_tetrahedral_element(
+                element_index=macrophage_element_index, point=macrophage_cell['point']
+            ), f"{macrophage_element_index=}, {macrophage_cell['point']=}"
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             uptake_in_element(
                 mesh=mesh,
                 point_field=transferrin.field['TfFe2'],
-                element_index=macrophage_cell_element,
+                element_index=macrophage_element_index,
                 point=macrophage_cell['point'],
                 amount=qtty_fe2,  # units: atto-mols * cell^-1 * step^-1
             )
             uptake_in_element(
                 mesh=mesh,
                 point_field=transferrin.field['TfFe'],
-                element_index=macrophage_cell_element,
+                element_index=macrophage_element_index,
                 point=macrophage_cell['point'],
                 amount=qtty_fe,  # units: atto-mols * cell^-1 * step^-1
             )
             secrete_in_element(
                 mesh=mesh,
                 point_field=transferrin.field['Tf'],
-                element_index=macrophage_cell_element,
+                element_index=macrophage_element_index,
                 point=macrophage_cell['point'],
                 amount=qtty_fe + qtty_fe2,  # units: atto-mols * cell^-1 * step^-1
             )
@@ -208,36 +212,62 @@ class Transferrin(ModuleModel):
                 # amount of iron to export is bounded by the amount of iron in the cell as well
                 # as the amount which can be accepted by transferrin
                 transferrin_in_element = mesh.integrate_point_function_single_element(
-                    element_index=macrophage_cell_element,
+                    element_index=macrophage_element_index,
                     point_function=transferrin.field['Tf'],
                 )  # units: atto-mols
+                transferrin_fe_in_element = mesh.integrate_point_function_single_element(
+                    element_index=macrophage_element_index,
+                    point_function=transferrin.field['TfFe'],
+                )  # units: atto-mols
+
+                print(f"{macrophage_cell['iron_pool']=}")
+                print(f"{transferrin_in_element=}")
+                print(f"{mesh.element_volumes[macrophage_element_index]=}")
+                print(f"{transferrin.ma_iron_export_rate_unit_t=}")
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],  # units: atto-mols
                     2 * transferrin_in_element,  # units: atto-mols
                     macrophage_cell['iron_pool']
                     * transferrin_in_element
-                    / mesh.element_volumes[macrophage_cell_element]  # TODO: verify units
+                    / mesh.element_volumes[macrophage_element_index]  # TODO: verify units
                     * transferrin.ma_iron_export_rate_unit_t,
                 )  # units: 3) atto-mols * atto-mols * L^-1 * (L * mol^-1 * cell^-1 * step^-1)
+
                 rel_tf_fe = iron_tf_reaction(
                     iron=qtty,
-                    tf=transferrin.field['Tf'][macrophage_cell_element],
-                    tf_fe=transferrin.field['TfFe'][macrophage_cell_element],
+                    tf=transferrin_in_element,
+                    tf_fe=transferrin_fe_in_element,
                     p1=transferrin.p1,
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                tffe_qtty = rel_tf_fe * qtty  # units: atto-M
-                tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-M
+                print(f"{rel_tf_fe=}")
+                print(f"{qtty=}")
+                tffe_qtty = rel_tf_fe * qtty  # units: atto-mols
+                tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-mols
 
-                transferrin.field['Tf'][macrophage_cell_element] -= (
-                    tffe_qtty + tffe2_qtty
-                )  # units: atto-M
-                transferrin.field['TfFe'][macrophage_cell_element] += tffe_qtty  # units: atto-M
-                transferrin.field['TfFe2'][macrophage_cell_element] += tffe2_qtty  # units: atto-M
-                macrophage_cell['iron_pool'] -= (
-                    qtty * mesh.point_dual_volumes[macrophage_cell_element]
-                )  # units: atto-M * L = atto-mols
+                uptake_in_element(
+                    mesh=mesh,
+                    point_field=transferrin.field['Tf'],
+                    element_index=macrophage_element_index,
+                    point=macrophage_cell['point'],
+                    amount=tffe_qtty + tffe2_qtty,  # units: atto-mols
+                )
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=transferrin.field['TfFe'],
+                    element_index=macrophage_element_index,
+                    point=macrophage_cell['point'],
+                    amount=tffe_qtty,  # units: atto-mols
+                )
+                secrete_in_element(
+                    mesh=mesh,
+                    point_field=transferrin.field['TfFe2'],
+                    element_index=macrophage_element_index,
+                    point=macrophage_cell['point'],
+                    amount=tffe2_qtty,  # units: atto-mols
+                )
+                macrophage_cell['iron_pool'] -= qtty  # units: atto-M * L = atto-mols
 
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.field['Tf'] + transferrin.field['TfFe']

@@ -172,7 +172,7 @@ class TAFC(ModuleModel):
             if afumigatus_cell['state'] != AfumigatusCellState.FREE:
                 continue
 
-            afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
+            afumigatus_cell_element: int = afumigatus_cell['element_index']
             afumigatus_bool_net: np.ndarray = afumigatus_cell['boolean_network']
 
             # uptake iron from TAFCBI
@@ -185,6 +185,8 @@ class TAFC(ModuleModel):
                     )
                     * tafc.tafcbi_uptake_rate_unit_t
                 )
+                print(f"{quantity=}")
+                print(f"{tafc.tafcbi_uptake_rate_unit_t=}")
                 uptake_in_element(
                     mesh=mesh,
                     point_field=tafc.field['TAFCBI'],

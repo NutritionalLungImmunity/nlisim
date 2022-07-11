@@ -176,8 +176,8 @@ class Neutrophil(PhagocyteModel):
         mesh: TetrahedralMesh = state.mesh
 
         for neutrophil_cell_index in neutrophil.cells.alive():
-            neutrophil_cell = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_element = neutrophil.cells.element_index[neutrophil_cell_index]
+            neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
+            neutrophil_cell_element: int = neutrophil_cell['element_index']
 
             self.update_status(state, neutrophil_cell)
 
@@ -396,7 +396,7 @@ class Neutrophil(PhagocyteModel):
 
         # we need to determine if this movement will put us into an air element.  If that happens,
         # we reduce the rate of movement exponentially (up to 4 times) until we stay within a
-        # non-air element. If exponential shortening is unsucessful after 4 tries, we stay in place.
+        # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in place.
         # Velocity is updated to dp/dt in either case.
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)

@@ -78,7 +78,7 @@ class Hepcidin(ModuleModel):
         ]
         hepcidin_concentration_at_macrophages = mesh.evaluate_point_function(
             point_function=hepcidin.field,
-            element_index=macrophage.cells.element_index[macrophage.cells.alive()],
+            element_index=macrophage.cells.alive()[:]['element_index'],
             point=live_macrophage_cells['point'],
         )
         activation_mask = activation_function(

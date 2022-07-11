@@ -1,9 +1,16 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
+# noinspection PyPackageRequirements
 from attr import attrib, attrs
+
+# noinspection PyPackageRequirements
 from h5py import Group
+
+# noinspection PyPackageRequirements
 import numpy as np
+
+# noinspection PyPackageRequirements
 from numpy.typing import DTypeLike
 
 from nlisim.coordinates import Point
@@ -58,6 +65,7 @@ class CellData(np.ndarray):
 
     FIELDS: CellFields = [
         ('point', Point.dtype),
+        ('element_index', int),
         ('dead', 'b1'),
     ]
     """
@@ -84,7 +92,9 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs) -> Tuple:
+    def create_cell_tuple(
+        cls, *, point: Point = None, element_index: int = -1, dead: bool = False, **kwargs
+    ) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
         The base class version of this method returns the fields associated with
@@ -96,7 +106,7 @@ class CellData(np.ndarray):
         if point is None:
             point = Point()
 
-        return point, dead
+        return point, element_index, dead
 
     @classmethod
     def create_cell(cls, **kwargs) -> 'CellData':
@@ -106,26 +116,6 @@ class CellData(np.ndarray):
         values.
         """
         return np.rec.array([cls.create_cell_tuple(**kwargs)], dtype=cls.dtype)[0]
-
-    # @classmethod
-    # def point_mask(cls, points: np.ndarray, grid: RectangularGrid):
-    #     """Generate a mask array from a set of points.
-    #
-    #     The output is a boolean array indicating if the point at that index
-    #     is a valid location for a cell.
-    #     """
-    #     assert points.shape[1] == 3, 'Invalid point array shape'
-    #     point = points.T.view(Point)
-    #
-    #     # TODO: add geometry restriction
-    #     return (
-    #         (grid.xv[0] <= point.x)
-    #         & (point.x <= grid.xv[-1])
-    #         & (grid.yv[0] <= point.y)
-    #         & (point.y <= grid.yv[-1])
-    #         & (grid.zv[0] <= point.z)
-    #         & (point.z <= grid.zv[-1])
-    #     )
 
 
 @attrs(kw_only=True, frozen=True, repr=False)
@@ -162,9 +152,8 @@ class CellList(object):
     max_cells: int = attrib(default=MAX_CELL_LIST_SIZE)
     _cell_data: CellData = attrib()
     _ncells: int = attrib(init=False)
-    _element_index: Dict[int, Set[int]] = attrib(init=False, factory=lambda: defaultdict(set))
-    _reverse_element_index: np.ndarray = attrib(
-        init=False, factory=lambda: np.full(MAX_CELL_LIST_SIZE, -1)
+    _cells_in_element_by_index: Dict[int, Set[int]] = attrib(
+        init=False, factory=lambda: defaultdict(set)
     )
 
     # noinspection PyUnresolvedReferences
@@ -204,10 +193,6 @@ class CellList(object):
     def cell_data(self) -> CellData:
         """Return the portion of the underlying data array containing valid data."""
         return self._cell_data[: self._ncells]
-
-    @property
-    def element_index(self):
-        return self._reverse_element_index
 
     @classmethod
     def create_from_seed(cls, mesh: TetrahedralMesh, **kwargs) -> 'CellList':
@@ -267,18 +252,18 @@ class CellList(object):
         mask = (cell_data[sample_indices]['dead'] == False).nonzero()[0]  # noqa: E712
         return sample_indices[mask]
 
-    def append(self, cell: CellType, element_index: Optional[int] = None) -> int:
-        """Append a new cell the the list."""
+    def append(self, cell: CellType) -> int:
+        """Append a new cell to the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
 
         cell_index = self._ncells
         object.__setattr__(self, '_ncells', self._ncells + 1)
         self._cell_data[cell_index] = cell
-        if element_index is None:
+        element_index = cell['element_index']
+        if element_index < 0:
             element_index = self.mesh.get_element_index(cell['point'])
-        self._element_index[element_index].add(cell_index)
-        self._reverse_element_index[cell_index] = element_index
+        self._cells_in_element_by_index[element_index].add(cell_index)
         return cell_index
 
     def extend(self, cells: Iterable[CellData]) -> None:
@@ -324,7 +309,7 @@ class CellList(object):
 
     def get_cells_in_element(self, element_index: int) -> np.ndarray:
         """Return a list of cell indices contained in a given element."""
-        return np.asarray(sorted((self._element_index[element_index])))
+        return np.asarray(sorted((self._cells_in_element_by_index[element_index])))
 
     def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
         """Return a list of cells indices in the same element."""
@@ -340,19 +325,18 @@ class CellList(object):
         element.
         """
         if indices is None:
-            self._element_index.clear()
-            self._reverse_element_index[:] = -1
+            self._cells_in_element_by_index.clear()
             self._compute_element_index()
             return
 
         for index in indices:
             cell = self[index]
-            old_element = self._reverse_element_index[index]
+            old_element = cell['element_index']
             new_element = self.mesh.get_element_index(cell['point'])
             if old_element != new_element:
-                self._element_index[old_element].remove(index)
-                self._element_index[new_element].add(index)
-                self._reverse_element_index[index] = new_element
+                self._cells_in_element_by_index[old_element].remove(index)
+                self._cells_in_element_by_index[new_element].add(index)
+                cell['element_index'] = new_element
 
     def _compute_element_index(self):
         """Generate a dictionary mapping element index to cell index.
@@ -363,5 +347,5 @@ class CellList(object):
         for cell_index in range(len(self)):
             cell = self[cell_index]
             element = self.mesh.get_element_index(cell['point'])
-            self._element_index[element].add(cell_index)
-            self._reverse_element_index[cell_index] = element
+            self._cells_in_element_by_index[element].add(cell_index)
+            cell['element_index'] = element

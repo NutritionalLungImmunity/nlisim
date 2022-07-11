@@ -12,7 +12,7 @@ from nlisim.random import rg
 EPSILON = 1e-50
 
 
-def activation_function(*, x, k_d, h, volume, b=1):
+def activation_function(*, x, k_d, h, volume, b=1) -> Union[float, np.ndarray]:
     # units:
     # x: atto-mol
     # k_d: aM
@@ -222,6 +222,12 @@ def uptake_in_element(
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume
     #    = old conc + (new amount / pt dual volume)
+    print(f"{point_field_proportions=}")
+    print(f"{amount=}")
+    print(f"{mesh.point_dual_volumes[points]=}")
+    assert np.all(0.0 <= point_field_proportions) and np.all(
+        point_field_proportions <= 1.0
+    ), f"{point_field_proportions=}"
     np.subtract.at(
         point_field, points, point_field_proportions * amount / mesh.point_dual_volumes[points]
     )  # units: prop * atto-mol / L = atto-M
@@ -249,7 +255,10 @@ def sample_point_from_simplex(num_points: int = 1, dimension: int = 3) -> np.nda
         return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
     else:
         return np.diff(
-            np.sort(np.random.random((dimension, num_points))), prepend=0.0, append=1.0, axis=0
+            np.sort(np.random.random((dimension, num_points)), axis=0),
+            prepend=0.0,
+            append=1.0,
+            axis=0,
         )
 
 

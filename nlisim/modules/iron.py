@@ -65,7 +65,7 @@ class Iron(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=iron.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                     amount=internal_iron,
                 )

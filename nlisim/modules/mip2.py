@@ -128,7 +128,7 @@ class MIP2(ModuleModel):
         )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_element: int = neutrophil.cells.element_index[neutrophil_cell_index]
+            neutrophil_cell_element: int = neutrophil_cell['element_index']
 
             if (
                 neutrophil_cell['status'] == PhagocyteStatus.RESTING
@@ -155,7 +155,7 @@ class MIP2(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=mip2.field,
-                    element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
+                    element_index=pneumocyte_cell['element_index'],
                     point=pneumocyte_cell['point'],
                     amount=mip2.pneumocyte_secretion_rate_unit_t,
                 )
@@ -168,7 +168,7 @@ class MIP2(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=mip2.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                     amount=mip2.macrophage_secretion_rate_unit_t,
                 )

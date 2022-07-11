@@ -98,7 +98,7 @@ class TGFB(ModuleModel):
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
+            macrophage_cell_element: int = macrophage_cell['element_index']
 
             if macrophage_cell['status'] == PhagocyteStatus.INACTIVE:
                 tgfb.field[macrophage_cell_element] += tgfb.macrophage_secretion_rate_unit_t

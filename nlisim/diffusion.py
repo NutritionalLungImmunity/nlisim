@@ -149,8 +149,18 @@ def assemble_mesh_laplacian_crank_nicholson(
 ) -> Tuple[csr_matrix, csr_matrix, Any]:
     mesh: TetrahedralMesh = state.mesh
 
+    # skfem is a bit too verbose with its warnings with mesh creation. We raise the minimum
+    # level for logging for
+    import logging
+
+    old_logging_level = logging.getLogger("skfem").getEffectiveLevel()
+    logging.getLogger("skfem").setLevel(logging.ERROR)
+
     # load a tetrahedral mesh, will be a MeshTet1
     skmesh: MeshTet1 = MeshTet1(doflocs=mesh.points.T, t=mesh.element_point_indices.T)
+
+    logging.getLogger("skfem").setLevel(old_logging_level)  # resume previous logging level
+
     basis = Basis(skmesh, ElementTetP1())
 
     # create matrices for Crank-Nicholson method

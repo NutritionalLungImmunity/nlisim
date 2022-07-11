@@ -3,6 +3,7 @@ import json
 
 # noinspection PyPackageRequirements
 import attr
+import meshio
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -14,12 +15,18 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 
 # noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStructuredPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkStructuredPoints,
+    vtkUnstructuredGrid,
+)
 
 # noinspection PyUnresolvedReferences
 from vtkmodules.vtkIOLegacy import vtkPolyDataWriter, vtkStructuredPointsWriter
 
 from nlisim.cell import CellList
+from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -92,6 +99,16 @@ class Visualization(ModuleModel):
         writer.Write()
 
     @classmethod
+    def write_unstructured_points(
+        cls, var: np.ndarray, var_name: str, filename: str, mesh: TetrahedralMesh
+    ) -> None:
+
+        mesh: meshio.Mesh = mesh.as_meshio()
+        mesh.point_data = {var_name: var}
+
+        mesh.write(filename, file_format="vtu")
+
+    @classmethod
     def write_structured_points(
         cls, var: np.ndarray, filename: str, dx: float, dy: float, dz: float
     ) -> None:
@@ -112,16 +129,23 @@ class Visualization(ModuleModel):
 
     def visualize(self, state: State, json_config: dict, filename: str) -> None:
         module_name = json_config['module']
+        module = getattr(state, module_name, None)
+        if module is None:
+            # ignore configuration for any modules which are not present at runtime
+            return
+
         var_name = json_config['variable']
+        var = getattr(module, var_name)
+
         vtk_type = json_config['vtk_type']
+
         try:
             attr_names = json_config['attributes']
         except KeyError:
             attr_names = None
-        module = getattr(state, module_name, None)
-        if module is None:
-            return
-        var = getattr(module, var_name)
+        # attr_names = getattr(
+        #     json_config, 'attributes', None
+        # )  # for cells and multi-component fields
 
         if vtk_type == VTKTypes.STRUCTURED_POINTS.name:
             spacing = (
@@ -155,6 +179,9 @@ class Visualization(ModuleModel):
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             file_name = filename.replace('<variable>', module_name + '-' + var_name)
+            print(f"{var=}")
+            print(f"{file_name=}")
+            print(f"{attr_names=}")
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
@@ -164,7 +191,28 @@ class Visualization(ModuleModel):
             raise NotImplementedError('rectilinear_grid is not supported yet')
 
         elif vtk_type == VTKTypes.UNSTRUCTURED_GRID.name:
-            raise NotImplementedError('unstructured_grid is not supported yet')
+            # file_name = filename.replace('<variable>', module_name + '-' + var_name)
+            if attr_names:
+                # multi-component fields
+                for attr_name in attr_names:
+                    var_attr = var[attr_name]  # particular attribute of the variable
+
+                    # composite data
+                    if var_attr.dtype.names:
+                        for name in var_attr.dtype.names:
+                            file_name = filename.replace('<variable>', module_name + '-' + name)
+                            Visualization.write_unstructured_points(
+                                var, var_attr[name], file_name, state.mesh
+                            )
+                    else:
+                        file_name = filename.replace('<variable>', module_name + '-' + attr_name)
+                        Visualization.write_unstructured_points(
+                            var_attr, attr_name, file_name, state.mesh
+                        )
+            else:
+                file_name = filename.replace('<variable>', module_name + '-' + var_name)
+                Visualization.write_unstructured_points(var, var_name, file_name, state.mesh)
+            # Visualization.write_unstructured_points(var, var_name, file_name, state.mesh)
 
         else:
             raise TypeError(f'Unknown VTK data type: {vtk_type}')
@@ -175,9 +223,9 @@ class Visualization(ModuleModel):
         json_config = json.loads(variables)
         now = state.time
 
-        # for variable in json_config:
-        #     file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
-        #     self.visualize(state, variable, file_name)
-        #     state.visualization.last_visualize = now
+        for variable in json_config:
+            file_name = visualization_file_name.replace('<time>', ('%005.0f' % now).strip())
+            self.visualize(state, variable, file_name)
+            state.visualization.last_visualize = now
 
         return state

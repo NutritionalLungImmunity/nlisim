@@ -121,7 +121,7 @@ class Lactoferrin(ModuleModel):
         rg.shuffle(live_macrophages)
         for macrophage_cell_index in live_macrophages:
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_element_index: int = macrophage.cells.element_index[macrophage_cell_index]
+            macrophage_element_index: int = macrophage_cell['element_index']
 
             uptake_proportion = np.minimum(
                 lactoferrin.ma_iron_import_rate_vol_unit_t
@@ -146,6 +146,9 @@ class Lactoferrin(ModuleModel):
                 * uptake_proportion
             )  # units: atto-M * cell^-1 * step^-1
 
+            assert mesh.in_tetrahedral_element(
+                element_index=macrophage_element_index, point=macrophage_cell['point']
+            ), f"{macrophage_element_index=}, {macrophage_cell['point']=}"
             uptake_in_element(
                 mesh=mesh,
                 point_field=lactoferrin.field['LactoferrinFe2'],
@@ -174,7 +177,7 @@ class Lactoferrin(ModuleModel):
             ):
                 continue
 
-            neutrophil_element_index: int = neutrophil.cells.element_index[neutrophil_cell_index]
+            neutrophil_element_index: int = neutrophil_cell['element_index']
             secrete_in_element(
                 mesh=mesh,
                 point_field=lactoferrin.field['Lactoferrin'],

@@ -138,8 +138,8 @@ class Pneumocyte(PhagocyteModel):
                         y=point[1],
                         z=point[0],
                     ),
+                    element_index=element_index,
                 ),
-                element_index=element_index,
             )
 
         return state
@@ -171,7 +171,7 @@ class Pneumocyte(PhagocyteModel):
 
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell = pneumocyte.cells[pneumocyte_cell_index]
-            pneumocyte_cell_element = pneumocyte.cells.element_index[pneumocyte_cell_index]
+            pneumocyte_cell_element = pneumocyte_cell['element_index']
 
             # self update
             if pneumocyte_cell['status'] == PhagocyteStatus.ACTIVE:
@@ -213,7 +213,7 @@ class Pneumocyte(PhagocyteModel):
                             pneumocyte_cell['status'] = PhagocyteStatus.ACTIVATING
                     else:
                         # active pneumocytes reset status count (i.e. _hard_ remain active)
-                        # when in the presence of a aspergillus cell
+                        # when in the presence of an aspergillus cell
                         pneumocyte_cell['status_iteration'] = 0
 
             # # secrete IL6

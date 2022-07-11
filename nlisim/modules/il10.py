@@ -100,7 +100,7 @@ class IL10(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=il10.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                     amount=il10.macrophage_secretion_rate_unit_t,
                 )
@@ -112,7 +112,7 @@ class IL10(ModuleModel):
             }:
                 il10_concentration_at_macrophage = mesh.evaluate_point_function(
                     point_function=il10.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                 )
                 if (

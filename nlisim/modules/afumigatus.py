@@ -241,15 +241,19 @@ class Afumigatus(ModuleModel):
         )
 
         # place fungal cells for initial infection. Cells will be distributed into the
-        # sufactant layer, in a uniformly random manner.
+        # surfactant layer, in a uniformly random manner.
         init_infection_num = self.config.getint('init_infection_num')
         locations = np.where(mesh.element_tissue_type == TissueType.ALVEOLAR_SURFACTANT)[0]
+
+        # define the cumulative distribution function so that elements are selected proportionally
+        # to their volumes
         volumes = mesh.element_volumes[locations]
-        cdf = np.cumsum(volumes)  # define the cumulative distribution function so that elements
-        cdf /= cdf[-1]  # are selected proportionally to their volumes
+        cdf = np.cumsum(volumes)
+        cdf /= cdf[-1]
         afumigatus_elements = locations[
             np.argmax(np.random.random((init_infection_num, 1)) < cdf, axis=1)
         ]
+
         simplex_coords = sample_point_from_simplex(num_points=init_infection_num)
         points = np.einsum(
             'ijk,ji->ik',
@@ -264,9 +268,9 @@ class Afumigatus(ModuleModel):
                         y=point[1],
                         z=point[0],
                     ),
+                    element_index=element_index,
                     iron_pool=afumigatus.init_iron,
                 ),
-                element_index=element_index,
             )
 
         return state
@@ -283,7 +287,7 @@ class Afumigatus(ModuleModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
+            afumigatus_cell_element: int = afumigatus_cell['element_index']
 
             # ------------ update cell
 
@@ -344,7 +348,7 @@ class Afumigatus(ModuleModel):
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
-        afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
+        afumigatus_cell_element: int = afumigatus_cell['element_index']
         element_volume = mesh.element_volumes[afumigatus_cell_element]
 
         probability_of_interaction = -np.expm1(
@@ -426,7 +430,7 @@ class Afumigatus(ModuleModel):
                 raise AssertionError("The fungal tree structure is malformed.")
 
         # kill the cell off and release its iron
-        afumigatus_cell_element: int = afumigatus.cells.element_index[afumigatus_cell_index]
+        afumigatus_cell_element: int = afumigatus_cell['element_index']
         secrete_in_element(
             mesh=mesh,
             point_field=iron.field,

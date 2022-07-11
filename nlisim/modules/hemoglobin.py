@@ -100,9 +100,9 @@ class Hemoglobin(ModuleModel):
         # array([2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1])
         # >>> np.bincount(arr)[arr]
         # array([2, 2, 3, 3, 3, 1, 1])
-        afumigatus_elements = np.array(afumigatus.cells.element_index)[
+        afumigatus_elements = np.array(afumigatus.cells[:]['element_index'])[
             iron_uptaking_afumigatus_indices
-        ]  # TODO: consider converting _reverse_element_index in CellList to ndarray
+        ]
         afumigatus_count_in_same_element = np.bincount(afumigatus_elements)[afumigatus_elements]
 
         available_hemoglobin = mesh.integrate_point_function_single_element(

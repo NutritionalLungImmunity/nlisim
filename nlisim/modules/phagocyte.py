@@ -66,7 +66,7 @@ class PhagocyteModel(ModuleModel):
         cell_index : int
             index of cell in cell_list
         cell_list : CellList
-            the CellList for the cell-type (macrophage/neutrophil/etc) of cell
+            the CellList for the cell-type (macrophage/neutrophil/etc.) of cell
 
 
         Returns
@@ -74,7 +74,7 @@ class PhagocyteModel(ModuleModel):
         nothing
         """
         # At this moment, there is no inter-voxel geometry.
-        cell_element = cell_list.element_index[cell_index]
+        cell_element = cell['element_index']
         new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element)
         cell['point'] = new_point
         cell_list.update_element_index([cell_index])

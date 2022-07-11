@@ -114,7 +114,7 @@ class MIP1B(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=mip1b.field,
-                    element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
+                    element_index=pneumocyte_cell['element_index'],
                     point=pneumocyte_cell['point'],
                     amount=mip1b.pneumocyte_secretion_rate_unit_t,
                 )
@@ -127,7 +127,7 @@ class MIP1B(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=mip1b.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                     amount=mip1b.macrophage_secretion_rate_unit_t,
                 )

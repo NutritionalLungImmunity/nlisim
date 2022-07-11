@@ -120,7 +120,7 @@ class IL6(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
-                    element_index=macrophage.cells.element_index[macrophage_cell_index],
+                    element_index=macrophage_cell['element_index'],
                     point=macrophage_cell['point'],
                     amount=il6.macrophage_secretion_rate_unit_t,
                 )
@@ -132,7 +132,7 @@ class IL6(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
-                    element_index=neutrophil.cells.element_index[neutrophil_cell_index],
+                    element_index=neutrophil_cell['element_index'],
                     point=neutrophil_cell['point'],
                     amount=il6.neutrophil_secretion_rate_unit_t,
                 )
@@ -144,7 +144,7 @@ class IL6(ModuleModel):
                 secrete_in_element(
                     mesh=mesh,
                     point_field=il6.field,
-                    element_index=pneumocyte.cells.element_index[pneumocyte_cell_index],
+                    element_index=pneumocyte_cell['element_index'],
                     point=pneumocyte_cell['point'],
                     amount=il6.pneumocyte_secretion_rate_unit_t,
                 )

@@ -6,6 +6,7 @@ import attr
 
 # noinspection PyPackageRequirements
 from attr import attrib, attrs
+from modules.afumigatus import AfumigatusCellData
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -83,11 +84,11 @@ class Hemolysin(ModuleModel):
         ]
 
         for afumigatus_cell_index in hemolysin_releasing_afumigatus:
-            afumigatus_cell = afumigatus.cells[afumigatus_cell_index]
+            afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
             secrete_in_element(
                 mesh=mesh,
                 point_field=hemolysin.field,
-                element_index=afumigatus.cells.element_index[afumigatus_cell_index],
+                element_index=afumigatus_cell['element_index'],
                 point=afumigatus_cell['point'],
                 amount=hemolysin.hemolysin_qtty,
             )

@@ -26,19 +26,16 @@ from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
 from itertools import product
-import sys
 from typing import Iterable, Iterator, List, Tuple, Union, cast
 
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
 
 # noinspection PyPackageRequirements
 from h5py import File as H5File
+import meshio
 
 # noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from numpy.typing import DTypeLike
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
@@ -64,7 +61,7 @@ class TetrahedralMesh(object):
     """
     A class representation of a tetrahedral mesh.
 
-    points is an (N,3) array of points in euclidean 3-space
+    points is an (N,3) array of points in euclidean 3-space. All x,y,z coordinates are in µm
 
     element_point_indices is an (M,4) numpy array of integers where each row encodes the points
      of a tetrahedron via their index in the points array. M = number of tetrahedra
@@ -119,6 +116,20 @@ class TetrahedralMesh(object):
     def save_hdf5(self, file: H5File) -> None:
         for dim in ('points', 'element_point_indices', 'element_tissue_type'):
             file.create_dataset(dim, data=getattr(self, dim))
+
+    def as_meshio(self) -> meshio.Mesh:
+        """
+        Create a meshio Mesh for this mesh.
+
+        No fields are added.
+
+        Returns
+        -------
+        a meshio.Mesh
+        """
+        mesh = meshio.Mesh(points=self.points, cells={'tetra': self.element_point_indices})
+
+        return mesh
 
     @classmethod
     def load_vtk(cls, filename: str) -> 'TetrahedralMesh':
@@ -196,9 +207,9 @@ class TetrahedralMesh(object):
 
         # precompute element volumes
         tet_points = points[element_point_indices, :]
-        element_volumes = np.abs(
-            np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0
-        )
+        element_volumes = (
+            np.abs(np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0) * 1e-15
+        )  # unit note: (µm)^3 = 10^{-6*3} m^3 = 10^{-5*3} (dm)^3 = 10^-15 L
         element_volumes.flags['WRITEABLE'] = False
 
         total_volume = float(np.sum(element_volumes))
@@ -210,7 +221,7 @@ class TetrahedralMesh(object):
         return element_neighbors, element_volumes, point_dual_volumes, total_volume
 
     def evaluate_point_function(
-        self, *, point_function: np.ndarray, point: Point, element_index: int
+        self, *, point_function: np.ndarray, point: Point, element_index: Union[int, np.ndarray]
     ) -> Union[float, np.ndarray]:
         """
         Evaluate a point function on the interior of a tetrahedral element.
@@ -229,7 +240,14 @@ class TetrahedralMesh(object):
         Value of the function, defined using linear interpolation.
         """
         proportions = self.tetrahedral_proportions(element_index=element_index, point=point)
-        return point_function[self.element_point_indices[element_index]] @ proportions
+        print(f"{proportions=}")
+        print(f"{np.sum(proportions)=}")
+        if isinstance(element_index, np.ndarray):
+            return np.einsum(
+                'ij,ij->i', point_function[self.element_point_indices[element_index]], proportions
+            )
+        else:
+            return point_function[self.element_point_indices[element_index]] @ proportions
 
     def integrate_point_function(self, point_function: np.ndarray) -> Union[np.ndarray, float]:
         """
@@ -420,61 +438,66 @@ class TetrahedralMesh(object):
         return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
 
     def tetrahedral_proportions(
-        self, element_index: Union[int, np.ndarray], point: Point, check_bounds: bool = False
+        self, element_index: Union[int, np.ndarray], point: Point
     ) -> np.ndarray:
+        # TODO: good candidate for tests
         if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
             element_index = int(element_index)
 
         if isinstance(element_index, (int, np.integer)):
             tet_points = self.points[self.element_point_indices[element_index, :], :]
             ortho_coords = np.linalg.solve(
-                tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :]
+                (tet_points[1:, :] - tet_points[0, :]).T, point - tet_points[0, :]
             )
-
-            if check_bounds and not (
-                np.alltrue(0.0 <= ortho_coords <= 1.0) and 0.0 <= np.sum(ortho_coords) <= 1.0
-            ):
-                raise RuntimeError(
-                    f"Point does not seem to be in the element."
-                    f" {point=}"
-                    f" {element_index=}"
-                    f" {tet_points=}"
-                )
 
             proportional_coords = np.array(
                 [
-                    1 - ortho_coords[0] - ortho_coords[1] - ortho_coords[2],
-                    ortho_coords[0],
-                    ortho_coords[1],
-                    ortho_coords[2],
+                    1 - np.sum(ortho_coords, axis=0),
+                    *ortho_coords,
                 ]
             )
 
             return proportional_coords
         else:
             tet_points = self.points[self.element_point_indices[element_index]]
-            print(f"{element_index=}")
-            print(f"{point.shape=}")
-            print(f"{tet_points.shape=}")
-            print(f"{tet_points[0, :].shape=}")
+            print(f"{(tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1)).shape=}")
+            print(f"{(point - tet_points[:, 0, :]).shape=}")
             ortho_coords = np.linalg.solve(
-                tet_points[:, 1:, :] - tet_points[:, 0, :], point - tet_points[:, 0, :]
+                np.transpose(
+                    tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1),
+                    axes=[0, 2, 1],
+                ),
+                point - tet_points[:, 0, :],
             )
-            raise RuntimeError("Unhandled!")  # TODO: not this
+            proportional_coords = np.array(
+                [
+                    1 - np.sum(ortho_coords, axis=1),
+                    ortho_coords[:, 0],
+                    ortho_coords[:, 1],
+                    ortho_coords[:, 2],
+                ]
+            ).T
+
+            return proportional_coords
 
     def in_tetrahedral_element(
         self, element_index: int, point: Point, interior: bool = False
     ) -> bool:
-        try:
-            tet_proportions = self.tetrahedral_proportions(element_index, point, check_bounds=True)
-        except RuntimeError:
-            return False
+        tet_proportions = self.tetrahedral_proportions(element_index, point)
 
-        return not interior or np.alltrue(0.0 < tet_proportions < 1.0)
+        return (
+            np.alltrue(0.0 <= tet_proportions)
+            and np.alltrue(tet_proportions <= 1.0)
+            and (
+                (not interior)
+                or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
+            )
+        )
 
 
 @attrs(auto_attribs=True, repr=False)
 class RectangularGrid(object):
+    # noinspection PyUnresolvedReferences
     r"""
     A class representation of a rectangular mesh.
 
@@ -643,10 +666,10 @@ class RectangularGrid(object):
     def get_voxel(self, point: Point) -> Voxel:
         """Return the voxel containing the given point.
 
-        For points outside of the mesh, this method will return invalid
+        For points outside the mesh, this method will return invalid
         indices.  For example, given vertex coordinates `[1.5, 2.7, 6.5]` and point
         `-1.5` or `7.1`, this method will return `-1` and `3`, respectively.  Call the
-        the `is_valid_voxel` method to determine if the voxel is valid.
+        `is_valid_voxel` method to determine if the voxel is valid.
         """
         # For some reason, extracting fields from a recordarray results in a
         # transposed point object (shape (1,3) rather than (3,)).  This code
@@ -664,12 +687,12 @@ class RectangularGrid(object):
         return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
 
     def is_valid_voxel(self, voxel: Voxel) -> bool:
-        """Return whether or not a voxel index is valid."""
+        """Return whether a voxel index is valid."""
         v = voxel
         return 0 <= v.x < len(self.x) and 0 <= v.y < len(self.y) and 0 <= v.z < len(self.z)
 
     def is_point_in_domain(self, point: Point) -> bool:
-        """Return whether or not a point in inside the domain."""
+        """Return whether a point in inside the domain."""
         return (
             (self.xv[0] <= point.x <= self.xv[-1])
             and (self.yv[0] <= point.y <= self.yv[-1])

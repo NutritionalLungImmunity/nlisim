@@ -107,7 +107,7 @@ class IL8(ModuleModel):
             if neutrophil_cell['status'] in {PhagocyteStatus.RESTING or PhagocyteStatus.ACTIVE}:
                 il8_concentration_at_neutrophil = mesh.evaluate_point_function(
                     point_function=il8.field,
-                    element_index=neutrophil.cells.element_index[neutrophil_cell_index],
+                    element_index=neutrophil_cell['element_index'],
                     point=neutrophil_cell['point'],
                 )
                 if (

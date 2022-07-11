@@ -116,7 +116,7 @@ class TNFa(ModuleModel):
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_cell_element: int = macrophage.cells.element_index[macrophage_cell_index]
+            macrophage_cell_element: int = macrophage_cell['element_index']
 
             if macrophage_cell['status'] == PhagocyteStatus.ACTIVE:
                 secrete_in_element(
@@ -152,7 +152,7 @@ class TNFa(ModuleModel):
 
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_element: int = neutrophil.cells.element_index[neutrophil_cell_index]
+            neutrophil_cell_element: int = neutrophil_cell['element_index']
 
             if neutrophil_cell['status'] == PhagocyteStatus.ACTIVE:
                 secrete_in_element(

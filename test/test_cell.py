@@ -100,9 +100,9 @@ def test_move_cell(grid: RectangularGrid):
     # updating an incorrect index will not update the cell at index 0
     cells.update_element_index([1, 3])
     assert_array_equal(cells.get_neighboring_cells(cells[2]), [0, 2, 3])
-    assert cells._reverse_element_index[0] == grid.get_voxel(point)
+    assert cells._cell_index_to_element_index[0] == grid.get_voxel(point)
 
     # this should correctly update the voxel index
     cells.update_element_index([0])
     assert_array_equal(cells.get_neighboring_cells(cells[0]), [0])
-    assert cells._reverse_element_index[0] == grid.get_voxel(cells[0]['point'])
+    assert cells._cell_index_to_element_index[0] == grid.get_voxel(cells[0]['point'])

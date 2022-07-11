@@ -5,6 +5,7 @@ from typing import Tuple
 # noinspection PyPackageRequirements
 import click
 import click_pathlib
+import numpy as np
 
 # noinspection PyPackageRequirements
 from tqdm import tqdm
@@ -15,8 +16,8 @@ from nlisim.solver import Status
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
 
-
 # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+np.seterr(divide='raise', invalid='raise')
 
 
 @click.group()

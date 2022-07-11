@@ -16,7 +16,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 from nlisim.modules.hemoglobin import HemoglobinState
 from nlisim.modules.hemolysin import HemolysinState
-from nlisim.modules.macrophage import MacrophageState
+from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import activation_function
@@ -128,13 +128,14 @@ class ErythrocyteModel(ModuleModel):
             local_macrophages = macrophage.cells.get_cells_in_element(element_idx)
             num_local_macrophages = len(local_macrophages)
             for macrophage_index in local_macrophages:
-                macrophage_cell = macrophage.cells[macrophage_index]
+                macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_index]
+                macrophage_element_index = macrophage_cell['element_index']
                 if macrophage_cell['dead']:
                     continue
                 macrophage_cell['iron_pool'] += (
                     4  # number of iron atoms in hemoglobin
                     * erythrocyte.hemoglobin_quantity
-                    * erythrocytes_to_hemorrhage[z, y, x]
+                    * erythrocytes_to_hemorrhage[macrophage_element_index]
                     / num_local_macrophages
                 )
         erythrocyte.cells['count'] -= erythrocytes_to_hemorrhage
