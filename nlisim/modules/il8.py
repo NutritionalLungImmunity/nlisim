@@ -101,6 +101,8 @@ class IL8(ModuleModel):
         neutrophil: NeutrophilState = state.neutrophil
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(il8.field >= 0.0)
+
         # IL8 activates neutrophils
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
@@ -139,6 +141,8 @@ class IL8(ModuleModel):
             cn_b=il8.cn_b,
             dofs=il8.dofs,
         )
+
+        assert np.alltrue(il8.field >= 0.0)
 
         return state
 

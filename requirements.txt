@@ -10,3 +10,4 @@ scipy~=1.8.0
 vtk~=9.1.0
 matplotlib~=3.5.1
 scikit-fem~=6.0.0
+meshio~=5.3.4

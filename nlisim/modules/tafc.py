@@ -22,7 +22,7 @@ from nlisim.util import (
     michaelian_kinetics_molarity,
     secrete_in_element,
     turnover_rate,
-    uptake_in_element,
+    uptake_proportionally,
 )
 
 
@@ -39,7 +39,7 @@ class TAFCState(ModuleState):
     )  # units: atto-M
     k_m_tf_tafc: float  # units: aM
     tafcbi_uptake_rate: float  # units: L * cell^-1 * h^-1
-    tafcbi_uptake_rate_unit_t: float  # units: proportion * cell^-1 * step^-1
+    tafcbi_uptake_rate_unit_t: float  # units: L * cell^-1 * step^-1
     afumigatus_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     afumigatus_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     turnover_rate: float
@@ -83,10 +83,9 @@ class TAFC(ModuleModel):
         )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
         tafc.tafcbi_uptake_rate_unit_t = (
             tafc.tafcbi_uptake_rate
-            / 6.4e-11  # TODO: this magic number is TEMPORARY, was voxel_volume
             * (self.time_step / 60)
-            # units: (L * cell^-1 * h^-1) / L  * (min/step) / (min/hour)
-            # = proportion * cell^-1 * step^-1
+            # units: (L * cell^-1 * h^-1) * (min/step) / (min/hour)
+            # = L * cell^-1 * step^-1
         )
 
         # matrices for diffusion
@@ -118,6 +117,9 @@ class TAFC(ModuleModel):
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(tafc.field['TAFC'] >= 0.0)
+        assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
+
         # interaction with transferrin
         # - calculate iron transfer from transferrin+[1,2]Fe to TAFC
         dfe2_dt = michaelian_kinetics_molarity(
@@ -127,13 +129,20 @@ class TAFC(ModuleModel):
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
         )  # units: atto-M/step
+        for idx in range(transferrin.field["TfFe2"].shape[0]):
+            print(
+                f"{transferrin.field['TfFe2'][idx]=}"
+                f"\t{tafc.field['TAFC'][idx]=}"
+                f"\t{dfe2_dt[idx]=}"
+            )
         dfe_dt = michaelian_kinetics_molarity(
             substrate=transferrin.field["TfFe"],  # units: atto-M
             enzyme=tafc.field["TAFC"],  # units: atto-M
             k_m=tafc.k_m_tf_tafc,  # units: atto-M
-            h=self.time_step / 60,  # units: (min/step) / (min/hour)
+            h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
         )  # units: atto-M/step
+        print(f"{np.min(dfe_dt)=} {np.max(dfe_dt)=}")
 
         # - enforce bounds from TAFC quantity
         total_change = dfe2_dt + dfe_dt
@@ -143,7 +152,9 @@ class TAFC(ModuleModel):
             out=np.zeros_like(tafc.field['TAFC']),  # source of defaults
             where=total_change != 0.0,
         )
+        print(f"{np.min(rel)=} {np.max(rel)=}")
         np.clip(rel, 0.0, 1.0, out=rel)  # fix any remaining problem divides
+        print(f"{np.min(rel)=} {np.max(rel)=}")
         np.multiply(dfe2_dt, rel, out=dfe2_dt)
         np.multiply(dfe_dt, rel, out=dfe_dt)
 
@@ -159,11 +170,17 @@ class TAFC(ModuleModel):
         tafc.field['TAFC'] -= dfe2_dt + dfe_dt
         tafc.field['TAFCBI'] += dfe2_dt + dfe_dt
 
+        assert np.alltrue(
+            tafc.field['TAFCBI'] >= 0.0
+        ), f"{np.min(dfe2_dt)=} {np.min(dfe_dt)=} {dfe2_dt+dfe_dt=}"
+
         # interaction with iron, all available iron is bound to TAFC
         potential_reactive_quantity = np.minimum(iron.field, tafc.field['TAFC'])
         tafc.field['TAFC'] -= potential_reactive_quantity
         tafc.field['TAFCBI'] += potential_reactive_quantity
         iron.field -= potential_reactive_quantity
+
+        assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
 
         # interaction with fungus
         for afumigatus_cell_index in afumigatus.cells.alive():
@@ -177,24 +194,40 @@ class TAFC(ModuleModel):
 
             # uptake iron from TAFCBI
             if afumigatus_bool_net[NetworkSpecies.MirB] & afumigatus_bool_net[NetworkSpecies.EstB]:
-                quantity = (
-                    mesh.evaluate_point_function(
-                        point_function=tafc.field['TAFCBI'],
-                        point=afumigatus_cell['point'],
-                        element_index=afumigatus_cell_element,
-                    )
-                    * tafc.tafcbi_uptake_rate_unit_t
-                )
-                print(f"{quantity=}")
-                print(f"{tafc.tafcbi_uptake_rate_unit_t=}")
-                uptake_in_element(
+                quantity = uptake_proportionally(
                     mesh=mesh,
                     point_field=tafc.field['TAFCBI'],
                     element_index=afumigatus_cell_element,
                     point=afumigatus_cell['point'],
-                    amount=quantity,
+                    k=tafc.tafcbi_uptake_rate_unit_t,
                 )
+                # quantity = (
+                #     mesh.integrate_point_function_single_element(
+                #         point_function=tafc.field['TAFCBI'], element_index=afumigatus_cell_element
+                #     )
+                #     * tafc.tafcbi_uptake_rate_unit_t
+                #     / mesh.element_volumes[afumigatus_cell_element]
+                # )  # units: atto-mols * (L * cell^-1 * step^-1) / L = atto-mols * cell^-1 * step^-1
+                print()
+                print(
+                    f"{tafc.field['TAFCBI'][mesh.element_point_indices[afumigatus_cell_element]]=}"
+                )
+                print(
+                    f"{mesh.integrate_point_function_single_element(point_function=tafc.field['TAFCBI'], element_index=afumigatus_cell_element)=}"
+                )
+                print()
+                print(f"{quantity=}")
+                print(f"{tafc.tafcbi_uptake_rate_unit_t=}")
+                # uptake_in_element(
+                #     mesh=mesh,
+                #     point_field=tafc.field['TAFCBI'],
+                #     element_index=afumigatus_cell_element,
+                #     point=afumigatus_cell['point'],
+                #     amount=quantity,
+                # )
                 afumigatus_cell['iron_pool'] += quantity
+
+            assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
 
             # secrete TAFC
             if afumigatus_bool_net[NetworkSpecies.TAFC] and afumigatus_cell['status'] in {
@@ -228,6 +261,9 @@ class TAFC(ModuleModel):
                 cn_b=tafc.cn_b,
                 dofs=tafc.dofs,
             )
+
+        assert np.alltrue(tafc.field['TAFC'] >= 0.0)
+        assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
 
         return state
 

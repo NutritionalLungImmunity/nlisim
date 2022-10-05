@@ -113,6 +113,8 @@ class IL6(ModuleModel):
         pneumocyte: PneumocyteState = state.pneumocyte
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(il6.field >= 0.0)
+
         # active Macrophages secrete il6
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
@@ -159,6 +161,8 @@ class IL6(ModuleModel):
             cn_b=il6.cn_b,
             dofs=il6.dofs,
         )
+
+        assert np.alltrue(il6.field >= 0.0)
 
         return state
 

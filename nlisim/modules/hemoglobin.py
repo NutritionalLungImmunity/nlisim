@@ -79,6 +79,8 @@ class Hemoglobin(ModuleModel):
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(hemoglobin.field >= 0.0)
+
         # afumigatus uptakes iron from hemoglobin
 
         # find the cells that will take up iron
@@ -142,6 +144,8 @@ class Hemoglobin(ModuleModel):
             cn_b=hemoglobin.cn_b,
             dofs=hemoglobin.dofs,
         )
+
+        assert np.alltrue(hemoglobin.field >= 0.0)
 
         return state
 

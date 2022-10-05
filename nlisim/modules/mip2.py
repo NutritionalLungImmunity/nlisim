@@ -118,6 +118,8 @@ class MIP2(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(mip2.field >= 0.0)
+
         # interact with neutrophils
         neutrophil_activation: np.ndarray = activation_function(
             x=mip2.field,
@@ -183,6 +185,8 @@ class MIP2(ModuleModel):
             cn_b=mip2.cn_b,
             dofs=mip2.dofs,
         )
+
+        assert np.alltrue(mip2.field >= 0.0)
 
         return state
 

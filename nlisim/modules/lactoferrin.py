@@ -116,6 +116,10 @@ class Lactoferrin(ModuleModel):
         neutrophil: NeutrophilState = state.neutrophil
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(lactoferrin.field['Lactoferrin'] >= 0.0)
+        assert np.alltrue(lactoferrin.field['LactoferrinFe'] >= 0.0)
+        assert np.alltrue(lactoferrin.field['LactoferrinFe2'] >= 0.0)
+
         # macrophages uptake iron from lactoferrin
         live_macrophages = macrophage.cells.alive()
         rg.shuffle(live_macrophages)
@@ -148,7 +152,12 @@ class Lactoferrin(ModuleModel):
 
             assert mesh.in_tetrahedral_element(
                 element_index=macrophage_element_index, point=macrophage_cell['point']
-            ), f"{macrophage_element_index=}, {macrophage_cell['point']=}"
+            ), (
+                f"{macrophage_element_index=},\n"
+                f"{macrophage_cell['point']=},\n"
+                f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+                f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+            )
             uptake_in_element(
                 mesh=mesh,
                 point_field=lactoferrin.field['LactoferrinFe2'],
@@ -302,6 +311,10 @@ class Lactoferrin(ModuleModel):
                 cn_b=lactoferrin.cn_b,
                 dofs=lactoferrin.dofs,
             )
+
+        assert np.alltrue(lactoferrin.field['Lactoferrin'] >= 0.0)
+        assert np.alltrue(lactoferrin.field['LactoferrinFe'] >= 0.0)
+        assert np.alltrue(lactoferrin.field['LactoferrinFe2'] >= 0.0)
 
         return state
 

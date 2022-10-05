@@ -146,6 +146,10 @@ class Transferrin(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(transferrin.field['Tf'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
+
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -177,7 +181,12 @@ class Transferrin(ModuleModel):
 
             assert mesh.in_tetrahedral_element(
                 element_index=macrophage_element_index, point=macrophage_cell['point']
-            ), f"{macrophage_element_index=}, {macrophage_cell['point']=}"
+            ), (
+                f"{macrophage_element_index=},\n"
+                f"{macrophage_cell['point']=},\n"
+                f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+                f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+            )
 
             # macrophage uptakes iron, leaves transferrin+0Fe behind
             uptake_in_element(
@@ -221,9 +230,9 @@ class Transferrin(ModuleModel):
                 )  # units: atto-mols
 
                 print(f"{macrophage_cell['iron_pool']=}")
-                print(f"{transferrin_in_element=}")
-                print(f"{mesh.element_volumes[macrophage_element_index]=}")
-                print(f"{transferrin.ma_iron_export_rate_unit_t=}")
+                # print(f"{transferrin_in_element=}")
+                # print(f"{mesh.element_volumes[macrophage_element_index]=}")
+                # print(f"{transferrin.ma_iron_export_rate_unit_t=}")
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],  # units: atto-mols
                     2 * transferrin_in_element,  # units: atto-mols
@@ -269,6 +278,10 @@ class Transferrin(ModuleModel):
                 )
                 macrophage_cell['iron_pool'] -= qtty  # units: atto-M * L = atto-mols
 
+        assert np.alltrue(transferrin.field['Tf'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
+
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.field['Tf'] + transferrin.field['TfFe']
         potential_reactive_quantity = np.minimum(iron.field, transferrin_fe_capacity)
@@ -299,6 +312,10 @@ class Transferrin(ModuleModel):
                 cn_b=transferrin.cn_b,
                 dofs=transferrin.dofs,
             )
+
+        assert np.alltrue(transferrin.field['Tf'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
         return state
 

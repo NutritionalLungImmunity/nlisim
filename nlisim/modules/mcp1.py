@@ -106,6 +106,8 @@ class MCP1(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(mcp1.field >= 0.0)
+
         # interact with pneumocytes
         for pneumocyte_cell_index in pneumocyte.cells.alive():
             pneumocyte_cell: PneumocyteCellData = pneumocyte.cells[pneumocyte_cell_index]
@@ -142,6 +144,8 @@ class MCP1(ModuleModel):
             cn_b=mcp1.cn_b,
             dofs=mcp1.dofs,
         )
+
+        assert np.alltrue(mcp1.field >= 0.0)
 
         return state
 

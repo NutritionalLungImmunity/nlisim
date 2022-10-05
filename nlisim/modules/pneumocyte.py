@@ -115,7 +115,6 @@ class Pneumocyte(PhagocyteModel):
             -time_step_size / 60 / pneumocyte.pr_p_int_param
         )  # units: probability
 
-        print(f"tick 1")
         # initialize cells, placing one per epithelial element TODO: something better
         locations = np.where(mesh.element_tissue_type == GridTissueType.EPITHELIUM)[0]
         volumes = mesh.element_volumes[locations]

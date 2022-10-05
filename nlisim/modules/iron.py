@@ -51,6 +51,8 @@ class Iron(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(iron.field >= 0.0)
+
         # dead macrophages contribute their iron to the environment
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -74,6 +76,8 @@ class Iron(ModuleModel):
         # turnover done by liver, if at all (2/4/2021: not currently)
 
         # iron does not diffuse
+
+        assert np.alltrue(iron.field >= 0.0)
 
         return state
 

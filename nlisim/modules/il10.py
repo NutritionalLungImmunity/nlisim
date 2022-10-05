@@ -89,6 +89,8 @@ class IL10(ModuleModel):
         molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(il10.field >= 0.0)
+
         # active Macrophages secrete il10 and non-dead macrophages can become inactivated by il10
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
@@ -146,6 +148,8 @@ class IL10(ModuleModel):
             cn_b=il10.cn_b,
             dofs=il10.dofs,
         )
+
+        assert np.alltrue(il10.field >= 0.0)
 
         return state
 

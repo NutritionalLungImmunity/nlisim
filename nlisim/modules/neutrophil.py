@@ -154,6 +154,7 @@ class Neutrophil(PhagocyteModel):
                 x=point[2],
                 y=point[1],
                 z=point[0],
+                element_index=element_index,
             )
 
         return state
@@ -345,7 +346,7 @@ class Neutrophil(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Point:
+    ) -> Tuple[Point, int]:
         """
         Calculate a 1µm movement of a neutrophil
 
@@ -401,15 +402,18 @@ class Neutrophil(PhagocyteModel):
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
         for iteration in range(4):
-            if mesh.element_tissue_type[new_element_index] != GridTissueType.AIR:
+            if (
+                new_element_index >= 0
+                and mesh.element_tissue_type[new_element_index] != GridTissueType.AIR
+            ):
                 cell['velocity'][:] = dp_dt
-                return new_position
+                return new_position, new_element_index
             dp_dt /= 2.0
             new_position = cell['point'] + dp_dt
             new_element_index: int = mesh.get_element_index(new_position)
 
         cell['velocity'].fill(0.0)
-        return cell['point']
+        return cell['point'], cell['element_index']
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """

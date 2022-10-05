@@ -62,6 +62,8 @@ class ROS(ModuleModel):
         """Advance the state by a single time step."""
         ros: ROSState = state.ros
 
+        assert np.alltrue(ros.field >= 0.0)
+
         # From Henrique's code: commented region below adds zero, omitting until we have
         #   a non-trivial model
 
@@ -82,6 +84,8 @@ class ROS(ModuleModel):
             cn_b=ros.cn_b,
             dofs=ros.dofs,
         )
+
+        assert np.alltrue(ros.field >= 0.0)
 
         return state
 

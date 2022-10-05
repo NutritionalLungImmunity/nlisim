@@ -313,7 +313,7 @@ class CellList(object):
 
     def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
         """Return a list of cells indices in the same element."""
-        return self.get_cells_in_element(self.mesh.get_element_index(cell['point']))
+        return self.get_cells_in_element(cell['element_index'])
 
     def update_element_index(self, indices: Iterable = None):
         """Update the embedded element index.
@@ -333,9 +333,11 @@ class CellList(object):
             cell = self[index]
             old_element = cell['element_index']
             new_element = self.mesh.get_element_index(cell['point'])
+            assert new_element > 0, f"{old_element=} {new_element=}"
             if old_element != new_element:
                 self._cells_in_element_by_index[old_element].remove(index)
                 self._cells_in_element_by_index[new_element].add(index)
+                # print(f"{cell['element_index']=} {new_element=}")
                 cell['element_index'] = new_element
 
     def _compute_element_index(self):
@@ -347,5 +349,6 @@ class CellList(object):
         for cell_index in range(len(self)):
             cell = self[cell_index]
             element = self.mesh.get_element_index(cell['point'])
+            assert element >= 0
             self._cells_in_element_by_index[element].add(cell_index)
             cell['element_index'] = element

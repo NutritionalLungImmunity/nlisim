@@ -75,6 +75,8 @@ class Hemolysin(ModuleModel):
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(hemolysin.field >= 0.0)
+
         # fungus releases hemolysin
 
         # find the fungal cells that release hemolysin
@@ -108,6 +110,8 @@ class Hemolysin(ModuleModel):
             cn_b=hemolysin.cn_b,
             dofs=hemolysin.dofs,
         )
+
+        assert np.alltrue(hemolysin.field >= 0.0)
 
         return state
 

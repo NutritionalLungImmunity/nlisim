@@ -75,14 +75,18 @@ class PhagocyteModel(ModuleModel):
         """
         # At this moment, there is no inter-voxel geometry.
         cell_element = cell['element_index']
-        new_point: Point = self.single_step_probabilistic_drift(state, cell, cell_element)
-        cell['point'] = new_point
-        cell_list.update_element_index([cell_index])
+        new_point, new_cell_element = self.single_step_probabilistic_drift(
+            state, cell, cell_element
+        )
+        # print(f"{(new_point - cell['point'])=}")
+        cell['point'][:] = new_point
+        if new_cell_element != cell_element:
+            cell_list.update_element_index([cell_index])
 
     @abstractmethod
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Point:
+    ) -> Tuple[Point, int]:
         ...
 
     @staticmethod

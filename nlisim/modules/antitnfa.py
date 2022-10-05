@@ -88,6 +88,8 @@ class AntiTNFa(ModuleModel):
         tnf_a: TNFaState = state.tnfa
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(anti_tnf_a.field >= 0.0)
+
         # AntiTNFa / TNFa reaction
         reacted_quantity = michaelian_kinetics(
             substrate=anti_tnf_a.field,
@@ -117,6 +119,8 @@ class AntiTNFa(ModuleModel):
             cn_b=anti_tnf_a.cn_b,
             dofs=anti_tnf_a.dofs,
         )
+
+        assert np.alltrue(anti_tnf_a.field >= 0.0)
 
         return state
 

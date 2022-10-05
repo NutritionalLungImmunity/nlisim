@@ -93,6 +93,8 @@ class EstB(ModuleModel):
         molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(estb.field >= 0.0)
+
         # contribute our iron buffer to the iron pool
         iron.field += estb.iron_buffer
         estb.iron_buffer[:] = 0.0
@@ -134,6 +136,8 @@ class EstB(ModuleModel):
             cn_b=estb.cn_b,
             dofs=estb.dofs,
         )
+
+        assert np.alltrue(estb.field >= 0.0)
 
         return state
 

@@ -72,13 +72,15 @@ class Hepcidin(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(hepcidin.field >= 0.0)
+
         # interaction with macrophages
         live_macrophage_cells: MacrophageCellData = macrophage.cells.cell_data[
             macrophage.cells.alive()
         ]
         hepcidin_concentration_at_macrophages = mesh.evaluate_point_function(
             point_function=hepcidin.field,
-            element_index=macrophage.cells.alive()[:]['element_index'],
+            element_index=macrophage.cells.cell_data[macrophage.cells.alive()]['element_index'],
             point=live_macrophage_cells['point'],
         )
         activation_mask = activation_function(
@@ -116,6 +118,8 @@ class Hepcidin(ModuleModel):
         # Degrading Hepcidin is done by the "liver"
 
         # hepcidin does not diffuse
+
+        assert np.alltrue(hepcidin.field >= 0.0)
 
         return state
 

@@ -146,18 +146,25 @@ class Macrophage(PhagocyteModel):
         # uniformly random manner.
         init_num_macrophages = self.config.getint('init_num_macrophages')
         locations = np.where(mesh.element_tissue_type != GridTissueType.AIR)[0]
+
+        # define the cumulative distribution function so that elements are selected proportionally
+        # to their volumes
         volumes = mesh.element_volumes[locations]
-        cdf = np.cumsum(volumes)  # define the cumulative distribution function so that elements
-        cdf /= cdf[-1]  # are selected proportionally to their volumes
+        cdf = np.cumsum(volumes)
+        cdf /= cdf[-1]
         macrophage_elements = locations[
             np.argmax(np.random.random((init_num_macrophages, 1)) < cdf, axis=1)
         ]
+
+        # the cell's points are then superpositions of the tetrahedral vertices weighted by randomly
+        # generated simplex coordinates
         simplex_coords = sample_point_from_simplex(num_points=init_num_macrophages)
         points = np.einsum(
             'ijk,ji->ik',
             mesh.points[mesh.element_point_indices[macrophage_elements]],
             simplex_coords,
         )
+
         for element_index, point in zip(macrophage_elements, points):
             self.create_macrophage(
                 state=state,
@@ -321,7 +328,7 @@ class Macrophage(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Point:
+    ) -> Tuple[Point, int]:
         """
         Calculate a 1µm movement of a macrophage
 
@@ -341,9 +348,10 @@ class Macrophage(PhagocyteModel):
         """
         # macrophages are attracted by MIP1b
         from nlisim.modules.mip1b import MIP1BState
-        from nlisim.util import GridTissueType, activation_function
+        from nlisim.util import activation_function
 
         mip1b: MIP1BState = state.mip1b
+        macrophage: MacrophageState = state.macrophage
         mesh: TetrahedralMesh = state.mesh
 
         # compute chemokine influence on velocity, with some randomness.
@@ -359,12 +367,10 @@ class Macrophage(PhagocyteModel):
             b=1.0,
         )
 
-        # movement tends toward the gradient direction
+        # movement tends toward the gradient direction, with some randomization
         dp_dt = tetrahedral_gradient(
             field=weights, points=mesh.points[mesh.element_point_indices[element_index]]
-        ) + rg.normal(
-            scale=0.1, size=3
-        )  # TODO: expose scale to config file
+        ) + rg.normal(scale=macrophage.drift_bias, size=3)
 
         # average and re-normalize with existing velocity
         dp_dt += cell['velocity']
@@ -374,25 +380,32 @@ class Macrophage(PhagocyteModel):
 
         # we need to determine if this movement will put us into an air element.  If that happens,
         # we reduce the rate of movement exponentially (up to 4 times) until we stay within a
-        # non-air element. If exponential shortening is unsucessful after 4 tries, we stay in place.
-        # Velocity is updated to dp/dt in either case.
+        # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in
+        # place. Velocity is updated to dp/dt in either case.
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
+        assert cell['element_index'] > 0
         for iteration in range(4):
-            print(f"{new_element_index=}")
-            print(f"{mesh.element_tissue_type[new_element_index]=}")
+            # print(f"{iteration=}")
+            # print(f"{new_element_index=}")
+            # print(f"{cell['element_index']=}")
+            # print(f"{mesh.element_tissue_type[new_element_index]=}")
+            assert cell['element_index'] > 0
             if (
-                new_element_index != -1
+                new_element_index >= 0
                 and mesh.element_tissue_type[new_element_index] != TissueType.AIR
             ):
                 cell['velocity'][:] = dp_dt
-                return new_position
+                return new_position, new_element_index
+
             dp_dt /= 2.0
             new_position = cell['point'] + dp_dt
             new_element_index: int = mesh.get_element_index(new_position)
 
+        print(macrophage.cells.cell_data['element_index'])
+
         cell['velocity'].fill(0.0)
-        return cell['point']
+        return cell['point'], cell['element_index']
 
     @staticmethod
     def create_macrophage(
@@ -427,10 +440,10 @@ class Macrophage(PhagocyteModel):
         macrophage.cells.append(
             MacrophageCellData.create_cell(
                 point=Point(x=x, y=y, z=z),
+                element_index=-1 if element_index is None else element_index,
                 iron_pool=iron_pool,
                 **kwargs,
             ),
-            element_index=element_index,
         )
 
     def update_status(

@@ -86,12 +86,12 @@ def iron_tf_reaction(
 
 def michaelian_kinetics(
     *,
-    substrate: np.ndarray,
-    enzyme: np.ndarray,
-    k_m: float,
-    h: float,
-    k_cat: float = 1.0,
-    volume: Union[float, np.ndarray],
+    substrate: np.ndarray,  # units: atto-mol
+    enzyme: np.ndarray,  # units: atto-mol
+    k_m: float,  # units: atto-M
+    h: float,  # units: sec/step
+    k_cat: float = 1.0,  # units: 1/sec
+    volume: Union[float, np.ndarray],  # units: L
 ) -> np.ndarray:
     """
     Compute Michaelis–Menten kinetics.
@@ -113,26 +113,17 @@ def michaelian_kinetics(
 
 def michaelian_kinetics_molarity(
     *,
-    substrate: np.ndarray,
-    enzyme: np.ndarray,
-    k_m: float,
-    h: float,
-    k_cat: float = 1.0,
+    substrate: np.ndarray,  # units: atto-M
+    enzyme: np.ndarray,  # units: atto-M
+    k_m: float,  # units: atto-M
+    h: float,  # units: sec/step
+    k_cat: float = 1.0,  # units: 1/step
 ) -> np.ndarray:
     """
     Compute Michaelis–Menten kinetics.
 
-    units:
-    substrate : atto-M
-    enzyme : atto-M
-    k_m : atto-M
-    h: sec/step
-    k_cat: 1/sec
-
     result: atto-M/step
     """
-    # Note: was originally defined by converting to molarity, but can be redefined in terms
-    # of mols. This is algebraically equivalent and reduces the number of operations.
     return h * k_cat * enzyme * substrate / (substrate + k_m)
 
 
@@ -207,6 +198,26 @@ def secrete_in_element(
     )  # units: prop * atto-mol / L = atto-M
 
 
+def uptake_proportionally(
+    *,
+    mesh: TetrahedralMesh,
+    point_field: np.ndarray,  # units: atto-M
+    element_index: Union[int, np.ndarray],
+    point: Union[Point, np.ndarray],
+    k: float,  # units: L * cell^-1 * step^-1
+) -> float:
+    points = mesh.element_point_indices[element_index]
+    amount_around_points = point_field[points] * mesh.point_dual_volumes[points]
+    point_field_proportions = mesh.tetrahedral_proportions(element_index=element_index, point=point)
+    uptake_amounts = k * amount_around_points * point_field_proportions
+
+    np.subtract.at(
+        point_field, points, uptake_amounts / mesh.point_dual_volumes[points]
+    )  # units: atto-mol / L = atto-M
+
+    return float(np.sum(uptake_amounts))
+
+
 def uptake_in_element(
     *,
     mesh: TetrahedralMesh,
@@ -222,15 +233,16 @@ def uptake_in_element(
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume
     #    = old conc + (new amount / pt dual volume)
-    print(f"{point_field_proportions=}")
-    print(f"{amount=}")
-    print(f"{mesh.point_dual_volumes[points]=}")
+    # print(f"{point_field_proportions=}")
+    # print(f"{amount=}")
+    # print(f"{mesh.point_dual_volumes[points]=}")
     assert np.all(0.0 <= point_field_proportions) and np.all(
         point_field_proportions <= 1.0
     ), f"{point_field_proportions=}"
+
     np.subtract.at(
         point_field, points, point_field_proportions * amount / mesh.point_dual_volumes[points]
-    )  # units: prop * atto-mol / L = atto-M
+    )  # units: proportion * atto-mol / L = atto-M
 
 
 def sample_point_from_simplex(num_points: int = 1, dimension: int = 3) -> np.ndarray:

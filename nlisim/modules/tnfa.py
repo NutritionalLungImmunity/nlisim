@@ -114,6 +114,8 @@ class TNFa(ModuleModel):
         neutrophil: NeutrophilState = state.neutrophil
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(tnfa.field >= 0.0)
+
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
             macrophage_cell_element: int = macrophage_cell['element_index']
@@ -192,6 +194,8 @@ class TNFa(ModuleModel):
             cn_b=tnfa.cn_b,
             dofs=tnfa.dofs,
         )
+
+        assert np.alltrue(tnfa.field >= 0.0)
 
         return state
 

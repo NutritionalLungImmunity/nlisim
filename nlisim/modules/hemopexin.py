@@ -87,6 +87,8 @@ class Hemopexin(ModuleModel):
         molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
+        assert np.alltrue(hemopexin.field >= 0.0)
+
         # Hemopexin / Hemoglobin reaction
         reacted_quantity = michaelian_kinetics(
             substrate=hemopexin.field,
@@ -116,6 +118,8 @@ class Hemopexin(ModuleModel):
             cn_b=hemopexin.cn_b,
             dofs=hemopexin.dofs,
         )
+
+        assert np.alltrue(hemopexin.field >= 0.0)
 
         return state
 
