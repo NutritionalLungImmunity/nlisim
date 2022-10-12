@@ -1,7 +1,6 @@
 from enum import IntEnum, unique
 import math
 from queue import Queue
-import random
 from typing import TYPE_CHECKING, Any, Dict
 
 import attr
@@ -253,7 +252,7 @@ class Afumigatus(ModuleModel):
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in random.choices(
+        for vox_z, vox_y, vox_x in rg.choices(
             locations, k=self.config.getint('init_infection_num')
         ):
             # the x,y,z coordinates are in the centers of the grids
