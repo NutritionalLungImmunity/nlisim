@@ -6,7 +6,7 @@ jobs:
       - image: knappa/tox:latest
     steps:
       - checkout
-      - run: tox -e lint,type,py36,py37,py38,py39
+      - run: tox -e lint,type,py38,py39
 
   docs-build:
     docker:
