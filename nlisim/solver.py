@@ -27,6 +27,7 @@ def initialize(state: State) -> State:
     # run validation after all initialization is done otherwise validation
     # could fail on a module's private state before it can initialize itself
     with validation_context('global initialization'):
+        # noinspection PyTypeChecker
         attr.validate(state)
     return state
 
@@ -77,6 +78,7 @@ def advance(state: State, target_time: float) -> Iterator[State]:
 
             with validation_context(m.name):
                 state = m.advance(state, previous_time)
+                # noinspection PyTypeChecker
                 attr.validate(state)
 
             # reinsert module with updated time
@@ -108,9 +110,10 @@ def run_iterator(config: SimulationConfig, target_time: float) -> Iterator[Tuple
     4. Finalize the simulation (yielding the result)
     """
     attr.set_run_validators(config.getboolean('simulation', 'validate'))
-    state = initialize(State.create(config))
-    yield state, Status.initialize
+    initial_state = initialize(State.create(config))
+    yield initial_state, Status.initialize
 
+    mid_state = initial_state
     for mid_state in advance(initial_state, target_time):
         yield mid_state, Status.time_step
 
