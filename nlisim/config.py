@@ -4,7 +4,7 @@ from importlib import import_module
 from io import StringIO, TextIOBase
 from pathlib import PurePath
 import re
-from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union
+from typing import TYPE_CHECKING, List, Optional, TextIO, Type, Union, cast
 
 if TYPE_CHECKING:
     from nlisim.module import ModuleModel
@@ -55,7 +55,7 @@ class SimulationConfig(ConfigParser):
         """Load a module class, returning the class constructor."""
         module_path, func_name = path.rsplit('.', 1)
         module = import_module(module_path)
-        func = getattr(module, func_name, None)
+        func: Type['ModuleModel'] = cast(Type['ModuleModel'], getattr(module, func_name, None))
 
         cls.validate_module(func, path)
 
@@ -132,12 +132,7 @@ class SimulationConfig(ConfigParser):
 
         This is a helper method for `getlist`, split out for code sharing.
         """
-        values = []
-        for value in re.split('[\n ,]+', value):
-            stripped = value.strip()
-            if stripped:
-                values.append(stripped)
-        return values
+        return [val.strip() for val in re.split('[\n ,]+', value) if val.strip()]
 
     def __str__(self):
         f = StringIO()
