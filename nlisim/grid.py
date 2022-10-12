@@ -26,7 +26,7 @@ from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple, Union, cast
+from typing import Dict, Iterable, Iterator, List, Tuple, Union, cast, overload
 
 from attr import attrib, attrs
 
@@ -182,7 +182,7 @@ class TetrahedralMesh(object):
         # TODO: see if vtk has this
         # if we don't have a precomputed 1-skeleton of the dual, compute it now
         # collect all faces and their incident tetrahedra
-        face_tets = defaultdict(list)
+        face_tets: Dict = defaultdict(list)
         for tet_index in range(element_point_indices.shape[0]):
             point_indices = np.array(sorted(element_point_indices[tet_index, :]))
             for omitted_idx in range(4):
@@ -219,6 +219,18 @@ class TetrahedralMesh(object):
         np.add.at(point_dual_volumes, element_point_indices.T, element_volumes / 4.0)
 
         return element_neighbors, element_volumes, point_dual_volumes, total_volume
+
+    @overload
+    def evaluate_point_function(
+        self, *, point_function: np.ndarray, point: Point, element_index: int
+    ) -> float:
+        ...
+
+    @overload
+    def evaluate_point_function(
+        self, *, point_function: np.ndarray, point: Point, element_index: np.ndarray
+    ) -> np.ndarray:
+        ...
 
     def evaluate_point_function(
         self, *, point_function: np.ndarray, point: Point, element_index: Union[int, np.ndarray]
@@ -371,7 +383,7 @@ class TetrahedralMesh(object):
             sln = np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :])
             return np.all(0.0 <= sln) and np.all(sln <= 1.0) and np.sum(sln) <= 1.0
         except np.linalg.LinAlgError:
-            assert False, "Bad mesh: contains a singular tetrahedron"
+            raise AssertionError("Bad mesh: contains a singular tetrahedron")
 
     def get_element_index(self, point: Point) -> int:
         """

@@ -1,10 +1,6 @@
-# noinspection PyPackageRequirements
 import logging
 
-# noinspection PyPackageRequirements
 from attr import attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.module import ModuleModel, ModuleState

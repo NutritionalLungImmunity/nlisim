@@ -203,17 +203,28 @@ class TAFC(ModuleModel):
                 )
                 # quantity = (
                 #     mesh.integrate_point_function_single_element(
-                #         point_function=tafc.field['TAFCBI'], element_index=afumigatus_cell_element
+                #         point_function=tafc.field['TAFCBI'],
+                #         element_index=afumigatus_cell_element
                 #     )
                 #     * tafc.tafcbi_uptake_rate_unit_t
                 #     / mesh.element_volumes[afumigatus_cell_element]
-                # )  # units: atto-mols * (L * cell^-1 * step^-1) / L = atto-mols * cell^-1 * step^-1
+                # )  # units: atto-mols * (L * cell^-1 * step^-1) / L
+                #    # = atto-mols * cell^-1 * step^-1
                 state.log.debug(' ')
                 state.log.debug(
                     f"{tafc.field['TAFCBI'][mesh.element_point_indices[afumigatus_cell_element]]=}"
                 )
                 state.log.debug(
-                    f"{mesh.integrate_point_function_single_element(point_function=tafc.field['TAFCBI'], element_index=afumigatus_cell_element)=}"
+                    "mesh.integrate_point_function_single_element(\n"
+                    "    point_function=tafc.field['TAFCBI'],\n"
+                    "    element_index=afumigatus_cell_element,\n"
+                    ")="
+                    + str(
+                        mesh.integrate_point_function_single_element(
+                            point_function=tafc.field['TAFCBI'],
+                            element_index=afumigatus_cell_element,
+                        )
+                    )
                 )
                 state.log.debug(' ')
                 state.log.debug(f"{quantity=}")

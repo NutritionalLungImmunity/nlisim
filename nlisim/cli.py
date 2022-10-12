@@ -1,9 +1,8 @@
 import logging
 import logging.handlers
-import os
-import shutil
 from pathlib import Path
-from typing import Tuple, Optional
+import shutil
+from typing import Optional, Tuple
 
 import click
 import click_pathlib
@@ -50,7 +49,7 @@ np.seterr(divide='raise', invalid='raise')
 )
 @click.pass_context
 def main(
-    ctx: click.Context, config_files: Tuple[Path], log_level: int, log_file: Optional[LogFilePath]
+    ctx: click.Context, config_files: Tuple[Path], log_level: int, log_file: Optional[Path]
 ) -> None:
     root = logging.getLogger('nlisim')
     if log_file is not None:

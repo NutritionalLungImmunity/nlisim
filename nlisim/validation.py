@@ -1,5 +1,5 @@
-import logging
 from contextlib import contextmanager
+import logging
 from typing import TYPE_CHECKING, Callable, Iterator, List
 
 if TYPE_CHECKING:  # prevent circular imports for type checking

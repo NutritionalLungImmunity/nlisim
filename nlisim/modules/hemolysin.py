@@ -1,17 +1,9 @@
 import logging
 from typing import Any, Dict
 
-# noinspection PyPackageRequirements
 import attr
-
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-from modules.afumigatus import AfumigatusCellData
-
-# noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import (
@@ -20,6 +12,7 @@ from nlisim.diffusion import (
 )
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
+from nlisim.modules.afumigatus import AfumigatusCellData
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import secrete_in_element, turnover_rate

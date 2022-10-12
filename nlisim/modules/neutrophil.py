@@ -397,11 +397,11 @@ class Neutrophil(PhagocyteModel):
 
         # we need to determine if this movement will put us into an air element.  If that happens,
         # we reduce the rate of movement exponentially (up to 4 times) until we stay within a
-        # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in place.
-        # Velocity is updated to dp/dt in either case.
+        # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in
+        # place. Velocity is updated to dp/dt in either case.
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
-        for iteration in range(4):
+        for _ in range(4):
             if (
                 new_element_index >= 0
                 and mesh.element_tissue_type[new_element_index] != GridTissueType.AIR
@@ -410,7 +410,7 @@ class Neutrophil(PhagocyteModel):
                 return new_position, new_element_index
             dp_dt /= 2.0
             new_position = cell['point'] + dp_dt
-            new_element_index: int = mesh.get_element_index(new_position)
+            new_element_index = mesh.get_element_index(new_position)
 
         cell['velocity'].fill(0.0)
         return cell['point'], cell['element_index']

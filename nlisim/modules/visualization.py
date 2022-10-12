@@ -1,11 +1,8 @@
 from enum import Enum
 import json
 
-# noinspection PyPackageRequirements
 import attr
 import meshio
-
-# noinspection PyPackageRequirements
 import numpy as np
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
@@ -15,11 +12,10 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 
 # noinspection PyUnresolvedReferences
-from vtkmodules.vtkCommonDataModel import (
+from vtkmodules.vtkCommonDataModel import (  # vtkUnstructuredGrid,
     vtkCellArray,
     vtkPolyData,
     vtkStructuredPoints,
-    vtkUnstructuredGrid,
 )
 
 # noinspection PyUnresolvedReferences
@@ -103,10 +99,10 @@ class Visualization(ModuleModel):
         cls, var: np.ndarray, var_name: str, filename: str, mesh: TetrahedralMesh
     ) -> None:
 
-        mesh: meshio.Mesh = mesh.as_meshio()
-        mesh.point_data = {var_name: var}
+        meshio_mesh: meshio.Mesh = mesh.as_meshio()
+        meshio_mesh.point_data = {var_name: var}
 
-        mesh.write(filename, file_format="vtu")
+        meshio_mesh.write(filename, file_format="vtu")
 
     @classmethod
     def write_structured_points(

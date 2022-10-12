@@ -1,16 +1,16 @@
-import logging
 from io import BytesIO, StringIO
+import logging
 from pathlib import PurePath
 from typing import IO, TYPE_CHECKING, Any, Dict, Union, cast
-
-# noinspection PyPackageRequirements
-import numpy as np
 
 # noinspection PyPackageRequirements
 from attr import attrib, attrs
 
 # noinspection PyPackageRequirements
 from h5py import File as H5File
+
+# noinspection PyPackageRequirements
+import numpy as np
 
 from nlisim.grid import TetrahedralMesh
 from nlisim.validation import context as validation_context

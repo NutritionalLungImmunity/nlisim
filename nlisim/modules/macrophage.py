@@ -385,7 +385,7 @@ class Macrophage(PhagocyteModel):
         new_position = cell['point'] + dp_dt
         new_element_index: int = mesh.get_element_index(new_position)
         assert cell['element_index'] > 0
-        for iteration in range(4):
+        for _ in range(4):
             # state.log.debug(f"{iteration=}")
             # state.log.debug(f"{new_element_index=}")
             # state.log.debug(f"{cell['element_index']=}")
@@ -400,7 +400,7 @@ class Macrophage(PhagocyteModel):
 
             dp_dt /= 2.0
             new_position = cell['point'] + dp_dt
-            new_element_index: int = mesh.get_element_index(new_position)
+            new_element_index = mesh.get_element_index(new_position)
 
         state.log.info(f"{macrophage.cells.cell_data['element_index']=}")
 

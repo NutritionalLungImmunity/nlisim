@@ -112,6 +112,7 @@ def generate_vtk_objects(
     state: State,
 ) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
     """Generate the vtk objects for each module. (e.g. for upload)"""
+    # TODO: these are both rectangular grid thingys and need updating
     volume = create_vtk_geometry(state.mesh, state.lung_tissue)
     molecules_grid = create_vtk_volume(state.mesh)
     cells = dict()

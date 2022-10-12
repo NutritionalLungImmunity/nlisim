@@ -144,7 +144,7 @@ class Pneumocyte(PhagocyteModel):
         return state
 
     def single_step_probabilistic_drift(
-        self, state: State, cell: PhagocyteCellData, voxel: Voxel
+        self, state: State, cell: PhagocyteCellData, element_index: int
     ) -> Point:
         # pneumocytes do not move
         pass

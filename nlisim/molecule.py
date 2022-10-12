@@ -2,10 +2,10 @@ from enum import Enum, unique
 from typing import Dict, List
 
 from attr import attrib, attrs
-from grid import TetrahedralMesh
 from h5py import Group
 import numpy as np
 
+from nlisim.grid import TetrahedralMesh
 from nlisim.state import State, get_class_path
 
 

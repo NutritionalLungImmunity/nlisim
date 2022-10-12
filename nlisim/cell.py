@@ -178,7 +178,7 @@ class CellList(object):
     def __repr__(self) -> str:
         return f'CellList[{self._ncells}]'
 
-    def __getitem__(self, index: int) -> CellType:
+    def __getitem__(self, index: Union[int, slice]) -> CellType:
         if isinstance(index, str):
             raise TypeError('Expected an integer index, did you mean `cells.cell_data[key]`?')
         return self.cell_data[index]

@@ -102,6 +102,7 @@ class Hemoglobin(ModuleModel):
         # array([2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1])
         # >>> np.bincount(arr)[arr]
         # array([2, 2, 3, 3, 3, 1, 1])
+
         afumigatus_elements = np.array(afumigatus.cells[:]['element_index'])[
             iron_uptaking_afumigatus_indices
         ]
