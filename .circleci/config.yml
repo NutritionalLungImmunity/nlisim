@@ -6,11 +6,11 @@ jobs:
       - image: knappa/tox:latest
     steps:
       - checkout
-      - run: tox -e lint,type,py36,py37,py38,py39
+      - run: tox -e lint,type,py39,py310
 
   docs-build:
     docker:
-      - image: circleci/python:3.8
+      - image: circleci/python:3.9
     steps:
       - checkout
       - run:
@@ -46,7 +46,7 @@ jobs:
 
   release:
     docker:
-      - image: circleci/python:3.8
+      - image: circleci/python:3.9
     steps:
       - checkout
       - run:
