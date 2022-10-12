@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Callable, Iterator, List
 
@@ -50,5 +51,5 @@ def context(name: str) -> Iterator[None]:
         raise
     except Exception:
         # TODO: use simulation logger
-        print(f'ERROR: Unhandled exception raised while executing "{name}"')
+        logging.getLogger('nlisim').error(f'Unhandled exception raised while executing "{name}"')
         raise

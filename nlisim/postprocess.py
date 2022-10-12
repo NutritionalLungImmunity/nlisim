@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
 
@@ -43,7 +44,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
         try:
             scalar = numpy_to_vtk(data)
         except Exception:
-            print(f'Unhandled data type in field {field}')
+            logging.getLogger('nlisim').error(f'Unhandled data type in field {field}')
             continue
 
         scalar.SetName(field)

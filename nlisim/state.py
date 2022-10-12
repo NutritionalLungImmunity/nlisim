@@ -1,15 +1,16 @@
+import logging
 from io import BytesIO, StringIO
 from pathlib import PurePath
 from typing import IO, TYPE_CHECKING, Any, Dict, Union, cast
+
+# noinspection PyPackageRequirements
+import numpy as np
 
 # noinspection PyPackageRequirements
 from attr import attrib, attrs
 
 # noinspection PyPackageRequirements
 from h5py import File as H5File
-
-# noinspection PyPackageRequirements
-import numpy as np
 
 from nlisim.grid import TetrahedralMesh
 from nlisim.validation import context as validation_context
@@ -31,6 +32,9 @@ class State(object):
 
     # simulation configuration
     config: 'SimulationConfig'
+
+    # logger for nlisim
+    log: logging.Logger = attrib(factory=lambda: logging.getLogger('nlisim'))
 
     # a private container for module state, users of this class should use the
     # public API instead
@@ -69,7 +73,7 @@ class State(object):
                 try:
                     module_state = module.StateClass.load_state(state, group)
                 except Exception:
-                    print(f'Error loading state for {module.name}')
+                    state.log.error(f'Error loading state for {module.name}')
                     raise
 
                 state._extra[module.name] = module_state
@@ -89,7 +93,7 @@ class State(object):
                 try:
                     module_state.save_state(group)
                 except Exception:
-                    print(f'Error serializing {module.name}')
+                    logging.getLogger('nlisim').error(f'Error serializing {module.name}')
                     raise
 
     def serialize(self) -> bytes:
@@ -201,5 +205,5 @@ def get_class_path(instance: Any) -> str:
 #         with h5py.File(path, 'r') as file:
 #             return np.array(file['geometry'])
 #     except Exception:
-#         print(f'Error loading geometry file at {path}.')
+#         logging.getLogger('nlisim').error(f'Error loading geometry file at {path}.')
 #         raise

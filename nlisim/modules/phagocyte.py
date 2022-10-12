@@ -78,7 +78,7 @@ class PhagocyteModel(ModuleModel):
         new_point, new_cell_element = self.single_step_probabilistic_drift(
             state, cell, cell_element
         )
-        # print(f"{(new_point - cell['point'])=}")
+
         cell['point'][:] = new_point
         if new_cell_element != cell_element:
             cell_list.update_element_index([cell_index])

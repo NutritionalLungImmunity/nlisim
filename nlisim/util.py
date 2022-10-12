@@ -233,9 +233,9 @@ def uptake_in_element(
     # new pt concentration = (old pt amount + new amount) / pt dual volume
     #    = (old conc * pt dual volume + new amount) / pt dual volume
     #    = old conc + (new amount / pt dual volume)
-    # print(f"{point_field_proportions=}")
-    # print(f"{amount=}")
-    # print(f"{mesh.point_dual_volumes[points]=}")
+    # state.log.debug(f"{point_field_proportions=}")
+    # state.log.debug(f"{amount=}")
+    # state.log.debug(f"{mesh.point_dual_volumes[points]=}")
     assert np.all(0.0 <= point_field_proportions) and np.all(
         point_field_proportions <= 1.0
     ), f"{point_field_proportions=}"

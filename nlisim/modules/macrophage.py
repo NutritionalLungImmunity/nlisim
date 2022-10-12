@@ -386,10 +386,10 @@ class Macrophage(PhagocyteModel):
         new_element_index: int = mesh.get_element_index(new_position)
         assert cell['element_index'] > 0
         for iteration in range(4):
-            # print(f"{iteration=}")
-            # print(f"{new_element_index=}")
-            # print(f"{cell['element_index']=}")
-            # print(f"{mesh.element_tissue_type[new_element_index]=}")
+            # state.log.debug(f"{iteration=}")
+            # state.log.debug(f"{new_element_index=}")
+            # state.log.debug(f"{cell['element_index']=}")
+            # state.log.debug(f"{mesh.element_tissue_type[new_element_index]=}")
             assert cell['element_index'] > 0
             if (
                 new_element_index >= 0
@@ -402,7 +402,7 @@ class Macrophage(PhagocyteModel):
             new_position = cell['point'] + dp_dt
             new_element_index: int = mesh.get_element_index(new_position)
 
-        print(macrophage.cells.cell_data['element_index'])
+        state.log.info(f"{macrophage.cells.cell_data['element_index']=}")
 
         cell['velocity'].fill(0.0)
         return cell['point'], cell['element_index']

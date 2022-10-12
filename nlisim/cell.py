@@ -337,7 +337,6 @@ class CellList(object):
             if old_element != new_element:
                 self._cells_in_element_by_index[old_element].remove(index)
                 self._cells_in_element_by_index[new_element].add(index)
-                # print(f"{cell['element_index']=} {new_element=}")
                 cell['element_index'] = new_element
 
     def _compute_element_index(self):

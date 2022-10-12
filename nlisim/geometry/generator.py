@@ -1,4 +1,5 @@
 import json
+import logging
 import struct
 import time
 from typing import List, Tuple, Union
@@ -86,7 +87,7 @@ class Geometry(object):
         return mask
 
     def construct_air_duct(self, random_mask):
-        print('constructing air duct...')
+        logging.getLogger('nlisim').info('constructing air duct...')
         tissue = self.geo
         fixed = self.fixed
         # construct air duct
@@ -116,7 +117,7 @@ class Geometry(object):
     def construct_alveolus(self, random_mask):
         tissue = self.geo
         fixed = self.fixed
-        print('constructing alveolus...')
+        logging.getLogger('nlisim').info('constructing alveolus...')
         # construct sac
         for function in self.sac_f:
             if isinstance(function, Sphere):
@@ -149,7 +150,7 @@ class Geometry(object):
 
         epi_mask = np.where(tissue == EPITHELIUM, 2, 0)
         surf_mask = ndimage.filters.convolve(epi_mask, np.ones((3, 3, 3)))
-        print('constructing surfactant layer and capillary...')
+        logging.getLogger('nlisim').info('constructing surfactant layer and capillary...')
         # construct surfactant and blood vessel
         if not simple:
             tissue[np.logical_and(tissue == AIR, surf_mask > 0)] = SURF
@@ -301,6 +302,6 @@ def generate_geometry(config, output, preview, simple, lapl):
         g.construct(simple)
         g.write_to_hdf5(output + '.hdf5', lapl)
         g.write_to_vtk(output + '.vtk')
-    print(f'--- {(time.time() - start_time)} seconds ---')
+    logging.getLogger('nlisim').info(f'--- {(time.time() - start_time)} seconds ---')
     if preview:
         g.preview()

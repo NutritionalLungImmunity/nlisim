@@ -42,7 +42,7 @@
 #                     raise ValidationError("shape doesn't match")
 #                 geometry.lung_tissue[:] = f['geometry'][:]
 #         except Exception:
-#             print(f'Error loading geometry file at {path}.')
+#             state.log.error(f'Error loading geometry file at {path}.')
 #             raise
 #
 #         return state

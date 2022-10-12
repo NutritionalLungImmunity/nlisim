@@ -240,8 +240,7 @@ class TetrahedralMesh(object):
         Value of the function, defined using linear interpolation.
         """
         proportions = self.tetrahedral_proportions(element_index=element_index, point=point)
-        # print(f"{proportions=}")
-        # print(f"{np.sum(proportions)=}")
+
         if isinstance(element_index, np.ndarray):
             return np.einsum(
                 'ij,ij->i', point_function[self.element_point_indices[element_index]], proportions
@@ -460,8 +459,7 @@ class TetrahedralMesh(object):
             return proportional_coords
         else:
             tet_points = self.points[self.element_point_indices[element_index]]
-            # print(f"{(tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1)).shape=}")
-            # print(f"{(point - tet_points[:, 0, :]).shape=}")
+
             ortho_coords = np.linalg.solve(
                 np.transpose(
                     tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1),
@@ -484,7 +482,7 @@ class TetrahedralMesh(object):
         self, element_index: int, point: Point, interior: bool = False
     ) -> bool:
         tet_proportions = self.tetrahedral_proportions(element_index, point)
-        # print(f"{tet_proportions=}")
+
         return (
             np.alltrue(0.0 <= tet_proportions)
             and np.alltrue(tet_proportions <= 1.0)

@@ -130,7 +130,7 @@ class TAFC(ModuleModel):
             k_cat=1.0,  # default
         )  # units: atto-M/step
         for idx in range(transferrin.field["TfFe2"].shape[0]):
-            print(
+            state.log.debug(
                 f"{transferrin.field['TfFe2'][idx]=}"
                 f"\t{tafc.field['TAFC'][idx]=}"
                 f"\t{dfe2_dt[idx]=}"
@@ -142,7 +142,7 @@ class TAFC(ModuleModel):
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
         )  # units: atto-M/step
-        print(f"{np.min(dfe_dt)=} {np.max(dfe_dt)=}")
+        state.log.debug(f"{np.min(dfe_dt)=} {np.max(dfe_dt)=}")
 
         # - enforce bounds from TAFC quantity
         total_change = dfe2_dt + dfe_dt
@@ -152,9 +152,9 @@ class TAFC(ModuleModel):
             out=np.zeros_like(tafc.field['TAFC']),  # source of defaults
             where=total_change != 0.0,
         )
-        print(f"{np.min(rel)=} {np.max(rel)=}")
+        state.log.debug(f"tafc {np.min(rel)=} {np.max(rel)=}")
         np.clip(rel, 0.0, 1.0, out=rel)  # fix any remaining problem divides
-        print(f"{np.min(rel)=} {np.max(rel)=}")
+        state.log.debug(f"tafc {np.min(rel)=} {np.max(rel)=}")
         np.multiply(dfe2_dt, rel, out=dfe2_dt)
         np.multiply(dfe_dt, rel, out=dfe_dt)
 
@@ -208,16 +208,16 @@ class TAFC(ModuleModel):
                 #     * tafc.tafcbi_uptake_rate_unit_t
                 #     / mesh.element_volumes[afumigatus_cell_element]
                 # )  # units: atto-mols * (L * cell^-1 * step^-1) / L = atto-mols * cell^-1 * step^-1
-                print()
-                print(
+                state.log.debug(' ')
+                state.log.debug(
                     f"{tafc.field['TAFCBI'][mesh.element_point_indices[afumigatus_cell_element]]=}"
                 )
-                print(
+                state.log.debug(
                     f"{mesh.integrate_point_function_single_element(point_function=tafc.field['TAFCBI'], element_index=afumigatus_cell_element)=}"
                 )
-                print()
-                print(f"{quantity=}")
-                print(f"{tafc.tafcbi_uptake_rate_unit_t=}")
+                state.log.debug(' ')
+                state.log.debug(f"{quantity=}")
+                state.log.debug(f"{tafc.tafcbi_uptake_rate_unit_t=}")
                 # uptake_in_element(
                 #     mesh=mesh,
                 #     point_field=tafc.field['TAFCBI'],

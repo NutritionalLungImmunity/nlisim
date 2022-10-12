@@ -1,22 +1,22 @@
-from pathlib import Path
+import logging
+import logging.handlers
+import os
 import shutil
-from typing import Tuple
+from pathlib import Path
+from typing import Tuple, Optional
 
-# noinspection PyPackageRequirements
 import click
 import click_pathlib
 import numpy as np
-
-# noinspection PyPackageRequirements
 from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
 from nlisim.solver import Status
 
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
+LogFilePath = click_pathlib.Path(exists=False, dir_okay=False, readable=True)
 OutputDirPath = click_pathlib.Path(file_okay=False, dir_okay=True, writable=True)
 
-# logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 np.seterr(divide='raise', invalid='raise')
 
 
@@ -27,11 +27,38 @@ np.seterr(divide='raise', invalid='raise')
     type=InputFilePath,
     multiple=True,
     default=['config.ini'],
-    help='Path to a simulation config. May be specified multiple times to cascade configurations.',
+    help='Path to a simulation config. '
+    'May be specified multiple times to cascade configurations.',
     show_default=True,
 )
+@click.option(
+    '--loglevel',
+    'log_level',
+    type=int,
+    default=0,
+    help='Set the log level. 10 = Debug, 20 = Info, '
+    '30 = Warning, 40 = Error, 50 = Critical, 0 = None',
+    show_default=True,
+)
+@click.option(
+    '--logfile',
+    'log_file',
+    type=LogFilePath,
+    default=None,
+    help='Set optional file for log. Defaults to stdout/err',
+    show_default=False,
+)
 @click.pass_context
-def main(ctx: click.Context, config_files: Tuple[Path]) -> None:
+def main(
+    ctx: click.Context, config_files: Tuple[Path], log_level: int, log_file: Optional[LogFilePath]
+) -> None:
+    root = logging.getLogger('nlisim')
+    if log_file is not None:
+        handler = logging.handlers.WatchedFileHandler(log_file)
+        formatter = logging.Formatter(logging.BASIC_FORMAT)
+        handler.setFormatter(formatter)
+        root.addHandler(handler)
+    root.setLevel(log_level)
     ctx.obj = {'config': SimulationConfig(*config_files)}
 
 

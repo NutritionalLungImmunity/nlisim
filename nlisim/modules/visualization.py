@@ -179,9 +179,9 @@ class Visualization(ModuleModel):
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             file_name = filename.replace('<variable>', module_name + '-' + var_name)
-            print(f"{var=}")
-            print(f"{file_name=}")
-            print(f"{attr_names=}")
+            state.log.info(f"{var=}")
+            state.log.info(f"{file_name=}")
+            state.log.info(f"{attr_names=}")
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:

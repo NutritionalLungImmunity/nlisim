@@ -52,7 +52,7 @@ class StateOutput(ModuleModel):
         output_dir = self._output_dir
         if output_dir.exists():
             # Since output_dir may be a Docker mount point, don't remove the directory itself.
-            print(f'File output directory {output_dir.resolve()} exists. Clearing it.')
+            state.log.info(f'File output directory {output_dir.resolve()} exists. Clearing it.')
             self._clear_directory(output_dir)
         else:
             output_dir.mkdir(parents=True)

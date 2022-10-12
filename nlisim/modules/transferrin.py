@@ -229,10 +229,10 @@ class Transferrin(ModuleModel):
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols
 
-                print(f"{macrophage_cell['iron_pool']=}")
-                # print(f"{transferrin_in_element=}")
-                # print(f"{mesh.element_volumes[macrophage_element_index]=}")
-                # print(f"{transferrin.ma_iron_export_rate_unit_t=}")
+                state.log.info(f"{macrophage_cell['iron_pool']=}")
+                # state.log.info(f"{transferrin_in_element=}")
+                # state.log.info(f"{mesh.element_volumes[macrophage_element_index]=}")
+                # state.log.info(f"{transferrin.ma_iron_export_rate_unit_t=}")
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],  # units: atto-mols
                     2 * transferrin_in_element,  # units: atto-mols
@@ -250,8 +250,8 @@ class Transferrin(ModuleModel):
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                print(f"{rel_tf_fe=}")
-                print(f"{qtty=}")
+                state.log.info(f"{rel_tf_fe=}")
+                state.log.info(f"{qtty=}")
                 tffe_qtty = rel_tf_fe * qtty  # units: atto-mols
                 tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-mols
 
