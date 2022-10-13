@@ -100,9 +100,15 @@ class Transferrin(ModuleModel):
         )  # units: proportion * cell^-1 * step^-1
 
         # initialize the molecular field
-        transferrin.grid['Tf'][lung_tissue != TissueType.AIR] = transferrin.default_apotf_concentration * voxel_volume
-        transferrin.grid['TfFe'][lung_tissue != TissueType.AIR] = transferrin.default_tffe_concentration * voxel_volume
-        transferrin.grid['TfFe2'][lung_tissue != TissueType.AIR] = transferrin.default_tffe2_concentration * voxel_volume
+        transferrin.grid['Tf'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_apotf_concentration * voxel_volume
+        )
+        transferrin.grid['TfFe'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_tffe_concentration * voxel_volume
+        )
+        transferrin.grid['TfFe2'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_tffe2_concentration * voxel_volume
+        )
 
         return state
 
