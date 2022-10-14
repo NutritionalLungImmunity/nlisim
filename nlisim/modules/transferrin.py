@@ -9,7 +9,7 @@ from nlisim.diffusion import apply_diffusion
 from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction
+from nlisim.util import TissueType, iron_tf_reaction
 
 
 def molecule_grid_factory(self: 'TransferrinState') -> np.ndarray:
@@ -53,6 +53,7 @@ class Transferrin(ModuleModel):
     def initialize(self, state: State) -> State:
         transferrin: TransferrinState = state.transferrin
         voxel_volume = state.voxel_volume
+        lung_tissue = state.lung_tissue
 
         # config file values
         transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
@@ -99,9 +100,15 @@ class Transferrin(ModuleModel):
         )  # units: proportion * cell^-1 * step^-1
 
         # initialize the molecular field
-        transferrin.grid['Tf'] = transferrin.default_apotf_concentration * voxel_volume
-        transferrin.grid['TfFe'] = transferrin.default_tffe_concentration * voxel_volume
-        transferrin.grid['TfFe2'] = transferrin.default_tffe2_concentration * voxel_volume
+        transferrin.grid['Tf'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_apotf_concentration * voxel_volume
+        )
+        transferrin.grid['TfFe'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_tffe_concentration * voxel_volume
+        )
+        transferrin.grid['TfFe2'][lung_tissue != TissueType.AIR] = (
+            transferrin.default_tffe2_concentration * voxel_volume
+        )
 
         return state
 
