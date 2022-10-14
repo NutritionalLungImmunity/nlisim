@@ -72,11 +72,12 @@ def test_config_add_module_object():
 
 
 def test_config_add_module_invalid_subclass():
-    class NonModule(ModuleModel):
+    class NonModule:
         name = 'NonModule'
 
     config = SimulationConfig()
     with raises(TypeError, match=r'^Invalid module class for'):
+        # noinspection PyTypeChecker
         config.add_module(NonModule)
 
 

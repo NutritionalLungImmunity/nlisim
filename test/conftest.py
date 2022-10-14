@@ -29,7 +29,7 @@ def config():
                 'dz': 20,
                 'voxel_volume': 6.4e-11,
                 'space_volume': 6.4e-11 * 20 * 40 * 20,
-                'geometry_path': 'geometry.hdf5',
+                'geometry_file': 'acinus-tet.vtu',
                 'validate': True,
             }
         }

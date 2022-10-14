@@ -9,7 +9,7 @@ from nlisim.grid import TetrahedralMesh
 
 
 @fixture
-def cell(mesh: TetrahedralMesh, point: Point):
+def cell(grid, point: Point) -> CellData:
     # a single cell in the middle of the domain
     cell = CellData.create_cell(point=point)
     cells = CellData([cell])
@@ -17,8 +17,8 @@ def cell(mesh: TetrahedralMesh, point: Point):
 
 
 @fixture
-def cell_list(mesh: TetrahedralMesh, point: Point):
-    cells = CellList.create_from_seed(mesh=mesh, point=point)
+def cell_list(grid, point: Point) -> CellList:
+    cells = CellList.create_from_seed(mesh=grid, point=point)
     yield cells
 
 
@@ -52,16 +52,16 @@ def test_getitem_error(cell_list: CellList):
         _ = cell_list['a']  # type: ignore
 
 
-def test_out_of_memory_error(mesh: TetrahedralMesh, cell: CellData):
-    cell_list = CellList(mesh=mesh, max_cells=1)
+def test_out_of_memory_error(grid, cell: CellData):
+    cell_list = CellList(mesh=grid, max_cells=1)
     cell_list.append(cell)
 
     with raises(Exception):
         cell_list.append(cell)
 
 
-def test_filter_out_dead(mesh: TetrahedralMesh):
-    cells = CellList(mesh=mesh)
+def test_filter_out_dead(grid):
+    cells = CellList(mesh=grid)
     cells.extend([CellData.create_cell(dead=bool(i % 2)) for i in range(10)])
 
     assert_array_equal(cells.alive(), [0, 2, 4, 6, 8])

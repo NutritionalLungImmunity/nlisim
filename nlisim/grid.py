@@ -39,6 +39,7 @@ from vtkmodules.util.numpy_support import vtk_to_numpy
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.random import rg
+from nlisim.tetsearch import TetrahedronSearchTree, TreeNode
 from nlisim.util import logger
 
 ShapeType = Tuple[int, int, int]
@@ -95,6 +96,7 @@ class TetrahedralMesh(object):
     point_dual_volumes: np.ndarray = attrib()
     laplacian: csr_matrix = attrib()
     hodge_star_0: dia_matrix = attrib()
+    point_search_tree: TetrahedronSearchTree = attrib()
 
     @classmethod
     def load_hdf5(cls, file: H5File) -> 'TetrahedralMesh':
@@ -119,6 +121,9 @@ class TetrahedralMesh(object):
             point_dual_volumes=point_dual_volumes,
             laplacian=laplacian,
             hodge_star_0=hodge_star_0,
+            point_search_tree=TetrahedronSearchTree(
+                points=points, element_point_indices=element_point_indices
+            ),
         )
 
     def save_hdf5(self, file: H5File) -> None:
@@ -186,6 +191,9 @@ class TetrahedralMesh(object):
             point_dual_volumes=point_dual_volumes,
             laplacian=laplacian,
             hodge_star_0=hodge_star_0,
+            point_search_tree=TetrahedronSearchTree(
+                points=points, element_point_indices=element_point_indices
+            ),
         )
 
     @classmethod
@@ -213,7 +221,9 @@ class TetrahedralMesh(object):
         # filled with -1's if fewer than 4 neighbors
         element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
         for face, tets in face_tets.items():
-            assert 0 < len(tets) <= 2, f"Not a manifold at face: {face}"
+            assert (
+                0 < len(tets) <= 2
+            ), f"Not a manifold at face {face}: {len(tets)} tetrahedra share this face"
             if len(tets) == 1:
                 continue
             tet_a, tet_b = tets
@@ -223,7 +233,7 @@ class TetrahedralMesh(object):
             # insert tet_a into incidence list for tet_b
             idx = np.argmin(element_neighbors[tet_b])
             element_neighbors[tet_b, idx] = tet_a
-        element_neighbors.flags['WRITEABLE'] = False
+        element_neighbors.flags['WRITEABLE'] = False  # type: ignore
 
         # precompute element volumes
         # tet_points: (M,4,3) array
@@ -465,6 +475,41 @@ class TetrahedralMesh(object):
                 np.any(self.element_point_indices[:, :, np.newaxis] == points, axis=(1, 2))
             )[0]
 
+    def _find_tet(self, point: Union[Point,np.ndarray], tree_node: TreeNode, dimension: int = 0) -> int:
+        if tree_node.leaf:
+            assert tree_node.tetrahedra_indices is not None
+            for element_idx in tree_node.tetrahedra_indices:
+                if self.in_element(element_idx, point=point):
+                    return element_idx
+            return -1
+
+        assert tree_node.left is not None
+        assert tree_node.center is not None
+        assert tree_node.right is not None
+
+        if tree_node.left.min <= point[dimension] <= tree_node.left.max:
+            left_result = self._find_tet(
+                point=point, tree_node=tree_node.left.node, dimension=(dimension + 1) % 3
+            )
+            if left_result >= 0:
+                return left_result
+
+        if tree_node.center.min <= point[dimension] <= tree_node.center.max:
+            center_result = self._find_tet(
+                point=point, tree_node=tree_node.center.node, dimension=(dimension + 1) % 3
+            )
+            if center_result >= 0:
+                return center_result
+
+        if tree_node.right.min <= point[dimension] <= tree_node.right.max:
+            right_result = self._find_tet(
+                point=point, tree_node=tree_node.right.node, dimension=(dimension + 1) % 3
+            )
+            if right_result >= 0:
+                return right_result
+
+        return -1
+
     def get_element_index(self, point: Point) -> int:
         """
         Get the index label of the element containing the point `point`.
@@ -478,11 +523,7 @@ class TetrahedralMesh(object):
         -------
         integer label of the element, -1 if not in an element
         """
-        # TODO: This is the most naïve algorithm, replace it.
-        for tet_index in range(self.element_point_indices.shape[0]):
-            if self.in_element(tet_index, point):
-                return tet_index
-        return -1  # TODO: inspect all callers
+        return self._find_tet(np.squeeze(point), self.point_search_tree.sorted_tree, dimension=0)
 
     def get_element_tissue_type(self, element_index: int) -> TissueType:
         """
@@ -532,13 +573,15 @@ class TetrahedralMesh(object):
         self, element_index: Union[int, np.ndarray], point: Point
     ) -> np.ndarray:
         # TODO: good candidate for tests
-        if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
+        try:
             element_index = int(element_index)
+        except TypeError:
+            pass
+
+        tet_points = self.points[self.element_point_indices[element_index]]
 
         try:
             if isinstance(element_index, (int, np.integer)):
-                tet_points = self.points[self.element_point_indices[element_index, :], :]
-
                 ortho_coords = np.linalg.solve(
                     (tet_points[1:, :] - tet_points[0, :]).T, point - tet_points[0, :]
                 )
@@ -552,8 +595,6 @@ class TetrahedralMesh(object):
 
                 return proportional_coords
             else:
-                tet_points = self.points[self.element_point_indices[element_index]]
-
                 ortho_coords = np.linalg.solve(
                     np.transpose(
                         tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1),
@@ -571,8 +612,8 @@ class TetrahedralMesh(object):
                 ).T
 
                 return proportional_coords
-        except np.linalg.LinAlgError:
-            raise AssertionError("Bad mesh: contains a singular tetrahedron")
+        except np.linalg.LinAlgError as e:
+            raise AssertionError(str(e) + "; Bad mesh: contains a singular tetrahedron")
 
     # removed as a de-duplication, TODO: permanent removal
     # def is_in_element(self, element_index: int, point: Point) -> bool:
@@ -595,6 +636,102 @@ class TetrahedralMesh(object):
         return np.all(0.0 <= tet_proportions) and (
             (not interior)
             or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
+        )
+
+    @classmethod
+    def construct_uniform(cls, shape: ShapeType, spacing: SpacingType) -> 'TetrahedralMesh':
+        xs = np.linspace(0, spacing[0] * shape[0], shape[0] + 1)
+        ys = np.linspace(0, spacing[1] * shape[1], shape[1] + 1)
+        zs = np.linspace(0, spacing[2] * shape[2], shape[2] + 1)
+        points = np.array(list(product(xs, ys, zs)), dtype=np.float64)
+
+        def pt_idx(i_idx: int, j_idx: int, k_idx: int) -> int:
+            return k_idx + (shape[2] + 1) * (j_idx + (shape[1] + 1) * i_idx)
+
+        element_point_indices_list = []
+        for i, j, k in product(range(shape[0]), range(shape[1]), range(shape[2])):
+            # the [0,1]^3 cube splits into 6 tetrahedra:
+            # 1) [0,0,0], [0,0,1], [0,1,1], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 0, j + 0, k + 1),
+                    pt_idx(i + 0, j + 1, k + 1),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # 2) [0,0,0], [0,0,1], [1,0,1], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 0, j + 0, k + 1),
+                    pt_idx(i + 1, j + 0, k + 1),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # 3) [0,0,0], [0,1,0], [0,1,1], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 0, j + 1, k + 0),
+                    pt_idx(i + 0, j + 1, k + 1),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # 4) [0,0,0], [0,1,0], [1,1,0], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 0, j + 1, k + 0),
+                    pt_idx(i + 1, j + 1, k + 0),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # 5) [0,0,0], [1,0,0], [1,0,1], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 1, j + 0, k + 0),
+                    pt_idx(i + 1, j + 0, k + 1),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # 6) [0,0,0], [1,0,0], [1,1,0], [1,1,1]
+            element_point_indices_list.append(
+                [
+                    pt_idx(i + 0, j + 0, k + 0),
+                    pt_idx(i + 1, j + 0, k + 0),
+                    pt_idx(i + 1, j + 1, k + 0),
+                    pt_idx(i + 1, j + 1, k + 1),
+                ]
+            )
+            # you can divide the cube into fewer, but this set match up as triangles on the faces.
+        element_point_indices = np.array(element_point_indices_list, dtype=int)
+
+        element_tissue_type = np.full(
+            shape=element_point_indices.shape[0], fill_value=TissueType.ALVEOLAR_EPITHELIUM
+        )
+        (
+            element_neighbors,
+            element_volumes,
+            point_dual_volumes,
+            total_volume,
+            laplacian,
+            hodge_star_0,
+        ) = cls.compute_derived_quantities(element_point_indices, points)
+        return cls(
+            points=points,
+            element_point_indices=element_point_indices,
+            element_neighbors=element_neighbors,
+            element_tissue_type=element_tissue_type,
+            element_volumes=element_volumes,
+            total_volume=total_volume,
+            point_dual_volumes=point_dual_volumes,
+            laplacian=laplacian,
+            hodge_star_0=hodge_star_0,
+            point_search_tree=TetrahedronSearchTree(
+                points=points, element_point_indices=element_point_indices
+            ),
         )
 
 
