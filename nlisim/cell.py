@@ -166,6 +166,7 @@ class CellList(object):
     _voxel_index: Dict[Voxel, Set[int]] = attr.ib(init=False, factory=lambda: defaultdict(set))
     _reverse_voxel_index: List[Voxel] = attr.ib(init=False, factory=list)
 
+    # noinspection PyUnresolvedReferences
     @_cell_data.default
     def __set_default_cells(self) -> CellData:
         return self.CellDataClass(0)
@@ -266,7 +267,7 @@ class CellList(object):
         return sample_indices[mask]
 
     def append(self, cell: CellType) -> int:
-        """Append a new cell the the list."""
+        """Append a new cell to the list."""
         if len(self) >= self.max_cells:
             raise Exception('Not enough free space in cell tree')
 
@@ -283,6 +284,7 @@ class CellList(object):
         for cell in cells:
             self.append(cell)
 
+    # noinspection PyUnusedLocal
     def save(self, group: Group, name: str, metadata: dict) -> Group:
         """Save the cell list.
 
@@ -301,6 +303,7 @@ class CellList(object):
         composite_group.create_dataset(name='cell_data', data=self.cell_data)
         return composite_group
 
+    # noinspection PyUnusedLocal
     @classmethod
     def load(cls, global_state: State, group: Group, name: str, metadata: dict) -> 'CellList':
         """Load a cell list object.

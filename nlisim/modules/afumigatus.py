@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Dict
 import attr
 from attr import attrib, attrs
 import numpy as np
-from util import random_sphere_point
 
 from nlisim.cell import CellData, CellList
 from nlisim.cell_maker import CellDataFactory
@@ -17,7 +16,7 @@ from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import TissueType
+from nlisim.util import TissueType, random_sphere_point
 
 
 @unique
