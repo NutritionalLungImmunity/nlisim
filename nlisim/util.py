@@ -164,3 +164,21 @@ StateFields = List[Tuple[str, type, Optional[Callable]]]
 
 def upper_first(s: str) -> str:
     return s[0].upper() + s[1:]
+
+
+def random_sphere_point() -> np.ndarray:
+    """Generate a random point on the unit 2-sphere in R^3 using Marsaglia's method"""
+    # generate vector in unit disc
+    u: np.ndarray = 2 * rg.random(size=2) - 1
+    while np.linalg.norm(u) > 1.0:
+        u = 2 * rg.random(size=2) - 1
+
+    norm_squared_u = float(np.dot(u, u))
+    return np.array(
+        [
+            2 * u[0] * np.sqrt(1 - norm_squared_u),
+            2 * u[1] * np.sqrt(1 - norm_squared_u),
+            1 - 2 * norm_squared_u,
+        ],
+        dtype=np.float64,
+    )

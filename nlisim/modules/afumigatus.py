@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict
 import attr
 from attr import attrib, attrs
 import numpy as np
+from util import random_sphere_point
 
 from nlisim.cell import CellData, CellList
 from nlisim.cell_maker import CellDataFactory
@@ -60,24 +61,6 @@ class AfumigatusCellState(IntEnum):
     FREE = 0
     INTERNALIZING = 1
     RELEASING = 2
-
-
-def random_sphere_point() -> np.ndarray:
-    """Generate a random point on the unit 2-sphere in R^3 using Marsaglia's method"""
-    # generate vector in unit disc
-    u: np.ndarray = 2 * rg.random(size=2) - 1
-    while np.linalg.norm(u) > 1.0:
-        u = 2 * rg.random(size=2) - 1
-
-    norm_squared_u = float(np.dot(u, u))
-    return np.array(
-        [
-            2 * u[0] * np.sqrt(1 - norm_squared_u),
-            2 * u[1] * np.sqrt(1 - norm_squared_u),
-            1 - 2 * norm_squared_u,
-        ],
-        dtype=np.float64,
-    )
 
 
 def initial_boolean_network() -> np.ndarray:
