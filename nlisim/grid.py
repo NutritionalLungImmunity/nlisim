@@ -24,7 +24,7 @@ for details.
 """
 from functools import reduce
 from itertools import product
-from typing import Iterable, Iterator, List, Tuple, cast
+from typing import Iterable, Iterator, List, Tuple, Union, cast
 
 import attr
 from h5py import File as H5File
@@ -126,6 +126,7 @@ class RectangularGrid(object):
 
     @property
     def meshgrid(self) -> List[np.ndarray]:
+        # noinspection PyUnresolvedReferences
         """Return the coordinate grid representation.
 
         This returns three 3D arrays containing the z, y, x coordinates
@@ -154,7 +155,7 @@ class RectangularGrid(object):
 
     @property
     def shape(self) -> ShapeType:
-        return (len(self.z), len(self.y), len(self.x))
+        return len(self.z), len(self.y), len(self.x)
 
     def __len__(self):
         return reduce(lambda x, y: x * y, self.shape, 1)
@@ -203,7 +204,7 @@ class RectangularGrid(object):
         z, y, x = np.unravel_index(index, self.shape)
         return Voxel(x=float(x), y=float(y), z=float(z))
 
-    def get_voxel(self, point: Point) -> Voxel:
+    def get_voxel(self, point: Union[Point, np.ndarray]) -> Voxel:
         """Return the voxel containing the given point.
 
         For points outside of the grid, this method will return invalid
@@ -227,7 +228,7 @@ class RectangularGrid(object):
         return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
 
     def is_valid_voxel(self, voxel: Voxel) -> bool:
-        """Return whether or not a voxel index is valid."""
+        """Return whether a voxel index is valid."""
         v = voxel
         return 0 <= v.x < len(self.x) and 0 <= v.y < len(self.y) and 0 <= v.z < len(self.z)
 

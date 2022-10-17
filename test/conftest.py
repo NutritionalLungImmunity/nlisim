@@ -20,7 +20,7 @@ def config():
     yield SimulationConfig(
         {
             'simulation': {
-                'modules': 'nlisim.oldmodules.fungus.Fungus',
+                'modules': 'nlisim.modules.macrophage.Macrophage',
                 'nx': 20,
                 'ny': 40,
                 'nz': 20,
