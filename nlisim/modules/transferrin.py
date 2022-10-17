@@ -4,8 +4,6 @@ from typing import Any, Dict
 import attr
 from attr import attrib, attrs
 import numpy as np
-
-# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import (

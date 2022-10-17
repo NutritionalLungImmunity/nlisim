@@ -3,13 +3,8 @@ import logging
 from pathlib import PurePath
 from typing import IO, TYPE_CHECKING, Any, Dict, Union, cast
 
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 from h5py import File as H5File
-
-# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.grid import TetrahedralMesh

@@ -1,16 +1,9 @@
 import logging
 from typing import Any, Dict
 
-# noinspection PyPackageRequirements
 import attr
-
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import assemble_mesh_laplacian_crank_nicholson

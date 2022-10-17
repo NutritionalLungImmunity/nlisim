@@ -1,16 +1,9 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
 
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 from h5py import Group
-
-# noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from numpy.typing import DTypeLike
 
 from nlisim.coordinates import Point

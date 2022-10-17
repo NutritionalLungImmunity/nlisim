@@ -29,12 +29,8 @@ from itertools import product
 from typing import Dict, Iterable, Iterator, List, Tuple, Union, cast, overload
 
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 from h5py import File as H5File
 import meshio
-
-# noinspection PyPackageRequirements
 import numpy as np
 from numpy.typing import DTypeLike
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader

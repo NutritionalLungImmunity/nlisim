@@ -1,7 +1,6 @@
 from enum import IntEnum
 from typing import Tuple, Union
 
-# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.coordinates import Point, Voxel
@@ -168,7 +167,7 @@ def choose_voxel_by_prob(
         # e.g. if all neighbors are air
         return default_value
 
-    # prepend a zero to detect `failure by zero' in the argmax below
+    # prepend a zero to detect 'failure by zero' in the argmax below
     normalized_weights = np.concatenate((np.array([0.0]), weights / normalization_constant))
 
     # sample from distribution given by normalized weights

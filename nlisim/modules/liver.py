@@ -1,7 +1,6 @@
 import logging
 import math
 
-# noinspection PyPackageRequirements
 from attr import attrs
 
 from nlisim.grid import TetrahedralMesh
@@ -9,8 +8,6 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
 from nlisim.util import turnover_rate
-
-# noinspection PyPackageRequirements
 
 
 @attrs(kw_only=True, repr=False)

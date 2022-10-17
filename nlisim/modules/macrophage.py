@@ -2,13 +2,8 @@ import logging
 import math
 from typing import Any, Dict, Optional, Tuple
 
-# noinspection PyPackageRequirements
 import attr
-
-# noinspection PyPackageRequirements
 from attr import attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList

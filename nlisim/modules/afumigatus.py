@@ -4,13 +4,8 @@ import math
 from queue import Queue
 from typing import Any, Dict, Tuple
 
-# noinspection PyPackageRequirements
 import attr
-
-# noinspection PyPackageRequirements
 from attr import attrib, attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList

@@ -1,13 +1,8 @@
 import logging
 from typing import Any, Dict
 
-# noinspection PyPackageRequirements
 from attr import Factory, attrib, attrs
-
-# noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix
 
 from nlisim.diffusion import (

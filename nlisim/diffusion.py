@@ -1,12 +1,7 @@
 from typing import Any, Tuple
 
-# noinspection PyPackageRequirements
 import numpy as np
-
-# noinspection PyPackageRequirements
 from scipy.sparse import csr_matrix, dok_matrix, eye, identity
-
-# noinspection PyPackageRequirements
 from scipy.sparse.linalg import cg
 import skfem
 from skfem import Basis, ElementTetP1, MeshTet1, condense

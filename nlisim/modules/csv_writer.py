@@ -1,10 +1,7 @@
 import csv
 import itertools
-
-# noinspection PyPackageRequirements
 import logging
 
-# noinspection PyPackageRequirements
 from attr import attrs
 
 from nlisim.module import ModuleModel, ModuleState
