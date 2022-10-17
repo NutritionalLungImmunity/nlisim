@@ -202,7 +202,7 @@ class CellList(object):
     @property
     def cell_data(self) -> CellData:
         """Return the portion of the underlying data array containing valid data."""
-        return self._cell_data[: self._ncells]
+        return cast(CellData, self._cell_data[: self._ncells])
 
     @property
     def voxel_index(self):

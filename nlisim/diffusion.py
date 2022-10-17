@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix, eye
 from scipy.sparse.linalg import cg
@@ -30,9 +32,9 @@ def discrete_laplacian(
         voxel_index = grid.get_flattened_index(voxel)
 
         for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
-            ni = neighbor.x
-            nj = neighbor.y
-            nk = neighbor.z
+            ni: int = cast(int, neighbor.x)
+            nj: int = cast(int, neighbor.y)
+            nk: int = cast(int, neighbor.z)
 
             if not mask[nk, nj, ni]:
                 continue
@@ -82,7 +84,10 @@ def periodic_discrete_laplacian(
             )
 
             # but maybe it isn't in the mask (i.e. air)
-            if not mask[neighbor.z, neighbor.y, neighbor.x]:
+            ni: int = cast(int, neighbor.x)
+            nj: int = cast(int, neighbor.y)
+            nk: int = cast(int, neighbor.z)
+            if not mask[nk, nj, ni]:
                 continue
 
             neighbor_index = grid.get_flattened_index(neighbor)

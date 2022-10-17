@@ -225,7 +225,9 @@ class RectangularGrid(object):
 
     def get_voxel_center(self, voxel: Voxel) -> Point:
         """Get the coordinates of the center point of a voxel."""
-        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
+        return Point(
+            x=self.x[cast(int, voxel.x)], y=self.y[cast(int, voxel.y)], z=self.z[cast(int, voxel.z)]
+        )
 
     def is_valid_voxel(self, voxel: Voxel) -> bool:
         """Return whether a voxel index is valid."""

@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import attr
 from attr import attrs
@@ -403,7 +403,7 @@ class Macrophage(PhagocyteModel):
         new_voxel: Voxel = grid.get_voxel(new_position)
         if state.lung_tissue[tuple(new_voxel)] == TissueType.AIR:
             cell['velocity'][:] = np.zeros(3, dtype=np.float64)
-            return cell['point']
+            return cast(Point, cell['point'])
         else:
             cell['velocity'][:] = dp_dt
             return new_position

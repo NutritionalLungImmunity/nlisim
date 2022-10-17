@@ -1,7 +1,7 @@
 from enum import IntEnum, unique
 import math
 from queue import Queue
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union, cast
 
 import attr
 from attr import attrib, attrs
@@ -96,8 +96,10 @@ if TYPE_CHECKING:
     # This does nothing for an actual, running program. (only the else-clause fires) However, the
     # type checker (mypy) does not recognize that the generated classes are sub-classes of the
     # appropriate type, and throws many errors. This works around that problem.
+    @attrs(order=False)
     class AfumigatusCellData(CellData):
         # stub class for type checking
+        cells: CellList
         pass
 
 else:
@@ -230,12 +232,14 @@ class Afumigatus(ModuleModel):
         )
 
         # place cells for initial infection
-        locations = list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        locations = cast(
+            List[Tuple[int, int, int]], list(zip(*np.where(lung_tissue == TissueType.EPITHELIUM)))
+        )
         dz_field: np.ndarray = state.grid.delta(axis=0)
         dy_field: np.ndarray = state.grid.delta(axis=1)
         dx_field: np.ndarray = state.grid.delta(axis=2)
-        for vox_z, vox_y, vox_x in rg.choices(
-            locations, k=self.config.getint('init_infection_num')
+        for vox_z, vox_y, vox_x in rg.choice(
+            locations, size=self.config.getint('init_infection_num')
         ):
             # the x,y,z coordinates are in the centers of the grids
             z = state.grid.z[vox_z]
@@ -375,18 +379,18 @@ class Afumigatus(ModuleModel):
         """
         # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
-            next_septa = afumigatus_cell['next_septa']
+            next_septa = int(afumigatus_cell['next_septa'])
             afumigatus_cell['next_septa'] = -1
             afumigatus.cells[next_septa]['is_root'] = True
             afumigatus.cells[next_septa]['previous_septa'] = -1
         if afumigatus_cell['next_branch'] != -1:
-            next_branch = afumigatus_cell['next_branch']
+            next_branch = int(afumigatus_cell['next_branch'])
             afumigatus_cell['next_branch'] = -1
             afumigatus.cells[next_branch]['is_root'] = True
             afumigatus.cells[next_branch]['previous_septa'] = -1
 
         # unlink from parent, if exists
-        parent_id = afumigatus_cell['previous_septa']
+        parent_id = int(afumigatus_cell['previous_septa'])
         if parent_id != -1:
             afumigatus_cell['previous_septa'] = -1
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
@@ -399,7 +403,7 @@ class Afumigatus(ModuleModel):
 
         # kill the cell off and release its iron
         voxel: Voxel = grid.get_voxel(afumigatus_cell['point'])
-        iron.grid[voxel.z, voxel.y, voxel.x] += afumigatus_cell['iron_pool']
+        iron.grid[int(voxel.z), int(voxel.y), int(voxel.x)] += afumigatus_cell['iron_pool']
         afumigatus_cell['iron_pool'] = 0.0
         afumigatus_cell['dead'] = True
         afumigatus_cell['status'] = AfumigatusCellStatus.DEAD
@@ -635,7 +639,7 @@ def diffuse_iron(root_cell_index: int, afumigatus: AfumigatusState) -> None:
         afumigatus.cells[tree_cell_index]['iron_pool'] = iron_per_cell
 
 
-def lip_activation(afumigatus: AfumigatusState, iron_pool: float) -> bool:
+def lip_activation(afumigatus: AfumigatusState, iron_pool: Union[float, np.ndarray]) -> bool:
     molar_concentration = iron_pool / afumigatus.hyphae_volume
     activation = 1 - np.exp(-molar_concentration / afumigatus.kd_lip)
     return bool(rg.random() < activation)

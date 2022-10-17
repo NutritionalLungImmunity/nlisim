@@ -12,6 +12,7 @@ from attr import attrib, attrs
 
 # noinspection PyPackageRequirements
 import numpy as np
+from numpy._typing import _SupportsArray
 
 from nlisim.diffusion import apply_diffusion
 from nlisim.module import ModuleModel, ModuleState
@@ -98,7 +99,7 @@ class MoleculeModel(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         # shuffle and then sort by order (alone) to randomize the order for actions of equal order
-        rg.shuffle(self.advance_actions)
+        rg.shuffle(typing.cast(_SupportsArray, self.advance_actions))
         self.advance_actions.sort(key=lambda order_action: order_action[0])
 
         for _, action in self.advance_actions:

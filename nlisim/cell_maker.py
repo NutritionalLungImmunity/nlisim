@@ -9,7 +9,7 @@ from nlisim.cell import CellData, CellField, CellFields
 from nlisim.util import Datatype, name_validator, upper_first
 
 
-@attrs
+@attrs(order=False)
 class GeneratedCellData(CellData):
     fields: List[Tuple[CellField, Callable]] = attrib()
     dtype: np.dtype = attrib()
@@ -84,6 +84,7 @@ class CellDataFactory:
                 bases=(CellData,),
                 kw_only=True,
                 repr=False,
+                order=False,
             ),
         )
         return new_class

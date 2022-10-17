@@ -111,7 +111,7 @@ class State(object):
         # noinspection PyTypeChecker
         shape: Tuple[int, int, int] = lung_tissue.shape
 
-        space_volume = voxel_volume * np.product(shape)
+        space_volume: float = float(voxel_volume * np.product(shape))
 
         spacing = (
             config.getfloat('simulation', 'dz'),

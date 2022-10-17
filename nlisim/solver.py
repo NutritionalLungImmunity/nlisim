@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from queue import PriorityQueue
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, cast
 
 import attr
+from numpy._typing import _SupportsArray
 
 from nlisim.config import SimulationConfig
 from nlisim.module import ModuleModel
@@ -69,7 +70,7 @@ def advance(state: State, target_time: float) -> Iterator[State]:
             else:
                 queue.put(update_event)
                 break
-        rg.shuffle(concurrent_update_events)
+        rg.shuffle(cast(_SupportsArray, concurrent_update_events))
 
         for update_event in concurrent_update_events:
             m: ModuleModel = update_event.module
