@@ -4,9 +4,10 @@ from h5py import File
 import numpy as np
 from pytest import fixture
 
+from nlisim.grid import TetrahedralMesh
 from nlisim.config import SimulationConfig
 from nlisim.coordinates import Point
-from nlisim.mesh import TetrahedralMesh
+
 from nlisim.state import State
 
 
@@ -20,7 +21,7 @@ def config():
     yield SimulationConfig(
         {
             'simulation': {
-                'modules': 'nlisim.oldmodules.fungus.Fungus',
+                'modules': 'nlisim.modules.macrophage.Macrophage',
                 'nx': 20,
                 'ny': 40,
                 'nz': 20,
@@ -42,9 +43,9 @@ def state(config):
 
 
 @fixture
-def grid():
+def mesh():
     # a 100 x 100 x 100 unit mesh
-    yield RectangularGrid.construct_uniform((10, 10, 10), (10, 10, 10))
+    yield TetrahedralMesh.construct_uniform((10, 10, 10), (10, 10, 10))
 
 
 @fixture

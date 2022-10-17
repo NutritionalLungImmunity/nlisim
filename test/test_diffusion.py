@@ -2,23 +2,23 @@ import numpy as np
 import pytest
 
 from nlisim.diffusion import discrete_laplacian
-from nlisim.grid import RectangularGrid
+from nlisim.grid import TetrahedralMesh
 
 
 @pytest.fixture
-def grid():
-    yield RectangularGrid.construct_uniform(shape=(3, 3, 3), spacing=(1, 1, 1))
+def mesh():
+    yield TetrahedralMesh.construct_uniform(shape=(3, 3, 3), spacing=(1, 1, 1))
 
 
 @pytest.fixture
-def mask(grid):
-    yield np.zeros(grid.shape, dtype=np.dtype('bool'))
+def mask(mesh):
+    yield np.zeros(mesh.shape, dtype=np.dtype('bool'))
 
 
-def test_dense_laplacian(grid, mask):
+def test_dense_laplacian(mesh, mask):
     mask[:] = True
-    laplacian = (np.asarray(discrete_laplacian(grid, mask).todense())).reshape(
-        grid.shape + grid.shape
+    laplacian = (np.asarray(discrete_laplacian(mesh, mask).todense())).reshape(
+        mesh.shape + mesh.shape
     )
 
     assert laplacian.sum() == 0
@@ -27,19 +27,19 @@ def test_dense_laplacian(grid, mask):
     assert laplacian[1, 0, 0, 0, 0, 0] == 1
 
 
-def test_single_element_laplacian(grid, mask):
+def test_single_element_laplacian(mesh, mask):
     mask[1, 1, 1] = True
-    laplacian = (np.asarray(discrete_laplacian(grid, mask).todense())).reshape(
-        grid.shape + grid.shape
+    laplacian = (np.asarray(discrete_laplacian(mesh, mask).todense())).reshape(
+        mesh.shape + mesh.shape
     )
 
     assert laplacian.sum() == 0
 
 
-def test_surface_laplacian(grid, mask):
+def test_surface_laplacian(mesh, mask):
     mask[:, :, 1] = True
-    laplacian = (np.asarray(discrete_laplacian(grid, mask).todense())).reshape(
-        grid.shape + grid.shape
+    laplacian = (np.asarray(discrete_laplacian(mesh, mask).todense())).reshape(
+        mesh.shape + mesh.shape
     )
 
     assert laplacian.sum() == 0

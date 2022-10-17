@@ -72,7 +72,7 @@ def test_config_add_module_object():
 
 
 def test_config_add_module_invalid_subclass():
-    class NonModule:
+    class NonModule(ModuleModel):
         name = 'NonModule'
 
     config = SimulationConfig()
