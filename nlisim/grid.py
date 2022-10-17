@@ -110,8 +110,8 @@ class RectangularGrid(object):
     def _make_coordinate_arrays(cls, size: int, spacing: float) -> Tuple[np.ndarray, np.ndarray]:
         vertex = np.arange(size + 1) * spacing
         cell = spacing / 2 + vertex[:-1]
-        vertex.flags['WRITEABLE'] = False
-        cell.flags['WRITEABLE'] = False
+        vertex.flags['WRITEABLE'] = False  # type: ignore
+        cell.flags['WRITEABLE'] = False  # type: ignore
         return cell, vertex
 
     @classmethod
