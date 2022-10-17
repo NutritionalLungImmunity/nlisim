@@ -14,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secrete_in_element, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'IL10State') -> np.ndarray:
@@ -129,9 +129,9 @@ class IL10(ModuleModel):
 
         # Degrade IL10
         il10.field *= il10.half_life_multiplier
-        il10.field *= turnover_rate(
-            x=np.ones(shape=il10.field.shape, dtype=np.float64),
-            x_system=0.0,
+        turnover(
+            field=il10.field,
+            system_concentration=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

@@ -17,7 +17,7 @@ from nlisim.util import (
     iron_tf_reaction,
     michaelian_kinetics_molarity,
     secrete_in_element,
-    turnover_rate,
+    turnover,
     uptake_in_element,
 )
 
@@ -286,17 +286,24 @@ class Lactoferrin(ModuleModel):
         iron.field -= potential_reactive_quantity
 
         # Degrade Lactoferrin
-        # Note: ideally, this would be a constant computed in initialize, but we would have to
-        # know that "molecules" is initialized first
-        trnvr_rt = turnover_rate(
-            x=np.array(1.0, dtype=np.float64),
-            x_system=0.0,
+        turnover(
+            field=lactoferrin.field['Lactoferrin'],
+            system_concentration=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        lactoferrin.field['Lactoferrin'] *= trnvr_rt
-        lactoferrin.field['LactoferrinFe'] *= trnvr_rt
-        lactoferrin.field['LactoferrinFe2'] *= trnvr_rt
+        turnover(
+            field=lactoferrin.field['LactoferrinFe'],
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+        turnover(
+            field=lactoferrin.field['LactoferrinFe2'],
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of lactoferrin
         for component in {'Lactoferrin', 'LactoferrinFe', 'LactoferrinFe2'}:

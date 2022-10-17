@@ -14,7 +14,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import michaelian_kinetics, turnover_rate
+from nlisim.util import michaelian_kinetics, turnover
 
 
 def molecule_point_field_factory(self: 'EstBState') -> np.ndarray:
@@ -115,9 +115,9 @@ class EstB(ModuleModel):
 
         # Degrade EstB
         estb.field *= estb.half_life_multiplier
-        estb.field *= turnover_rate(
-            x=estb.field,
-            x_system=estb.system_concentration,
+        turnover(
+            field=estb.field,
+            system_concentration=estb.system_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

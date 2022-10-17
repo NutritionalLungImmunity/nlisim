@@ -13,7 +13,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'MIP1BState') -> np.ndarray:
@@ -32,7 +32,6 @@ class MIP1BState(ModuleState):
     macrophage_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # units: aM
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -48,7 +47,6 @@ class MIP1B(ModuleModel):
     def initialize(self, state: State) -> State:
         logging.getLogger('nlisim').debug("Initializing " + self.name)
         mip1b: MIP1BState = state.mip1b
-        molecules: MoleculesState = state.molecules
 
         # config file values
         mip1b.half_life = self.config.getfloat('half_life')
@@ -62,12 +60,6 @@ class MIP1B(ModuleModel):
         mip1b.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        mip1b.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         mip1b.half_life_multiplier = 0.5 ** (
             self.time_step / mip1b.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -99,6 +91,7 @@ class MIP1B(ModuleModel):
         mip1b: MIP1BState = state.mip1b
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(mip1b.field >= 0.0)
@@ -130,7 +123,13 @@ class MIP1B(ModuleModel):
                 )
 
         # Degrade MIP1B
-        mip1b.field *= mip1b.half_life_multiplier * mip1b.turnover_rate
+        mip1b.field *= mip1b.half_life_multiplier
+        turnover(
+            field=mip1b.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MIP1b
         mip1b.field[:] = apply_mesh_diffusion_crank_nicholson(

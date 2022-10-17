@@ -19,31 +19,24 @@ def activation_function(*, x, k_d, h, volume, b=1) -> Union[float, np.ndarray]:
     return h * (1 - b * np.exp(-x / k_d / volume))
 
 
-def turnover_rate(
+def turnover(
     *,
-    x: Union[float, np.ndarray],
-    x_system: Union[float, np.ndarray],
+    field: np.ndarray,
+    system_concentration: float,
     base_turnover_rate: float,
     rel_cyt_bind_unit_t: float,
-):
-    # Note: x and x_system should be both either in M or mols, not a mixture of the two.
-    if x_system == 0.0:
-        if isinstance(x, float):
-            return np.exp(-base_turnover_rate * rel_cyt_bind_unit_t)
-        else:
-            return np.full(
-                shape=x.shape, fill_value=np.exp(-base_turnover_rate * rel_cyt_bind_unit_t)
-            )
-    # NOTE: in formula, voxel_volume cancels. So I cancelled it.
-    y = (x - x_system) * np.exp(-base_turnover_rate * rel_cyt_bind_unit_t) + x_system
-
-    result = np.true_divide(y, x, where=(x != 0.0))
-
-    # enforce bounds and zero out problem divides
-    result[x == 0] = 0.0
-    np.clip(result, 0.0, 1.0, out=result)
-
-    return result
+) -> None:
+    # Note: field and system_concentration should be both either in M or mols, not a mixture
+    # of the two.
+    assert system_concentration >= 0.0
+    assert base_turnover_rate >= 0.0
+    assert rel_cyt_bind_unit_t >= 0.0
+    if system_concentration == 0.0:
+        field *= np.exp(-base_turnover_rate * rel_cyt_bind_unit_t)
+    else:
+        field[:] = system_concentration + (field - system_concentration) * np.exp(
+            -base_turnover_rate * rel_cyt_bind_unit_t
+        )
 
 
 def iron_tf_reaction(

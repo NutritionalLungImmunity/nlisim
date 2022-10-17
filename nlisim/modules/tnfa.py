@@ -14,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secrete_in_element, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'TNFaState') -> np.ndarray:
@@ -35,7 +35,6 @@ class TNFaState(ModuleState):
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     epithelial_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # aM
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -49,7 +48,6 @@ class TNFa(ModuleModel):
     def initialize(self, state: State) -> State:
         logging.getLogger('nlisim').debug("Initializing " + self.name)
         tnfa: TNFaState = state.tnfa
-        molecules: MoleculesState = state.molecules
 
         # config file values
         tnfa.half_life = self.config.getfloat('half_life')  # units: min
@@ -66,12 +64,6 @@ class TNFa(ModuleModel):
         tnfa.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        tnfa.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         tnfa.half_life_multiplier = 0.5 ** (
             self.time_step / tnfa.half_life
         )  # units: (min/step) / min -> 1/step
@@ -107,6 +99,7 @@ class TNFa(ModuleModel):
         tnfa: TNFaState = state.tnfa
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(tnfa.field >= 0.0)
@@ -180,7 +173,13 @@ class TNFa(ModuleModel):
                     neutrophil_cell['tnfa'] = True
 
         # Degrade TNFa
-        tnfa.field *= tnfa.half_life_multiplier * tnfa.turnover_rate
+        tnfa.field *= tnfa.half_life_multiplier
+        turnover(
+            field=tnfa.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of TNFa
         tnfa.field[:] = apply_mesh_diffusion_crank_nicholson(

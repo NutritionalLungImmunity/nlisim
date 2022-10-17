@@ -15,7 +15,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellData
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'HemolysinState') -> np.ndarray:
@@ -89,9 +89,9 @@ class Hemolysin(ModuleModel):
             )
 
         # Degrade Hemolysin
-        hemolysin.field *= turnover_rate(
-            x=hemolysin.field,
-            x_system=0.0,
+        turnover(
+            field=hemolysin.field,
+            system_concentration=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

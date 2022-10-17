@@ -7,7 +7,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate
+from nlisim.util import turnover
 
 
 @attrs(kw_only=True, repr=False)
@@ -68,27 +68,24 @@ class Liver(ModuleModel):
         tf = transferrin.tf_intercept + transferrin.tf_slope * max(
             transferrin.threshold_log_hep, log_hepcidin
         )  # units: aM
-        rate_tf = turnover_rate(
-            x=transferrin.field['Tf'],
-            x_system=tf * transferrin.default_apotf_rel_concentration,
+        turnover(
+            field=transferrin.field['Tf'],
+            system_concentration=tf * transferrin.default_apotf_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        rate_tf_fe = turnover_rate(
-            x=transferrin.field['TfFe'],
-            x_system=tf * transferrin.default_tffe_rel_concentration,
+        turnover(
+            field=transferrin.field['TfFe'],
+            system_concentration=tf * transferrin.default_tffe_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        rate_tf_fe2 = turnover_rate(
-            x=transferrin.field['TfFe2'],
-            x_system=tf * transferrin.default_tffe2_rel_concentration,
+        turnover(
+            field=transferrin.field['TfFe2'],
+            system_concentration=tf * transferrin.default_tffe2_rel_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        transferrin.field['Tf'] *= rate_tf
-        transferrin.field['TfFe'] *= rate_tf_fe
-        transferrin.field['TfFe2'] *= rate_tf_fe2
 
         # interact with hepcidin
         system_concentration = (
@@ -96,9 +93,9 @@ class Liver(ModuleModel):
             if log_hepcidin == float('-inf') or log_hepcidin > liver.threshold_log_hep
             else math.pow(10.0, log_hepcidin)
         )
-        hepcidin.field *= turnover_rate(
-            x=hepcidin.field,
-            x_system=system_concentration,
+        turnover(
+            field=hepcidin.field,
+            system_concentration=system_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

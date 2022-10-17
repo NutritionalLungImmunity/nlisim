@@ -14,7 +14,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import michaelian_kinetics, turnover_rate
+from nlisim.util import michaelian_kinetics, turnover
 
 
 def molecule_point_field_factory(self: 'HemopexinState') -> np.ndarray:
@@ -97,9 +97,9 @@ class Hemopexin(ModuleModel):
 
         # Degrade Hemopexin
         hemopexin.field *= hemopexin.half_life_multiplier
-        hemopexin.field *= turnover_rate(
-            x=hemopexin.field,
-            x_system=hemopexin.system_concentration,
+        turnover(
+            field=hemopexin.field,
+            system_concentration=hemopexin.system_concentration,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

@@ -14,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover_rate
+from nlisim.util import activation_function, turnover
 
 
 def molecule_point_field_factory(self: 'TGFBState') -> np.ndarray:
@@ -31,7 +31,6 @@ class TGFBState(ModuleState):
     macrophage_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # aM
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -47,7 +46,6 @@ class TGFB(ModuleModel):
     def initialize(self, state: State) -> State:
         logging.getLogger('nlisim').debug("Initializing " + self.name)
         tgfb: TGFBState = state.tgfb
-        molecules: MoleculesState = state.molecules
 
         # config file values
         tgfb.half_life = self.config.getfloat('half_life')  # units: min
@@ -58,12 +56,6 @@ class TGFB(ModuleModel):
         tgfb.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        tgfb.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         tgfb.half_life_multiplier = 0.5 ** (
             self.time_step / tgfb.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -89,6 +81,7 @@ class TGFB(ModuleModel):
 
         tgfb: TGFBState = state.tgfb
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(tgfb.field >= 0.0)
@@ -140,7 +133,13 @@ class TGFB(ModuleModel):
                     ] = 0  # Previously, was no reset of the status iteration
 
         # Degrade TGFB
-        tgfb.field *= tgfb.half_life_multiplier * tgfb.turnover_rate
+        tgfb.field *= tgfb.half_life_multiplier
+        turnover(
+            field=tgfb.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of TGFB
         tgfb.field[:] = apply_mesh_diffusion_crank_nicholson(

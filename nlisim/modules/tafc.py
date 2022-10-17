@@ -16,7 +16,7 @@ from nlisim.state import State
 from nlisim.util import (
     michaelian_kinetics_molarity,
     secrete_in_element,
-    turnover_rate,
+    turnover,
     uptake_proportionally,
 )
 
@@ -37,7 +37,6 @@ class TAFCState(ModuleState):
     tafcbi_uptake_rate_unit_t: float  # units: L * cell^-1 * step^-1
     afumigatus_secretion_rate: float  # units: atto-mol * cell^-1 * h^-1
     afumigatus_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -54,7 +53,6 @@ class TAFC(ModuleModel):
     def initialize(self, state: State) -> State:
         logging.getLogger('nlisim').debug("Initializing " + self.name)
         tafc: TAFCState = state.tafc
-        molecules: MoleculesState = state.molecules
 
         # config file values
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
@@ -67,12 +65,6 @@ class TAFC(ModuleModel):
         tafc.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        tafc.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         tafc.afumigatus_secretion_rate_unit_t = tafc.afumigatus_secretion_rate * (
             self.time_step / 60
         )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
@@ -248,16 +240,25 @@ class TAFC(ModuleModel):
                     point=afumigatus_cell['point'],
                     amount=tafc.afumigatus_secretion_rate_unit_t,
                 )
+        assert np.alltrue(tafc.field['TAFC'] >= 0.0)
+        assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
 
         # Degrade TAFC
-        trnvr_rt = turnover_rate(
-            x=np.array(1.0, dtype=np.float64),
-            x_system=0.0,
+        turnover(
+            field=tafc.field['TAFC'],
+            system_concentration=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
-        tafc.field['TAFC'] *= trnvr_rt
-        tafc.field['TAFCBI'] *= trnvr_rt
+        turnover(
+            field=tafc.field['TAFCBI'],
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
+
+        assert np.alltrue(tafc.field['TAFC'] >= 0.0)
+        assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
 
         # Diffusion of TAFC
         for component in {'TAFC', 'TAFCBI'}:

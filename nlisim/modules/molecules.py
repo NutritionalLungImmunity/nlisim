@@ -26,7 +26,6 @@ class Molecules(ModuleModel):
         molecules: MoleculesState = state.molecules
 
         molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')  # units: min
-        # molecules.turnover_rate = self.config.getfloat('turnover_rate') # units: hours^-1
         molecules.diffusion_constant = self.config.getfloat(
             'diffusion_constant'
         )  # units: µm^2 * min^-1

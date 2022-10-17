@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
-import numpy as np  # type: ignore
+import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkStructuredPoints
@@ -61,7 +61,7 @@ def create_vtk_volume(grid: RectangularGrid) -> vtkStructuredPoints:
     vtk_grid.SetDimensions(len(x), len(y), len(z))
 
     # In theory, the rectangular mesh used in our code is more general than
-    # than a vtkStructuredPoints object.  In practice, we always construct
+    # a vtkStructuredPoints object.  In practice, we always construct
     # a uniform mesh, so we choose to use the more efficient vtk data structure.
     vtk_grid.SetOrigin(0, 0, 0)
     vtk_grid.SetSpacing(x[1] - x[0], y[1] - y[0], z[1] - z[0])

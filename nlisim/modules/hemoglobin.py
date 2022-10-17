@@ -14,7 +14,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover_rate, uptake_in_element
+from nlisim.util import turnover, uptake_in_element
 
 
 def molecule_point_field_factory(self: 'HemoglobinState') -> np.ndarray:
@@ -124,9 +124,9 @@ class Hemoglobin(ModuleModel):
         )
 
         # Degrade Hemoglobin
-        hemoglobin.field *= turnover_rate(
-            x=hemoglobin.field,
-            x_system=0.0,
+        turnover(
+            field=hemoglobin.field,
+            system_concentration=0.0,
             base_turnover_rate=molecules.turnover_rate,
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )

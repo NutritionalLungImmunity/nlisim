@@ -13,7 +13,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'MCP1State') -> np.ndarray:
@@ -32,7 +32,6 @@ class MCP1State(ModuleState):
     macrophage_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # units: aM
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -62,12 +61,6 @@ class MCP1(ModuleModel):
         mcp1.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        mcp1.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         mcp1.half_life_multiplier = 0.5 ** (
             self.time_step / mcp1.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -99,6 +92,7 @@ class MCP1(ModuleModel):
         mcp1: MCP1State = state.mcp1
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(mcp1.field >= 0.0)
@@ -130,7 +124,13 @@ class MCP1(ModuleModel):
                 )
 
         # Degrade MCP1
-        mcp1.field *= mcp1.half_life_multiplier * mcp1.turnover_rate
+        mcp1.field *= mcp1.half_life_multiplier
+        turnover(
+            field=mcp1.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MCP1
         mcp1.field[:] = apply_mesh_diffusion_crank_nicholson(

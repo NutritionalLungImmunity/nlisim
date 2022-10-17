@@ -6,7 +6,7 @@ from pytest import fixture
 
 from nlisim.config import SimulationConfig
 from nlisim.coordinates import Point
-from nlisim.grid import RectangularGrid
+from nlisim.mesh import TetrahedralMesh
 from nlisim.state import State
 
 

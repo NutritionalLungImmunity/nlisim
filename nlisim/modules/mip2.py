@@ -14,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secrete_in_element, turnover_rate
+from nlisim.util import activation_function, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'MIP2State') -> np.ndarray:
@@ -35,7 +35,6 @@ class MIP2State(ModuleState):
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol * cell^-1 * step^-1
     k_d: float  # aM
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -51,7 +50,6 @@ class MIP2(ModuleModel):
     def initialize(self, state: State) -> State:
         logging.getLogger('nlisim').debug("Initializing " + self.name)
         mip2: MIP2State = state.mip2
-        molecules: MoleculesState = state.molecules
 
         # config file values
         mip2.half_life = self.config.getfloat('half_life')
@@ -68,12 +66,6 @@ class MIP2(ModuleModel):
         mip2.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        mip2.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
         mip2.half_life_multiplier = 0.5 ** (
             self.time_step / mip2.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -111,6 +103,7 @@ class MIP2(ModuleModel):
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
         macrophage: MacrophageState = state.macrophage
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(mip2.field >= 0.0)
@@ -171,7 +164,13 @@ class MIP2(ModuleModel):
                 )
 
         # Degrade MIP2
-        mip2.field *= mip2.half_life_multiplier * mip2.turnover_rate
+        mip2.field *= mip2.half_life_multiplier
+        turnover(
+            field=mip2.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of MIP2
         mip2.field[:] = apply_mesh_diffusion_crank_nicholson(

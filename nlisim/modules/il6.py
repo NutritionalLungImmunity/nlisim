@@ -13,7 +13,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover_rate
+from nlisim.util import secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'IL6State') -> np.ndarray:
@@ -34,7 +34,6 @@ class IL6State(ModuleState):
     neutrophil_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     pneumocyte_secretion_rate_unit_t: float  # units: atto-mol/(cell*step)
     k_d: float  # units: atto-M
-    turnover_rate: float
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
@@ -67,13 +66,6 @@ class IL6(ModuleModel):
         il6.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values
-        il6.turnover_rate = turnover_rate(
-            x=1.0,
-            x_system=0.0,
-            base_turnover_rate=molecules.turnover_rate,
-            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
-        )
-        # units: %/step + %/min * (min/step) -> %/step
         il6.half_life_multiplier = 0.5 ** (
             self.time_step / il6.half_life
         )  # units in exponent: (min/step) / min -> 1/step
@@ -106,6 +98,7 @@ class IL6(ModuleModel):
         macrophage: MacrophageState = state.macrophage
         neutrophil: NeutrophilState = state.neutrophil
         pneumocyte: PneumocyteState = state.pneumocyte
+        molecules: MoleculesState = state.molecules
         mesh: TetrahedralMesh = state.mesh
 
         assert np.alltrue(il6.field >= 0.0)
@@ -147,7 +140,13 @@ class IL6(ModuleModel):
                 )
 
         # Degrade IL6
-        il6.field *= il6.half_life_multiplier * il6.turnover_rate
+        il6.field *= il6.half_life_multiplier
+        turnover(
+            field=il6.field,
+            system_concentration=0.0,
+            base_turnover_rate=molecules.turnover_rate,
+            rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
+        )
 
         # Diffusion of IL6
         il6.field[:] = apply_mesh_diffusion_crank_nicholson(
