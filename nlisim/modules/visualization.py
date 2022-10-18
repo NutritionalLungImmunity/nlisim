@@ -1,5 +1,6 @@
 from enum import Enum
 import json
+import logging
 
 import attr
 import meshio
@@ -28,7 +29,7 @@ from nlisim.state import State
 
 
 class VTKTypes(Enum):
-    """a enum class for the vtk data type."""
+    """an enum class for the vtk data type."""
 
     STRUCTURED_POINTS = 0
     STRUCTURED_GRID = 1
@@ -175,9 +176,9 @@ class Visualization(ModuleModel):
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             file_name = filename.replace('<variable>', module_name + '-' + var_name)
-            state.log.info(f"{var=}")
-            state.log.info(f"{file_name=}")
-            state.log.info(f"{attr_names=}")
+            logging.debug(f"{var=}")
+            logging.debug(f"{file_name=}")
+            logging.debug(f"{attr_names=}")
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:
@@ -214,6 +215,9 @@ class Visualization(ModuleModel):
             raise TypeError(f'Unknown VTK data type: {vtk_type}')
 
     def advance(self, state: State, previous_time: float) -> State:
+        """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')
         json_config = json.loads(variables)

@@ -7,7 +7,7 @@ from attr import attrib, attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
-from nlisim.coordinates import Point, Voxel
+from nlisim.coordinates import Point
 from nlisim.grid import TetrahedralMesh
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
@@ -83,7 +83,7 @@ class Pneumocyte(PhagocyteModel):
     StateClass = PneumocyteState
 
     def initialize(self, state: State):
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         pneumocyte: PneumocyteState = state.pneumocyte
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -146,6 +146,8 @@ class Pneumocyte(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.afumigatus import (
             AfumigatusCellData,
             AfumigatusCellStatus,

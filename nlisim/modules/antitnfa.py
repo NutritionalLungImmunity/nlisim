@@ -41,7 +41,7 @@ class AntiTNFa(ModuleModel):
     StateClass = AntiTNFaState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         anti_tnf_a: AntiTNFaState = state.antitnfa
         # mesh: TetrahedralMesh = state.mesh
 
@@ -76,6 +76,8 @@ class AntiTNFa(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advances the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.tnfa import TNFaState
 
         anti_tnf_a: AntiTNFaState = state.antitnfa

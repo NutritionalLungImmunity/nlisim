@@ -45,9 +45,8 @@ class MCP1(ModuleModel):
     StateClass = MCP1State
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         mcp1: MCP1State = state.mcp1
-        molecules: MoleculesState = state.molecules
 
         # config file values
         mcp1.half_life = self.config.getfloat('half_life')  # units: min
@@ -86,6 +85,8 @@ class MCP1(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.pneumocyte import PneumocyteCellData, PneumocyteState
 

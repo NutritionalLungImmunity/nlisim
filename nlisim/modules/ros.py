@@ -36,7 +36,7 @@ class ROS(ModuleModel):
     StateClass = ROSState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         ros: ROSState = state.ros
 
         # config file values
@@ -55,6 +55,8 @@ class ROS(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         ros: ROSState = state.ros
 
         assert np.alltrue(ros.field >= 0.0)

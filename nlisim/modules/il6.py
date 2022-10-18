@@ -47,9 +47,8 @@ class IL6(ModuleModel):
     StateClass = IL6State
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         il6: IL6State = state.il6
-        molecules: MoleculesState = state.molecules
 
         # config file values
         il6.half_life = self.config.getfloat('half_life')
@@ -89,6 +88,8 @@ class IL6(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageState
         from nlisim.modules.neutrophil import NeutrophilState
         from nlisim.modules.phagocyte import PhagocyteStatus

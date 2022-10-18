@@ -41,7 +41,7 @@ class Hemoglobin(ModuleModel):
     StateClass = HemoglobinState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         hemoglobin: HemoglobinState = state.hemoglobin
 
         # config file values
@@ -65,6 +65,8 @@ class Hemoglobin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 
         hemoglobin: HemoglobinState = state.hemoglobin

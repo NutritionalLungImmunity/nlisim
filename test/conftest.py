@@ -4,10 +4,9 @@ from h5py import File
 import numpy as np
 from pytest import fixture
 
-from nlisim.grid import TetrahedralMesh
 from nlisim.config import SimulationConfig
 from nlisim.coordinates import Point
-
+from nlisim.grid import TetrahedralMesh
 from nlisim.state import State
 
 

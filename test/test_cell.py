@@ -1,5 +1,5 @@
-import numpy as np
 from h5py import Group
+import numpy as np
 from numpy.testing import assert_array_equal
 from pytest import fixture, raises
 

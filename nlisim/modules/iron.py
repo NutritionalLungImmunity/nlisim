@@ -29,7 +29,7 @@ class Iron(ModuleModel):
     StateClass = IronState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         # iron: IronState = state.iron
         # voxel_volume = geometry.voxel_volume
 
@@ -41,6 +41,8 @@ class Iron(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageState
         from nlisim.modules.phagocyte import PhagocyteStatus
 

@@ -26,7 +26,7 @@ class Liver(ModuleModel):
     StateClass = LiverState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         liver: LiverState = state.liver
 
         # config file values
@@ -42,6 +42,8 @@ class Liver(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State
         from nlisim.modules.transferrin import TransferrinState

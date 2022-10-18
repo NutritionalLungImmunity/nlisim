@@ -38,7 +38,7 @@ class Hepcidin(ModuleModel):
     StateClass = HepcidinState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values
@@ -59,6 +59,8 @@ class Hepcidin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageState
 
         hepcidin: HepcidinState = state.hepcidin

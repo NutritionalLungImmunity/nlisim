@@ -33,10 +33,9 @@ np.seterr(divide='raise', invalid='raise')
 @click.option(
     '--loglevel',
     'log_level',
-    type=int,
-    default=0,
-    help='Set the log level. 10 = Debug, 20 = Info, '
-    '30 = Warning, 40 = Error, 50 = Critical, 0 = None',
+    type=str,
+    default='WARNING',
+    help='Set the log level. options: DEBUG, INFO, WARNING, ERROR, CRITICAL',
     show_default=True,
 )
 @click.option(
@@ -49,15 +48,27 @@ np.seterr(divide='raise', invalid='raise')
 )
 @click.pass_context
 def main(
-    ctx: click.Context, config_files: Tuple[Path], log_level: int, log_file: Optional[Path]
+    ctx: click.Context, config_files: Tuple[Path], log_level: str, log_file: Optional[Path]
 ) -> None:
-    root = logging.getLogger('nlisim')
-    if log_file is not None:
-        handler = logging.handlers.WatchedFileHandler(log_file)
-        formatter = logging.Formatter(logging.BASIC_FORMAT)
-        handler.setFormatter(formatter)
-        root.addHandler(handler)
-    root.setLevel(log_level)
+    # get log level
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % log_level)
+    if log_file is None:
+        logging.basicConfig(
+            level=numeric_level,
+            format=logging.BASIC_FORMAT,
+            # encoding='utf-8'
+        )
+    else:
+        logging.basicConfig(
+            filemode='w',
+            filename=log_file,
+            level=numeric_level,
+            format=logging.BASIC_FORMAT,
+            # encoding='utf-8',
+        )
+
     ctx.obj = {'config': SimulationConfig(*config_files)}
 
 

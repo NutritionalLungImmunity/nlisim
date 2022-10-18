@@ -46,7 +46,7 @@ class TNFa(ModuleModel):
     StateClass = TNFaState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         tnfa: TNFaState = state.tnfa
 
         # config file values
@@ -92,6 +92,8 @@ class TNFa(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.neutrophil import NeutrophilCellData, NeutrophilState
         from nlisim.modules.phagocyte import PhagocyteStatus

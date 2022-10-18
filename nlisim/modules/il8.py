@@ -48,7 +48,7 @@ class IL8(ModuleModel):
     StateClass = IL8State
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         il8: IL8State = state.il8
 
         # config file values
@@ -88,6 +88,8 @@ class IL8(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.neutrophil import NeutrophilCellData, NeutrophilState
         from nlisim.modules.phagocyte import PhagocyteStatus
 

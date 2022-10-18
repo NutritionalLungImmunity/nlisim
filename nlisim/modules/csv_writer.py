@@ -21,6 +21,9 @@ class CSVWriter(ModuleModel):
     StateClass = CSVWriterState
 
     def advance(self, state: State, previous_time: float) -> State:
+        """Advances the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         now = state.time
 
         summary_stats = generate_summary_stats(state)
@@ -36,7 +39,7 @@ class CSVWriter(ModuleModel):
         return state
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         summary_stats = generate_summary_stats(state)
         column_names = ['time'] + list(
             itertools.chain.from_iterable(

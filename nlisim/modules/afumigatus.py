@@ -193,7 +193,7 @@ class Afumigatus(ModuleModel):
     from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 
     def initialize(self, state: State):
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
@@ -271,6 +271,9 @@ class Afumigatus(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float) -> State:
+        """Advances the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 
         afumigatus: AfumigatusState = state.afumigatus

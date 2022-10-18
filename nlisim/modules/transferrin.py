@@ -58,7 +58,7 @@ class Transferrin(ModuleModel):
     StateClass = TransferrinState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         transferrin: TransferrinState = state.transferrin
 
         # config file values
@@ -130,6 +130,8 @@ class Transferrin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.phagocyte import PhagocyteStatus
@@ -222,10 +224,10 @@ class Transferrin(ModuleModel):
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols
 
-                state.log.info(f"{macrophage_cell['iron_pool']=}")
-                # state.log.info(f"{transferrin_in_element=}")
-                # state.log.info(f"{mesh.element_volumes[macrophage_element_index]=}")
-                # state.log.info(f"{transferrin.ma_iron_export_rate_unit_t=}")
+                logging.debug(f"{macrophage_cell['iron_pool']=}")
+                # logging.debug(f"{transferrin_in_element=}")
+                # logging.debug(f"{mesh.element_volumes[macrophage_element_index]=}")
+                # logging.debug(f"{transferrin.ma_iron_export_rate_unit_t=}")
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],  # units: atto-mols
                     2 * transferrin_in_element,  # units: atto-mols
@@ -243,8 +245,8 @@ class Transferrin(ModuleModel):
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                state.log.info(f"{rel_tf_fe=}")
-                state.log.info(f"{qtty=}")
+                logging.debug(f"{rel_tf_fe=}")
+                logging.debug(f"{qtty=}")
                 tffe_qtty = rel_tf_fe * qtty  # units: atto-mols
                 tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-mols
 
@@ -297,6 +299,10 @@ class Transferrin(ModuleModel):
 
         # Degrade transferrin: done in liver
 
+        assert np.alltrue(transferrin.field['Tf'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
+
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
             transferrin.field[component][:] = apply_mesh_diffusion_crank_nicholson(
@@ -306,7 +312,7 @@ class Transferrin(ModuleModel):
                 dofs=transferrin.dofs,
             )
 
-        assert np.alltrue(transferrin.field['Tf'] >= 0.0)
+        assert np.alltrue(transferrin.field['Tf'] >= 0.0), np.min(transferrin.field['Tf'])
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 

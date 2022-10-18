@@ -44,7 +44,7 @@ class IL10(ModuleModel):
     StateClass = IL10State
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         il10: IL10State = state.il10
 
         # config file values
@@ -76,6 +76,8 @@ class IL10(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.phagocyte import PhagocyteState, PhagocyteStatus
 

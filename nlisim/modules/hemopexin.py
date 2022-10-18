@@ -44,7 +44,7 @@ class Hemopexin(ModuleModel):
     StateClass = HemopexinState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         hemopexin: HemopexinState = state.hemopexin
 
         # config file values
@@ -73,6 +73,8 @@ class Hemopexin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.hemoglobin import HemoglobinState
 
         hemopexin: HemopexinState = state.hemopexin

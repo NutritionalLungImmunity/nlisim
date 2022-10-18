@@ -45,7 +45,7 @@ class MIP1B(ModuleModel):
     StateClass = MIP1BState
 
     def initialize(self, state: State) -> State:
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         mip1b: MIP1BState = state.mip1b
 
         # config file values
@@ -85,6 +85,8 @@ class MIP1B(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.pneumocyte import PneumocyteCellData, PneumocyteState
 

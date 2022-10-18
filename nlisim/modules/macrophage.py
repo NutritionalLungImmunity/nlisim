@@ -97,7 +97,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         macrophage: MacrophageState = state.macrophage
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -174,6 +174,8 @@ class Macrophage(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         macrophage: MacrophageState = state.macrophage
 
         for macrophage_cell_index in macrophage.cells.alive():
@@ -381,10 +383,10 @@ class Macrophage(PhagocyteModel):
         new_element_index: int = mesh.get_element_index(new_position)
         assert cell['element_index'] > 0
         for _ in range(4):
-            # state.log.debug(f"{iteration=}")
-            # state.log.debug(f"{new_element_index=}")
-            # state.log.debug(f"{cell['element_index']=}")
-            # state.log.debug(f"{mesh.element_tissue_type[new_element_index]=}")
+            # logging.debug(f"{iteration=}")
+            # logging.debug(f"{new_element_index=}")
+            # logging.debug(f"{cell['element_index']=}")
+            # logging.debug(f"{mesh.element_tissue_type[new_element_index]=}")
             assert cell['element_index'] > 0
             if (
                 new_element_index >= 0
@@ -397,7 +399,7 @@ class Macrophage(PhagocyteModel):
             new_position = cell['point'] + dp_dt
             new_element_index = mesh.get_element_index(new_position)
 
-        state.log.info(f"{macrophage.cells.cell_data['element_index']=}")
+        logging.debug(f"{macrophage.cells.cell_data['element_index']=}")
 
         cell['velocity'].fill(0.0)
         return cell['point'], cell['element_index']

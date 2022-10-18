@@ -41,7 +41,7 @@ class ErythrocyteModel(ModuleModel):
     StateClass = ErythrocyteState
 
     def initialize(self, state: State):
-        logging.getLogger('nlisim').debug("Initializing " + self.name)
+        logging.info("Initializing " + self.name)
         erythrocyte: ErythrocyteState = state.erythrocyte
         mesh: TetrahedralMesh = state.mesh
         time_step_size: float = self.time_step
@@ -75,6 +75,9 @@ class ErythrocyteModel(ModuleModel):
         return state
 
     def advance(self, state: State, previous_time: float):
+        """Advances the state by a single time step."""
+        logging.info("Advancing " + self.name + f" from t={previous_time}")
+
         erythrocyte: ErythrocyteState = state.erythrocyte
         molecules: MoleculesState = state.molecules
         hemoglobin: HemoglobinState = state.hemoglobin

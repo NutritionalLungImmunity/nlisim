@@ -28,9 +28,6 @@ class State(object):
     # simulation configuration
     config: 'SimulationConfig'
 
-    # logger for nlisim
-    log: logging.Logger = attrib(factory=lambda: logging.getLogger('nlisim'))
-
     # a private container for module state, users of this class should use the
     # public API instead
     _extra: Dict[str, 'ModuleState'] = attrib(factory=dict)
@@ -88,7 +85,7 @@ class State(object):
                 try:
                     module_state.save_state(group)
                 except Exception:
-                    logging.getLogger('nlisim').error(f'Error serializing {module.name}')
+                    logging.error(f'Error serializing {module.name}')
                     raise
 
     def serialize(self) -> bytes:
