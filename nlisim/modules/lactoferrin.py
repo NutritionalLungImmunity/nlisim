@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -15,6 +14,7 @@ from nlisim.random import rg
 from nlisim.state import State
 from nlisim.util import (
     iron_tf_reaction,
+    logger,
     michaelian_kinetics_molarity,
     secrete_in_element,
     turnover,
@@ -58,7 +58,7 @@ class Lactoferrin(ModuleModel):
     StateClass = LactoferrinState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         lactoferrin: LactoferrinState = state.lactoferrin
 
         # config file values
@@ -96,7 +96,7 @@ class Lactoferrin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState

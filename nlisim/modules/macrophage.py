@@ -1,4 +1,3 @@
-import logging
 import math
 from typing import Any, Dict, Optional, Tuple
 
@@ -18,7 +17,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import GridTissueType, sample_point_from_simplex, tetrahedral_gradient
+from nlisim.util import GridTissueType, logger, sample_point_from_simplex, tetrahedral_gradient
 
 
 class MacrophageCellData(PhagocyteCellData):
@@ -97,7 +96,7 @@ class Macrophage(PhagocyteModel):
     StateClass = MacrophageState
 
     def initialize(self, state: State):
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         macrophage: MacrophageState = state.macrophage
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -174,7 +173,7 @@ class Macrophage(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         macrophage: MacrophageState = state.macrophage
 
@@ -399,7 +398,7 @@ class Macrophage(PhagocyteModel):
             new_position = cell['point'] + dp_dt
             new_element_index = mesh.get_element_index(new_position)
 
-        logging.debug(f"{macrophage.cells.cell_data['element_index']=}")
+        logger.debug(f"{macrophage.cells.cell_data['element_index']=}")
 
         cell['velocity'].fill(0.0)
         return cell['point'], cell['element_index']

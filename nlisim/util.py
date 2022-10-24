@@ -1,4 +1,5 @@
 from enum import IntEnum
+import logging
 from typing import Tuple, Union
 
 import numpy as np
@@ -9,6 +10,9 @@ from nlisim.random import rg
 
 # ϵ is used in a divide by zero fix: 1/x -> 1/(x+ϵ)
 EPSILON = 1e-50
+
+
+logger: logging.Logger = logging.getLogger('nlisim')
 
 
 def activation_function(*, x, k_d, h, volume, b=1) -> Union[float, np.ndarray]:

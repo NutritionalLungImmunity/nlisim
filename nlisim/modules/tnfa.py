@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -14,7 +13,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, secrete_in_element, turnover
+from nlisim.util import activation_function, logger, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'TNFaState') -> np.ndarray:
@@ -46,7 +45,7 @@ class TNFa(ModuleModel):
     StateClass = TNFaState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         tnfa: TNFaState = state.tnfa
 
         # config file values
@@ -92,7 +91,7 @@ class TNFa(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.neutrophil import NeutrophilCellData, NeutrophilState

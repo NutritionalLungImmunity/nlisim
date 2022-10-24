@@ -1,4 +1,3 @@
-import logging
 import math
 
 from attr import attrs
@@ -7,7 +6,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import turnover
+from nlisim.util import logger, turnover
 
 
 @attrs(kw_only=True, repr=False)
@@ -26,7 +25,7 @@ class Liver(ModuleModel):
     StateClass = LiverState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         liver: LiverState = state.liver
 
         # config file values
@@ -42,7 +41,7 @@ class Liver(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.hepcidin import HepcidinState
         from nlisim.modules.il6 import IL6State

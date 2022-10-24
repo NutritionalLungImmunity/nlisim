@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -8,7 +7,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.state import State
-from nlisim.util import secrete_in_element
+from nlisim.util import logger, secrete_in_element
 
 
 def molecule_point_field_factory(self: 'IronState') -> np.ndarray:
@@ -29,7 +28,7 @@ class Iron(ModuleModel):
     StateClass = IronState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         # iron: IronState = state.iron
         # voxel_volume = geometry.voxel_volume
 
@@ -41,7 +40,7 @@ class Iron(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageState
         from nlisim.modules.phagocyte import PhagocyteStatus

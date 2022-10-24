@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Tuple
 
 import numpy as np
@@ -176,4 +177,5 @@ def apply_mesh_diffusion_crank_nicholson(
     dofs: Any,
     # tolerance: float = 1e-10,
 ):
+    logging.debug(f"{np.min(variable)=} {np.max(variable)=}")
     return skfem.utils.solve(*condense(cn_a, cn_b @ variable, D=dofs))  # , tolerance=tolerance)

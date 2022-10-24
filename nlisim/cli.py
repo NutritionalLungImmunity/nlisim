@@ -1,4 +1,3 @@
-import logging
 import logging.handlers
 from pathlib import Path
 import shutil
@@ -11,6 +10,7 @@ from tqdm import tqdm
 
 from nlisim.config import SimulationConfig
 from nlisim.solver import Status
+from nlisim.util import logger
 
 InputFilePath = click_pathlib.Path(exists=True, file_okay=True, dir_okay=False, readable=True)
 LogFilePath = click_pathlib.Path(exists=False, dir_okay=False, readable=True)
@@ -50,24 +50,22 @@ np.seterr(divide='raise', invalid='raise')
 def main(
     ctx: click.Context, config_files: Tuple[Path], log_level: str, log_file: Optional[Path]
 ) -> None:
+    logger.propagate = False
     # get log level
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % log_level)
-    if log_file is None:
-        logging.basicConfig(
-            level=numeric_level,
-            format=logging.BASIC_FORMAT,
-            # encoding='utf-8'
-        )
+    logger.setLevel(numeric_level)
+    formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s:%(funcName)s:%(message)s")
+    if log_file is not None:
+        ch = logging.FileHandler(log_file, mode='w', encoding='utf-8')
     else:
-        logging.basicConfig(
-            filemode='w',
-            filename=log_file,
-            level=numeric_level,
-            format=logging.BASIC_FORMAT,
-            # encoding='utf-8',
-        )
+        ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    ch.setLevel(numeric_level)
+    for h in logger.handlers:
+        logger.removeHandler(h)
+    logger.addHandler(ch)
 
     ctx.obj = {'config': SimulationConfig(*config_files)}
 

@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -14,7 +13,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, turnover
+from nlisim.util import activation_function, logger, turnover
 
 
 def molecule_point_field_factory(self: 'TGFBState') -> np.ndarray:
@@ -44,7 +43,7 @@ class TGFB(ModuleModel):
     StateClass = TGFBState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         tgfb: TGFBState = state.tgfb
 
         # config file values
@@ -76,7 +75,7 @@ class TGFB(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.phagocyte import PhagocyteStatus

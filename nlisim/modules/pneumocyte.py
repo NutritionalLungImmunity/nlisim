@@ -1,4 +1,3 @@
-import logging
 import math
 from typing import Any, Dict, Tuple
 
@@ -20,6 +19,7 @@ from nlisim.state import State
 from nlisim.util import (
     GridTissueType,
     activation_function,
+    logger,
     sample_point_from_simplex,
     secrete_in_element,
 )
@@ -83,7 +83,7 @@ class Pneumocyte(PhagocyteModel):
     StateClass = PneumocyteState
 
     def initialize(self, state: State):
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         pneumocyte: PneumocyteState = state.pneumocyte
         time_step_size: float = self.time_step
         mesh: TetrahedralMesh = state.mesh
@@ -146,7 +146,7 @@ class Pneumocyte(PhagocyteModel):
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.afumigatus import (
             AfumigatusCellData,

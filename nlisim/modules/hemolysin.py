@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -15,7 +14,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.afumigatus import AfumigatusCellData
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover
+from nlisim.util import logger, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'HemolysinState') -> np.ndarray:
@@ -39,7 +38,7 @@ class Hemolysin(ModuleModel):
     StateClass = HemolysinState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         hemolysin: HemolysinState = state.hemolysin
 
         # config file values
@@ -61,7 +60,7 @@ class Hemolysin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.afumigatus import AfumigatusCellStatus, AfumigatusState
 

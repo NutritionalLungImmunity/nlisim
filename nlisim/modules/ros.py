@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -12,6 +11,7 @@ from nlisim.diffusion import (
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
+from nlisim.util import logger
 
 
 def molecule_point_field_factory(self: 'ROSState') -> np.ndarray:
@@ -36,7 +36,7 @@ class ROS(ModuleModel):
     StateClass = ROSState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         ros: ROSState = state.ros
 
         # config file values
@@ -55,7 +55,7 @@ class ROS(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         ros: ROSState = state.ros
 

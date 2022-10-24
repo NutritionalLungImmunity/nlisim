@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 import shutil
 
@@ -6,6 +5,7 @@ from attr import attrib, attrs
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
+from nlisim.util import logger
 
 
 @attrs(kw_only=True)
@@ -47,11 +47,11 @@ class StateOutput(ModuleModel):
                 shutil.rmtree(file)
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         output_dir = self._output_dir
         if output_dir.exists():
             # Since output_dir may be a Docker mount point, don't remove the directory itself.
-            logging.info(f'File output directory {output_dir.resolve()} exists. Clearing it.')
+            logger.info(f'File output directory {output_dir.resolve()} exists. Clearing it.')
             self._clear_directory(output_dir)
         else:
             output_dir.mkdir(parents=True)
@@ -62,7 +62,7 @@ class StateOutput(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         self._write_output(state)
         return state

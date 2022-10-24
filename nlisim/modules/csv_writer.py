@@ -1,12 +1,12 @@
 import csv
 import itertools
-import logging
 
 from attr import attrs
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.postprocess import generate_summary_stats
 from nlisim.state import State
+from nlisim.util import logger
 
 
 @attrs(kw_only=True, repr=False)
@@ -22,7 +22,7 @@ class CSVWriter(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advances the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         now = state.time
 
@@ -39,7 +39,7 @@ class CSVWriter(ModuleModel):
         return state
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         summary_stats = generate_summary_stats(state)
         column_names = ['time'] + list(
             itertools.chain.from_iterable(

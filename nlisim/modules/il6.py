@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 from attr import Factory, attrib, attrs
@@ -13,7 +12,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover
+from nlisim.util import logger, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'IL6State') -> np.ndarray:
@@ -47,7 +46,7 @@ class IL6(ModuleModel):
     StateClass = IL6State
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         il6: IL6State = state.il6
 
         # config file values
@@ -88,7 +87,7 @@ class IL6(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageState
         from nlisim.modules.neutrophil import NeutrophilState

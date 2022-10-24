@@ -1,5 +1,4 @@
 from enum import IntEnum, unique
-import logging
 import math
 from queue import Queue
 from typing import Any, Dict, Tuple
@@ -16,7 +15,7 @@ from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import GridTissueType, sample_point_from_simplex, secrete_in_element
+from nlisim.util import GridTissueType, logger, sample_point_from_simplex, secrete_in_element
 
 
 @unique
@@ -193,7 +192,7 @@ class Afumigatus(ModuleModel):
     from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 
     def initialize(self, state: State):
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         afumigatus: AfumigatusState = state.afumigatus
         mesh: TetrahedralMesh = state.mesh
 
@@ -272,7 +271,7 @@ class Afumigatus(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advances the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState, PhagocyteStatus
 

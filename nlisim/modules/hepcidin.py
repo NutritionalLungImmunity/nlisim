@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -12,7 +11,7 @@ from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, logger
 
 
 def molecule_point_field_factory(self: 'HepcidinState') -> np.ndarray:
@@ -38,7 +37,7 @@ class Hepcidin(ModuleModel):
     StateClass = HepcidinState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         hepcidin: HepcidinState = state.hepcidin
 
         # config file values
@@ -59,7 +58,7 @@ class Hepcidin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageState
 

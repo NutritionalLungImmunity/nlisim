@@ -26,6 +26,7 @@ from nlisim.cell import CellList
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
+from nlisim.util import logger
 
 
 class VTKTypes(Enum):
@@ -216,7 +217,7 @@ class Visualization(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         visualization_file_name = self.config.get('visualization_file_name')
         variables = self.config.get('visual_variables')

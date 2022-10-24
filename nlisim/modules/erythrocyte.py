@@ -1,4 +1,3 @@
-import logging
 import math
 from typing import Any, Dict
 
@@ -14,7 +13,7 @@ from nlisim.modules.hemolysin import HemolysinState
 from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import activation_function
+from nlisim.util import activation_function, logger
 
 
 # note: treating these a bit more like molecules than cells.
@@ -41,7 +40,7 @@ class ErythrocyteModel(ModuleModel):
     StateClass = ErythrocyteState
 
     def initialize(self, state: State):
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         erythrocyte: ErythrocyteState = state.erythrocyte
         mesh: TetrahedralMesh = state.mesh
         time_step_size: float = self.time_step
@@ -76,7 +75,7 @@ class ErythrocyteModel(ModuleModel):
 
     def advance(self, state: State, previous_time: float):
         """Advances the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         erythrocyte: ErythrocyteState = state.erythrocyte
         molecules: MoleculesState = state.molecules

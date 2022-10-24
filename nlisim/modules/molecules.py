@@ -1,10 +1,9 @@
-import logging
-
 from attr import attrs
 import numpy as np
 
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
+from nlisim.util import logger
 
 
 @attrs(kw_only=True, repr=False)
@@ -22,7 +21,7 @@ class Molecules(ModuleModel):
 
     # noinspection SpellCheckingInspection
     def initialize(self, state: State):
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         molecules: MoleculesState = state.molecules
 
         molecules.cyt_bind_t = self.config.getfloat('cyt_bind_t')  # units: min

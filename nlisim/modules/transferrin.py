@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -13,7 +12,7 @@ from nlisim.diffusion import (
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction, secrete_in_element, uptake_in_element
+from nlisim.util import iron_tf_reaction, logger, secrete_in_element, uptake_in_element
 
 
 def molecule_point_field_factory(self: 'TransferrinState') -> np.ndarray:
@@ -58,7 +57,7 @@ class Transferrin(ModuleModel):
     StateClass = TransferrinState
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         transferrin: TransferrinState = state.transferrin
 
         # config file values
@@ -96,22 +95,28 @@ class Transferrin(ModuleModel):
         transferrin.default_tf_concentration = (
             transferrin.tf_intercept + transferrin.tf_slope * transferrin.threshold_log_hep
         )  # based on y--log(x) plot. units: aM * L = aM
+        logger.info(f"Computed {transferrin.default_tf_concentration=}")
         transferrin.default_apotf_concentration = (
             transferrin.default_apotf_rel_concentration * transferrin.default_tf_concentration
         )  # units: atto-M
+        logger.info(f"Computed {transferrin.default_apotf_concentration=}")
         transferrin.default_tffe_concentration = (
             transferrin.default_tffe_rel_concentration * transferrin.default_tf_concentration
         )  # units: atto-M
+        logger.info(f"Computed {transferrin.default_tffe_concentration=}")
         transferrin.default_tffe2_concentration = (
             transferrin.default_tffe2_rel_concentration * transferrin.default_tf_concentration
         )  # units: atto-M
+        logger.info(f"Computed {transferrin.default_tffe2_concentration=}")
 
         transferrin.ma_iron_import_rate_unit_t = transferrin.ma_iron_import_rate / (
             self.time_step / 60
         )  # units: L * cell^-1 * step^-1
+        logger.info(f"Computed {transferrin.ma_iron_import_rate_unit_t=}")
         transferrin.ma_iron_export_rate_unit_t = transferrin.ma_iron_export_rate / (
             self.time_step / 60
         )  # units: L * mol^-1 * cell^-1 * step^-1
+        logger.info(f"Computed {transferrin.ma_iron_export_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
@@ -130,7 +135,7 @@ class Transferrin(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.iron import IronState
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
@@ -144,6 +149,10 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['Tf'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
+
+        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -224,10 +233,10 @@ class Transferrin(ModuleModel):
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols
 
-                logging.debug(f"{macrophage_cell['iron_pool']=}")
-                # logging.debug(f"{transferrin_in_element=}")
-                # logging.debug(f"{mesh.element_volumes[macrophage_element_index]=}")
-                # logging.debug(f"{transferrin.ma_iron_export_rate_unit_t=}")
+                logger.debug(f"{macrophage_cell['iron_pool']=}")
+                # logger.debug(f"{transferrin_in_element=}")
+                # logger.debug(f"{mesh.element_volumes[macrophage_element_index]=}")
+                # logger.debug(f"{transferrin.ma_iron_export_rate_unit_t=}")
                 qtty: np.float64 = min(
                     macrophage_cell['iron_pool'],  # units: atto-mols
                     2 * transferrin_in_element,  # units: atto-mols
@@ -245,8 +254,8 @@ class Transferrin(ModuleModel):
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                logging.debug(f"{rel_tf_fe=}")
-                logging.debug(f"{qtty=}")
+                logger.debug(f"{rel_tf_fe=}")
+                logger.debug(f"{qtty=}")
                 tffe_qtty = rel_tf_fe * qtty  # units: atto-mols
                 tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-mols
 
@@ -277,6 +286,10 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
+        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
+
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.field['Tf'] + transferrin.field['TfFe']
         potential_reactive_quantity = np.minimum(iron.field, transferrin_fe_capacity)
@@ -303,6 +316,10 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
+        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
+        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
+
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
             transferrin.field[component][:] = apply_mesh_diffusion_crank_nicholson(
@@ -313,8 +330,8 @@ class Transferrin(ModuleModel):
             )
 
         assert np.alltrue(transferrin.field['Tf'] >= 0.0), np.min(transferrin.field['Tf'])
-        assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
-        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
+        assert np.alltrue(transferrin.field['TfFe'] >= 0.0), np.min(transferrin.field['TfFe'])
+        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0), np.min(transferrin.field['TfFe2'])
 
         return state
 

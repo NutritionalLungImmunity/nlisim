@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict
 
 import attr
@@ -13,7 +12,7 @@ from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import secrete_in_element, turnover
+from nlisim.util import logger, secrete_in_element, turnover
 
 
 def molecule_point_field_factory(self: 'MCP1State') -> np.ndarray:
@@ -45,7 +44,7 @@ class MCP1(ModuleModel):
     StateClass = MCP1State
 
     def initialize(self, state: State) -> State:
-        logging.info("Initializing " + self.name)
+        logger.info("Initializing " + self.name)
         mcp1: MCP1State = state.mcp1
 
         # config file values
@@ -85,7 +84,7 @@ class MCP1(ModuleModel):
 
     def advance(self, state: State, previous_time: float) -> State:
         """Advance the state by a single time step."""
-        logging.info("Advancing " + self.name + f" from t={previous_time}")
+        logger.info("Advancing " + self.name + f" from t={previous_time}")
 
         from nlisim.modules.macrophage import MacrophageCellData, MacrophageState
         from nlisim.modules.pneumocyte import PneumocyteCellData, PneumocyteState
