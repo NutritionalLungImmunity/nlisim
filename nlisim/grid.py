@@ -25,14 +25,15 @@ for details.
 from collections import defaultdict
 from enum import IntEnum
 from functools import reduce
-from itertools import product
-from typing import Dict, Iterable, Iterator, List, Tuple, Union, cast, overload
+from itertools import combinations, product
+from typing import Dict, Iterable, Iterator, List, Set, Tuple, Union, cast, overload
 
 from attr import attrib, attrs
 from h5py import File as H5File
 import meshio
 import numpy as np
 from numpy.typing import DTypeLike
+from scipy.sparse import csr_matrix, diags, dok_matrix
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
 
@@ -78,6 +79,9 @@ class TetrahedralMesh(object):
      incident to a point" What we really mean here is the Hodge star operator on 0-forms. That is,
      the map *_0: C_0 ↦ C^3 from functions to 3-forms. Why we need this: to compute the integral
      of functions.
+
+    laplacian is a sparse (N,N) matrix o floats which encodes the discrete laplace operator on
+     functions (0-forms)
     """
 
     points: np.ndarray = attrib()
@@ -87,6 +91,7 @@ class TetrahedralMesh(object):
     element_volumes: np.ndarray = attrib()
     total_volume: float = attrib()
     point_dual_volumes: np.ndarray = attrib()
+    laplacian: csr_matrix = attrib()
 
     @classmethod
     def load_hdf5(cls, file: H5File) -> 'TetrahedralMesh':
@@ -98,6 +103,7 @@ class TetrahedralMesh(object):
             element_volumes,
             point_dual_volumes,
             total_volume,
+            laplacian,
         ) = cls.compute_derived_quantities(element_point_indices, points)
         return cls(
             points=points,
@@ -107,6 +113,7 @@ class TetrahedralMesh(object):
             element_volumes=element_volumes,
             total_volume=total_volume,
             point_dual_volumes=point_dual_volumes,
+            laplacian=laplacian,
         )
 
     def save_hdf5(self, file: H5File) -> None:
@@ -154,6 +161,7 @@ class TetrahedralMesh(object):
             element_volumes,
             point_dual_volumes,
             total_volume,
+            laplacian,
         ) = cls.compute_derived_quantities(element_point_indices, points)
 
         return cls(
@@ -164,20 +172,20 @@ class TetrahedralMesh(object):
             element_volumes=element_volumes,
             total_volume=total_volume,
             point_dual_volumes=point_dual_volumes,
+            laplacian=laplacian,
         )
 
     @classmethod
     def compute_derived_quantities(
-        cls, element_point_indices, points
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
-        # element_neighbors: np.ndarray
-        # if data.GetCells().HasArray("neighbors") == 1:
-        #     # use any precomputed dual
-        #     element_neighbors = vtk_to_numpy(data.GetCellData().GetArray("neighbors"))
-        # else:
+        cls, element_point_indices: np.ndarray, points
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, csr_matrix]:
+
         # TODO: see if vtk has this
         # if we don't have a precomputed 1-skeleton of the dual, compute it now
+
         # collect all faces and their incident tetrahedra
+        # face_tets: dictionary from 3-tuples of point-indices representing triangles to
+        # the indices of tetrahedra which contain them.
         face_tets: Dict = defaultdict(list)
         for tet_index in range(element_point_indices.shape[0]):
             point_indices = np.array(sorted(element_point_indices[tet_index, :]))
@@ -186,7 +194,10 @@ class TetrahedralMesh(object):
                 tet_list = face_tets[face]
                 tet_list.append(tet_index)
 
-        # read the tetrahedra incidence lists from the faces
+        # read the tetrahedra incidence lists from the faces. each tetrahedron may be incident
+        # to up to 4 other tetrahedra
+        # element_neighbors[i] = (4,) array of indices of tetrahedra incident to i-th tetrahedron,
+        # filled with -1's if fewer than 4 neighbors
         element_neighbors = np.full((element_point_indices.shape[0], 4), -1)
         for face, tets in face_tets.items():
             assert 0 < len(tets) <= 2, f"Not a manifold at face: {face}"
@@ -202,10 +213,12 @@ class TetrahedralMesh(object):
         element_neighbors.flags['WRITEABLE'] = False
 
         # precompute element volumes
+        # tet_points: (M,4,3) array
+        # with indices: tetrahedral index, index of point _in_ tetrahedron, xyz
         tet_points = points[element_point_indices, :]
-        element_volumes = (
-            np.abs(np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0) * 1e-15
-        )  # unit note: (µm)^3 = 10^{-6*3} m^3 = 10^{-5*3} (dm)^3 = 10^-15 L
+        element_volumes = np.abs(
+            np.linalg.det((tet_points[:, 1:, :].T - tet_points[:, 0, :].T).T) / 6.0
+        )  # unit note: (µm)^3
         element_volumes.flags['WRITEABLE'] = False
 
         total_volume = float(np.sum(element_volumes))
@@ -214,7 +227,73 @@ class TetrahedralMesh(object):
         point_dual_volumes = np.zeros(points.shape[0], dtype=np.float64)
         np.add.at(point_dual_volumes, element_point_indices.T, element_volumes / 4.0)
 
-        return element_neighbors, element_volumes, point_dual_volumes, total_volume
+        # For details of following diagonal Hodge Star operators, see 4.8.4 of
+        # https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf
+
+        # sparse diagonal Hodge star matrix *_0: Ω^0 → Ω^{0*}
+        # hodge_star_0 = diags(point_dual_volumes)  # unit note: (µm)^3
+
+        # inverse of *_0
+        hodge_star_0_inv = diags(1.0 / point_dual_volumes)  # unit note: 1/(µm)^3
+
+        # 1-forms are defined on edges
+        edge_indices, edges = cls.get_edges(element_point_indices)
+
+        # compute diagonal Hodge star operator on 1-forms, *_1,
+        # in terms of edge lengths and dual areas
+        edge_lengths = np.linalg.norm(
+            points[edges[:, 0]] - points[edges[:, 1]], axis=1
+        )  # unit note: µm
+        edge_dual_areas = cls.get_edge_dual_areas(
+            edge_indices, edges, element_point_indices, points
+        )  # unit note: (µm)^2
+        # sparse diagonal Hodge star matrix *_1: Ω^1 → Ω^{1*}
+        hodge_star_1 = diags(edge_dual_areas / edge_lengths)
+
+        # d_0, exterior derivative on functions (d_0: Ω^0 → Ω^1)
+        d_0 = dok_matrix((edges.shape[0], points.shape[0]), dtype=np.float64)
+        for edge_idx, edge in enumerate(edges):
+            d_0[edge_idx, edge[1]] = 1.0
+            d_0[edge_idx, edge[0]] = -1.0
+
+        laplacian: csr_matrix = hodge_star_0_inv @ d_0.transpose() @ hodge_star_1 @ d_0
+
+        return element_neighbors, element_volumes, point_dual_volumes, total_volume, laplacian
+
+    @classmethod
+    def get_edge_dual_areas(cls, edge_indices, edges, element_point_indices, points):
+        # go through the tetrahedra to compute the edge duals
+        edge_dual_areas: np.ndarray = np.zeros(shape=edges.shape[0], dtype=np.float64)
+        for tet_index, idx_pair in product(
+            range(element_point_indices.shape[0]), combinations(range(4), 2)
+        ):
+            idx_pair_complement = tuple(sorted(set(range(4)) - set(idx_pair)))
+            edge = element_point_indices[tet_index, idx_pair]
+            edge_midpoint = np.mean(points[edge], axis=0)
+            # compute the area of the triangle whose points are 1) the midpoint of the edge and
+            # 2) the other two points of the tetrahedron
+            area = (
+                np.linalg.norm(
+                    np.cross(
+                        *(
+                            points[element_point_indices[tet_index, idx_pair_complement]]
+                            - edge_midpoint
+                        )
+                    )
+                )
+                / 2.0  # unit note: (µm)^2
+            )
+            edge_dual_areas[edge_indices[tuple(edge)]] += area / 3.0
+        return edge_dual_areas
+
+    @classmethod
+    def get_edges(cls, element_point_indices: np.ndarray):
+        edge_set: Set[Tuple] = set()
+        for idx_pair in combinations(range(4), 2):
+            edge_set.update(map(tuple, element_point_indices[:, idx_pair]))
+        edges = np.array(sorted(list(edge_set)))
+        edge_indices = {tuple(e): n for n, e in enumerate(edges)}  # edge index lookup
+        return edge_indices, edges
 
     @overload
     def evaluate_point_function(
