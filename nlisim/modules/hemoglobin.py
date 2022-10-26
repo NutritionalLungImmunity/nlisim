@@ -102,7 +102,7 @@ class Hemoglobin(ModuleModel):
         ]
         afumigatus_count_in_same_element = np.bincount(afumigatus_elements)[afumigatus_elements]
 
-        available_hemoglobin = mesh.integrate_point_function_single_element(
+        available_hemoglobin = mesh.integrate_point_function_in_element(
             element_index=afumigatus_elements, point_function=hemoglobin.field
         )
         hemoglobin_uptake = np.where(

@@ -224,11 +224,11 @@ class Transferrin(ModuleModel):
             }:
                 # amount of iron to export is bounded by the amount of iron in the cell as well
                 # as the amount which can be accepted by transferrin
-                transferrin_in_element = mesh.integrate_point_function_single_element(
+                transferrin_in_element = mesh.integrate_point_function_in_element(
                     element_index=macrophage_element_index,
                     point_function=transferrin.field['Tf'],
                 )  # units: atto-mols
-                transferrin_fe_in_element = mesh.integrate_point_function_single_element(
+                transferrin_fe_in_element = mesh.integrate_point_function_in_element(
                     element_index=macrophage_element_index,
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols

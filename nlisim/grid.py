@@ -33,7 +33,7 @@ from h5py import File as H5File
 import meshio
 import numpy as np
 from numpy.typing import DTypeLike
-from scipy.sparse import csr_matrix, diags, dok_matrix
+from scipy.sparse import csr_matrix, dia_matrix, diags, dok_matrix
 from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
 
@@ -92,6 +92,7 @@ class TetrahedralMesh(object):
     total_volume: float = attrib()
     point_dual_volumes: np.ndarray = attrib()
     laplacian: csr_matrix = attrib()
+    hodge_star_0: dia_matrix = attrib()
 
     @classmethod
     def load_hdf5(cls, file: H5File) -> 'TetrahedralMesh':
@@ -104,6 +105,7 @@ class TetrahedralMesh(object):
             point_dual_volumes,
             total_volume,
             laplacian,
+            hodge_star_0,
         ) = cls.compute_derived_quantities(element_point_indices, points)
         return cls(
             points=points,
@@ -114,6 +116,7 @@ class TetrahedralMesh(object):
             total_volume=total_volume,
             point_dual_volumes=point_dual_volumes,
             laplacian=laplacian,
+            hodge_star_0=hodge_star_0,
         )
 
     def save_hdf5(self, file: H5File) -> None:
@@ -162,6 +165,7 @@ class TetrahedralMesh(object):
             point_dual_volumes,
             total_volume,
             laplacian,
+            hodge_star_0,
         ) = cls.compute_derived_quantities(element_point_indices, points)
 
         return cls(
@@ -173,12 +177,13 @@ class TetrahedralMesh(object):
             total_volume=total_volume,
             point_dual_volumes=point_dual_volumes,
             laplacian=laplacian,
+            hodge_star_0=hodge_star_0,
         )
 
     @classmethod
     def compute_derived_quantities(
         cls, element_point_indices: np.ndarray, points
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, csr_matrix]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, csr_matrix, dia_matrix]:
 
         # TODO: see if vtk has this
         # if we don't have a precomputed 1-skeleton of the dual, compute it now
@@ -231,7 +236,7 @@ class TetrahedralMesh(object):
         # https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf
 
         # sparse diagonal Hodge star matrix *_0: Ω^0 → Ω^{0*}
-        # hodge_star_0 = diags(point_dual_volumes)  # unit note: (µm)^3
+        hodge_star_0 = diags(point_dual_volumes)  # unit note: (µm)^3
 
         # inverse of *_0
         hodge_star_0_inv = diags(1.0 / point_dual_volumes)  # unit note: 1/(µm)^3
@@ -258,7 +263,14 @@ class TetrahedralMesh(object):
 
         laplacian: csr_matrix = hodge_star_0_inv @ d_0.transpose() @ hodge_star_1 @ d_0
 
-        return element_neighbors, element_volumes, point_dual_volumes, total_volume, laplacian
+        return (
+            element_neighbors,
+            element_volumes,
+            point_dual_volumes,
+            total_volume,
+            laplacian,
+            hodge_star_0,
+        )
 
     @classmethod
     def get_edge_dual_areas(cls, edge_indices, edges, element_point_indices, points):
@@ -351,22 +363,18 @@ class TetrahedralMesh(object):
         (k,) numpy array if point_function is (N,k)
         """
         assert (
-            point_function.shape[0] == self.point_dual_volumes.shape[0]
-        ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
+            self.hodge_star_0[1] == point_function.shape[0]
+        ), f"Dimension mismatch! {self.hodge_star_0.shape} and {point_function.shape}"
 
-        if len(point_function.shape) == 1:
-            return float(np.sum(point_function * self.point_dual_volumes, axis=0))
+        result = np.sum(self.hodge_star_0 @ point_function, axis=0) / 3.0
+
+        # convert to float, if possible
+        if len(point_function.shape) > 1:
+            return result
         else:
-            return np.sum(
-                point_function
-                * np.expand_dims(
-                    self.point_dual_volumes,
-                    axis=[ax for ax in range(len(point_function.shape)) if ax != 0],
-                ),
-                axis=0,
-            )
+            return float(result)
 
-    def integrate_point_function_single_element(
+    def integrate_point_function_in_element(
         self, element_index: Union[int, np.ndarray], point_function: np.ndarray
     ) -> Union[float, np.ndarray]:
         """
@@ -388,8 +396,8 @@ class TetrahedralMesh(object):
          array is returned, respectively.
         """
         assert (
-            point_function.shape[0] == self.point_dual_volumes.shape[0]
-        ), f"Dimension mismatch! {point_function.shape} and {self.point_dual_volumes.shape}"
+            self.hodge_star_0[1] == point_function.shape[0]
+        ), f"Dimension mismatch! {self.hodge_star_0.shape} and {point_function.shape}"
 
         if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
             element_index = int(element_index)
@@ -397,11 +405,11 @@ class TetrahedralMesh(object):
         if isinstance(element_index, (int, np.integer)):
             point_indices = self.element_point_indices[element_index]  # (4,)
             values = point_function[point_indices]  # (4,)
-            return float(np.sum(values) / 3 * self.element_volumes[element_index])
+            return float(np.mean(values) * self.element_volumes[element_index])
         else:
             point_indices = self.element_point_indices[element_index]  # (L,4)
             values = point_function[point_indices]  # (L,4)
-            return np.sum(values, axis=1) / 3 * self.element_volumes[element_index]
+            return np.mean(values, axis=1) * self.element_volumes[element_index]
 
     def integrate_element_function(self, element_function: np.ndarray) -> Union[np.ndarray, float]:
         """

@@ -209,7 +209,7 @@ class TAFC(ModuleModel):
                     "    element_index=afumigatus_cell_element,\n"
                     ")="
                     + str(
-                        mesh.integrate_point_function_single_element(
+                        mesh.integrate_point_function_in_element(
                             point_function=tafc.field['TAFCBI'],
                             element_index=afumigatus_cell_element,
                         )
