@@ -60,6 +60,7 @@ class EstB(ModuleModel):
         estb.half_life_multiplier = 0.5 ** (
             self.time_step / estb.half_life
         )  # units: (min/step) / min -> 1/step
+        logger.info(f"Computed {estb.half_life_multiplier=}")
 
         # initialize concentration field
         estb.field = estb.system_concentration

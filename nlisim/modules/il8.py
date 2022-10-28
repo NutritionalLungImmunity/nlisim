@@ -68,12 +68,16 @@ class IL8(ModuleModel):
         il8.half_life_multiplier = 0.5 ** (
             1 * self.time_step / il8.half_life
         )  # units: step * (min/step) / min -> 1
+        logger.info(f"Computed {il8.half_life_multiplier=}")
         # time unit conversions
         # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
         il8.macrophage_secretion_rate_unit_t = il8.macrophage_secretion_rate * (self.time_step / 60)
+        logger.info(f"Computed {il8.macrophage_secretion_rate_unit_t=}")
         il8.neutrophil_secretion_rate_unit_t = il8.neutrophil_secretion_rate * (self.time_step / 60)
+        logger.info(f"Computed {il8.neutrophil_secretion_rate_unit_t=}")
         il8.pneumocyte_secretion_rate_unit_t = il8.pneumocyte_secretion_rate * (self.time_step / 60)
+        logger.info(f"Computed {il8.pneumocyte_secretion_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

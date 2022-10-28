@@ -66,18 +66,22 @@ class TNFa(ModuleModel):
         tnfa.half_life_multiplier = 0.5 ** (
             self.time_step / tnfa.half_life
         )  # units: (min/step) / min -> 1/step
+        logger.info(f"Computed {tnfa.half_life_multiplier=}")
         # time unit conversions
         # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
         tnfa.macrophage_secretion_rate_unit_t = tnfa.macrophage_secretion_rate * (
             self.time_step / 60
         )
+        logger.info(f"Computed {tnfa.macrophage_secretion_rate_unit_t=}")
         tnfa.neutrophil_secretion_rate_unit_t = tnfa.neutrophil_secretion_rate * (
             self.time_step / 60
         )
+        logger.info(f"Computed {tnfa.neutrophil_secretion_rate_unit_t=}")
         tnfa.epithelial_secretion_rate_unit_t = tnfa.epithelial_secretion_rate * (
             self.time_step / 60
         )
+        logger.info(f"Computed {tnfa.epithelial_secretion_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

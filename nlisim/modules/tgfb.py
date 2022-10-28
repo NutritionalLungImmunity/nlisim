@@ -58,10 +58,12 @@ class TGFB(ModuleModel):
         tgfb.half_life_multiplier = 0.5 ** (
             self.time_step / tgfb.half_life
         )  # units in exponent: (min/step) / min -> 1/step
+        logger.info(f"Computed {tgfb.half_life_multiplier=}")
         # time unit conversions
         tgfb.macrophage_secretion_rate_unit_t = tgfb.macrophage_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol/(cell*h) * (min/step) / (min/hour)
+        logger.info(f"Computed {tgfb.macrophage_secretion_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

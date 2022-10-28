@@ -224,15 +224,19 @@ class Afumigatus(ModuleModel):
         afumigatus.iter_to_swelling = max(
             0, int(afumigatus.time_to_swelling * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        logger.info(f"Computed {afumigatus.iter_to_swelling=}")
         afumigatus.iter_to_germinate = max(
             0, int(afumigatus.time_to_germinate * (60 / self.time_step) - 2)
         )  # units: hours * (min/hour) / (min/step) = steps TODO: -2?
+        logger.info(f"Computed {afumigatus.iter_to_germinate=}")
         afumigatus.iter_to_grow = max(
             0, int(afumigatus.time_to_grow * 60 / self.time_step) - 1
         )  # units: hours * (min/hour) / (min/step) = steps
+        logger.info(f"Computed {afumigatus.iter_to_grow=}")
         afumigatus.pr_aspergillus_change = -math.log(0.5) / (
             afumigatus.aspergillus_change_half_life * (60 / self.time_step)
         )
+        logger.info(f"Computed {afumigatus.pr_aspergillus_change=}")
 
         # place fungal cells for initial infection. Cells will be distributed into the
         # surfactant layer, in a uniformly random manner.

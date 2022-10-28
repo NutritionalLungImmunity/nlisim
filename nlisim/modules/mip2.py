@@ -68,18 +68,22 @@ class MIP2(ModuleModel):
         mip2.half_life_multiplier = 0.5 ** (
             self.time_step / mip2.half_life
         )  # units in exponent: (min/step) / min -> 1/step
+        logger.info(f"Computed {mip2.half_life_multiplier=}")
         # time unit conversions.
         # units: (atto-mol * cell^-1 * h^-1 * (min * step^-1) / (min * hour^-1)
         #        = atto-mol * cell^-1 * step^-1
         mip2.macrophage_secretion_rate_unit_t = mip2.macrophage_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
+        logger.info(f"Computed {mip2.macrophage_secretion_rate_unit_t=}")
         mip2.neutrophil_secretion_rate_unit_t = mip2.neutrophil_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
+        logger.info(f"Computed {mip2.neutrophil_secretion_rate_unit_t=}")
         mip2.pneumocyte_secretion_rate_unit_t = mip2.pneumocyte_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
+        logger.info(f"Computed {mip2.pneumocyte_secretion_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

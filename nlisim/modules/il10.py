@@ -58,10 +58,12 @@ class IL10(ModuleModel):
         il10.half_life_multiplier = 0.5 ** (
             self.time_step / il10.half_life
         )  # units in exponent: (min/step) / min -> 1/step
+        logger.info(f"Computed {il10.half_life_multiplier=}")
         # time unit conversions
         il10.macrophage_secretion_rate_unit_t = il10.macrophage_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * h^-1 * (min/step) / (min/hour)
+        logger.info(f"Computed {il10.macrophage_secretion_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

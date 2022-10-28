@@ -80,9 +80,11 @@ class Lactoferrin(ModuleModel):
         lactoferrin.neutrophil_secretion_rate_unit_t = lactoferrin.neutrophil_secretion_rate * (
             self.time_step / 60
         )  # units: atto-mol * cell^-1 * step^-1
+        logger.info(f"Computed {lactoferrin.neutrophil_secretion_rate_unit_t=}")
         lactoferrin.ma_iron_import_rate_vol_unit_t = lactoferrin.ma_iron_import_rate_vol * (
             self.time_step / 60
         )  # units: L * cell^-1 * step^-1
+        logger.info(f"Computed {lactoferrin.ma_iron_import_rate_vol_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

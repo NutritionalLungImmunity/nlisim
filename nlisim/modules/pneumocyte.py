@@ -100,15 +100,18 @@ class Pneumocyte(PhagocyteModel):
         pneumocyte.iter_to_rest = int(
             pneumocyte.time_to_rest * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
+        logger.info(f"Computed {pneumocyte.iter_to_rest=}")
         pneumocyte.iter_to_change_state = int(
             pneumocyte.time_to_change_state * (60 / self.time_step)
         )  # units: hours * (min/hour) / (min/step) = step
+        logger.info(f"Computed {pneumocyte.time_to_change_state=}")
         # pneumocyte.pr_p_int = -math.expm1(
         #     -time_step_size / 60 / (voxel_volume * pneumocyte.pr_p_int_param)
         # )  # units: probability
         pneumocyte.pr_non_activating_per_vol = math.exp(
             -time_step_size / 60 / pneumocyte.pr_p_int_param
         )  # units: probability
+        logger.info(f"Computed {pneumocyte.pr_non_activating_per_vol=}")
 
         # initialize cells, placing one per epithelial element TODO: something better
         locations = np.where(mesh.element_tissue_type == GridTissueType.EPITHELIUM)[0]

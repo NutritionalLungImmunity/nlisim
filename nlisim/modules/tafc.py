@@ -68,12 +68,14 @@ class TAFC(ModuleModel):
         tafc.afumigatus_secretion_rate_unit_t = tafc.afumigatus_secretion_rate * (
             self.time_step / 60
         )  # units: (atto-mol * cell^-1 * h^-1) * (min/step) / (min/hour)
+        logger.info(f"Computed {tafc.afumigatus_secretion_rate_unit_t=}")
         tafc.tafcbi_uptake_rate_unit_t = (
             tafc.tafcbi_uptake_rate
             * (self.time_step / 60)
             # units: (L * cell^-1 * h^-1) * (min/step) / (min/hour)
             # = L * cell^-1 * step^-1
         )
+        logger.info(f"Computed {tafc.tafcbi_uptake_rate_unit_t=}")
 
         # matrices for diffusion
         cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(

@@ -36,6 +36,7 @@ class Liver(ModuleModel):
 
         # computed values
         liver.threshold_hep = math.pow(10, liver.threshold_log_hep)
+        logger.info(f"Computed {liver.threshold_hep=}")
 
         return state
 

@@ -128,13 +128,16 @@ class Macrophage(PhagocyteModel):
         macrophage.iter_to_rest = int(
             macrophage.time_to_rest / self.time_step
         )  # units: min / (min/step) = steps
+        logger.info(f"Computed {macrophage.iter_to_rest=}")
         macrophage.iter_to_change_state = int(
             macrophage.time_to_change_state * (60 / time_step_size)
         )  # units: hours * (min/hour) / (min/step) = step
+        logger.info(f"Computed {macrophage.iter_to_change_state=}")
 
         macrophage.prob_death_per_timestep = -math.log(0.5) / (
             macrophage.half_life * (60 / time_step_size)
         )  # units: 1/(  hours * (min/hour) / (min/step)  ) = 1/step
+        logger.info(f"Computed {macrophage.prob_death_per_timestep=}")
 
         # initialize macrophages cells. Cells will be distributed into non-air layers, in a
         # uniformly random manner.
@@ -379,7 +382,8 @@ class Macrophage(PhagocyteModel):
         # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in
         # place. Velocity is updated to dp/dt in either case.
         new_position = cell['point'] + dp_dt
-        new_element_index: int = mesh.get_element_index(new_position)
+        orig_element_index: int = mesh.get_element_index(new_position)
+        new_element_index: int = orig_element_index
         assert cell['element_index'] > 0
         for _ in range(4):
             # logging.debug(f"{iteration=}")
@@ -398,7 +402,10 @@ class Macrophage(PhagocyteModel):
             new_position = cell['point'] + dp_dt
             new_element_index = mesh.get_element_index(new_position)
 
-        logger.debug(f"{macrophage.cells.cell_data['element_index']=}")
+        if orig_element_index == new_element_index:
+            logger.debug(f"MΦ moved from element {orig_element_index} to {new_element_index}")
+        else:
+            logger.debug(f"MΦ stayed in element {orig_element_index}")
 
         cell['velocity'].fill(0.0)
         return cell['point'], cell['element_index']

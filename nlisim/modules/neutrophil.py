@@ -131,9 +131,11 @@ class Neutrophil(PhagocyteModel):
             * (60 / self.time_step)
             # units: hours*(min/hour)/(min/step)=steps
         )  # units: probability
+        logger.info(f"Computed {neutrophil.apoptosis_probability=}")
         neutrophil.iter_to_change_state = int(
             neutrophil.time_to_change_state * 60 / self.time_step
         )  # units: hours * (min/hour) / (min/step) = steps
+        logger.info(f"Computed {neutrophil.iter_to_change_state=}")
 
         # initialize neutrophil cells. Cells will be distributed into non-air layers, in a
         # uniformly random manner.

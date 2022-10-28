@@ -59,6 +59,7 @@ class AntiTNFa(ModuleModel):
         anti_tnf_a.half_life_multiplier = 0.5 ** (
             self.time_step / anti_tnf_a.half_life
         )  # units in exponent: (min/step) / min -> 1/step
+        logger.info(f"Computed {anti_tnf_a.half_life_multiplier=}")
 
         # initialize concentration field TODO: tissue vs. air
         anti_tnf_a.field.fill(anti_tnf_a.system_concentration)
