@@ -260,10 +260,10 @@ def sample_point_from_simplex(num_points: int = 1, dimension: int = 3) -> np.nda
 
     """
     if num_points == 1:
-        return np.diff(np.sort(np.random.random(dimension)), prepend=0.0, append=1.0)
+        return np.diff(np.sort(rg.random(dimension)), prepend=0.0, append=1.0)
     else:
         return np.diff(
-            np.sort(np.random.random((dimension, num_points)), axis=0),
+            np.sort(rg.random((dimension, num_points)), axis=0),
             prepend=0.0,
             append=1.0,
             axis=0,
