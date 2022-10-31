@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
 
@@ -12,6 +11,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
 from nlisim.cell import CellData, CellList
 from nlisim.grid import RectangularGrid
 from nlisim.state import State
+from nlisim.util import logger
 
 
 def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
@@ -44,7 +44,7 @@ def convert_cells_to_vtk(cells: CellList) -> vtkPolyData:
         try:
             scalar = numpy_to_vtk(data)
         except Exception:
-            logging.getLogger('nlisim').error(f'Unhandled data type in field {field}')
+            logger.error(f'Unhandled data type in field {field}')
             continue
 
         scalar.SetName(field)

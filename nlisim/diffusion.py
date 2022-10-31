@@ -1,4 +1,3 @@
-import logging
 from typing import Tuple
 
 import numpy as np
@@ -7,6 +6,7 @@ from scipy.sparse.linalg import cg
 
 from nlisim.coordinates import Voxel
 from nlisim.grid import RectangularGrid
+from nlisim.util import logger
 
 _dtype_float64 = np.dtype('float64')
 
@@ -170,19 +170,19 @@ def apply_mesh_diffusion_crank_nicholson(
     cn_b: csr_matrix,
     # tolerance: float = 1e-10,
 ):
-    logging.debug(f"{np.min(variable)=} {np.max(variable)=}")
+    logger.debug(f"{np.min(variable)=} {np.max(variable)=}")
 
     # scipy.sparse.spsolve assumes that, for AX=B, X is sparse. So we don't want that.
     # conjugate gradient method works well for this type of problem
     result, info = cg(cn_a, cn_b @ variable, x0=variable)
     if info == 0:
-        logging.debug('successful exit')
+        logger.debug('successful exit')
     elif info > 0:
-        logging.warning(f'convergence to tolerance not achieved, after {info} iterations')
+        logger.warning(f'convergence to tolerance not achieved, after {info} iterations')
     else:
-        logging.error('illegal input or breakdown')
+        logger.error('illegal input or breakdown')
 
-    logging.debug(f"{np.min(result)=} {np.max(result)=}")
-    logging.debug(f"{np.sum(result-np.clip(result,0,float('inf')))=}")
+    logger.debug(f"{np.min(result)=} {np.max(result)=}")
+    logger.debug(f"{np.sum(result-np.clip(result,0,float('inf')))=}")
 
     np.copyto(variable, result)

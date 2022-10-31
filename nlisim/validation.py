@@ -1,6 +1,7 @@
 from contextlib import contextmanager
-import logging
 from typing import TYPE_CHECKING, Callable, Iterator, List
+
+from nlisim.util import logger
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
     from nlisim.state import State  # noqa
@@ -50,6 +51,5 @@ def context(name: str) -> Iterator[None]:
         e.push_context(name)
         raise
     except Exception:
-        # TODO: use simulation logger
-        logging.getLogger('nlisim').error(f'Unhandled exception raised while executing "{name}"')
+        logger.error(f'Unhandled exception raised while executing "{name}"')
         raise

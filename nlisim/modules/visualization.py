@@ -1,6 +1,5 @@
 from enum import Enum
 import json
-import logging
 
 import attr
 import meshio
@@ -177,9 +176,9 @@ class Visualization(ModuleModel):
 
         elif vtk_type == VTKTypes.POLY_DATA.name:
             file_name = filename.replace('<variable>', module_name + '-' + var_name)
-            logging.debug(f"{var=}")
-            logging.debug(f"{file_name=}")
-            logging.debug(f"{attr_names=}")
+            logger.debug(f"{var=}")
+            logger.debug(f"{file_name=}")
+            logger.debug(f"{attr_names=}")
             Visualization.write_poly_data(var, file_name, attr_names)
 
         elif vtk_type == VTKTypes.STRUCTURED_GRID.name:

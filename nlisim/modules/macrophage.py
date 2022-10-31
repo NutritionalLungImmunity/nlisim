@@ -153,6 +153,8 @@ class Macrophage(PhagocyteModel):
             np.argmax(np.random.random((init_num_macrophages, 1)) < cdf, axis=1)
         ]
 
+        logger.debug(f"placing MΦs in elements {macrophage_elements}")
+
         # the cell's points are then superpositions of the tetrahedral vertices weighted by randomly
         # generated simplex coordinates
         simplex_coords = sample_point_from_simplex(num_points=init_num_macrophages)
@@ -386,10 +388,10 @@ class Macrophage(PhagocyteModel):
         new_element_index: int = orig_element_index
         assert cell['element_index'] > 0
         for _ in range(4):
-            # logging.debug(f"{iteration=}")
-            # logging.debug(f"{new_element_index=}")
-            # logging.debug(f"{cell['element_index']=}")
-            # logging.debug(f"{mesh.element_tissue_type[new_element_index]=}")
+            logger.debug(f"{_=}")
+            logger.debug(f"{new_element_index=}")
+            logger.debug(f"{cell['element_index']=}")
+            logger.debug(f"{mesh.element_tissue_type[new_element_index]=}")
             assert cell['element_index'] > 0
             if (
                 new_element_index >= 0

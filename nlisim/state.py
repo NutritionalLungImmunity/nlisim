@@ -1,5 +1,4 @@
 from io import BytesIO, StringIO
-import logging
 from pathlib import PurePath
 from typing import IO, TYPE_CHECKING, Any, Dict, Union, cast
 
@@ -8,6 +7,7 @@ from h5py import File as H5File
 import numpy as np
 
 from nlisim.grid import TetrahedralMesh
+from nlisim.util import logger
 from nlisim.validation import context as validation_context
 
 if TYPE_CHECKING:  # prevent circular imports for type checking
@@ -85,7 +85,7 @@ class State(object):
                 try:
                     module_state.save_state(group)
                 except Exception:
-                    logging.error(f'Error serializing {module.name}')
+                    logger.error(f'Error serializing {module.name}')
                     raise
 
     def serialize(self) -> bytes:
@@ -197,5 +197,5 @@ def get_class_path(instance: Any) -> str:
 #         with h5py.File(path, 'r') as file:
 #             return np.array(file['geometry'])
 #     except Exception:
-#         logging.getLogger('nlisim').error(f'Error loading geometry file at {path}.')
+#         logger.error(f'Error loading geometry file at {path}.')
 #         raise
