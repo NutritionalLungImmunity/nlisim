@@ -170,7 +170,6 @@ def apply_mesh_diffusion_crank_nicholson(
     cn_b: csr_matrix,
     # tolerance: float = 1e-10,
 ):
-    logging.debug(f"")
     logging.debug(f"{np.min(variable)=} {np.max(variable)=}")
 
     # scipy.sparse.spsolve assumes that, for AX=B, X is sparse. So we don't want that.

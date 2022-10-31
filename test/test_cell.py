@@ -70,6 +70,7 @@ def test_filter_out_dead(mesh: TetrahedralMesh):
     mask = np.arange(10) < 5
     assert_array_equal(cells.alive(mask), [0, 2, 4])
 
+
 # def test_get_neighboring_cells(mesh: TetrahedralMesh):
 #     point = Point(x=4.5, y=4.5, z=4.5)
 #

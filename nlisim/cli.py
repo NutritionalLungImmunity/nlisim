@@ -1,7 +1,8 @@
+from logging import FileHandler, StreamHandler
 import logging.handlers
 from pathlib import Path
 import shutil
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import click
 import click_pathlib
@@ -57,6 +58,7 @@ def main(
         raise ValueError('Invalid log level: %s' % log_level)
     logger.setLevel(numeric_level)
     formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s:%(funcName)s:%(message)s")
+    ch: Union[FileHandler, StreamHandler]
     if log_file is not None:
         ch = logging.FileHandler(log_file, mode='w', encoding='utf-8')
     else:
