@@ -30,7 +30,6 @@ class HemoglobinState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class Hemoglobin(ModuleModel):
@@ -42,6 +41,7 @@ class Hemoglobin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         hemoglobin: HemoglobinState = state.hemoglobin
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         hemoglobin.uptake_rate = self.config.getfloat('uptake_rate')
@@ -53,12 +53,11 @@ class Hemoglobin(ModuleModel):
         # computed values (none)
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=hemoglobin.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=hemoglobin.diffusion_constant, dt=self.time_step
         )
         hemoglobin.cn_a = cn_a
         hemoglobin.cn_b = cn_b
-        hemoglobin.dofs = dofs
 
         return state
 
@@ -133,11 +132,11 @@ class Hemoglobin(ModuleModel):
         )
 
         # Diffusion of Hemoglobin
-        hemoglobin.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=hemoglobin.field,
             cn_a=hemoglobin.cn_a,
             cn_b=hemoglobin.cn_b,
-            dofs=hemoglobin.dofs,
         )
 
         assert np.alltrue(hemoglobin.field >= 0.0)

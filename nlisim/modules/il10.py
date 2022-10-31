@@ -33,7 +33,6 @@ class IL10State(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class IL10(ModuleModel):
@@ -45,6 +44,7 @@ class IL10(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         il10: IL10State = state.il10
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         il10.half_life = self.config.getfloat('half_life')  # units: min
@@ -66,12 +66,11 @@ class IL10(ModuleModel):
         logger.info(f"Computed {il10.macrophage_secretion_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=il10.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=il10.diffusion_constant, dt=self.time_step
         )
         il10.cn_a = cn_a
         il10.cn_b = cn_b
-        il10.dofs = dofs
 
         return state
 
@@ -140,11 +139,11 @@ class IL10(ModuleModel):
         )
 
         # Diffusion of IL10
-        il10.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=il10.field,
             cn_a=il10.cn_a,
             cn_b=il10.cn_b,
-            dofs=il10.dofs,
         )
 
         assert np.alltrue(il10.field >= 0.0)

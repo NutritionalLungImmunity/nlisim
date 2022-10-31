@@ -33,7 +33,6 @@ class HemopexinState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class Hemopexin(ModuleModel):
@@ -45,6 +44,7 @@ class Hemopexin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         hemopexin: HemopexinState = state.hemopexin
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         hemopexin.k_m = self.config.getfloat('k_m')
@@ -61,12 +61,11 @@ class Hemopexin(ModuleModel):
         hemopexin.field = hemopexin.system_concentration
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=hemopexin.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=hemopexin.diffusion_constant, dt=self.time_step
         )
         hemopexin.cn_a = cn_a
         hemopexin.cn_b = cn_b
-        hemopexin.dofs = dofs
 
         return state
 
@@ -105,12 +104,12 @@ class Hemopexin(ModuleModel):
             rel_cyt_bind_unit_t=molecules.rel_cyt_bind_unit_t,
         )
 
-        # Diffusion of Hemolysin
-        hemopexin.field[:] = apply_mesh_diffusion_crank_nicholson(
+        # Diffusion of Hemopexin
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=hemopexin.field,
             cn_a=hemopexin.cn_a,
             cn_b=hemopexin.cn_b,
-            dofs=hemopexin.dofs,
         )
 
         assert np.alltrue(hemopexin.field >= 0.0)

@@ -37,7 +37,6 @@ class TNFaState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class TNFa(ModuleModel):
@@ -47,6 +46,7 @@ class TNFa(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         tnfa: TNFaState = state.tnfa
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         tnfa.half_life = self.config.getfloat('half_life')  # units: min
@@ -84,12 +84,11 @@ class TNFa(ModuleModel):
         logger.info(f"Computed {tnfa.epithelial_secretion_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=tnfa.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=tnfa.diffusion_constant, dt=self.time_step
         )
         tnfa.cn_a = cn_a
         tnfa.cn_b = cn_b
-        tnfa.dofs = dofs
 
         return state
 
@@ -187,11 +186,11 @@ class TNFa(ModuleModel):
         )
 
         # Diffusion of TNFa
-        tnfa.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=tnfa.field,
             cn_a=tnfa.cn_a,
             cn_b=tnfa.cn_b,
-            dofs=tnfa.dofs,
         )
 
         assert np.alltrue(tnfa.field >= 0.0)

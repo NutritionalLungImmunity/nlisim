@@ -36,7 +36,6 @@ class IL6State(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class IL6(ModuleModel):
@@ -48,6 +47,7 @@ class IL6(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         il6: IL6State = state.il6
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         il6.half_life = self.config.getfloat('half_life')
@@ -80,12 +80,11 @@ class IL6(ModuleModel):
         logger.info(f"Computed {il6.pneumocyte_secretion_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=il6.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=il6.diffusion_constant, dt=self.time_step
         )
         il6.cn_a = cn_a
         il6.cn_b = cn_b
-        il6.dofs = dofs
 
         return state
 
@@ -153,11 +152,11 @@ class IL6(ModuleModel):
         )
 
         # Diffusion of IL6
-        il6.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=il6.field,
             cn_a=il6.cn_a,
             cn_b=il6.cn_b,
-            dofs=il6.dofs,
         )
 
         assert np.alltrue(il6.field >= 0.0)

@@ -30,7 +30,7 @@ class Iron(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         # iron: IronState = state.iron
-        # voxel_volume = geometry.voxel_volume
+        # mesh: TetrahedralMesh = state.mesh
 
         # config file values
 

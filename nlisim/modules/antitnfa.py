@@ -32,7 +32,6 @@ class AntiTNFaState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class AntiTNFa(ModuleModel):
@@ -42,7 +41,7 @@ class AntiTNFa(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         anti_tnf_a: AntiTNFaState = state.antitnfa
-        # mesh: TetrahedralMesh = state.mesh
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         anti_tnf_a.half_life = self.config.getfloat('half_life')  # units: min
@@ -65,12 +64,11 @@ class AntiTNFa(ModuleModel):
         anti_tnf_a.field.fill(anti_tnf_a.system_concentration)
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=anti_tnf_a.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=anti_tnf_a.diffusion_constant, dt=self.time_step
         )
         anti_tnf_a.cn_a = cn_a
         anti_tnf_a.cn_b = cn_b
-        anti_tnf_a.dofs = dofs
 
         return state
 
@@ -110,11 +108,11 @@ class AntiTNFa(ModuleModel):
         )
 
         # Diffusion of AntiTNFa
-        anti_tnf_a.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=anti_tnf_a.field,
             cn_a=anti_tnf_a.cn_a,
             cn_b=anti_tnf_a.cn_b,
-            dofs=anti_tnf_a.dofs,
         )
 
         assert np.alltrue(anti_tnf_a.field >= 0.0)

@@ -3,9 +3,7 @@ from typing import Any, Dict
 import attr
 from attr import attrib, attrs
 import numpy as np
-from scipy.sparse import csr_matrix
 
-from nlisim.diffusion import assemble_mesh_laplacian_crank_nicholson
 from nlisim.grid import TetrahedralMesh
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.macrophage import MacrophageCellData
@@ -25,9 +23,8 @@ class HepcidinState(ModuleState):
     )  # units: atto-mol
     k_d: float  # units: aM
     diffusion_constant: float  # units: µm^2/min
-    cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
-    cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
+    # cn_a: csr_matrix  # `A` matrix for Crank-Nicholson -> Hepcidin does not diffuse
+    # cn_b: csr_matrix  # `B` matrix for Crank-Nicholson -> Hepcidin does not diffuse
 
 
 class Hepcidin(ModuleModel):
@@ -39,6 +36,7 @@ class Hepcidin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         hepcidin: HepcidinState = state.hepcidin
+        # mesh: TetrahedralMesh = state.mesh
 
         # config file values
         hepcidin.k_d = self.config.getfloat('k_d')  # aM
@@ -46,13 +44,12 @@ class Hepcidin(ModuleModel):
 
         # computed values (none)
 
-        # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=hepcidin.diffusion_constant, dt=self.time_step
-        )
-        hepcidin.cn_a = cn_a
-        hepcidin.cn_b = cn_b
-        hepcidin.dofs = dofs
+        # matrices for diffusion -> Hepcidin does not diffuse
+        # cn_a, cn_b = new_assemble_mesh_laplacian_crank_nicholson(
+        #     laplacian=mesh.laplacian, diffusivity=hepcidin.diffusion_constant, dt=self.time_step
+        # )
+        # hepcidin.cn_a = cn_a
+        # hepcidin.cn_b = cn_b
 
         return state
 

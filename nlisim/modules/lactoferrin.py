@@ -48,7 +48,6 @@ class LactoferrinState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class Lactoferrin(ModuleModel):
@@ -60,6 +59,7 @@ class Lactoferrin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         lactoferrin: LactoferrinState = state.lactoferrin
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         lactoferrin.k_m_tf_lac = self.config.getfloat('k_m_tf_lac')  # units: aM
@@ -87,12 +87,11 @@ class Lactoferrin(ModuleModel):
         logger.info(f"Computed {lactoferrin.ma_iron_import_rate_vol_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=lactoferrin.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=lactoferrin.diffusion_constant, dt=self.time_step
         )
         lactoferrin.cn_a = cn_a
         lactoferrin.cn_b = cn_b
-        lactoferrin.dofs = dofs
 
         return state
 
@@ -311,11 +310,11 @@ class Lactoferrin(ModuleModel):
 
         # Diffusion of lactoferrin
         for component in {'Lactoferrin', 'LactoferrinFe', 'LactoferrinFe2'}:
-            lactoferrin.field[component][:] = apply_mesh_diffusion_crank_nicholson(
+            logger.info(f"diffusing {self.name}:{component}")
+            apply_mesh_diffusion_crank_nicholson(
                 variable=lactoferrin.field[component],
                 cn_a=lactoferrin.cn_a,
                 cn_b=lactoferrin.cn_b,
-                dofs=lactoferrin.dofs,
             )
 
         assert np.alltrue(lactoferrin.field['Lactoferrin'] >= 0.0)

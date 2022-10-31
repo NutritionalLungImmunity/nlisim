@@ -47,7 +47,6 @@ class TransferrinState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class Transferrin(ModuleModel):
@@ -59,6 +58,7 @@ class Transferrin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         transferrin: TransferrinState = state.transferrin
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
@@ -119,12 +119,11 @@ class Transferrin(ModuleModel):
         logger.info(f"Computed {transferrin.ma_iron_export_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=transferrin.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=transferrin.diffusion_constant, dt=self.time_step
         )
         transferrin.cn_a = cn_a
         transferrin.cn_b = cn_b
-        transferrin.dofs = dofs
 
         # initialize the molecular field
         transferrin.field['Tf'].fill(transferrin.default_apotf_concentration)
@@ -322,11 +321,11 @@ class Transferrin(ModuleModel):
 
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
-            transferrin.field[component][:] = apply_mesh_diffusion_crank_nicholson(
+            logger.info(f"diffusing {self.name}:{component}")
+            apply_mesh_diffusion_crank_nicholson(
                 variable=transferrin.field[component],
                 cn_a=transferrin.cn_a,
                 cn_b=transferrin.cn_b,
-                dofs=transferrin.dofs,
             )
 
         assert np.alltrue(transferrin.field['Tf'] >= 0.0), np.min(transferrin.field['Tf'])

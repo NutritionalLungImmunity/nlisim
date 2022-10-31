@@ -40,7 +40,6 @@ class TAFCState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class TAFC(ModuleModel):
@@ -53,6 +52,7 @@ class TAFC(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         tafc: TAFCState = state.tafc
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         tafc.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
@@ -78,12 +78,11 @@ class TAFC(ModuleModel):
         logger.info(f"Computed {tafc.tafcbi_uptake_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=tafc.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=tafc.diffusion_constant, dt=self.time_step
         )
         tafc.cn_a = cn_a
         tafc.cn_b = cn_b
-        tafc.dofs = dofs
 
         return state
 
@@ -266,11 +265,11 @@ class TAFC(ModuleModel):
 
         # Diffusion of TAFC
         for component in {'TAFC', 'TAFCBI'}:
-            tafc.field[component][:] = apply_mesh_diffusion_crank_nicholson(
+            logger.info(f"diffusing {self.name}:{component}")
+            apply_mesh_diffusion_crank_nicholson(
                 variable=tafc.field[component],
                 cn_a=tafc.cn_a,
                 cn_b=tafc.cn_b,
-                dofs=tafc.dofs,
             )
 
         assert np.alltrue(tafc.field['TAFC'] >= 0.0)

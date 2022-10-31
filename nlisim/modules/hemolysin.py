@@ -28,7 +28,6 @@ class HemolysinState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class Hemolysin(ModuleModel):
@@ -40,6 +39,7 @@ class Hemolysin(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         hemolysin: HemolysinState = state.hemolysin
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         hemolysin.hemolysin_qtty = self.config.getfloat('hemolysin_qtty')
@@ -49,12 +49,11 @@ class Hemolysin(ModuleModel):
         # computed values (none)
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=hemolysin.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=hemolysin.diffusion_constant, dt=self.time_step
         )
         hemolysin.cn_a = cn_a
         hemolysin.cn_b = cn_b
-        hemolysin.dofs = dofs
 
         return state
 
@@ -98,11 +97,11 @@ class Hemolysin(ModuleModel):
         )
 
         # Diffusion of Hemolysin
-        hemolysin.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=hemolysin.field,
             cn_a=hemolysin.cn_a,
             cn_b=hemolysin.cn_b,
-            dofs=hemolysin.dofs,
         )
 
         assert np.alltrue(hemolysin.field >= 0.0)

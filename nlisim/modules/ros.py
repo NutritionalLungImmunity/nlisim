@@ -26,7 +26,6 @@ class ROSState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class ROS(ModuleModel):
@@ -38,18 +37,18 @@ class ROS(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         ros: ROSState = state.ros
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
 
         # computed values
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=ros.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=ros.diffusion_constant, dt=self.time_step
         )
         ros.cn_a = cn_a
         ros.cn_b = cn_b
-        ros.dofs = dofs
 
         return state
 
@@ -75,11 +74,11 @@ class ROS(ModuleModel):
         # Degrade ROS (does not degrade) (obsolete, will be reintroduced later)
 
         # Diffusion of ros
-        ros.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=ros.field,
             cn_a=ros.cn_a,
             cn_b=ros.cn_b,
-            dofs=ros.dofs,
         )
 
         assert np.alltrue(ros.field >= 0.0)

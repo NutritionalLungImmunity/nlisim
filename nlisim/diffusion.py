@@ -1,16 +1,12 @@
 import logging
-from typing import Any, Tuple
+from typing import Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix, eye, identity
 from scipy.sparse.linalg import cg
-import skfem
-from skfem import Basis, ElementTetP1, MeshTet1, condense
-from skfem.models import laplace
 
 from nlisim.coordinates import Voxel
-from nlisim.grid import RectangularGrid, TetrahedralMesh
-from nlisim.state import State
+from nlisim.grid import RectangularGrid
 
 _dtype_float64 = np.dtype('float64')
 
@@ -139,34 +135,32 @@ def apply_grid_diffusion(
 
 def assemble_mesh_laplacian_crank_nicholson(
     *,
-    state: State,
+    laplacian: csr_matrix,
     diffusivity: float,
     dt: float,
-) -> Tuple[csr_matrix, csr_matrix, Any]:
-    mesh: TetrahedralMesh = state.mesh
+) -> Tuple[csr_matrix, csr_matrix]:
+    """
+    Create matrices for the Crank-Nicholson method.
 
-    # skfem is a bit too verbose with its warnings with mesh creation. We raise the minimum
-    # level for logging for
-    import logging
+    Parameters
+    ----------
+    laplacian: csr_matrix
+        The laplacian matrix for a mesh
+    diffusivity: float
+        The diffusivity of the molecule.
+    dt: float
+        Size of the time step
 
-    old_logging_level = logging.getLogger("skfem").getEffectiveLevel()
-    logging.getLogger("skfem").setLevel(logging.ERROR)
+    Returns
+    -------
+    Matrices A and B such that A x_{n+1} = B x_n defines the Crank-Nicholson update
+    """
+    rank = laplacian.shape[0]
 
-    # load a tetrahedral mesh, will be a MeshTet1
-    skmesh: MeshTet1 = MeshTet1(doflocs=mesh.points.T, t=mesh.element_point_indices.T)
+    a = identity(rank) + 0.5 * dt * diffusivity * laplacian
+    b = identity(rank) - 0.5 * dt * diffusivity * laplacian
 
-    logging.getLogger("skfem").setLevel(old_logging_level)  # resume previous logging level
-
-    basis = Basis(skmesh, ElementTetP1())
-
-    # create matrices for Crank-Nicholson method
-    a = identity(basis.dofs.N) + 0.5 * dt * diffusivity * laplace.assemble(basis)
-    b = identity(basis.dofs.N) - 0.5 * dt * diffusivity * laplace.assemble(basis)
-
-    # Empty call to get_dofs() matches all boundary DOFs.
-    dofs = basis.get_dofs()
-
-    return a, b, dofs
+    return a, b
 
 
 def apply_mesh_diffusion_crank_nicholson(
@@ -174,8 +168,22 @@ def apply_mesh_diffusion_crank_nicholson(
     variable: np.ndarray,
     cn_a: csr_matrix,
     cn_b: csr_matrix,
-    dofs: Any,
     # tolerance: float = 1e-10,
 ):
+    logging.debug(f"")
     logging.debug(f"{np.min(variable)=} {np.max(variable)=}")
-    return skfem.utils.solve(*condense(cn_a, cn_b @ variable, D=dofs))  # , tolerance=tolerance)
+
+    # scipy.sparse.spsolve assumes that, for AX=B, X is sparse. So we don't want that.
+    # conjugate gradient method works well for this type of problem
+    result, info = cg(cn_a, cn_b @ variable, x0=variable)
+    if info == 0:
+        logging.debug('successful exit')
+    elif info > 0:
+        logging.warning(f'convergence to tolerance not achieved, after {info} iterations')
+    else:
+        logging.error('illegal input or breakdown')
+
+    logging.debug(f"{np.min(result)=} {np.max(result)=}")
+    logging.debug(f"{np.sum(result-np.clip(result,0,float('inf')))=}")
+
+    np.copyto(variable, result)

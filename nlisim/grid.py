@@ -363,7 +363,7 @@ class TetrahedralMesh(object):
         (k,) numpy array if point_function is (N,k)
         """
         assert (
-            self.hodge_star_0[1] == point_function.shape[0]
+            self.hodge_star_0.shape[1] == point_function.shape[0]
         ), f"Dimension mismatch! {self.hodge_star_0.shape} and {point_function.shape}"
 
         result = np.sum(self.hodge_star_0 @ point_function, axis=0) / 3.0
@@ -396,7 +396,7 @@ class TetrahedralMesh(object):
          array is returned, respectively.
         """
         assert (
-            self.hodge_star_0[1] == point_function.shape[0]
+            self.hodge_star_0.shape[1] == point_function.shape[0]
         ), f"Dimension mismatch! {self.hodge_star_0.shape} and {point_function.shape}"
 
         if isinstance(element_index, np.ndarray) and element_index.shape == (1,):

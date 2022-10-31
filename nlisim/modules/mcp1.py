@@ -34,7 +34,6 @@ class MCP1State(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class MCP1(ModuleModel):
@@ -46,6 +45,7 @@ class MCP1(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         mcp1: MCP1State = state.mcp1
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         mcp1.half_life = self.config.getfloat('half_life')  # units: min
@@ -76,12 +76,11 @@ class MCP1(ModuleModel):
         logger.info(f"Computed {mcp1.pneumocyte_secretion_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=mcp1.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=mcp1.diffusion_constant, dt=self.time_step
         )
         mcp1.cn_a = cn_a
         mcp1.cn_b = cn_b
-        mcp1.dofs = dofs
 
         return state
 
@@ -136,11 +135,11 @@ class MCP1(ModuleModel):
         )
 
         # Diffusion of MCP1
-        mcp1.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=mcp1.field,
             cn_a=mcp1.cn_a,
             cn_b=mcp1.cn_b,
-            dofs=mcp1.dofs,
         )
 
         assert np.alltrue(mcp1.field >= 0.0)

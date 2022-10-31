@@ -33,7 +33,6 @@ class TGFBState(ModuleState):
     diffusion_constant: float  # units: µm^2/min
     cn_a: csr_matrix  # `A` matrix for Crank-Nicholson
     cn_b: csr_matrix  # `B` matrix for Crank-Nicholson
-    dofs: Any  # degrees of freedom in mesh
 
 
 class TGFB(ModuleModel):
@@ -45,6 +44,7 @@ class TGFB(ModuleModel):
     def initialize(self, state: State) -> State:
         logger.info("Initializing " + self.name)
         tgfb: TGFBState = state.tgfb
+        mesh: TetrahedralMesh = state.mesh
 
         # config file values
         tgfb.half_life = self.config.getfloat('half_life')  # units: min
@@ -66,12 +66,11 @@ class TGFB(ModuleModel):
         logger.info(f"Computed {tgfb.macrophage_secretion_rate_unit_t=}")
 
         # matrices for diffusion
-        cn_a, cn_b, dofs = assemble_mesh_laplacian_crank_nicholson(
-            state=state, diffusivity=tgfb.diffusion_constant, dt=self.time_step
+        cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(
+            laplacian=mesh.laplacian, diffusivity=tgfb.diffusion_constant, dt=self.time_step
         )
         tgfb.cn_a = cn_a
         tgfb.cn_b = cn_b
-        tgfb.dofs = dofs
 
         return state
 
@@ -145,11 +144,11 @@ class TGFB(ModuleModel):
         )
 
         # Diffusion of TGFB
-        tgfb.field[:] = apply_mesh_diffusion_crank_nicholson(
+        logger.info(f"diffusing {self.name}")
+        apply_mesh_diffusion_crank_nicholson(
             variable=tgfb.field,
             cn_a=tgfb.cn_a,
             cn_b=tgfb.cn_b,
-            dofs=tgfb.dofs,
         )
 
         assert np.alltrue(tgfb.field >= 0.0)
