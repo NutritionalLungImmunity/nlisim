@@ -1,15 +1,15 @@
 from pathlib import Path
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable
 
 # Import from vtkmodules, instead of vtk, to avoid requiring OpenGL
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkStructuredPoints
-from vtkmodules.vtkIOXML import vtkXMLImageDataWriter, vtkXMLPolyDataWriter
+from vtkmodules.vtkIOXML import vtkXMLPolyDataWriter
 
 from nlisim.cell import CellData, CellList
-from nlisim.grid import RectangularGrid
+from nlisim.grid import RectangularGrid, TetrahedralMesh
 from nlisim.state import State
 from nlisim.util import logger
 
@@ -108,43 +108,31 @@ def add_vtk_molecules(
     return vtk_grid
 
 
-def generate_vtk_objects(
-    state: State,
-) -> Tuple[vtkStructuredPoints, vtkStructuredPoints, Dict[str, vtkPolyData]]:
-    """Generate the vtk objects for each module. (e.g. for upload)"""
-    # TODO: these are both rectangular grid thingys and need updating
-    volume = create_vtk_geometry(state.mesh, state.lung_tissue)
-    molecules_grid = create_vtk_volume(state.mesh)
+def generate_vtk(state: State, postprocess_step_dir: Path):
+    mesh: TetrahedralMesh = state.mesh
+
+    import meshio
+
+    output_mesh = meshio.Mesh(points=mesh.points, cells=[('tetra', mesh.element_point_indices)])
+
+    meshio.write(filename=str(postprocess_step_dir / 'geometry_001.vtu'), mesh=output_mesh)
+
     cells = dict()
     for module in state.config.modules:
         data_type, content = module.visualization_data(state)
         if data_type == 'molecule':
             assert isinstance(content, np.ndarray)
-            add_vtk_molecules(content, module.name, molecules_grid)
+            output_mesh.point_data[module.name] = content
         elif data_type == 'cells':
             assert isinstance(content, CellList)
             cells[module.name] = convert_cells_to_vtk(content)
 
-    return volume, molecules_grid, cells
-
-
-def generate_vtk(state: State, postprocess_step_dir: Path):
-    volume, molecules, cells = generate_vtk_objects(state)
-
-    grid_writer = vtkXMLImageDataWriter()
-    grid_writer.SetDataModeToBinary()
-    grid_writer.SetFileName(str(postprocess_step_dir / 'geometry_001.vti'))
-    grid_writer.SetInputData(volume)
-    grid_writer.Write()
-
-    grid_writer.SetFileName(str(postprocess_step_dir / 'molecules_001.vti'))
-    grid_writer.SetInputData(molecules)
-    grid_writer.Write()
+    meshio.write(filename=str(postprocess_step_dir / 'molecules_001.vtu'), mesh=output_mesh)
 
     cell_writer = vtkXMLPolyDataWriter()
     cell_writer.SetDataModeToBinary()
-    for module, data in cells.items():
-        cell_writer.SetFileName(str(postprocess_step_dir / f'{module}_001.vtp'))
+    for module_name, data in cells.items():
+        cell_writer.SetFileName(str(postprocess_step_dir / f'{module_name}_001.vtp'))
         cell_writer.SetInputData(data)
         cell_writer.Write()
 
