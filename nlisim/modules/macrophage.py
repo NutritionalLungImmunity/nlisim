@@ -174,13 +174,31 @@ class Macrophage(PhagocyteModel):
                 element_index=element_index,
             )
 
+        # Debug, make sure that macrophages are correctly placed in their element
+        # for macrophage_cell_index in macrophage.cells.alive():
+        #     macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
+        #     macrophage_element_index: int = macrophage_cell['element_index']
+        #
+        #     assert mesh.in_tetrahedral_element(
+        #         element_index=macrophage_element_index, point=macrophage_cell['point']
+        #     ), (
+        #         f"{macrophage_element_index=},\n"
+        #         f"{macrophage_cell['point']=},\n"
+        #         f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+        #         f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+        #     )
+
         return state
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
         logger.info("Advancing " + self.name + f" from t={previous_time}")
 
+        from nlisim.modules.mip1b import MIP1BState
+
         macrophage: MacrophageState = state.macrophage
+        mip1b: MIP1BState = state.mip1b
+        mesh: TetrahedralMesh = state.mesh
 
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell = macrophage.cells[macrophage_cell_index]
@@ -216,12 +234,59 @@ class Macrophage(PhagocyteModel):
             move_step: int = rg.poisson(max_move_step)
             # move the cell 1 µm, move_step number of times
             for _ in range(move_step):
-                self.single_step_move(
-                    state, macrophage_cell, macrophage_cell_index, macrophage.cells
+                prev_pt = macrophage_cell['point'].copy()
+                prev_element = macrophage_cell['element_index'].copy()
+                chemotaxis_step(
+                    state=state,
+                    cell=macrophage_cell,
+                    cell_index=macrophage_cell_index,
+                    cell_list=macrophage.cells,
+                    chemokine_field=mip1b.field,
+                    k_d=mip1b.k_d,
+                    time_step=self.time_step,
+                    drift_bias=macrophage.drift_bias,
                 )
+                macrophage_element_index: int = macrophage_cell['element_index']
+                assert mesh.in_element(
+                    element_index=macrophage_element_index, point=macrophage_cell['point']
+                ), (
+                    f"{macrophage_element_index=},\n"
+                    f"{macrophage_cell['point']=},\n"
+                    f"{prev_pt=} {prev_element=}\n"
+                    f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+                    f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+                )
+
+        # Debug: make sure that macrophages are in the correct element after movement
+        # for macrophage_cell_index in macrophage.cells.alive():
+        #     macrophage_cell = macrophage.cells[macrophage_cell_index]
+        #     macrophage_element_index = macrophage_cell['element_index']
+        #
+        #     assert mesh.in_element(
+        #         element_index=macrophage_element_index, point=macrophage_cell['point']
+        #     ), (
+        #         f"{macrophage_element_index=},\n"
+        #         f"{macrophage_cell['point']=},\n"
+        #         f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+        #         f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+        #     )
 
         # Recruitment
         self.recruit_macrophages(state)
+
+        # Debug: make sure that macrophages are in the correct element after recruitment
+        # for macrophage_cell_index in macrophage.cells.alive():
+        #     macrophage_cell = macrophage.cells[macrophage_cell_index]
+        #     macrophage_element_index = macrophage_cell['element_index']
+        #
+        #     assert mesh.in_element(
+        #         element_index=macrophage_element_index, point=macrophage_cell['point']
+        #     ), (
+        #         f"{macrophage_element_index=},\n"
+        #         f"{macrophage_cell['point']=},\n"
+        #         f"{mesh.element_point_indices[macrophage_element_index]=}\n"
+        #         f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
+        #     )
 
         return state
 
@@ -356,9 +421,6 @@ class Macrophage(PhagocyteModel):
         mesh: TetrahedralMesh = state.mesh
 
         # compute chemokine influence on velocity, with some randomness.
-        # macrophage has a non-zero probability of moving into non-air voxels.
-        # if not any of these, stay in place. This could happen if e.g. you are
-        # somehow stranded in air.
         chemokine_levels = mip1b.field[mesh.element_point_indices[element_index]]
         weights = activation_function(
             x=chemokine_levels,

@@ -355,3 +355,104 @@ class CellList(object):
             assert element >= 0
             self._cells_in_element_by_index[element].add(cell_index)
             cell['element_index'] = element
+
+
+def chemotaxis_step(
+    *,
+    state: State,
+    cell: CellData,
+    cell_index: int,
+    cell_list: CellList,
+    chemokine_field: np.ndarray,
+    k_d: float,
+    time_step: float,
+    drift_bias: float,
+    distance: float = 1.0,
+) -> None:
+    """
+    Move the phagocyte one 1 µm, probabilistically.
+
+    depending on single_step_probabilistic_drift
+
+    Parameters
+    ----------
+    state : State
+        the global simulation state
+    cell : CellData
+        the cell to move
+    cell_index : int
+        index of cell in cell_list
+    cell_list : CellList
+        the CellList for the cell-type (macrophage/neutrophil/etc.) of cell
+    distance : float
+    drift_bias : float
+    time_step : float
+    k_d : float
+    chemokine_field : np.ndarray
+
+
+    Returns
+    -------
+    nothing
+    """
+    from nlisim.grid import TissueType
+    from nlisim.util import activation_function
+
+    mesh: TetrahedralMesh = state.mesh
+    cell_element = cell['element_index']
+    # compute chemokine influence on velocity, with some randomness.
+    chemokine_levels = chemokine_field[mesh.element_point_indices[cell_element]]
+    weights = activation_function(
+        x=chemokine_levels,
+        k_d=k_d,
+        h=time_step / 60,  # units: (min/step) / (min/hour)
+        volume=1.0,  # already in concentration (M)
+        b=1.0,
+    )
+
+    # movement tends toward the gradient direction, with some randomization
+    gradient = tetrahedral_gradient(
+        field=weights, points=mesh.points[mesh.element_point_indices[cell_element]]
+    )
+    dp_dt = gradient + rg.normal(scale=drift_bias, size=3)
+
+    # average and re-normalize with existing velocity
+    dp_dt += cell['velocity']
+    norm = np.linalg.norm(dp_dt)
+    if norm > 0.0:
+        dp_dt /= norm
+    dp_dt *= distance
+
+    # we need to determine if this movement will put us into an air element.  If that happens,
+    # we reduce the rate of movement exponentially (up to 4 times) until we stay within a
+    # non-air element. If exponential shortening is unsuccessful after 4 tries, we stay in
+    # place. Velocity is updated to dp/dt in either case.
+    new_position = cell['point'] + dp_dt
+    new_element_index: int = mesh.get_element_index(new_position)
+    logger.debug(f"{cell_element=} {new_element_index=}")
+    assert cell['element_index'] > 0
+    for _ in range(4):
+        logger.debug(f"{_=}")
+        logger.debug(f"{new_element_index=}")
+        logger.debug(f"{cell['element_index']=}")
+        logger.debug(f"{mesh.element_tissue_type[new_element_index]=}")
+        assert cell['element_index'] > 0
+        if new_element_index >= 0 and mesh.element_tissue_type[new_element_index] != TissueType.AIR:
+            cell['velocity'][:] = dp_dt
+            cell['point'][:] = new_position
+            if new_element_index != cell_element:
+                logger.debug(f"cell moved from element {cell_element} to {new_element_index}")
+                logger.debug(f"{mesh.element_point_indices[cell_element]=}")
+                logger.debug(f"{mesh.element_point_indices[new_element_index]=}")
+                cell_list.update_cell_element(
+                    cell_index=cell_index, new_element_index=new_element_index
+                )
+                return
+
+        dp_dt /= 2.0
+        new_position = cell['point'] + dp_dt
+        new_element_index = mesh.get_element_index(new_position)
+
+    # cell comes to a halt
+    cell['velocity'].fill(0.0)
+    logger.debug(f"cell stayed in element {cell_element}")
