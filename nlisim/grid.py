@@ -34,11 +34,12 @@ import meshio
 import numpy as np
 from numpy.typing import DTypeLike
 from scipy.sparse import csr_matrix, dia_matrix, diags, dok_matrix
-from vtkmodules.all import VTK_TETRA, vtkXMLUnstructuredGridReader
+from vtkmodules.all import VTK_TETRA, vtkUnstructuredGridReader, vtkXMLUnstructuredGridReader
 from vtkmodules.util.numpy_support import vtk_to_numpy
 
 from nlisim.coordinates import Point, Voxel
 from nlisim.random import rg
+from nlisim.util import logger
 
 ShapeType = Tuple[int, int, int]
 SpacingType = Tuple[float, float, float]
@@ -140,9 +141,15 @@ class TetrahedralMesh(object):
 
     @classmethod
     def load_vtk(cls, filename: str) -> 'TetrahedralMesh':
-        reader = vtkXMLUnstructuredGridReader()
+        if filename[-4:] != ".vtu":
+            logger.warning(
+                f"{filename} is not a vtu file, assuming it is a vtk unstructured grid. "
+                "This might be wrong!"
+            )
+            reader = vtkUnstructuredGridReader()
+        else:
+            reader = vtkXMLUnstructuredGridReader()
         reader.SetFileName(filename)
-        # noinspection PyArgumentList
         reader.Update()
 
         data = reader.GetOutput()
