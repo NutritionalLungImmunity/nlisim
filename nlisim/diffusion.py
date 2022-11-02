@@ -168,21 +168,24 @@ def apply_mesh_diffusion_crank_nicholson(
     variable: np.ndarray,
     cn_a: csr_matrix,
     cn_b: csr_matrix,
-    # tolerance: float = 1e-10,
+    tolerance: float = 1e-10,
 ):
-    logger.debug(f"{np.min(variable)=} {np.max(variable)=}")
-
     # scipy.sparse.spsolve assumes that, for AX=B, X is sparse. So we don't want that.
     # conjugate gradient method works well for this type of problem
-    result, info = cg(cn_a, cn_b @ variable, x0=variable)
+    result, info = cg(cn_a, cn_b @ variable, x0=variable, tol=tolerance)
     if info == 0:
-        logger.debug('successful exit')
+        pass
+        # logger.debug('cg solver: successful exit')
     elif info > 0:
-        logger.warning(f'convergence to tolerance not achieved, after {info} iterations')
+        logger.warning(f'cg solver: convergence to tolerance not achieved, after {info} iterations')
     else:
-        logger.error('illegal input or breakdown')
+        logger.error('cg solver: illegal input or breakdown')
 
-    logger.debug(f"{np.min(result)=} {np.max(result)=}")
-    logger.debug(f"{np.sum(result-np.clip(result,0,float('inf')))=}")
+    if np.any(result < 0.0):
+        logger.warning(
+            "Diffusion produced a negative value, clipping. "
+            f"Total Δ:{np.sum(np.clip(result,0,float('inf'))-result)}"
+        )
+        np.clip(result, 0, float('inf'), out=result)
 
     np.copyto(variable, result)
