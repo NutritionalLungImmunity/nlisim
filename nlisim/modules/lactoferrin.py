@@ -141,7 +141,7 @@ class Lactoferrin(ModuleModel):
                 * uptake_proportion
             )  # units: atto-M * cell^-1 * step^-1
 
-            assert mesh.in_tetrahedral_element(
+            assert mesh.in_element(
                 element_index=macrophage_element_index, point=macrophage_cell['point']
             ), (
                 f"{macrophage_element_index=},\n"

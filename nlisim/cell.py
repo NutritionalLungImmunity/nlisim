@@ -310,6 +310,15 @@ class CellList(object):
         """Return a list of cells indices in the same element."""
         return self.get_cells_in_element(cell['element_index'])
 
+    def update_cell_element(self, *, cell_index: int, new_element_index: int):
+        cell = self[cell_index]
+        old_element_index = cell['element_index']
+        assert new_element_index > 0, f"Tried to set {old_element_index=} {new_element_index=}"
+        if old_element_index != new_element_index:
+            self._cells_in_element_by_index[old_element_index].remove(cell_index)
+            self._cells_in_element_by_index[new_element_index].add(cell_index)
+            cell['element_index'] = new_element_index
+
     def update_element_index(self, indices: Iterable = None):
         """Update the embedded element index.
 

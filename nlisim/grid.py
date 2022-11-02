@@ -458,17 +458,6 @@ class TetrahedralMesh(object):
                 np.any(self.element_point_indices[:, :, np.newaxis] == points, axis=(1, 2))
             )[0]
 
-    def is_in_element(self, element_index: int, point: Point) -> bool:
-        """Determine if a given point is in a given element."""
-        tet_points = self.points[self.element_point_indices[element_index, :], :]
-
-        try:
-            # find position of the point in tetrahedral coordinates
-            sln = np.linalg.solve(tet_points[1:, :] - tet_points[0, :], point - tet_points[0, :])
-            return np.all(0.0 <= sln) and np.all(sln <= 1.0) and np.sum(sln) <= 1.0
-        except np.linalg.LinAlgError:
-            raise AssertionError("Bad mesh: contains a singular tetrahedron")
-
     def get_element_index(self, point: Point) -> int:
         """
         Get the index label of the element containing the point `point`.
@@ -484,7 +473,7 @@ class TetrahedralMesh(object):
         """
         # TODO: This is the most naïve algorithm, replace it.
         for tet_index in range(self.element_point_indices.shape[0]):
-            if self.is_in_element(tet_index, point):
+            if self.in_element(tet_index, point):
                 return tet_index
         return -1  # TODO: inspect all callers
 
@@ -539,53 +528,66 @@ class TetrahedralMesh(object):
         if isinstance(element_index, np.ndarray) and element_index.shape == (1,):
             element_index = int(element_index)
 
-        if isinstance(element_index, (int, np.integer)):
-            tet_points = self.points[self.element_point_indices[element_index, :], :]
-            ortho_coords = np.linalg.solve(
-                (tet_points[1:, :] - tet_points[0, :]).T, point - tet_points[0, :]
-            )
+        try:
+            if isinstance(element_index, (int, np.integer)):
+                tet_points = self.points[self.element_point_indices[element_index, :], :]
 
-            proportional_coords = np.array(
-                [
-                    1 - np.sum(ortho_coords, axis=0),
-                    *ortho_coords,
-                ]
-            )
+                ortho_coords = np.linalg.solve(
+                    (tet_points[1:, :] - tet_points[0, :]).T, point - tet_points[0, :]
+                )
 
-            return proportional_coords
-        else:
-            tet_points = self.points[self.element_point_indices[element_index]]
+                proportional_coords = np.array(
+                    [
+                        1 - np.sum(ortho_coords, axis=0),
+                        *ortho_coords,
+                    ]
+                )
 
-            ortho_coords = np.linalg.solve(
-                np.transpose(
-                    tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1),
-                    axes=[0, 2, 1],
-                ),
-                point - tet_points[:, 0, :],
-            )
-            proportional_coords = np.array(
-                [
-                    1 - np.sum(ortho_coords, axis=1),
-                    ortho_coords[:, 0],
-                    ortho_coords[:, 1],
-                    ortho_coords[:, 2],
-                ]
-            ).T
+                return proportional_coords
+            else:
+                tet_points = self.points[self.element_point_indices[element_index]]
 
-            return proportional_coords
+                ortho_coords = np.linalg.solve(
+                    np.transpose(
+                        tet_points[:, 1:, :] - np.expand_dims(tet_points[:, 0, :], axis=1),
+                        axes=[0, 2, 1],
+                    ),
+                    point - tet_points[:, 0, :],
+                )
+                proportional_coords = np.array(
+                    [
+                        1 - np.sum(ortho_coords, axis=1),
+                        ortho_coords[:, 0],
+                        ortho_coords[:, 1],
+                        ortho_coords[:, 2],
+                    ]
+                ).T
 
-    def in_tetrahedral_element(
-        self, element_index: int, point: Point, interior: bool = False
-    ) -> bool:
+                return proportional_coords
+        except np.linalg.LinAlgError:
+            raise AssertionError("Bad mesh: contains a singular tetrahedron")
+
+    # removed as a de-duplication, TODO: permanent removal
+    # def is_in_element(self, element_index: int, point: Point) -> bool:
+    #     """Determine if a given point is in a given element."""
+    #     tet_points = self.points[self.element_point_indices[element_index, :], :]
+    #
+    #     try:
+    #         # find position of the point in tetrahedral coordinates
+    #         sln = np.linalg.solve((tet_points[1:, :] - tet_points[0, :]).T,
+    #                               point - tet_points[0, :])
+    #         return np.all(0.0 <= sln) and np.all(sln <= 1.0) and np.sum(sln) <= 1.0
+    #     except np.linalg.LinAlgError:
+    #         raise AssertionError("Bad mesh: contains a singular tetrahedron")
+
+    def in_element(self, element_index: int, point: Point, interior: bool = False) -> bool:
         tet_proportions = self.tetrahedral_proportions(element_index, point)
+        # by construction, np.sum(tet_proportions) == 1.0 (approx), so failure to be in the
+        # tetrahedron will only happen when one of the coords is negative
 
-        return (
-            np.alltrue(0.0 <= tet_proportions)
-            and np.alltrue(tet_proportions <= 1.0)
-            and (
-                (not interior)
-                or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
-            )
+        return np.all(0.0 <= tet_proportions) and (
+            (not interior)
+            or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
         )
 
 
