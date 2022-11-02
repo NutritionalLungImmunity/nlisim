@@ -174,20 +174,6 @@ class Macrophage(PhagocyteModel):
                 element_index=element_index,
             )
 
-        # Debug, make sure that macrophages are correctly placed in their element
-        # for macrophage_cell_index in macrophage.cells.alive():
-        #     macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-        #     macrophage_element_index: int = macrophage_cell['element_index']
-        #
-        #     assert mesh.in_tetrahedral_element(
-        #         element_index=macrophage_element_index, point=macrophage_cell['point']
-        #     ), (
-        #         f"{macrophage_element_index=},\n"
-        #         f"{macrophage_cell['point']=},\n"
-        #         f"{mesh.element_point_indices[macrophage_element_index]=}\n"
-        #         f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
-        #     )
-
         return state
 
     def advance(self, state: State, previous_time: float):
@@ -273,20 +259,6 @@ class Macrophage(PhagocyteModel):
 
         # Recruitment
         self.recruit_macrophages(state)
-
-        # Debug: make sure that macrophages are in the correct element after recruitment
-        # for macrophage_cell_index in macrophage.cells.alive():
-        #     macrophage_cell = macrophage.cells[macrophage_cell_index]
-        #     macrophage_element_index = macrophage_cell['element_index']
-        #
-        #     assert mesh.in_element(
-        #         element_index=macrophage_element_index, point=macrophage_cell['point']
-        #     ), (
-        #         f"{macrophage_element_index=},\n"
-        #         f"{macrophage_cell['point']=},\n"
-        #         f"{mesh.element_point_indices[macrophage_element_index]=}\n"
-        #         f"{mesh.points[mesh.element_point_indices[macrophage_element_index]]=}"
-        #     )
 
         return state
 

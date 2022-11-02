@@ -37,8 +37,7 @@ class TAFCState(ModuleState):
 
 
 class TAFC(ModuleModel):
-    # noinspection SpellCheckingInspection
-    """TAFC: (T)ri(A)cetyl(F)usarinine C"""
+    """TAFC: TriAcetylFusarinine C"""
 
     name = 'tafc'
     StateClass = TAFCState
@@ -176,41 +175,6 @@ class TAFC(ModuleModel):
                     point=afumigatus_cell['point'],
                     k=tafc.tafcbi_uptake_rate_unit_t,
                 )
-                # quantity = (
-                #     mesh.integrate_point_function_single_element(
-                #         point_function=tafc.field['TAFCBI'],
-                #         element_index=afumigatus_cell_element
-                #     )
-                #     * tafc.tafcbi_uptake_rate_unit_t
-                #     / mesh.element_volumes[afumigatus_cell_element]
-                # )  # units: atto-mols * (L * cell^-1 * step^-1) / L
-                #    # = atto-mols * cell^-1 * step^-1
-                # logger.debug(' ')
-                # logger.debug(
-                #     f"{tafc.field['TAFCBI'][mesh.element_point_indices[afumigatus_cell_element]]=}"
-                # )
-                # logger.debug(
-                #     "mesh.integrate_point_function_single_element(\n"
-                #     "    point_function=tafc.field['TAFCBI'],\n"
-                #     "    element_index=afumigatus_cell_element,\n"
-                #     ")="
-                #     + str(
-                #         mesh.integrate_point_function_in_element(
-                #             point_function=tafc.field['TAFCBI'],
-                #             element_index=afumigatus_cell_element,
-                #         )
-                #     )
-                # )
-                # logger.debug(' ')
-                # logger.debug(f"{quantity=}")
-                # logger.debug(f"{tafc.tafcbi_uptake_rate_unit_t=}")
-                # uptake_in_element(
-                #     mesh=mesh,
-                #     point_field=tafc.field['TAFCBI'],
-                #     element_index=afumigatus_cell_element,
-                #     point=afumigatus_cell['point'],
-                #     amount=quantity,
-                # )
                 afumigatus_cell['iron_pool'] += quantity
 
             assert np.alltrue(tafc.field['TAFCBI'] >= 0.0)
