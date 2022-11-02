@@ -26,7 +26,6 @@ class TransferrinState(ModuleState):
     field: np.ndarray = attrib(
         default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-M
-    k_m_tf_tafc: float  # units: atto-M
     p1: float
     p2: float
     p3: float
@@ -61,7 +60,6 @@ class Transferrin(ModuleModel):
         mesh: TetrahedralMesh = state.mesh
 
         # config file values
-        transferrin.k_m_tf_tafc = self.config.getfloat('k_m_tf_tafc')  # units: aM
         transferrin.p1 = self.config.getfloat('p1')
         transferrin.p2 = self.config.getfloat('p2')
         transferrin.p3 = self.config.getfloat('p3')
@@ -149,9 +147,12 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
-        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
+        # logger.debug(f"{np.min(transferrin.field['Tf'])=} "
+        #              f"{np.max(transferrin.field['Tf'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe'])=} "
+        #              f"{np.max(transferrin.field['TfFe'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe2'])=} "
+        #              f"{np.max(transferrin.field['TfFe2'])=}")
 
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
@@ -232,7 +233,7 @@ class Transferrin(ModuleModel):
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols
 
-                logger.debug(f"{macrophage_cell['iron_pool']=}")
+                # logger.debug(f"{macrophage_cell['iron_pool']=}")
                 # logger.debug(f"{transferrin_in_element=}")
                 # logger.debug(f"{mesh.element_volumes[macrophage_element_index]=}")
                 # logger.debug(f"{transferrin.ma_iron_export_rate_unit_t=}")
@@ -253,8 +254,8 @@ class Transferrin(ModuleModel):
                     p2=transferrin.p2,
                     p3=transferrin.p3,
                 )
-                logger.debug(f"{rel_tf_fe=}")
-                logger.debug(f"{qtty=}")
+                # logger.debug(f"{rel_tf_fe=}")
+                # logger.debug(f"{qtty=}")
                 tffe_qtty = rel_tf_fe * qtty  # units: atto-mols
                 tffe2_qtty = (qtty - tffe_qtty) / 2  # units: atto-mols
 
@@ -285,9 +286,12 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
-        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
+        # logger.debug(f"{np.min(transferrin.field['Tf'])=} "
+        #              f"{np.max(transferrin.field['Tf'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe'])=} "
+        #              f"{np.max(transferrin.field['TfFe'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe2'])=} "
+        #              f"{np.max(transferrin.field['TfFe2'])=}")
 
         # interaction with iron: transferrin -> transferrin+[1,2]Fe
         transferrin_fe_capacity = 2 * transferrin.field['Tf'] + transferrin.field['TfFe']
@@ -315,9 +319,12 @@ class Transferrin(ModuleModel):
         assert np.alltrue(transferrin.field['TfFe'] >= 0.0)
         assert np.alltrue(transferrin.field['TfFe2'] >= 0.0)
 
-        logger.debug(f"{np.min(transferrin.field['Tf'])=} {np.max(transferrin.field['Tf'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe'])=} {np.max(transferrin.field['TfFe'])=}")
-        logger.debug(f"{np.min(transferrin.field['TfFe2'])=} {np.max(transferrin.field['TfFe2'])=}")
+        # logger.debug(f"{np.min(transferrin.field['Tf'])=} "
+        #              f"{np.max(transferrin.field['Tf'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe'])=} "
+        #              f"{np.max(transferrin.field['TfFe'])=}")
+        # logger.debug(f"{np.min(transferrin.field['TfFe2'])=} "
+        #              f"{np.max(transferrin.field['TfFe2'])=}")
 
         # Diffusion of transferrin
         for component in {'Tf', 'TfFe', 'TfFe2'}:
@@ -327,10 +334,6 @@ class Transferrin(ModuleModel):
                 cn_a=transferrin.cn_a,
                 cn_b=transferrin.cn_b,
             )
-
-        assert np.alltrue(transferrin.field['Tf'] >= 0.0), np.min(transferrin.field['Tf'])
-        assert np.alltrue(transferrin.field['TfFe'] >= 0.0), np.min(transferrin.field['TfFe'])
-        assert np.alltrue(transferrin.field['TfFe2'] >= 0.0), np.min(transferrin.field['TfFe2'])
 
         return state
 

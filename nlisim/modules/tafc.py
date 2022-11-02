@@ -113,12 +113,6 @@ class TAFC(ModuleModel):
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
         )  # units: atto-M/step
-        for idx in range(transferrin.field["TfFe2"].shape[0]):
-            logger.debug(
-                f"{transferrin.field['TfFe2'][idx]=}"
-                f"\t{tafc.field['TAFC'][idx]=}"
-                f"\t{dfe2_dt[idx]=}"
-            )
         dfe_dt = michaelian_kinetics_molarity(
             substrate=transferrin.field["TfFe"],  # units: atto-M
             enzyme=tafc.field["TAFC"],  # units: atto-M
@@ -126,19 +120,16 @@ class TAFC(ModuleModel):
             h=self.time_step / 60,  # units: (min/step) / (min/hour) = hours/step
             k_cat=1.0,  # default
         )  # units: atto-M/step
-        logger.debug(f"{np.min(dfe_dt)=} {np.max(dfe_dt)=}")
 
         # - enforce bounds from TAFC quantity
         total_change = dfe2_dt + dfe_dt
         rel = np.divide(  # safe division, defaults to zero when dividing by zero
             tafc.field['TAFC'],
             total_change,
-            out=np.zeros_like(tafc.field['TAFC']),  # source of defaults
+            out=np.zeros_like(tafc.field['TAFC']),  # defaults, see docs for 'where' param
             where=total_change != 0.0,
         )
-        logger.debug(f"tafc {np.min(rel)=} {np.max(rel)=}")
         np.clip(rel, 0.0, 1.0, out=rel)  # fix any remaining problem divides
-        logger.debug(f"tafc {np.min(rel)=} {np.max(rel)=}")
         np.multiply(dfe2_dt, rel, out=dfe2_dt)
         np.multiply(dfe_dt, rel, out=dfe_dt)
 
