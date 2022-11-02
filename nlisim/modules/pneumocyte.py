@@ -7,7 +7,7 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, sample_point_from_simplex, secrete_in_element
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
     PhagocyteModel,
@@ -16,13 +16,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import (
-    GridTissueType,
-    activation_function,
-    logger,
-    sample_point_from_simplex,
-    secrete_in_element,
-)
+from nlisim.util import GridTissueType, activation_function, logger
 
 
 class PneumocyteCellData(PhagocyteCellData):

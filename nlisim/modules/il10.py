@@ -8,12 +8,12 @@ from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
 )
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, secrete_in_element
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import activation_function, logger, secrete_in_element, turnover
+from nlisim.util import activation_function, logger, turnover
 
 
 def molecule_point_field_factory(self: 'IL10State') -> np.ndarray:

@@ -9,10 +9,10 @@ from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
 )
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, secrete_in_element, uptake_in_element
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
-from nlisim.util import iron_tf_reaction, logger, secrete_in_element, uptake_in_element
+from nlisim.util import iron_tf_reaction, logger
 
 
 def molecule_point_field_factory(self: 'TransferrinState') -> np.ndarray:

@@ -3,11 +3,11 @@ from typing import Any, Dict
 import attr
 import numpy as np
 
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, secrete_in_element
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.macrophage import MacrophageCellData
 from nlisim.state import State
-from nlisim.util import logger, secrete_in_element
+from nlisim.util import logger
 
 
 def molecule_point_field_factory(self: 'IronState') -> np.ndarray:

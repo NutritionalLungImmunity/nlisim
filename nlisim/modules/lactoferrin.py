@@ -8,18 +8,11 @@ from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
 )
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, secrete_in_element, uptake_in_element
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import (
-    iron_tf_reaction,
-    logger,
-    michaelian_kinetics_molarity,
-    secrete_in_element,
-    turnover,
-    uptake_in_element,
-)
+from nlisim.util import iron_tf_reaction, logger, michaelian_kinetics_molarity, turnover
 
 
 def molecule_point_field_factory(self: 'LactoferrinState') -> np.ndarray:

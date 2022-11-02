@@ -8,17 +8,11 @@ from nlisim.diffusion import (
     apply_mesh_diffusion_crank_nicholson,
     assemble_mesh_laplacian_crank_nicholson,
 )
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, secrete_in_element, uptake_proportionally
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.molecules import MoleculesState
 from nlisim.state import State
-from nlisim.util import (
-    logger,
-    michaelian_kinetics_molarity,
-    secrete_in_element,
-    turnover,
-    uptake_proportionally,
-)
+from nlisim.util import logger, michaelian_kinetics_molarity, turnover
 
 
 def molecule_point_field_factory(self: 'TAFCState') -> np.ndarray:

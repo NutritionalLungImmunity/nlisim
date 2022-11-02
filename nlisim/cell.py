@@ -7,8 +7,10 @@ import numpy as np
 from numpy.typing import DTypeLike
 
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import TetrahedralMesh, tetrahedral_gradient
+from nlisim.random import rg
 from nlisim.state import State, get_class_path
+from nlisim.util import logger
 
 MAX_CELL_LIST_SIZE = 1_000_000
 
@@ -326,7 +328,7 @@ class CellList(object):
             cell = self[index]
             old_element = cell['element_index']
             new_element = self.mesh.get_element_index(cell['point'])
-            assert new_element > 0, f"{old_element=} {new_element=}"
+            assert new_element > 0, f"Tried to set {old_element=} {new_element=}"
             if old_element != new_element:
                 self._cells_in_element_by_index[old_element].remove(index)
                 self._cells_in_element_by_index[new_element].add(index)

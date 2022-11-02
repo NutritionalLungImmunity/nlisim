@@ -7,7 +7,12 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
+from nlisim.grid import (
+    TetrahedralMesh,
+    sample_point_from_simplex,
+    secrete_in_element,
+    tetrahedral_gradient,
+)
 from nlisim.modules.mip2 import MIP2State
 from nlisim.modules.phagocyte import (
     PhagocyteCellData,
@@ -19,14 +24,7 @@ from nlisim.modules.phagocyte import (
 )
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import (
-    GridTissueType,
-    activation_function,
-    logger,
-    sample_point_from_simplex,
-    secrete_in_element,
-    tetrahedral_gradient,
-)
+from nlisim.util import GridTissueType, activation_function, logger
 
 MAX_CONIDIA = (
     50  # note: this the max that we can set the max to. i.e. not an actual model parameter

@@ -9,13 +9,13 @@ import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh, TissueType
+from nlisim.grid import TetrahedralMesh, TissueType, sample_point_from_simplex, secrete_in_element
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.modules.iron import IronState
 from nlisim.modules.phagocyte import interact_with_aspergillus
 from nlisim.random import rg
 from nlisim.state import State
-from nlisim.util import GridTissueType, logger, sample_point_from_simplex, secrete_in_element
+from nlisim.util import GridTissueType, logger
 
 
 @unique
