@@ -475,7 +475,9 @@ class TetrahedralMesh(object):
                 np.any(self.element_point_indices[:, :, np.newaxis] == points, axis=(1, 2))
             )[0]
 
-    def _find_tet(self, point: Union[Point,np.ndarray], tree_node: TreeNode, dimension: int = 0) -> int:
+    def _find_tet(
+        self, point: Union[Point, np.ndarray], tree_node: TreeNode, dimension: int = 0
+    ) -> int:
         if tree_node.leaf:
             assert tree_node.tetrahedra_indices is not None
             for element_idx in tree_node.tetrahedra_indices:
