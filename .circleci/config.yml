@@ -10,7 +10,7 @@ jobs:
 
   docs-build:
     docker:
-      - image: circleci/python:3.8
+      - image: knappa/tox:latest
     steps:
       - checkout
       - run:
@@ -46,7 +46,7 @@ jobs:
 
   release:
     docker:
-      - image: circleci/python:3.8
+      - image: knappa/tox:latest
     steps:
       - checkout
       - run:
