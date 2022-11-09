@@ -115,7 +115,6 @@ class CellData(np.ndarray):
 
 @attrs(kw_only=True, frozen=True, repr=False)
 class CellList(object):
-    # noinspection PyUnresolvedReferences
     """A python view on top of a CellData array.
 
     This class represents a pythonic interface to the data contained in a
@@ -131,9 +130,9 @@ class CellList(object):
 
     Parameters
     ------
-    mesh : `simulation.mesh.RectangularGrid`
+    mesh : `nlisim.grid.TetrahedralMesh`
     max_cells : int, optional
-    cells : `simulation.cell.CellData`, optional
+    cells : `nlisim.cell.CellData`, optional
 
     """
 
