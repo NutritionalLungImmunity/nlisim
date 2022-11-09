@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import attr
 import numpy as np
@@ -116,7 +116,7 @@ class Lactoferrin(ModuleModel):
         rg.shuffle(live_macrophages)
         for macrophage_cell_index in live_macrophages:
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_element_index: int = macrophage_cell['element_index']
+            macrophage_element_index: int = cast(int, macrophage_cell['element_index'])
 
             uptake_proportion = np.minimum(
                 lactoferrin.ma_iron_import_rate_vol_unit_t
@@ -177,7 +177,7 @@ class Lactoferrin(ModuleModel):
             ):
                 continue
 
-            neutrophil_element_index: int = neutrophil_cell['element_index']
+            neutrophil_element_index: int = cast(int, neutrophil_cell['element_index'])
             secrete_in_element(
                 mesh=mesh,
                 point_field=lactoferrin.field['Lactoferrin'],

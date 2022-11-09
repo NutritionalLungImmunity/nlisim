@@ -31,9 +31,9 @@ def discrete_laplacian(grid: RectangularGrid, mask: np.ndarray, dtype=_dtype_flo
         voxel_index = grid.get_flattened_index(voxel)
 
         for neighbor in grid.get_adjacent_voxels(voxel, corners=False):
-            ni = neighbor.x
-            nj = neighbor.y
-            nk = neighbor.z
+            ni: int = neighbor.x
+            nj: int = neighbor.y
+            nk: int = neighbor.z
 
             if not mask[nk, nj, ni]:
                 continue

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import attr
 from attr import attrib, attrs
@@ -157,7 +157,7 @@ class Transferrin(ModuleModel):
         # interact with macrophages
         for macrophage_cell_index in macrophage.cells.alive():
             macrophage_cell: MacrophageCellData = macrophage.cells[macrophage_cell_index]
-            macrophage_element_index: int = macrophage_cell['element_index']
+            macrophage_element_index: int = cast(int, macrophage_cell['element_index'])
 
             uptake_proportion = np.minimum(
                 transferrin.ma_iron_import_rate_unit_t
@@ -224,11 +224,11 @@ class Transferrin(ModuleModel):
             }:
                 # amount of iron to export is bounded by the amount of iron in the cell as well
                 # as the amount which can be accepted by transferrin
-                transferrin_in_element = mesh.integrate_point_function_in_element(
+                transferrin_in_element: float = mesh.integrate_point_function_in_element(
                     element_index=macrophage_element_index,
                     point_function=transferrin.field['Tf'],
                 )  # units: atto-mols
-                transferrin_fe_in_element = mesh.integrate_point_function_in_element(
+                transferrin_fe_in_element: float = mesh.integrate_point_function_in_element(
                     element_index=macrophage_element_index,
                     point_function=transferrin.field['TfFe'],
                 )  # units: atto-mols
@@ -237,13 +237,16 @@ class Transferrin(ModuleModel):
                 # logger.debug(f"{transferrin_in_element=}")
                 # logger.debug(f"{mesh.element_volumes[macrophage_element_index]=}")
                 # logger.debug(f"{transferrin.ma_iron_export_rate_unit_t=}")
-                qtty: np.float64 = min(
-                    macrophage_cell['iron_pool'],  # units: atto-mols
-                    2 * transferrin_in_element,  # units: atto-mols
-                    macrophage_cell['iron_pool']
-                    * transferrin_in_element
-                    / mesh.element_volumes[macrophage_element_index]  # TODO: verify units
-                    * transferrin.ma_iron_export_rate_unit_t,
+                qtty: float = min(
+                    cast(float, macrophage_cell['iron_pool']),  # units: atto-mols
+                    cast(float, 2 * transferrin_in_element),  # units: atto-mols
+                    cast(
+                        float,
+                        macrophage_cell['iron_pool']
+                        * transferrin_in_element
+                        / mesh.element_volumes[macrophage_element_index]  # TODO: verify units
+                        * transferrin.ma_iron_export_rate_unit_t,
+                    ),
                 )  # units: 3) atto-mols * atto-mols * L^-1 * (L * mol^-1 * cell^-1 * step^-1)
 
                 rel_tf_fe = iron_tf_reaction(

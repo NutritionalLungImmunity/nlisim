@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import attr
 import numpy as np
@@ -163,7 +163,7 @@ class TAFC(ModuleModel):
             if afumigatus_cell['state'] != AfumigatusCellState.FREE:
                 continue
 
-            afumigatus_cell_element: int = afumigatus_cell['element_index']
+            afumigatus_cell_element: int = cast(int, afumigatus_cell['element_index'])
             afumigatus_bool_net: np.ndarray = afumigatus_cell['boolean_network']
 
             # uptake iron from TAFCBI

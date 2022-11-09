@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import attr
 from attr import attrib, attrs
@@ -137,9 +137,9 @@ class Pneumocyte(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Point:
+    ) -> Tuple[np.ndarray, int]:
         # pneumocytes do not move
-        pass
+        return cell['point'], cast(int, cell['element_index'])
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""

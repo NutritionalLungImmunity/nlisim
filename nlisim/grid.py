@@ -327,18 +327,26 @@ class TetrahedralMesh(object):
 
     @overload
     def evaluate_point_function(
-        self, *, point_function: np.ndarray, point: Point, element_index: int
+        self, *, point_function: np.ndarray, point: Union[Point, np.ndarray], element_index: int
     ) -> float:
         ...
 
     @overload
     def evaluate_point_function(
-        self, *, point_function: np.ndarray, point: Point, element_index: np.ndarray
+        self,
+        *,
+        point_function: np.ndarray,
+        point: Union[Point, np.ndarray],
+        element_index: np.ndarray,
     ) -> np.ndarray:
         ...
 
     def evaluate_point_function(
-        self, *, point_function: np.ndarray, point: Point, element_index: Union[int, np.ndarray]
+        self,
+        *,
+        point_function: np.ndarray,
+        point: Union[Point, np.ndarray],
+        element_index: Union[int, np.ndarray],
     ) -> Union[float, np.ndarray]:
         """
         Evaluate a point function on the interior of a tetrahedral element.
@@ -391,6 +399,18 @@ class TetrahedralMesh(object):
             return result
         else:
             return float(result)
+
+    @overload
+    def integrate_point_function_in_element(
+        self, element_index: np.ndarray, point_function: np.ndarray
+    ) -> np.ndarray:
+        ...
+
+    @overload
+    def integrate_point_function_in_element(
+        self, element_index: int, point_function: np.ndarray
+    ) -> float:
+        ...
 
     def integrate_point_function_in_element(
         self, element_index: Union[int, np.ndarray], point_function: np.ndarray
@@ -572,7 +592,7 @@ class TetrahedralMesh(object):
         return (idx for idx in self.element_neighbors[element_index, :] if idx != -1)
 
     def tetrahedral_proportions(
-        self, element_index: Union[int, np.ndarray], point: Point
+        self, element_index: Union[int, np.ndarray], point: Union[Point, np.ndarray]
     ) -> np.ndarray:
         # TODO: good candidate for tests
         try:
@@ -630,14 +650,19 @@ class TetrahedralMesh(object):
     #     except np.linalg.LinAlgError:
     #         raise AssertionError("Bad mesh: contains a singular tetrahedron")
 
-    def in_element(self, element_index: int, point: Point, interior: bool = False) -> bool:
+    def in_element(
+        self, element_index: int, point: Union[Point, np.ndarray], interior: bool = False
+    ) -> bool:
         tet_proportions = self.tetrahedral_proportions(element_index, point)
         # by construction, np.sum(tet_proportions) == 1.0 (approx), so failure to be in the
         # tetrahedron will only happen when one of the coords is negative
 
-        return np.all(0.0 <= tet_proportions) and (
-            (not interior)
-            or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
+        return bool(
+            np.all(0.0 <= tet_proportions)
+            and (
+                (not interior)
+                or (np.alltrue(0.0 < tet_proportions) and np.alltrue(tet_proportions < 1.0))
+            )
         )
 
     @classmethod
@@ -926,7 +951,7 @@ class RectangularGrid(object):
 
     def get_voxel_center(self, voxel: Voxel) -> Point:
         """Get the coordinates of the center point of a voxel."""
-        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])
+        return Point(x=self.x[voxel.x], y=self.y[voxel.y], z=self.z[voxel.z])  # type: ignore
 
     def is_valid_voxel(self, voxel: Voxel) -> bool:
         """Return whether a voxel index is valid."""

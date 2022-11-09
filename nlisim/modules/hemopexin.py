@@ -58,7 +58,7 @@ class Hemopexin(ModuleModel):
         )  # units in exponent: (min/step) / min -> 1/step
 
         # initialize mesh TODO: tissue vs. air
-        hemopexin.field = hemopexin.system_concentration
+        hemopexin.field[:] = hemopexin.system_concentration
 
         # matrices for diffusion
         cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(

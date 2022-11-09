@@ -63,7 +63,7 @@ class EstB(ModuleModel):
         logger.info(f"Computed {estb.half_life_multiplier=}")
 
         # initialize concentration field
-        estb.field = estb.system_concentration
+        estb.field[:] = estb.system_concentration
 
         # matrices for diffusion
         cn_a, cn_b = assemble_mesh_laplacian_crank_nicholson(

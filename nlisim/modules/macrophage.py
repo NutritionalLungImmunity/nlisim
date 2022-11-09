@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 import attr
 from attr import attrs
@@ -336,7 +336,7 @@ class Macrophage(PhagocyteModel):
             / mip1b.k_d
         )
         number_to_recruit = max(
-            rg.poisson(avg) if avg > 0 else 0, macrophage.min_ma - num_live_macrophages
+            cast(int, rg.poisson(avg)) if avg > 0 else 0, macrophage.min_ma - num_live_macrophages
         )
         # 2. get voxels for new macrophages, based on activation
         if number_to_recruit > 0:
@@ -349,7 +349,7 @@ class Macrophage(PhagocyteModel):
                     b=1.0,
                 )
                 < rg.uniform(size=mip1b.field.shape)
-            )
+            )[0]
             activated_elements = mesh.elements_incident_to(points=activated_points)
             for element_index in rg.choice(
                 activated_elements, size=number_to_recruit, replace=True
@@ -366,7 +366,7 @@ class Macrophage(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Tuple[Point, int]:
+    ) -> Tuple[np.ndarray, int]:
         """
         Calculate a 1µm movement of a macrophage
 
@@ -381,8 +381,8 @@ class Macrophage(PhagocyteModel):
 
         Returns
         -------
-        Point
-            the new position of the macrophage
+        Point, int
+            the new position of the macrophage as a point and the element index
         """
         # macrophages are attracted by MIP1b
         from nlisim.modules.mip1b import MIP1BState
@@ -444,7 +444,7 @@ class Macrophage(PhagocyteModel):
             logger.debug(f"MΦ stayed in element {orig_element_index}")
 
         cell['velocity'].fill(0.0)
-        return cell['point'], cell['element_index']
+        return cell['point'], cast(int, cell['element_index'])
 
     @staticmethod
     def create_macrophage(

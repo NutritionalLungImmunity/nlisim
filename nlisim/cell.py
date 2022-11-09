@@ -186,7 +186,7 @@ class CellList(object):
     @property
     def cell_data(self) -> CellData:
         """Return the portion of the underlying data array containing valid data."""
-        return self._cell_data[: self._ncells]
+        return cast(CellData, self._cell_data[: self._ncells])
 
     @classmethod
     def create_from_seed(cls, mesh: TetrahedralMesh, **kwargs) -> 'CellList':
@@ -307,7 +307,7 @@ class CellList(object):
 
     def get_neighboring_cells(self, cell: CellData) -> np.ndarray:
         """Return a list of cells indices in the same element."""
-        return self.get_cells_in_element(cell['element_index'])
+        return self.get_cells_in_element(cast(int, cell['element_index']))
 
     def update_cell_element(self, *, cell_index: int, new_element_index: int):
         cell = self[cell_index]

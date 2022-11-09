@@ -1,12 +1,11 @@
 from abc import abstractmethod
 from enum import IntEnum, unique
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, cast
 
 from attr import attrs
 import numpy as np
 
 from nlisim.cell import CellData, CellFields, CellList
-from nlisim.coordinates import Point
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
 
@@ -71,7 +70,7 @@ class PhagocyteModel(ModuleModel):
         nothing
         """
         # At this moment, there is no inter-voxel geometry.
-        cell_element = cell['element_index']
+        cell_element = cast(int, cell['element_index'])
         new_point, new_cell_element = self.single_step_probabilistic_drift(
             state, cell, cell_element
         )
@@ -83,7 +82,7 @@ class PhagocyteModel(ModuleModel):
     @abstractmethod
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Tuple[Point, int]:
+    ) -> Tuple[np.ndarray, int]:
         ...
 
     @staticmethod
