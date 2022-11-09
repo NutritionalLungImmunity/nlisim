@@ -5,11 +5,10 @@ from pytest import fixture, raises
 
 from nlisim.cell import CellData, CellList
 from nlisim.coordinates import Point
-from nlisim.grid import TetrahedralMesh
 
 
 @fixture
-def cell(grid, point: Point) -> CellData:
+def cell(mesh, point: Point) -> CellData:
     # a single cell in the middle of the domain
     cell = CellData.create_cell(point=point)
     cells = CellData([cell])
@@ -17,8 +16,8 @@ def cell(grid, point: Point) -> CellData:
 
 
 @fixture
-def cell_list(grid, point: Point) -> CellList:
-    cells = CellList.create_from_seed(mesh=grid, point=point)
+def cell_list(mesh, point: Point) -> CellList:
+    cells = CellList.create_from_seed(mesh=mesh, point=point)
     yield cells
 
 
@@ -52,16 +51,16 @@ def test_getitem_error(cell_list: CellList):
         _ = cell_list['a']  # type: ignore
 
 
-def test_out_of_memory_error(grid, cell: CellData):
-    cell_list = CellList(mesh=grid, max_cells=1)
+def test_out_of_memory_error(mesh, cell: CellData):
+    cell_list = CellList(mesh=mesh, max_cells=1)
     cell_list.append(cell)
 
     with raises(Exception):
         cell_list.append(cell)
 
 
-def test_filter_out_dead(grid):
-    cells = CellList(mesh=grid)
+def test_filter_out_dead(mesh):
+    cells = CellList(mesh=mesh)
     cells.extend([CellData.create_cell(dead=bool(i % 2)) for i in range(10)])
 
     assert_array_equal(cells.alive(), [0, 2, 4, 6, 8])
