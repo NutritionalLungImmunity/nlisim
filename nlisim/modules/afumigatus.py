@@ -1,7 +1,7 @@
 from enum import IntEnum, unique
 import math
 from queue import Queue
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import attr
 from attr import attrib, attrs
@@ -288,7 +288,7 @@ class Afumigatus(ModuleModel):
         for afumigatus_cell_index in afumigatus.cells.alive():
             # get cell and voxel position
             afumigatus_cell: AfumigatusCellData = afumigatus.cells[afumigatus_cell_index]
-            afumigatus_cell_element: int = afumigatus_cell['element_index']
+            afumigatus_cell_element: int = cast(int, afumigatus_cell['element_index'])
 
             # ------------ update cell
 
@@ -349,7 +349,7 @@ class Afumigatus(ModuleModel):
     ):
         from nlisim.modules.macrophage import PhagocyteStatus
 
-        afumigatus_cell_element: int = afumigatus_cell['element_index']
+        afumigatus_cell_element: int = cast(int, afumigatus_cell['element_index'])
         element_volume = mesh.element_volumes[afumigatus_cell_element]
 
         probability_of_interaction = -np.expm1(
@@ -408,18 +408,18 @@ class Afumigatus(ModuleModel):
         """
         # unlink from any children
         if afumigatus_cell['next_septa'] != -1:
-            next_septa = afumigatus_cell['next_septa']
+            next_septa = cast(int, afumigatus_cell['next_septa'])
             afumigatus_cell['next_septa'] = -1
             afumigatus.cells[next_septa]['is_root'] = True
             afumigatus.cells[next_septa]['previous_septa'] = -1
         if afumigatus_cell['next_branch'] != -1:
-            next_branch = afumigatus_cell['next_branch']
+            next_branch = cast(int, afumigatus_cell['next_branch'])
             afumigatus_cell['next_branch'] = -1
             afumigatus.cells[next_branch]['is_root'] = True
             afumigatus.cells[next_branch]['previous_septa'] = -1
 
         # unlink from parent, if exists
-        parent_id = afumigatus_cell['previous_septa']
+        parent_id = cast(int, afumigatus_cell['previous_septa'])
         if parent_id != -1:
             afumigatus_cell['previous_septa'] = -1
             parent_cell: AfumigatusCellData = afumigatus.cells[parent_id]
@@ -431,7 +431,7 @@ class Afumigatus(ModuleModel):
                 raise AssertionError("The fungal tree structure is malformed.")
 
         # kill the cell off and release its iron
-        afumigatus_cell_element: int = afumigatus_cell['element_index']
+        afumigatus_cell_element: int = cast(int, afumigatus_cell['element_index'])
         secrete_in_element(
             mesh=mesh,
             point_field=iron.field,
@@ -603,7 +603,7 @@ def process_boolean_network(
     )
     temp[NetworkSpecies.LIP] = (
         bool_net[NetworkSpecies.Fe] & bool_net[NetworkSpecies.RIA]
-    ) | lip_activation(afumigatus=afumigatus, iron_pool=afumigatus_cell['iron_pool'])
+    ) | lip_activation(afumigatus=afumigatus, iron_pool=cast(float, afumigatus_cell['iron_pool']))
     temp[NetworkSpecies.CccA] = ~bool_net[NetworkSpecies.HapX]
     temp[NetworkSpecies.FC0fe] = bool_net[NetworkSpecies.SidA]
     temp[NetworkSpecies.FC1fe] = bool_net[NetworkSpecies.LIP] & bool_net[NetworkSpecies.FC0fe]

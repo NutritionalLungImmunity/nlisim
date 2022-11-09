@@ -68,7 +68,7 @@ def advance(state: State, target_time: float) -> Iterator[State]:
             else:
                 queue.put(update_event)
                 break
-        rg.shuffle(concurrent_update_events)
+        rg.shuffle(concurrent_update_events)  # type: ignore
 
         for update_event in concurrent_update_events:
             m: ModuleModel = update_event.module

@@ -8,7 +8,7 @@ from nlisim.coordinates import Point
 
 
 @fixture
-def cell(mesh, point: Point) -> CellData:
+def cell(mesh, point: Point):
     # a single cell in the middle of the domain
     cell = CellData.create_cell(point=point)
     cells = CellData([cell])
@@ -16,7 +16,7 @@ def cell(mesh, point: Point) -> CellData:
 
 
 @fixture
-def cell_list(mesh, point: Point) -> CellList:
+def cell_list(mesh, point: Point):
     cells = CellList.create_from_seed(mesh=mesh, point=point)
     yield cells
 

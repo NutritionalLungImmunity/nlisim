@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import attr
 from attr import attrib, attrs
@@ -175,7 +175,7 @@ class Neutrophil(PhagocyteModel):
 
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_element: int = neutrophil_cell['element_index']
+            neutrophil_cell_element: int = cast(int, neutrophil_cell['element_index'])
 
             self.update_status(state, neutrophil_cell)
 
@@ -343,7 +343,7 @@ class Neutrophil(PhagocyteModel):
 
     def single_step_probabilistic_drift(
         self, state: State, cell: PhagocyteCellData, element_index: int
-    ) -> Tuple[Point, int]:
+    ) -> Tuple[np.ndarray, int]:
         """
         Calculate a 1µm movement of a neutrophil
 
@@ -410,7 +410,7 @@ class Neutrophil(PhagocyteModel):
             new_element_index = mesh.get_element_index(new_position)
 
         cell['velocity'].fill(0.0)
-        return cell['point'], cell['element_index']
+        return cell['point'], cast(int, cell['element_index'])
 
     def update_status(self, state: State, neutrophil_cell: NeutrophilCellData) -> None:
         """
@@ -480,21 +480,23 @@ class Neutrophil(PhagocyteModel):
             * (1 - num_live_neutrophils / neutrophil.max_neutrophils)
             / mip2.k_d
         )
-        number_to_recruit = np.random.poisson(avg) if avg > 0 else 0
+        number_to_recruit = cast(int, rg.poisson(avg)) if avg > 0 else 0
         if number_to_recruit <= 0:
             return
         # 2. get voxels for new neutrophils, based on activation
         if number_to_recruit > 0:
-            activated_points = np.where(
-                activation_function(
-                    x=mip2.field,
-                    k_d=mip2.k_d,
-                    h=self.time_step / 60,
-                    volume=1.0,  # mip2.field already in concentration (M) units
-                    b=1.0,
+            activated_points: np.ndarray = (
+                np.where(
+                    activation_function(
+                        x=mip2.field,
+                        k_d=mip2.k_d,
+                        h=self.time_step / 60,
+                        volume=1.0,  # mip2.field already in concentration (M) units
+                        b=1.0,
+                    )
+                    < rg.uniform(size=mip2.field.shape)
                 )
-                < rg.uniform(size=mip2.field.shape)
-            )
+            )[0]
             activated_elements = mesh.elements_incident_to(points=activated_points)
             for element_index in rg.choice(
                 activated_elements, size=number_to_recruit, replace=True

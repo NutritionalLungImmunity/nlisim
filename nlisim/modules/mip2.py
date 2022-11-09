@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import attr
 import numpy as np
@@ -122,7 +122,7 @@ class MIP2(ModuleModel):
         )
         for neutrophil_cell_index in neutrophil.cells.alive():
             neutrophil_cell: NeutrophilCellData = neutrophil.cells[neutrophil_cell_index]
-            neutrophil_cell_element: int = neutrophil_cell['element_index']
+            neutrophil_cell_element: int = cast(int, neutrophil_cell['element_index'])
 
             if (
                 neutrophil_cell['status'] == PhagocyteStatus.RESTING

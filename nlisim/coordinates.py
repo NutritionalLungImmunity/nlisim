@@ -1,10 +1,19 @@
+from typing import Union
+
 import numpy as np
 
 
 class Coordinate(np.ndarray):
     """A base class for representing 3D vectors as numpy arrays."""
 
-    def __new__(cls, *, x: float = 0.0, y: float = 0.0, z: float = 0.0, **kwargs) -> 'Coordinate':
+    def __new__(
+        cls,
+        *,
+        x: Union[float, int] = 0.0,
+        y: Union[float, int] = 0.0,
+        z: Union[float, int] = 0.0,
+        **kwargs,
+    ) -> 'Coordinate':
         return np.asarray([(z, y, x)], dtype=cls.dtype).reshape((3,)).view(cls)  # type: ignore
 
     def __repr__(self):
@@ -18,30 +27,30 @@ class Coordinate(np.ndarray):
         return array.view(cls)
 
     @property
-    def x(self) -> float:
+    def x(self):
         """Return the `x`-coordinate of the vector."""
         return self[2]
 
     @x.setter
-    def x(self, value: float):
+    def x(self, value):
         self[2] = value
 
     @property
-    def y(self) -> float:
+    def y(self):
         """Return the `y`-coordinate of the vector."""
         return self[1]
 
     @y.setter
-    def y(self, value: float):
+    def y(self, value):
         self[1] = value
 
     @property
-    def z(self) -> float:
+    def z(self):
         """Return the `z`-coordinate of the vector."""
         return self[0]
 
     @z.setter
-    def z(self, value: float):
+    def z(self, value):
         self[0] = value
 
     def norm(self):

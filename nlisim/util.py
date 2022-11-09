@@ -1,6 +1,6 @@
 from enum import IntEnum
 import logging
-from typing import Union
+from typing import Union, overload
 
 import numpy as np
 
@@ -10,7 +10,31 @@ EPSILON = 1e-50
 logger: logging.Logger = logging.getLogger('nlisim')
 
 
-def activation_function(*, x, k_d, h, volume, b=1) -> Union[float, np.ndarray]:
+@overload
+def activation_function(*, x: float, k_d: float, h: float, volume: float, b=1) -> float:
+    ...
+
+
+@overload
+def activation_function(*, x: np.ndarray, k_d: float, h: float, volume: float, b=1) -> np.ndarray:
+    ...
+
+
+@overload
+def activation_function(*, x: float, k_d: float, h: float, volume: np.ndarray, b=1) -> np.ndarray:
+    ...
+
+
+@overload
+def activation_function(
+    *, x: np.ndarray, k_d: float, h: float, volume: np.ndarray, b=1
+) -> np.ndarray:
+    ...
+
+
+def activation_function(
+    *, x: Union[float, np.ndarray], k_d: float, h: float, volume: Union[float, np.ndarray], b=1
+) -> Union[float, np.ndarray]:
     # units:
     # x: atto-mol
     # k_d: aM
@@ -38,6 +62,20 @@ def turnover(
         )
 
 
+@overload
+def iron_tf_reaction(
+    *,
+    iron: Union[float, np.float64, np.ndarray],
+    tf: float,
+    tf_fe: float,
+    p1: float,
+    p2: float,
+    p3: float,
+) -> np.ndarray:
+    ...
+
+
+@overload
 def iron_tf_reaction(
     *,
     iron: Union[float, np.float64, np.ndarray],
@@ -47,15 +85,27 @@ def iron_tf_reaction(
     p2: float,
     p3: float,
 ) -> np.ndarray:
+    ...
+
+
+def iron_tf_reaction(
+    *,
+    iron: Union[float, np.float64, np.ndarray],
+    tf: Union[float, np.ndarray],
+    tf_fe: Union[float, np.ndarray],
+    p1: float,
+    p2: float,
+    p3: float,
+) -> np.ndarray:
     # Note: It doesn't matter what the units of iron, tf, and tf_fe are as long as they are the same
 
     # easier to deal with (1,) array
     if np.isscalar(iron) or type(iron) == float:
-        iron = np.array([iron])
+        iron = np.array([iron], dtype=np.float64)
 
     # That is right, 2*(Tf + TfFe)!
-    total_binding_site: np.ndarray = 2 * (tf + tf_fe)
-    total_iron: np.ndarray = iron + tf_fe  # it does not count TfFe2
+    total_binding_site: Union[float, np.ndarray] = 2 * (tf + tf_fe)
+    total_iron = iron + tf_fe  # it does not count TfFe2
 
     rel_total_iron: np.ndarray = np.divide(  # safe division, defaults to zero when dividing by zero
         total_iron,
