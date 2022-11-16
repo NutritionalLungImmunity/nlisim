@@ -22,7 +22,7 @@ class HepcidinState(ModuleState):
         default=attr.Factory(molecule_point_field_factory, takes_self=True)
     )  # units: atto-mol
     k_d: float  # units: aM
-    diffusion_constant: float  # units: µm^2/min
+    # diffusion_constant: float  # units: µm^2/min
     # cn_a: csr_matrix  # `A` matrix for Crank-Nicholson -> Hepcidin does not diffuse
     # cn_b: csr_matrix  # `B` matrix for Crank-Nicholson -> Hepcidin does not diffuse
 
@@ -40,7 +40,7 @@ class Hepcidin(ModuleModel):
 
         # config file values
         hepcidin.k_d = self.config.getfloat('k_d')  # aM
-        hepcidin.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
+        # hepcidin.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values (none)
 
