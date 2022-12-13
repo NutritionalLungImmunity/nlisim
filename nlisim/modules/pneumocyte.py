@@ -130,7 +130,7 @@ class Pneumocyte(PhagocyteModel):
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
     ) -> Point:
         # pneumocytes do not move
-        pass
+        return cell['point']
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""

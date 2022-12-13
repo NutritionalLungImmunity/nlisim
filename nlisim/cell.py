@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 import attr
 from h5py import Group
@@ -87,7 +87,9 @@ class CellData(np.ndarray):
         return np.asarray(arg, dtype=cls.dtype).view(cls)
 
     @classmethod
-    def create_cell_tuple(cls, *, point: Point = None, dead: bool = False, **kwargs) -> Tuple:
+    def create_cell_tuple(
+        cls, *, point: Optional[Point] = None, dead: bool = False, **kwargs
+    ) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
         The base class version of this method returns the fields associated with
@@ -223,7 +225,7 @@ class CellList(object):
 
     # TODO: this is inconsistent with iterating over the whole CellList, why does this give indices
     #  while the other gives the records
-    def alive(self, sample: Iterable = None) -> np.ndarray:
+    def alive(self, sample: Optional[Iterable] = None) -> np.ndarray:
         """Get a list of indices containing cells that are alive.
 
         This method will filter out cells that are dead according to the
@@ -327,7 +329,7 @@ class CellList(object):
         """Return a list of cells indices in the same voxel."""
         return self.get_cells_in_voxel(self.grid.get_voxel(cell['point']))
 
-    def update_voxel_index(self, indices: Iterable = None):
+    def update_voxel_index(self, indices: Optional[Iterable] = None):
         """Update the embedded voxel index.
 
         This method will update the voxel indices for a given list of cells,
