@@ -6,23 +6,6 @@ from pytest import raises
 from nlisim.config import SimulationConfig
 from nlisim.module import ModuleModel
 
-# Destroy all defaults!
-# def test_config_defaults():
-#     config = SimulationConfig()
-#     assert config.getboolean('simulation', 'validate') is True
-
-# Destroy all defaults!
-# def test_config_default_merging():
-#     config = SimulationConfig({'simulation': {'custom_val': 5}})
-#     # Existing defaults should be merged
-#     assert config.getboolean('simulation', 'validate') is True
-
-# Destroy all defaults!
-# def test_config_default_overwrite():
-#     config = SimulationConfig({'simulation': {'validate': False}})
-#     # Defaults should be overwritable
-#     assert config.getboolean('simulation', 'validate') is False
-
 
 def test_config_dict():
     config = SimulationConfig({'custom_section': {'custom_val': 5}})

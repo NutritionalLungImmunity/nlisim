@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Iterator, List, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 from attr import attrib, attrs
 from h5py import Group
@@ -10,7 +10,6 @@ from nlisim.coordinates import Point
 from nlisim.grid import TetrahedralMesh, tetrahedral_gradient
 from nlisim.random import rg
 from nlisim.state import State, get_class_path
-from nlisim.util import logger
 
 MAX_CELL_LIST_SIZE = 1_000_000
 
@@ -88,7 +87,7 @@ class CellData(np.ndarray):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, point: Point = None, element_index: int = -1, dead: bool = False, **kwargs
+        cls, *, point: Optional[Point] = None, dead: bool = False, **kwargs
     ) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
@@ -202,7 +201,7 @@ class CellList(object):
 
     # TODO: this is inconsistent with iterating over the whole CellList, why does this give indices
     #  while the other gives the records
-    def alive(self, sample: Iterable = None) -> np.ndarray:
+    def alive(self, sample: Optional[Iterable] = None) -> np.ndarray:
         """Get a list of indices containing cells that are alive.
 
         This method will filter out cells that are dead according to the
