@@ -40,7 +40,8 @@ class Hepcidin(ModuleModel):
 
         # config file values
         hepcidin.k_d = self.config.getfloat('k_d')  # aM
-        # hepcidin.diffusion_constant = self.config.getfloat('diffusion_constant')  # units: µm^2/min
+        # hepcidin.diffusion_constant = \
+        #     self.config.getfloat('diffusion_constant')  # units: µm^2/min
 
         # computed values (none)
 

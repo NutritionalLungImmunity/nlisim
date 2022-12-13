@@ -10,6 +10,7 @@ from nlisim.coordinates import Point
 from nlisim.grid import TetrahedralMesh, tetrahedral_gradient
 from nlisim.random import rg
 from nlisim.state import State, get_class_path
+from nlisim.util import logger
 
 MAX_CELL_LIST_SIZE = 1_000_000
 
@@ -87,7 +88,7 @@ class CellData(np.ndarray):
 
     @classmethod
     def create_cell_tuple(
-        cls, *, point: Optional[Point] = None, dead: bool = False, **kwargs
+        cls, *, point: Optional[Point] = None, element_index: int = -1, dead: bool = False, **kwargs
     ) -> Tuple:
         """Create a tuple of fields attached to a single cell.
 
