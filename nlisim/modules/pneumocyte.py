@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import attr
 from attr import attrib, attrs
@@ -130,7 +130,7 @@ class Pneumocyte(PhagocyteModel):
         self, state: State, cell: PhagocyteCellData, voxel: Voxel
     ) -> Point:
         # pneumocytes do not move
-        return cell['point']
+        return cast(Point, cell['point'])
 
     def advance(self, state: State, previous_time: float):
         """Advance the state by a single time step."""
