@@ -2,22 +2,38 @@
 
 ## Installing
 
-While not required, it is recommended you use
-[pipenv](https://github.com/pypa/pipenv) to create an isolated environment for
-running and developing.  To do so, run
+While not required, it is recommended you use 
+[poetry](https://python-poetry.org/) to create a "virtual environment" 
+running and developing nlisim in which the simulator and its dependancies
+can be run without interfering with other python programs on your system. 
+Installation instructions for `poetry` are available at 
+[https://python-poetry.org/docs/#installation](https://python-poetry.org/docs/#installation). 
+Once installed, within the terminal, change directory to the place that you downloaded `nlisim`.
+Then run
+To do so, run
 ```bash
-pipenv install --dev
+poetry shell
 ```
+which will enter the virtual environment. You will see a change in the command prompt
+that reflects this. Now, within this virtual environment, run
+```bash
+poetry install
+```
+which will install `nlisim` and its dependencies within the virtual environment.
 
-See [pipenv](https://pipenv.kennethreitz.org/) for details.  Once this is done,
-you can run `pipenv shell` to enter the newly created environment.
+### Dealing with errors
+
+There are several possible places that you might run into problems during installation:
+1. Problems with the base python installation. This is largely outside the scope of what we can deal with in this document, but you should make sure that you can run python 3.8 (or later) from the terminal.
+2. Problems with installation of poetry. Also outside of the scope of this document, we refer the reader to [https://python-poetry.org/docs](https://python-poetry.org/docs) to verify that poetry has been installed correctly.
+3. Problems with `nlisim` dependencies. For the purposes of a conistent and reproducible environment, poetry attempts to install the exact version of nlisim's dependencies that are listed in the `poetry.lock` file in the top directory of this repository. At the time of writing, this should be possible on every system with every compatible version of Python. If, however, future systems or versions of Python require newer versions of these dependencies, you can delete `poetry.lock` and let poetry try to resolve these conflicts anew. **Advanced**: Failing that, examine the version numbers specified in `pypproject.toml` for requirements that miht be loosened.
 
 ## Running
 
 ### Run with Python virtual environment
 
 With the simulation package installed, you should have a new command-line
-program called `nlisim ` available.  Try running `nlisim --help` to get
+program called `nlisim ` available. (Within the virtual environment) Try running `nlisim --help` to get
 more information.  To run a simulation, you will need configure a configuration.
 There is an example configuration in the repository to get you started.
 
@@ -97,8 +113,7 @@ comply with some (but unfortunately not all) of the style checks.
 
     This module contains high level, but efficient, data structures representing
     "cells" in the simulation.  At minimum, a cell is an object containing two
-    attributes representing the position of the cell in the domain and whether
-    or not it is alive.  This data structure is intended to be extended by
+    attributes representing the position of the cell in the domain and whether     it is alive.  This data structure is intended to be extended by
     modules to create cells with additional attributes and behavior.
 
 * `config.py `
@@ -168,7 +183,7 @@ At a high level, an extension module contains the following features:
 
 An extension module is registered with the simulation by providing a subclass
 of `nlisim.module.Module`.  Features are added by overriding attributes on
-this class.  The following is small example demonstrating some of the features:
+this class.  The following is small example demonstrating some features:
 ```python
 import attr
 
