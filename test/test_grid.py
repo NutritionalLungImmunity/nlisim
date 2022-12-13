@@ -14,8 +14,8 @@ def p(x: float, y: float, z: float) -> Point:
 
 @pytest.fixture
 def grid():
-    shape = [10, 20, 30]
-    spacing = [1, 1, 1]
+    shape = (10, 20, 30)
+    spacing = (1, 1, 1)
     yield RectangularGrid.construct_uniform(shape=shape, spacing=spacing)
 
 

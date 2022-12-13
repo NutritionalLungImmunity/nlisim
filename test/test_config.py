@@ -39,7 +39,7 @@ def test_config_multiple():
 
 def test_config_add_module_string():
     config = SimulationConfig()
-    config.add_module('nlisim.oldmodules.fungus.Fungus')
+    config.add_module('nlisim.modules.afumigatus.Afumigatus')
     assert len(config.modules) == 1
     assert isinstance(config.modules[0], ModuleModel)
 
@@ -60,6 +60,7 @@ def test_config_add_module_invalid_subclass():
 
     config = SimulationConfig()
     with raises(TypeError, match=r'^Invalid module class for'):
+        # noinspection PyTypeChecker
         config.add_module(NonModule)
 
 
