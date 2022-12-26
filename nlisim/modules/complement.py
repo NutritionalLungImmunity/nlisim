@@ -5,11 +5,8 @@ import attr
 import numpy as np
 from scipy.integrate import solve_ivp
 
-from nlisim.diffusion import apply_diffusion
-from nlisim.grid import RectangularGrid
 from nlisim.module import ModuleModel, ModuleState
 from nlisim.state import State
-from nlisim.util import turnover_rate
 
 
 def minimal_model(t, var, k, ks, d, FD, FI):
@@ -46,6 +43,7 @@ def minimal_model(t, var, k, ks, d, FD, FI):
     dC3bBbH = k[25] * c3bbb * fh - k[16] * c3bbbh - k[21] * c3bbbh
 
     return np.array([dC3, dC3b, dC3bB_c, dC3bB_o, dC3bBb, dFB, dFH, dC3bH, dC3bBbH])
+
 
 def jacobian(t, var, k, ks, d, FD, FI):
     C3, C3b, C3bB_c, C3bB_o, C3bBb, FB, FH, C3bH, C3bBbH = var
@@ -121,7 +119,8 @@ def jacobian(t, var, k, ks, d, FD, FI):
                 0,
             ],
             [0, k[21], 0, 0, k[16], 0, k[16] + k[21], 0, -k[16] - k[21]],
-        ], dtype=np.float64
+        ],
+        dtype=np.float64,
     ).T
 
 
@@ -289,17 +288,17 @@ class Complement(ModuleModel):
         d[3] = complement.d3
 
         # TODO: find or write a vectorized version. solve_ivp doesn't do that.
-        for i,j,k in itertools.product(*map(range,complement.grid.shape)):
+        for i, j, k in itertools.product(*map(range, complement.grid.shape)):
             result = solve_ivp(
                 minimal_model,
                 t_span=(previous_time, previous_time + self.time_step),
-                y0=np.array([complement.grid[spec][i,j,k] for spec in species], dtype=np.float64),
+                y0=np.array([complement.grid[spec][i, j, k] for spec in species], dtype=np.float64),
                 args=(k, ks, d, complement.fd, complement.fi),
                 method='BDF',
                 jac=jacobian,
             )
             for idx, spec in enumerate(species):
-                complement.grid[spec][i,j,k] = result.y[idx]
+                complement.grid[spec][i, j, k] = result.y[idx]
 
         # TODO: do we want this?
         # # Degrade Complement proteins
