@@ -114,7 +114,8 @@ def jacobian(t, var, k, ks, d, FD, FI):
                 0,
             ],
             [0, k[21], 0, 0, k[16], 0, k[16] + k[21], 0, -k[16] - k[21]],
-        ], dtype=np.float64
+        ],
+        dtype=np.float64,
     ).T
 
 
