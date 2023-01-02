@@ -1,6 +1,5 @@
 from typing import Callable, Optional, Tuple
 
-from numba import jit
 import numpy as np
 from numpy.linalg import LinAlgError
 
@@ -146,7 +145,13 @@ def implicit_euler_solver(
 
     # there is only one step left, but it might be irregularly spaced
     implicit_euler(
-        f, jac, t_span[1], t_span[1] - ts[num_datapoints - 2], ys[num_datapoints-2], ys, idx=num_datapoints - 1
+        f,
+        jac,
+        t_span[1],
+        t_span[1] - ts[num_datapoints - 2],
+        ys[num_datapoints - 2],
+        ys,
+        idx=num_datapoints - 1,
     )
     ts[num_datapoints - 1] = t_span[1]
 
