@@ -142,11 +142,11 @@ def implicit_euler_solver(
         ################################################################################
         next_idx = prev_idx + 1
         ts[next_idx] = ts[prev_idx] + dt
-        implicit_euler(f, jac, ts[next_idx], dt, y0, ys, idx=next_idx)
+        implicit_euler(f, jac, ts[next_idx], dt, ys[prev_idx], ys, idx=next_idx)
 
     # there is only one step left, but it might be irregularly spaced
     implicit_euler(
-        f, jac, t_span[1], t_span[1] - ts[num_datapoints - 2], y0, ys, idx=num_datapoints - 1
+        f, jac, t_span[1], t_span[1] - ts[num_datapoints - 2], ys[num_datapoints-2], ys, idx=num_datapoints - 1
     )
     ts[num_datapoints - 1] = t_span[1]
 
