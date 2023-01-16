@@ -238,10 +238,10 @@ analytic_soln = [
 result_ts = result[0]
 analytic_eval = np.zeros_like(result[1])
 
-for span, f in analytic_soln:
+for span, fn in analytic_soln:
     mask = (span[0] <= result_ts) & (result_ts < span[1])
     if np.any(mask):
-        analytic_eval[mask] = f(result_ts[mask])[:,np.newaxis]
+        analytic_eval[mask] = fn(result_ts[mask])[:, np.newaxis]
 
 print("Max absolute error:")
 print(np.max(np.abs(analytic_eval - result[1])))
