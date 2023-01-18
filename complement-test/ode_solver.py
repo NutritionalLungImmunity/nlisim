@@ -18,11 +18,9 @@ def make_ode_solver(
     Parameters
     ----------
     f: Callable[[float, np.ndarray], np.ndarray]
-        The function f in y'=f(t,y) where y is an n-vector. For vectorization, this function should
-        support y that are (n,) arrays, and return y' as an array of identical form.
+        The function f in y'=f(t,y) where y is an n-vector.
     jac: Callable[[float, np.ndarray], np.ndarray]
-        The Jacobian of f, taking values as (n,n) matrices. For vectorization, this function should
-        support y that are (n,) arrays, and return J_f as a (n, n) array.
+        The Jacobian of f, taking values as (n,n) matrices. Parameters are identical to those of f.
     implicit_euler: bool
         If True, use the implicit Euler scheme to do integration. Otherwise, the solver uses BDF
         formulas orders 1 through 3. The BDF solver is a higher order solver and may have a higher
