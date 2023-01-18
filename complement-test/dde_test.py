@@ -5,12 +5,12 @@ import numpy as np
 
 
 def model_maker():
-    # noinspection PyUnusedLocal,PyPep8Naming
+    # noinspection PyUnusedLocal
     @jit(nopython=True)
     def f(t, y, y_delay):
         return -y_delay
 
-    # noinspection PyUnusedLocal,PyPep8Naming
+    # noinspection PyUnusedLocal
     @jit(nopython=True)
     def jac_f(t, y, y_delay):
         return np.array([0.0], dtype=np.float64)

@@ -1,14 +1,15 @@
 import constants
 import matplotlib.pyplot as plt
-from numba import jit
+from numba import njit
 import numpy as np
-from parallel_solver import make_solver
+from ode_solver import make_ode_solver
 
 
 def model_maker(k, ks, d, FD, FI):
     # noinspection PyUnusedLocal,PyPep8Naming
-    @jit(nopython=True)
-    def minimal_model(t, var):
+    @njit
+    def minimal_model(t: float, var: np.ndarray):
+        # unpack an array with shape (9,)
         C3, C3b, C3bB_c, C3bB_o, C3bBb, FB, FH, C3bH, C3bBbH = var
 
         dC3 = ks[1] - d[1] * C3 - k[1] * C3 - (k[2] * C3bBb * C3) / (k[3] + C3)
@@ -44,90 +45,115 @@ def model_maker(k, ks, d, FD, FI):
         dC3bH = k[15] * C3b * FH - k[16] * C3bH - (k[19] * C3bH * FI) / (k[20] + C3bH)
         dC3bBbH = k[25] * C3bBb * FH - k[16] * C3bBbH - k[21] * C3bBbH
 
-        return np.array([dC3, dC3b, dC3bB_c, dC3bB_o, dC3bBb, dFB, dFH, dC3bH, dC3bBbH])
+        # repack the differential to the shape (9,)
+        return np.array(
+            (dC3, dC3b, dC3bB_c, dC3bB_o, dC3bBb, dFB, dFH, dC3bH, dC3bBbH), dtype=np.float64
+        )
 
     # noinspection PyUnusedLocal,PyPep8Naming
-    @jit(nopython=True)
+    @njit
     def jacobian(t, var):
+        # unpack an array with shape (9,)
         C3, C3b, C3bB_c, C3bB_o, C3bBb, FB, FH, C3bH, C3bBbH = var
 
+        # pack jacobian into a (9,9) array
         return np.array(
-            [
-                [
+            (
+                (
                     -d[1]
                     - k[1]
                     - C3bBb * k[2] / (C3 + k[3])
                     + C3 * C3bBb * k[2] / (C3 + k[3]) ** 2,
                     k[1] + C3bBb * k[2] / (C3 + k[3]) - C3 * C3bBb * k[2] / (C3 + k[3]) ** 2,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],
-                [
-                    0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
+                (
+                    0.0,
                     -FH * k[15] - FB * k[4],
                     FB * k[4],
-                    0,
-                    0,
+                    0.0,
+                    0.0,
                     -FB * k[4],
                     -FH * k[15],
                     FH * k[15],
-                    0,
-                ],
-                [0, k[5], -k[5] - k[9], k[9], 0, k[5], 0, 0, 0],
-                [
-                    0,
-                    0,
+                    0.0,
+                ),
+                (0, k[5], -k[5] - k[9], k[9], 0, k[5], 0, 0, 0),
+                (
+                    0.0,
+                    0.0,
                     k[10],
                     -k[10]
                     - FD * k[7] / (C3bB_o + k[8])
                     + C3bB_o * FD * k[7] / (C3bB_o + k[8]) ** 2,
                     FD * k[7] / (C3bB_o + k[8]) - C3bB_o * FD * k[7] / (C3bB_o + k[8]) ** 2,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],
-                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
+                (
                     -C3 * k[2] / (C3 + k[3]),
                     C3 * k[2] / (C3 + k[3]) + k[6],
-                    0,
-                    0,
+                    0.0,
+                    0.0,
                     -FH * k[25] - k[6],
-                    0,
+                    0.0,
                     -FH * k[25],
-                    0,
+                    0.0,
                     FH * k[25],
-                ],
-                [0, -C3b * k[4], C3b * k[4], 0, 0, -C3b * k[4] - d[2], 0, 0, 0],
-                [
-                    0,
+                ),
+                (
+                    0.0,
+                    -C3b * k[4],
+                    C3b * k[4],
+                    0.0,
+                    0.0,
+                    -C3b * k[4] - d[2],
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
+                (
+                    0.0,
                     -C3b * k[15],
-                    0,
-                    0,
+                    0.0,
+                    0.0,
                     -C3bBb * k[25],
-                    0,
+                    0.0,
                     -C3b * k[15] - C3bBb * k[25] - d[3],
                     C3b * k[15],
                     C3bBb * k[25],
-                ],
-                [
-                    0,
+                ),
+                (
+                    0.0,
                     k[16],
-                    0,
-                    0,
-                    0,
-                    0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
                     k[16] + FI * k[19] / (C3bH + k[20]) - C3bH * FI * k[19] / (C3bH + k[20]) ** 2,
                     -k[16] - FI * k[19] / (C3bH + k[20]) + C3bH * FI * k[19] / (C3bH + k[20]) ** 2,
-                    0,
-                ],
-                [0, k[21], 0, 0, k[16], 0, k[16] + k[21], 0, -k[16] - k[21]],
-            ],
+                    0.0,
+                ),
+                (
+                    0.0,
+                    k[21],
+                    0.0,
+                    0.0,
+                    k[16],
+                    0.0,
+                    k[16] + k[21],
+                    0.0,
+                    -k[16] - k[21],
+                ),
+            ),
             dtype=np.float64,
         ).T
 
@@ -136,7 +162,7 @@ def model_maker(k, ks, d, FD, FI):
 
 const = [constants.k, constants.ks, constants.d, constants.FD, constants.FI]
 
-solver = make_solver(*model_maker(*const))
+solver = make_ode_solver(*model_maker(*const))
 
 # Initial state of system
 var0 = np.zeros(9)
@@ -152,7 +178,7 @@ var0[6] = 3
 
 t_span = (0.0, 100.0)
 
-result = solver(y0=var0, t_span=t_span, dt=0.1)
+result = solver(var0, t_span, 0.1)
 
 var_names = ["C3", "C3b", "C3bB_c", "C3bB_o", "C3bBb", "FB", "FH", "C3bH", "C3bBbH"]
 
