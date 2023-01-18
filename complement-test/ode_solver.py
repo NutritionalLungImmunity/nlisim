@@ -19,10 +19,10 @@ def make_ode_solver(
     ----------
     f: Callable[[float, np.ndarray], np.ndarray]
         The function f in y'=f(t,y) where y is an n-vector. For vectorization, this function should
-        support y that are (..., n) arrays, and return y' as an array of identical form.
+        support y that are (n,) arrays, and return y' as an array of identical form.
     jac: Callable[[float, np.ndarray], np.ndarray]
         The Jacobian of f, taking values as (n,n) matrices. For vectorization, this function should
-        support y that are (..., n) arrays, and return J_f as a (..., n, n) array.
+        support y that are (n,) arrays, and return J_f as a (n, n) array.
     implicit_euler: bool
         If True, use the implicit Euler scheme to do integration. Otherwise, the solver uses BDF
         formulas orders 1 through 3. The BDF solver is a higher order solver and may have a higher
@@ -34,9 +34,10 @@ def make_ode_solver(
     -------
     solver: Callable[[np.ndarray, Tuple[float, float], float], Tuple[np.ndarray, np.ndarray]]
         A function with three keyword parameters, y0, t_span, and an optional dt. Here,
-        y0 is an np.ndarray of initial conditions, t_span is a Tuple[float, float] of the time
-        range to integrate over and dt is a float specifying the step size. When dt is not provided,
-        it will be set so that the t_span takes 16 steps.
+        y0 is an (m,n) np.ndarray of initial conditions (where n is the dimension of the ODE and m
+        is the number of initial conditions), t_span is a Tuple[float, float] of the time range to
+        integrate over and dt is a float specifying the step size. When dt is not provided, it will
+        be set so that the t_span takes 16 steps.
     """
 
     def newton_raphson(
