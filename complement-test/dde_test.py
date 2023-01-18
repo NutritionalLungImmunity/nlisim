@@ -1,4 +1,4 @@
-from delay_de_solver import make_delay_solver
+from dde_solver import make_delay_solver
 import matplotlib.pyplot as plt
 from numba import jit
 import numpy as np
