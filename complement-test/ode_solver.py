@@ -65,7 +65,7 @@ def make_ode_solver(
                 break
 
     if jit_compile:
-        newton_raphson = njit(newton_raphson)
+        newton_raphson = njit(newton_raphson, inline='always')
 
     def implicit_euler_step(
         t_np1: float,
@@ -86,7 +86,7 @@ def make_ode_solver(
         )
 
     if jit_compile:
-        implicit_euler_step = njit(implicit_euler_step)
+        implicit_euler_step = njit(implicit_euler_step, inline='always')
 
     if implicit_euler:
 
@@ -177,7 +177,7 @@ def make_ode_solver(
         )
 
     if jit_compile:
-        bdf2_step = njit(bdf2_step)
+        bdf2_step = njit(bdf2_step, inline='always')
 
     def bdf3_step(
         t_np1: float,
@@ -201,7 +201,7 @@ def make_ode_solver(
         )
 
     if jit_compile:
-        bdf3_step = njit(bdf3_step)
+        bdf3_step = njit(bdf3_step, inline='always')
 
     def bdf_solver(
         y0: np.ndarray,
